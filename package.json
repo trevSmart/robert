@@ -14,10 +14,57 @@
 	"contributes": {
 		"commands": [
 			{
-				"command": "robert.helloWorld",
-				"title": "Hello World"
+				"command": "robert.openView",
+				"title": "Open Robert View",
+				"category": "Robert"
+			},
+			{
+				"command": "robert.refreshView",
+				"title": "Refresh Robert View",
+				"category": "Robert"
 			}
-		]
+		],
+		"views": {
+			"explorer": [
+				{
+					"id": "robertExplorerView",
+					"name": "Robert Explorer",
+					"when": "true"
+				}
+			],
+			"robert": [
+				{
+					"id": "robertMainView",
+					"name": "Robert Main",
+					"when": "true"
+				}
+			]
+		},
+		"viewsContainers": {
+			"activitybar": [
+				{
+					"id": "robert",
+					"title": "Robert",
+					"icon": "$(robot)"
+				}
+			]
+		},
+		"menus": {
+			"view/title": [
+				{
+					"command": "robert.refreshView",
+					"when": "view == robertMainView",
+					"group": "navigation"
+				}
+			],
+			"explorer/context": [
+				{
+					"command": "robert.openView",
+					"when": "true",
+					"group": "navigation"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

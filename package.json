@@ -9,58 +9,59 @@
 	"categories": [
 		"Other"
 	],
-	"activationEvents": [],
-	"main": "./out/extension.js",
+	"activationEvents": [
+		"onView:robert.mainView",
+		"onCommand:robert.openView"
+	],
+	"main": "./out/src/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "robert.openView",
-				"title": "Open Robert View",
-				"category": "Robert"
+				"command": "robert.helloWorld",
+				"title": "Hello World"
 			},
 			{
-				"command": "robert.refreshView",
-				"title": "Refresh Robert View",
-				"category": "Robert"
+				"command": "robert.openView",
+				"title": "Open IBM Robert View",
+				"category": "IBM Robert"
 			}
 		],
-		"views": {
-			"explorer": [
-				{
-					"id": "robertExplorerView",
-					"name": "Robert Explorer",
-					"when": "true"
-				}
-			],
-			"robert": [
-				{
-					"id": "robertMainView",
-					"name": "Robert Main",
-					"when": "true"
-				}
-			]
-		},
 		"viewsContainers": {
 			"activitybar": [
 				{
 					"id": "robert",
-					"title": "Robert",
-					"icon": "$(robot)"
+					"title": "IBM Robert",
+					"icon": "./resources/icons/ibm-logo.webp"
 				}
 			]
 		},
+		"views": {
+			"robert": [
+				{
+					"id": "robert.mainView",
+					"name": "IBM Robert",
+					"type": "webview",
+					"icon": "./resources/icons/ibm-logo.webp"
+				}
+			]
+		},
+		"customEditors": [
+			{
+				"viewType": "robert.editor",
+				"displayName": "IBM Robert Editor",
+				"selector": [
+					{
+						"filenamePattern": "*.robert"
+					}
+				],
+				"priority": "default"
+			}
+		],
 		"menus": {
 			"view/title": [
 				{
-					"command": "robert.refreshView",
-					"when": "view == robertMainView",
-					"group": "navigation"
-				}
-			],
-			"explorer/context": [
-				{
 					"command": "robert.openView",
-					"when": "true",
+					"when": "view == robert.mainView",
 					"group": "navigation"
 				}
 			]
@@ -76,5 +77,8 @@
 		"@types/node": "^24.3.0",
 		"@types/vscode": "^1.103.0",
 		"typescript": "^5.9.2"
+	},
+	"dependencies": {
+		"@vscode/webview-ui-toolkit": "^1.4.0"
 	}
 }

@@ -212,6 +212,13 @@ function buildStatusTooltip(errorHandler: ErrorHandler): vscode.MarkdownString {
 export function deactivate() {
 	// This function is called when the extension is deactivated
 	// Cleanup can go here if needed
+
+	// Log extension deactivation to output
+	const output = vscode.window.createOutputChannel('Robert');
+	output.appendLine('[Robert] 🚫 EXTENSION DEACTIVATED');
+	output.appendLine(`[Robert] Time: ${new Date().toISOString()}`);
+	output.appendLine('[Robert] ---');
+	output.show(true);
 }
 
 // Lightweight floating popover using QuickPick (closest to a small panel)

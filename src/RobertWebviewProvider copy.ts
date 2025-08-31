@@ -10,9 +10,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private _currentView?: vscode.WebviewView;
 	private _errorHandler: ErrorHandler;
 
-	// State persistence for webview
-	private _webviewState: Map<string, unknown> = new Map();
-
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
 		private readonly _outputChannel?: vscode.OutputChannel
@@ -38,12 +35,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			// Log abans de renderitzar
 			this._errorHandler.logInfo('Rendering main webview content for activity bar', 'RobertWebviewProvider.resolveWebviewView');
 
-			// Generate unique ID for this webview instance
-			const webviewId = this._generateWebviewId('activity-bar');
-			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId);
+			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 'activity-bar');
 
 			// Handle messages from webview
-			this._setWebviewMessageListener(webviewView.webview, webviewId);
+			this._setWebviewMessageListener(webviewView.webview);
 
 			// Handle view destruction
 			webviewView.onDidDispose(
@@ -76,13 +71,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			// Log abans de renderitzar
 			this._errorHandler.logInfo('Rendering main webview content for editor tab', 'RobertWebviewProvider.resolveCustomTextEditor');
 
-			// Generate unique ID for this webview instance
-			const webviewId = this._generateWebviewId('editor-tab');
-			webviewPanel.webview.html = this._getHtmlForWebview(webviewPanel.webview, 'editor-tab', webviewId);
+			webviewPanel.webview.html = this._getHtmlForWebview(webviewPanel.webview, 'editor-tab');
 			this._errorHandler.logViewCreation('Custom Text Editor', 'RobertWebviewProvider.resolveCustomTextEditor');
 
 			// Handle messages from webview
-			this._setWebviewMessageListener(webviewPanel.webview, webviewId);
+			this._setWebviewMessageListener(webviewPanel.webview);
 
 			// Handle panel destruction
 			webviewPanel.onDidDispose(
@@ -115,12 +108,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._currentPanel = panel;
 				this._errorHandler.logViewCreation('Webview Panel', 'RobertWebviewProvider.createWebviewPanel');
 
-				// Generate unique ID for this webview instance
-				const webviewId = this._generateWebviewId('separate-window');
-				panel.webview.html = this._getHtmlForWebview(panel.webview, 'separate-window', webviewId);
+				panel.webview.html = this._getHtmlForWebview(panel.webview, 'separate-window');
 
 				// Handle messages from webview
-				this._setWebviewMessageListener(panel.webview, webviewId);
+				this._setWebviewMessageListener(panel.webview);
 
 				// Handle panel close
 				panel.onDidDispose(
@@ -249,7 +240,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
-	private _getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): string {
+	private _getHtmlForWebview(webview: vscode.Webview, context: string): string {
 		return (
 			this._errorHandler.executeWithErrorHandlingSync(() => {
 				// Log quan es renderitza la view principal
@@ -457,29 +448,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
     <script>
         const vscode = acquireVsCodeApi();
-        const webviewId = '${webviewId || 'unknown'}';
         let isLoading = false;
         let progressInterval = null;
         let currentProgress = 0;
-
-        // Load saved state when webview initializes
-        function loadSavedState() {
-            vscode.postMessage({
-                command: 'getState',
-                webviewId: webviewId
-            });
-        }
-
-        // Save current state
-        function saveState() {
-            vscode.postMessage({
-                command: 'saveState',
-                webviewId: webviewId,
-                state: {
-                    currentProgress: currentProgress
-                }
-            });
-        }
 
         function showLoading() {
             if (!isLoading) {
@@ -516,7 +487,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
                     progressInterval = null;
                 }
                 updateProgressBar(currentProgress);
-                saveState(); // Save state after each update
             }, 200);
         }
 
@@ -531,7 +501,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
             stopProgress();
             currentProgress = 0;
             updateProgressBar(currentProgress);
-            saveState(); // Save state after reset
         }
 
         function sendMessage(type) {
@@ -572,21 +541,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
                         '<p style="margin:4px 0 0 0;color:var(--vscode-descriptionForeground);font-size:12px;">Click the activity bar to open the full view.</p>' +
                         '</div></div>';
                 }
-            } else if (message.command === 'restoreState') {
-                // Restore saved state
-                if (message.state && message.state.currentProgress !== undefined) {
-                    currentProgress = message.state.currentProgress;
-                    updateProgressBar(currentProgress);
-                    console.log('State restored:', message.state);
-                }
             }
         });
 
-        // Hide loading after initial render and load saved state
+        // Hide loading after initial render
         window.addEventListener('load', () => {
             setTimeout(() => {
                 hideLoading();
-                loadSavedState(); // Load saved state when page loads
             }, 100);
         });
     </script>
@@ -596,14 +557,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
-	private _setWebviewMessageListener(webview: vscode.Webview, webviewId?: string) {
+	private _setWebviewMessageListener(webview: vscode.Webview) {
 		webview.onDidReceiveMessage(
 			(message) => {
 				this._errorHandler.executeWithErrorHandlingSync(() => {
-					// Log webview ID for debugging
-					if (webviewId) {
-						this._errorHandler.logInfo(`Message from webview: ${webviewId}`, 'WebviewMessageListener');
-					}
 					switch (message.command) {
 						case 'hello':
 							vscode.window.showInformationMessage(`Hello from ${message.context}!`);
@@ -617,24 +574,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							vscode.window.showInformationMessage(`Demo for ${message.demoType} not implemented yet. Try adding Chart.js, D3.js, or other libraries!`);
 							this._errorHandler.logInfo(`Message received: showDemo — demoType=${message.demoType}`, 'WebviewMessageListener');
 							break;
-						case 'saveState':
-							if (message.webviewId && message.state) {
-								this._saveWebviewState(message.webviewId, message.state);
-								this._errorHandler.logInfo(`State saved for webview: ${message.webviewId}`, 'WebviewMessageListener');
-							}
-							break;
-						case 'getState':
-							if (message.webviewId) {
-								const savedState = this._getWebviewState(message.webviewId);
-								if (savedState) {
-									webview.postMessage({
-										command: 'restoreState',
-										state: savedState
-									});
-									this._errorHandler.logInfo(`State restored for webview: ${message.webviewId}`, 'WebviewMessageListener');
-								}
-							}
-							break;
 						default:
 							this._errorHandler.logWarning(`Unknown message command: ${message.command}`, 'WebviewMessageListener');
 							break;
@@ -644,28 +583,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			undefined,
 			this._disposables
 		);
-	}
-
-	/**
-	 * Save state for a specific webview
-	 */
-	private _saveWebviewState(webviewId: string, state: unknown): void {
-		this._webviewState.set(webviewId, state);
-		this._errorHandler.logInfo(`State saved for webview: ${webviewId}`, 'RobertWebviewProvider._saveWebviewState');
-	}
-
-	/**
-	 * Get state for a specific webview
-	 */
-	private _getWebviewState(webviewId: string): unknown {
-		return this._webviewState.get(webviewId);
-	}
-
-	/**
-	 * Generate a unique ID for a webview
-	 */
-	private _generateWebviewId(context: string): string {
-		return `${context}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 	}
 
 	public dispose() {

@@ -1,4 +1,3 @@
-import process from 'node:process';
 import * as vscode from 'vscode';
 
 export class ErrorHandler {
@@ -26,12 +25,12 @@ export class ErrorHandler {
 	 */
 	private setupGlobalErrorHandling(): void {
 		// Capture uncaught promise rejections
-		process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
+		globalThis.process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
 			this.handleError(new Error(`Unhandled Promise Rejection: ${reason}`), 'Unhandled Promise Rejection');
 		});
 
 		// Capture uncaught exceptions
-		process.on('uncaughtException', (error: Error) => {
+		globalThis.process.on('uncaughtException', (error: Error) => {
 			this.handleError(error, 'Uncaught Exception');
 		});
 
@@ -91,6 +90,34 @@ export class ErrorHandler {
 			this.outputChannel.appendLine(`[Robert] ℹ️ INFO in ${context}:`);
 			this.outputChannel.appendLine(`[Robert] Time: ${timestamp}`);
 			this.outputChannel.appendLine(`[Robert] Message: ${message}`);
+			this.outputChannel.appendLine(`[Robert] ---`);
+		}
+	}
+
+	/**
+	 * Log view destruction events to the output channel with special formatting
+	 */
+	public logViewDestruction(viewType: string, context: string = 'Unknown'): void {
+		const timestamp = new Date().toISOString();
+
+		if (this.outputChannel) {
+			this.outputChannel.appendLine(`[Robert] 🗑️ VIEW DESTROYED in ${context}:`);
+			this.outputChannel.appendLine(`[Robert] Time: ${timestamp}`);
+			this.outputChannel.appendLine(`[Robert] View Type: ${viewType}`);
+			this.outputChannel.appendLine(`[Robert] ---`);
+		}
+	}
+
+	/**
+	 * Log view creation/opening events to the output channel with special formatting
+	 */
+	public logViewCreation(viewType: string, context: string = 'Unknown'): void {
+		const timestamp = new Date().toISOString();
+
+		if (this.outputChannel) {
+			this.outputChannel.appendLine(`[Robert] 🆕 VIEW CREATED in ${context}:`);
+			this.outputChannel.appendLine(`[Robert] Time: ${timestamp}`);
+			this.outputChannel.appendLine(`[Robert] View Type: ${viewType}`);
 			this.outputChannel.appendLine(`[Robert] ---`);
 		}
 	}

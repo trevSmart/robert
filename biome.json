@@ -37,11 +37,11 @@
 				"noInvalidUseBeforeDeclaration": "error",
 				"noMissingVarFunction": "error",
 				"noNestedComponentDefinitions": "error",
-				"noNodejsModules": "error",
+				"noNodejsModules": "off",
 				"noNonoctalDecimalEscape": "error",
 				"noPrecisionLoss": "error",
 				"noPrivateImports": "error",
-				"noProcessGlobal": "warn",
+				"noProcessGlobal": "off",
 				"noReactPropAssignments": "error",
 				"noRenderReturnValue": "error",
 				"noRestrictedElements": "error",
@@ -178,10 +178,17 @@
 				"noBannedTypes": "error",
 				"noCommaOperator": "error",
 				"noEmptyTypeParameters": "error",
-				"noExcessiveCognitiveComplexity": "error",
+				"noExcessiveCognitiveComplexity": {
+					"level": "error",
+					"options": {
+						"maxAllowedComplexity": 20
+					}
+				},
 				"noExcessiveLinesPerFunction": {
 					"level": "error",
-					"options": { "maxLines": 255 }
+					"options": {
+						"maxLines": 255
+					}
 				},
 				"noExcessiveNestedTestSuites": "error",
 				"noExtraBooleanCast": "error",

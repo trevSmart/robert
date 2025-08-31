@@ -8,7 +8,7 @@ A VSCode extension project.
 
 ## Requirements
 
-- VSCode 1.74.0 or higher
+- VSCode 1.75.0 or higher
 
 ## Extension Settings
 
@@ -50,4 +50,4 @@ Initial release of Robert extension.
 
 - `npm run compile`: Compile the TypeScript code
 - `npm run watch`: Watch for changes and recompile
-- `npm run lint`: Run ESLint
+- `npm run lint`: Run Biome (checks and formats the code)

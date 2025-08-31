@@ -179,7 +179,10 @@
 				"noCommaOperator": "error",
 				"noEmptyTypeParameters": "error",
 				"noExcessiveCognitiveComplexity": "error",
-				"noExcessiveLinesPerFunction": "error",
+				"noExcessiveLinesPerFunction": {
+					"level": "error",
+					"options": { "maxLines": 255 }
+				},
 				"noExcessiveNestedTestSuites": "error",
 				"noExtraBooleanCast": "error",
 				"noFlatMapIdentity": "error",

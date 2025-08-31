@@ -6,6 +6,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	private _disposables: vscode.Disposable[] = [];
 	private _currentPanel: vscode.WebviewPanel | undefined;
+	private _currentView?: vscode.WebviewView;
 
 	constructor(private readonly _extensionUri: vscode.Uri) {}
 
@@ -16,10 +17,18 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			localResourceRoots: [this._extensionUri]
 		};
 
+		this._currentView = webviewView;
+
 		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 'activity-bar');
 
 		// Handle messages from webview
 		this._setWebviewMessageListener(webviewView.webview);
+	}
+
+	public postMessageToView(message: { command: string; [key: string]: unknown }) {
+		if (this._currentView) {
+			this._currentView.webview.postMessage(message);
+		}
 	}
 
 	// CustomTextEditor implementation (for editor tab)
@@ -68,6 +77,59 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 
 		return panel;
+	}
+
+	// Small, lightweight panel to show the logo and short info
+	public createLogoPanel(): vscode.WebviewPanel {
+		// If panel already exists and is visible, reveal it
+		if (this._currentPanel) {
+			this._currentPanel.reveal(vscode.ViewColumn.One);
+			return this._currentPanel;
+		}
+
+		const panel = vscode.window.createWebviewPanel('robert.logo', 'Robert — Logo', vscode.ViewColumn.One, {
+			enableScripts: false,
+			localResourceRoots: [this._extensionUri]
+		});
+
+		this._currentPanel = panel;
+
+		panel.webview.html = this._getHtmlForLogo(panel.webview);
+
+		panel.onDidDispose(
+			() => {
+				this._currentPanel = undefined;
+			},
+			undefined,
+			this._disposables
+		);
+
+		return panel;
+	}
+
+	private _getHtmlForLogo(webview: vscode.Webview): string {
+		const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo.webp'));
+		return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    body { margin: 0; display:flex; align-items:center; justify-content:center; height:100vh; background: var(--vscode-editor-background); color: var(--vscode-foreground); font-family: var(--vscode-font-family); }
+    .card { text-align:center; padding:16px; border-radius:8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); background: var(--vscode-input-background); }
+    img { width: 64px; height:64px; display:block; margin:0 auto 8px; }
+    h1 { font-size: 16px; margin: 0 0 8px 0; }
+    p { margin: 0; font-size: 12px; color: var(--vscode-descriptionForeground); }
+  </style>
+<\x2fhead>
+<body>
+  <div class="card">
+    <img src="${logoUri}" alt="Robert logo" />
+    <h1>Robert</h1>
+    <p>Click the activity bar to open the full view.</p>
+  </div>
+</body>
+</html>`;
 	}
 
 	private _getHtmlForWebview(webview: vscode.Webview, context: string): string {
@@ -355,7 +417,18 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
         // Listen for messages from extension
         window.addEventListener('message', event => {
             const message = event.data;
-            // Handle messages from extension if needed
+            if (message.command === 'showLogo') {
+                const container = document.querySelector('.container');
+                const LOGO_URI = '${webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo.webp'))}';
+                if (container) {
+                    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:20px;">' +
+                        '<div style="text-align:center;background:var(--vscode-input-background);padding:16px;border-radius:8px;">' +
+                        '<img src="' + LOGO_URI + '" style="width:64px;height:64px;display:block;margin:0 auto 8px;" />' +
+                        '<h1 style="margin:0;font-size:16px;color:var(--vscode-foreground);">Robert</h1>' +
+                        '<p style="margin:4px 0 0 0;color:var(--vscode-descriptionForeground);font-size:12px;">Click the activity bar to open the full view.</p>' +
+                        '</div></div>';
+                }
+            }
         });
 
         // Hide loading after initial render

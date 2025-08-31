@@ -4,14 +4,10 @@
 	"description": "VSCode extension project",
 	"version": "0.0.1",
 	"engines": {
-		"vscode": "^1.74.0"
+		"vscode": "^1.75.0"
 	},
 	"categories": [
 		"Other"
-	],
-	"activationEvents": [
-		"onView:robert.mainView",
-		"onCommand:robert.openView"
 	],
 	"main": "./out/src/extension.js",
 	"contributes": {
@@ -70,6 +66,7 @@
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
+		"watch": "tsc -p ./ -w",
 		"lint": "biome check --write . && biome format --write ."
 	},
 	"devDependencies": {

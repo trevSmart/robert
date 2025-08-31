@@ -1,6 +1,13 @@
 import * as vscode from 'vscode';
 import { RobertWebviewProvider } from './RobertWebviewProvider';
 
+// In-memory state for the status popover (dummy content)
+const robertPopoverState = {
+	allFiles: true,
+	nextEditSuggestions: true,
+	snoozedUntil: 0
+};
+
 export function activate(context: vscode.ExtensionContext) {
 	// Extension is now active
 	const disposable = vscode.commands.registerCommand('robert.helloWorld', () => {
@@ -21,24 +28,43 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	// Register command to open separate window (now reveals sidebar view)
+	// Register command to open our panel in a new editor tab
 	const openViewCommand = vscode.commands.registerCommand('robert.openView', async () => {
-		// Try to focus the activity bar view container for our extension
-		// Command id for the view container: 'workbench.view.extension.<containerId>' where containerId is 'robert'
-		try {
-			await vscode.commands.executeCommand('workbench.view.extension.robert');
-			// Also ensure the specific view has focus
-			await vscode.commands.executeCommand('workbench.action.focusActiveEditorGroup');
-		} catch (_e) {
-			// Fallback: if focusing the view fails, open a panel
-			webviewProvider.createWebviewPanel();
-		}
+		webviewProvider.createWebviewPanel();
 	});
 	context.subscriptions.push(openViewCommand);
+
+	// Register command used by the status bar to open a small, lightweight popover
+	const openStatusPanelCommand = vscode.commands.registerCommand('robert.openStatusPanel', () => {
+		showStatusPopover(webviewProvider);
+	});
+	context.subscriptions.push(openStatusPanelCommand);
 
 	// Create and setup status bar item
 	const statusBarItem = createStatusBarItem(context);
 	context.subscriptions.push(statusBarItem);
+
+	// Commands used by interactive tooltip links
+	context.subscriptions.push(
+		vscode.commands.registerCommand('robert.toggleAllFiles', () => {
+			robertPopoverState.allFiles = !robertPopoverState.allFiles;
+			// Re-render tooltip to reflect the new state
+			updateStatusBarItem(statusBarItem, 'idle');
+		}),
+		vscode.commands.registerCommand('robert.toggleNextEdit', () => {
+			robertPopoverState.nextEditSuggestions = !robertPopoverState.nextEditSuggestions;
+			updateStatusBarItem(statusBarItem, 'idle');
+		}),
+		vscode.commands.registerCommand('robert.snooze', (minutes: number = 5) => {
+			const now = Date.now();
+			robertPopoverState.snoozedUntil = now + minutes * 60 * 1000;
+			updateStatusBarItem(statusBarItem, 'idle');
+			vscode.window.showInformationMessage(`Robert snoozed for ${minutes} minutes`);
+		}),
+		vscode.commands.registerCommand('robert.openSettings', () => {
+			vscode.commands.executeCommand('workbench.action.openSettings', '@ext:robert');
+		})
+	);
 }
 
 function createStatusBarItem(context: vscode.ExtensionContext): vscode.StatusBarItem {
@@ -92,10 +118,101 @@ function updateStatusBarItem(item: vscode.StatusBarItem, state: string) {
 			item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
 			break;
 	}
+	// Build interactive tooltip similar to a small anchored popover
+	item.tooltip = buildStatusTooltip();
+
+	// Clicking the status bar: keep a useful default action (open full panel)
 	item.command = 'robert.openView';
 	item.show();
 }
 
+function buildStatusTooltip(): vscode.MarkdownString {
+	const md = new vscode.MarkdownString(undefined, true);
+	md.isTrusted = true;
+
+	const checked = (on: boolean) => (on ? '$(check)' : '$(circle-slash)');
+	const pad = (s: string) => `&nbsp;&nbsp;${s}`;
+
+	// Encode args helper for command markdown links
+	const enc = (args: unknown[]) => encodeURIComponent(JSON.stringify(args));
+
+	const allFilesLink = `command:robert.toggleAllFiles?${enc([])}`;
+	const nextEditLink = `command:robert.toggleNextEdit?${enc([])}`;
+	const snooze5Link = `command:robert.snooze?${enc([5])}`;
+	const settingsLink = `command:robert.openSettings?${enc([])}`;
+
+	const snoozed = robertPopoverState.snoozedUntil > Date.now();
+	const snoozeLabel = snoozed ? `Snoozed until ${new Date(robertPopoverState.snoozedUntil).toLocaleTimeString()}` : 'Snooze (5 min)';
+
+	md.appendMarkdown('**Code Completions**  ');
+	md.appendMarkdown(`[$(gear)](${settingsLink} "Settings")\n\n`);
+	md.appendMarkdown(`[$${checked(robertPopoverState.allFiles)}](${allFilesLink}) ${pad('All files')}\n\n`);
+	md.appendMarkdown(`[$${checked(robertPopoverState.nextEditSuggestions)}](${nextEditLink}) ${pad('Next edit suggestions')}\n\n`);
+	md.appendMarkdown(`[Snooze](${snooze5Link} "Hide for 5 minutes") ${pad(snoozeLabel)}\n`);
+
+	return md;
+}
+
 export function deactivate() {
 	// This function is called when the extension is deactivated
+}
+
+// Lightweight floating popover using QuickPick (closest to a small panel)
+function showStatusPopover(webviewProvider: RobertWebviewProvider) {
+	const qp = vscode.window.createQuickPick();
+	qp.title = 'Robert';
+	qp.placeholder = 'IBM Robert — resum ràpid';
+	qp.matchOnDetail = true;
+	qp.matchOnDescription = true;
+
+	qp.items = [
+		{
+			label: '$(organization) Robert',
+			description: 'Extensió activa',
+			detail: 'Pots obrir el panell complet o la vista lateral'
+		},
+		{
+			label: '$(rocket) Obrir panell complet',
+			description: 'Webview en una pestanya nova',
+			detail: ''
+		},
+		{
+			label: '$(sidebar-expand) Obrir vista lateral',
+			description: 'Mostra la vista del contenidor IBM Robert',
+			detail: ''
+		}
+	];
+
+	// Add a button to open the full panel quickly
+	qp.buttons = [{ iconPath: new vscode.ThemeIcon('screen-full'), tooltip: 'Obrir panell complet' }];
+
+	const accept = () => {
+		const picked = qp.selectedItems[0];
+		if (!picked) {
+			qp.hide();
+			qp.dispose();
+			return;
+		}
+		if (picked.label.includes('Obrir panell complet')) {
+			webviewProvider.createWebviewPanel();
+		} else if (picked.label.includes('Obrir vista lateral')) {
+			vscode.commands.executeCommand('workbench.view.extension.robert');
+		}
+		qp.hide();
+		qp.dispose();
+	};
+
+	qp.onDidAccept(accept);
+	qp.onDidTriggerItemButton(() => {
+		webviewProvider.createWebviewPanel();
+		qp.hide();
+		qp.dispose();
+	});
+	qp.onDidTriggerButton(() => {
+		webviewProvider.createWebviewPanel();
+		qp.hide();
+		qp.dispose();
+	});
+
+	qp.show();
 }

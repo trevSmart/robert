@@ -79,7 +79,6 @@ function createStatusBarItem(context: vscode.ExtensionContext): vscode.StatusBar
 		const randomState = states[Math.floor(Math.random() * states.length)];
 		updateStatusBarItem(statusBarItem, randomState);
 	}, 5000);
-
 	// Clean up interval when extension deactivates
 	context.subscriptions.push({
 		dispose: () => clearInterval(intervalId)

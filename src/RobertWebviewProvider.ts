@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { ErrorHandler } from './ErrorHandler';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -7,109 +8,187 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private _disposables: vscode.Disposable[] = [];
 	private _currentPanel: vscode.WebviewPanel | undefined;
 	private _currentView?: vscode.WebviewView;
+	private _errorHandler: ErrorHandler;
 
-	constructor(private readonly _extensionUri: vscode.Uri) {}
+	constructor(
+		private readonly _extensionUri: vscode.Uri,
+		private readonly _outputChannel?: vscode.OutputChannel
+	) {
+		this._errorHandler = ErrorHandler.getInstance(_outputChannel);
+
+		if (this._outputChannel) {
+			this._errorHandler.logInfo('WebviewProvider initialized', 'RobertWebviewProvider.constructor');
+		}
+	}
 
 	// WebviewView implementation (for activity bar)
 	public resolveWebviewView(webviewView: vscode.WebviewView, _context: vscode.WebviewViewResolveContext, _token: vscode.CancellationToken) {
-		webviewView.webview.options = {
-			enableScripts: true,
-			localResourceRoots: [this._extensionUri]
-		};
+		this._errorHandler.executeWithErrorHandlingSync(() => {
+			webviewView.webview.options = {
+				enableScripts: true,
+				localResourceRoots: [this._extensionUri]
+			};
 
-		this._currentView = webviewView;
+			this._currentView = webviewView;
+			this._errorHandler.logInfo('Activity bar view resolved', 'RobertWebviewProvider.resolveWebviewView');
 
-		webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 'activity-bar');
+			webviewView.webview.html = this._getHtmlForWebview(webviewView.webview, 'activity-bar');
 
-		// Handle messages from webview
-		this._setWebviewMessageListener(webviewView.webview);
+			// Handle messages from webview
+			this._setWebviewMessageListener(webviewView.webview);
+		}, 'resolveWebviewView');
 	}
 
 	public postMessageToView(message: { command: string; [key: string]: unknown }) {
-		if (this._currentView) {
-			this._currentView.webview.postMessage(message);
-		}
+		this._errorHandler.executeWithErrorHandlingSync(() => {
+			if (this._currentView) {
+				this._currentView.webview.postMessage(message);
+			}
+		}, 'postMessageToView');
 	}
 
 	// CustomTextEditor implementation (for editor tab)
 	public async resolveCustomTextEditor(_document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel, _token: vscode.CancellationToken): Promise<void> {
-		webviewPanel.webview.options = {
-			enableScripts: true,
-			localResourceRoots: [this._extensionUri]
-		};
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			webviewPanel.webview.options = {
+				enableScripts: true,
+				localResourceRoots: [this._extensionUri]
+			};
 
-		webviewPanel.webview.html = this._getHtmlForWebview(webviewPanel.webview, 'editor-tab');
+			webviewPanel.webview.html = this._getHtmlForWebview(webviewPanel.webview, 'editor-tab');
+			this._errorHandler.logInfo('Custom editor resolved (editor tab)', 'RobertWebviewProvider.resolveCustomTextEditor');
 
-		// Handle messages from webview
-		this._setWebviewMessageListener(webviewPanel.webview);
+			// Handle messages from webview
+			this._setWebviewMessageListener(webviewPanel.webview);
+		}, 'resolveCustomTextEditor');
 	}
 
 	// WebviewPanel implementation (for separate window)
 	public createWebviewPanel(): vscode.WebviewPanel {
-		// If panel already exists and is visible, reveal it
-		if (this._currentPanel) {
-			this._currentPanel.reveal(vscode.ViewColumn.One);
-			return this._currentPanel;
-		}
+		return (
+			this._errorHandler.executeWithErrorHandlingSync(() => {
+				// If panel already exists and is visible, reveal it
+				if (this._currentPanel) {
+					this._currentPanel.reveal(vscode.ViewColumn.One);
+					return this._currentPanel;
+				}
 
-		// Create new panel
-		const panel = vscode.window.createWebviewPanel('robert', 'Robert', vscode.ViewColumn.One, {
-			enableScripts: true,
-			localResourceRoots: [this._extensionUri]
-		});
+				// Create new panel
+				const panel = vscode.window.createWebviewPanel('robert', 'Robert', vscode.ViewColumn.One, {
+					enableScripts: true,
+					localResourceRoots: [this._extensionUri]
+				});
 
-		// Store reference to current panel
-		this._currentPanel = panel;
+				// Store reference to current panel
+				this._currentPanel = panel;
+				this._errorHandler.logInfo('Webview panel created', 'RobertWebviewProvider.createWebviewPanel');
 
-		panel.webview.html = this._getHtmlForWebview(panel.webview, 'separate-window');
+				panel.webview.html = this._getHtmlForWebview(panel.webview, 'separate-window');
 
-		// Handle messages from webview
-		this._setWebviewMessageListener(panel.webview);
+				// Handle messages from webview
+				this._setWebviewMessageListener(panel.webview);
 
-		// Handle panel close
-		panel.onDidDispose(
-			() => {
-				// Clear reference when panel is closed
-				this._currentPanel = undefined;
-			},
-			undefined,
-			this._disposables
+				// Handle panel close
+				panel.onDidDispose(
+					() => {
+						// Clear reference when panel is closed
+						this._currentPanel = undefined;
+					},
+					undefined,
+					this._disposables
+				);
+
+				return panel;
+			}, 'createWebviewPanel') ||
+			vscode.window.createWebviewPanel('robert', 'Robert', vscode.ViewColumn.One, {
+				enableScripts: true,
+				localResourceRoots: [this._extensionUri]
+			})
 		);
+	}
 
-		return panel;
+	/**
+	 * Reveal the main webview panel if it exists but isn't visible; otherwise create it.
+	 * If it's already visible, this is a no-op.
+	 * Prioritizes the activity bar view over separate panels.
+	 */
+	public showMainPanelIfHidden(): void {
+		this._errorHandler.executeWithErrorHandlingSync(() => {
+			// First priority: Check if activity bar view exists and is visible
+			if (this._currentView) {
+				this._errorHandler.logInfo('Activity bar view exists; ensuring it has focus', 'RobertWebviewProvider.showMainPanelIfHidden');
+							// Execute command to show/focus the activity bar view
+			vscode.commands.executeCommand('workbench.view.extension.robert');
+				return;
+			}
+
+			// Second priority: Check if separate panel exists and is visible
+			if (this._currentPanel) {
+				if (this._currentPanel.visible) {
+					this._errorHandler.logInfo('Main panel already visible; no action taken', 'RobertWebviewProvider.showMainPanelIfHidden');
+					return;
+				}
+				this._errorHandler.logInfo('Revealing existing main panel', 'RobertWebviewProvider.showMainPanelIfHidden');
+				this._currentPanel.reveal(vscode.ViewColumn.One);
+				return;
+			}
+
+			// Fallback: Try to open activity bar view first, if that fails create a separate panel
+			this._errorHandler.logInfo('No existing views found; opening activity bar view', 'RobertWebviewProvider.showMainPanelIfHidden');
+			Promise.resolve(vscode.commands.executeCommand('workbench.view.extension.robert'))
+				.then(() => {
+					this._errorHandler.logInfo('Activity bar view opened successfully', 'RobertWebviewProvider.showMainPanelIfHidden');
+				})
+				.catch((error) => {
+					this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'showMainPanelIfHidden.activityBar');
+					this._errorHandler.logInfo('Failed to open activity bar view; creating separate panel', 'RobertWebviewProvider.showMainPanelIfHidden');
+					this.createWebviewPanel();
+				});
+		}, 'showMainPanelIfHidden');
 	}
 
 	// Small, lightweight panel to show the logo and short info
 	public createLogoPanel(): vscode.WebviewPanel {
-		// If panel already exists and is visible, reveal it
-		if (this._currentPanel) {
-			this._currentPanel.reveal(vscode.ViewColumn.One);
-			return this._currentPanel;
-		}
+		return (
+			this._errorHandler.executeWithErrorHandlingSync(() => {
+				// If panel already exists and is visible, reveal it
+				if (this._currentPanel) {
+					this._currentPanel.reveal(vscode.ViewColumn.One);
+					return this._currentPanel;
+				}
 
-		const panel = vscode.window.createWebviewPanel('robert.logo', 'Robert — Logo', vscode.ViewColumn.One, {
-			enableScripts: false,
-			localResourceRoots: [this._extensionUri]
-		});
+				const panel = vscode.window.createWebviewPanel('robert.logo', 'Robert — Logo', vscode.ViewColumn.One, {
+					enableScripts: false,
+					localResourceRoots: [this._extensionUri]
+				});
 
-		this._currentPanel = panel;
+				this._currentPanel = panel;
+				this._errorHandler.logInfo('Logo panel created', 'RobertWebviewProvider.createLogoPanel');
 
-		panel.webview.html = this._getHtmlForLogo(panel.webview);
+				panel.webview.html = this._getHtmlForLogo(panel.webview);
 
-		panel.onDidDispose(
-			() => {
-				this._currentPanel = undefined;
-			},
-			undefined,
-			this._disposables
+				panel.onDidDispose(
+					() => {
+						this._currentPanel = undefined;
+					},
+					undefined,
+					this._disposables
+				);
+
+				return panel;
+			}, 'createLogoPanel') ||
+			vscode.window.createWebviewPanel('robert.logo', 'Robert — Logo', vscode.ViewColumn.One, {
+				enableScripts: false,
+				localResourceRoots: [this._extensionUri]
+			})
 		);
-
-		return panel;
 	}
 
 	private _getHtmlForLogo(webview: vscode.Webview): string {
-		const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo.webp'));
-		return `<!doctype html>
+		return (
+			this._errorHandler.executeWithErrorHandlingSync(() => {
+				const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo.webp'));
+				return `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
@@ -121,7 +200,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
     h1 { font-size: 16px; margin: 0 0 8px 0; }
     p { margin: 0; font-size: 12px; color: var(--vscode-descriptionForeground); }
   </style>
-<\x2fhead>
+</head>
 <body>
   <div class="card">
     <img src="${logoUri}" alt="Robert logo" />
@@ -130,10 +209,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
   </div>
 </body>
 </html>`;
+			}, 'getHtmlForLogo') || '<html><body><p>Error loading logo</p></body></html>'
+		);
 	}
 
 	private _getHtmlForWebview(webview: vscode.Webview, context: string): string {
-		return `<!DOCTYPE html>
+		return (
+			this._errorHandler.executeWithErrorHandlingSync(() => {
+				return `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -440,22 +523,32 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
     </script>
 </body>
 </html>`;
+			}, 'getHtmlForWebview') || '<html><body><p>Error loading webview</p></body></html>'
+		);
 	}
 
 	private _setWebviewMessageListener(webview: vscode.Webview) {
 		webview.onDidReceiveMessage(
 			(message) => {
-				switch (message.command) {
-					case 'hello':
-						vscode.window.showInformationMessage(`Hello from ${message.context}!`);
-						break;
-					case 'info':
-						vscode.window.showInformationMessage(`Context: ${message.context}, Time: ${message.timestamp}`);
-						break;
-					case 'showDemo':
-						vscode.window.showInformationMessage(`Demo for ${message.demoType} not implemented yet. Try adding Chart.js, D3.js, or other libraries!`);
-						break;
-				}
+				this._errorHandler.executeWithErrorHandlingSync(() => {
+					switch (message.command) {
+						case 'hello':
+							vscode.window.showInformationMessage(`Hello from ${message.context}!`);
+							this._errorHandler.logInfo(`Message received: hello — context=${message.context}`, 'WebviewMessageListener');
+							break;
+						case 'info':
+							vscode.window.showInformationMessage(`Context: ${message.context}, Time: ${message.timestamp}`);
+							this._errorHandler.logInfo(`Message received: info — context=${message.context} time=${message.timestamp}`, 'WebviewMessageListener');
+							break;
+						case 'showDemo':
+							vscode.window.showInformationMessage(`Demo for ${message.demoType} not implemented yet. Try adding Chart.js, D3.js, or other libraries!`);
+							this._errorHandler.logInfo(`Message received: showDemo — demoType=${message.demoType}`, 'WebviewMessageListener');
+							break;
+						default:
+							this._errorHandler.logWarning(`Unknown message command: ${message.command}`, 'WebviewMessageListener');
+							break;
+					}
+				}, 'WebviewMessageListener');
 			},
 			undefined,
 			this._disposables
@@ -463,8 +556,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	}
 
 	public dispose() {
-		for (const disposable of this._disposables) {
-			disposable.dispose();
-		}
+		this._errorHandler.executeWithErrorHandlingSync(() => {
+			for (const disposable of this._disposables) {
+				disposable.dispose();
+			}
+		}, 'RobertWebviewProvider.dispose');
 	}
 }

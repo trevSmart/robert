@@ -1,53 +1,105 @@
-# Robert
+# Robert - VS Code Extension
 
-A VSCode extension project.
+Una extensió de VS Code que demostra múltiples contextos de visualització i inclou un sistema complet de gestió d'errors.
 
-## Features
+## Característiques
 
-- Hello World command
+### Visualitzacions Múltiples
+- **Activity Bar**: Vista lateral integrada
+- **Editor Tab**: Editor personalitzat
+- **Separate Window**: Panell independent
 
-## Requirements
+### Sistema de Gestió d'Errors
+L'extensió inclou un sistema robust de gestió d'errors que captura i registra tots els errors al canal Output "Robert":
 
-- VSCode 1.75.0 or higher
+#### ErrorHandler
+- **Captura global d'errors**: Errors no capturats, excepcions i rejections de promeses
+- **Logging estructurat**: Errors, warnings i missatges informatius amb timestamps
+- **Context detallat**: Cada error inclou informació sobre on va ocórrer
+- **Stack traces**: Informació completa per debugging
 
-## Extension Settings
+#### Funcions de Gestió d'Errors
+- `handleError()`: Gestiona i registra errors
+- `logWarning()`: Registra warnings
+- `logInfo()`: Registra missatges informatius
+- `executeWithErrorHandling()`: Executa funcions amb gestió automàtica d'errors
+- `executeWithErrorHandlingSync()`: Versió síncrona
 
-This extension contributes the following settings:
+## Comandes Disponibles
 
-* `robert.helloWorld`: Executes the Hello World command
+- `robert.helloWorld`: Missatge de salutació
+- `robert.openView`: Obre la vista lateral
+- `robert.showOutput`: Mostra el canal Output
+- `robert.showPanelIfHidden`: Mostra el panell si està ocult
 
-## Known Issues
+## Com Provar el Sistema d'Errors
 
-None at the moment.
+1. **Obre el canal Output**: `Ctrl+Shift+P` → "Robert: Show Robert Output"
+2. **Executa qualsevol comanda** de l'extensió
+3. **Observa els logs** al canal Output amb format detallat
 
-## Release Notes
+### Exemple d'Output d'Error
+```
+[Robert] ❌ ERROR in robert.helloWorld command:
+[Robert] Time: 2024-01-15T10:30:45.123Z
+[Robert] Message: Test error: This is a simulated error for testing purposes
+[Robert] Stack Trace:
+[Robert] Error: Test error: This is a simulated error for testing purposes
+[Robert]     at Object.executeWithErrorHandlingSync (ErrorHandler.ts:...)
+[Robert] ---
+```
 
-### 0.0.1
+### Exemple d'Output d'Info
+```
+[Robert] ℹ️ INFO in Extension Activation:
+[Robert] Time: 2024-01-15T10:30:45.123Z
+[Robert] Message: Extension activated successfully
+[Robert] ---
+```
 
-Initial release of Robert extension.
+## Estructura del Projecte
 
----
+```
+src/
+├── extension.ts              # Punt d'entrada principal
+├── RobertWebviewProvider.ts  # Proveïdor de webviews
+└── ErrorHandler.ts           # Sistema de gestió d'errors
+```
 
-## Development
+## Desenvolupament
 
-### Prerequisites
+```bash
+# Compilar
+npm run compile
 
-- Node.js
-- npm
+# Compilar en mode watch
+npm run watch
 
-### Setup
+# Linting i formatatge
+npm run lint
+```
 
-1. Clone the repository
-2. Run `npm install`
-3. Run `npm run compile`
+## Tecnologies
 
-### Running the Extension
+- TypeScript
+- VS Code Extension API
+- Webview API
+- Custom Text Editor API
 
-1. Press F5 to open a new Extension Development Host window
-2. Run the "Hello World" command from the command palette
+## Característiques del Sistema d'Errors
 
-### Building
+### Captura Automàtica
+- **Errors no capturats**: Tots els errors que no es capturen amb try-catch
+- **Promise rejections**: Errors en promeses no gestionades
+- **Excepcions**: Errors de runtime i excepcions
 
-- `npm run compile`: Compile the TypeScript code
-- `npm run watch`: Watch for changes and recompile
-- `npm run lint`: Run Biome (checks and formats the code)
+### Logging Estructurat
+- **Timestamps**: Cada entrada inclou data i hora exacta
+- **Context**: Informació sobre on va ocórrer l'error
+- **Stack traces**: Informació completa per debugging
+- **Tipus d'entrada**: Errors (❌), Warnings (⚠️), Info (ℹ️)
+
+### Integració amb VS Code
+- **Canal Output dedicat**: Tots els logs es mostren al canal "Robert"
+- **Notificacions**: Errors crítics es mostren com a notificacions
+- **Debugging**: Informació completa per desenvolupadors

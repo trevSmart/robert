@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robert</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-editor-background);
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+        }
+        .button {
+            background-color: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: none;
+            padding: 6px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background-color: var(--vscode-button-hoverBackground);
+        }
+        .content {
+            background-color: var(--vscode-editor-background);
+            padding: 20px;
+            min-height: 300px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .loading.show {
+            display: block;
+        }
+        .spinner {
+            border: 2px solid var(--vscode-panel-border);
+            border-top: 2px solid var(--vscode-button-background);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .progress-container {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #282828;
+            border-radius: 6px;
+        }
+        .progress-bar-container {
+            width: 100%;
+            height: 20px;
+            background-color: var(--vscode-input-background);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(to right, #4CAF50, #FF5722);
+            width: 0%;
+            transition: width 0.3s ease, background 0.3s ease;
+            border-radius: 10px;
+        }
+        .progress-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 12px;
+            color: var(--vscode-foreground);
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+            z-index: 1;
+        }
+        .progress-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        .demo-section {
+            margin: 20px 0;
+            padding: 20px;
+            background-color: #282828;
+            border-radius: 6px;
+        }
+        .section-title {
+            font-size: 12px;
+            font-weight: 400;
+            color: color(srgb 0.8 0.8 0.8 / 0.68);
+            letter-spacing: 0.5px;
+            margin: 0 0 8px 0;
+            padding-left: 7px;
+        }
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .demo-item {
+            padding: 15px;
+            background-color: var(--vscode-input-background);
+            border: 1px solid var(--vscode-input-border);
+            border-radius: 5px;
+            text-align: center;
+        }
+        .demo-item h4 {
+            margin: 0 0 10px 0;
+            color: var(--vscode-foreground);
+        }
+        .demo-item p {
+            margin: 0 0 15px 0;
+            font-size: 12px;
+            color: var(--vscode-descriptionForeground);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 6px;">
+                <img src="{{rebusLogoUri}}"
+                     alt="IBM Logo"
+                     style="width: 72px; height: auto; margin-right: 5px;">
+                <h1 style="margin: 0; font-weight: 500; font-size: 28px;">Robert</h1>
+            </div>
+        </div>
+
+        <div class="content">
+
+            <div class="progress-container">
+                <div class="section-title">Progress Demo</div>
+                <div class="progress-bar-container">
+                    <div class="progress-bar" id="progressBar"></div>
+                    <div class="progress-text" id="progressText">0%</div>
+                </div>
+                <div class="progress-controls">
+                    <button class="button" id="progressToggleBtn" onclick="toggleProgress()">Start Progress</button>
+                    <button class="button" onclick="resetProgress()">Reset</button>
+                </div>
+            </div>
+
+            <div class="demo-section">
+                <div class="section-title">Web Content Examples</div>
+                <div class="demo-grid">
+                    <div class="demo-item">
+                        <h4>📊 Charts & Graphs</h4>
+                        <p>Interactive charts using Chart.js, D3.js, etc.</p>
+                        <button class="button" onclick="showDemo('charts')">View Chart Demo</button>
+                    </div>
+                    <div class="demo-item">
+                        <h4>🎨 Rich Media</h4>
+                        <p>Images, videos, audio players, canvas drawing</p>
+                        <button class="button" onclick="showDemo('media')">View Media Demo</button>
+                    </div>
+                    <div class="demo-item">
+                        <h4>📝 Forms & Inputs</h4>
+                        <p>Text inputs, dropdowns, checkboxes, file uploads</p>
+                        <button class="button" onclick="showDemo('forms')">View Form Demo</button>
+                    </div>
+                    <div class="demo-item">
+                        <h4>🎯 Interactive Games</h4>
+                        <p>Simple games, puzzles, or interactive experiences</p>
+                        <button class="button" onclick="showDemo('games')">View Game Demo</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="demo-section">
+                <div class="section-title">Rally Projects</div>
+                <div style="margin-bottom: 15px;">
+                    <button class="button" onclick="loadProjects()">Load Projects</button>
+                    <button class="button" onclick="clearProjects()">Clear Projects</button>
+                </div>
+                <div id="projectsTable" style="display: none;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                        <thead>
+                            <tr style="background-color: var(--vscode-panel-border);">
+                                <th style="padding: 8px; text-align: left; border: 1px solid var(--vscode-input-border);">Name</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid var(--vscode-input-border);">Description</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid var(--vscode-input-border);">State</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid var(--vscode-input-border);">Owner</th>
+                                <th style="padding: 8px; text-align: left; border: 1px solid var(--vscode-input-border);">Children</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projectsTableBody">
+                        </tbody>
+                    </table>
+                </div>
+                <div id="projectsLoading" style="display: none; text-align: center; padding: 20px;">
+                    <div class="spinner"></div>
+                    <p>Loading projects...</p>
+                </div>
+                <div id="projectsError" style="display: none; text-align: center; padding: 20px; color: var(--vscode-errorForeground);">
+                    <p>Error loading projects</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Loading...</p>
+        </div>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        const webviewId = '{{webviewId}}';
+        let isLoading = false;
+        let progressInterval = null;
+        let currentProgress = 0;
+        let isProgressRunning = false;
+
+        // Load saved state when webview initializes
+        function loadSavedState() {
+            vscode.postMessage({
+                command: 'getState',
+                webviewId: webviewId
+            });
+        }
+
+        // Save current state
+        function saveState() {
+            vscode.postMessage({
+                command: 'saveState',
+                webviewId: webviewId,
+                state: {
+                    currentProgress: currentProgress
+                }
+            });
+        }
+
+        function showLoading() {
+            if (!isLoading) {
+                isLoading = true;
+                document.getElementById('loading').classList.add('show');
+            }
+        }
+
+        function hideLoading() {
+            if (isLoading) {
+                isLoading = false;
+                document.getElementById('loading').classList.remove('show');
+            }
+        }
+
+        function updateProgressBar(progress) {
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+
+            progressBar.style.width = progress + '%';
+            progressText.textContent = Math.round(progress) + '%';
+
+            // Update color based on progress percentage
+            if (progress <= 50) {
+                // From green to yellow (0% to 50%)
+                const ratio = progress / 50;
+                const r = Math.round(76 + (255 - 76) * ratio);
+                const g = Math.round(175 + (193 - 175) * ratio);
+                const b = Math.round(80 + (7 - 80) * ratio);
+                progressBar.style.background = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+            } else {
+                // From yellow to red (50% to 100%)
+                const ratio = (progress - 50) / 50;
+                const r = Math.round(255 + (255 - 255) * ratio);
+                const g = Math.round(193 + (87 - 193) * ratio);
+                const b = Math.round(7 + (34 - 7) * ratio);
+                progressBar.style.background = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+            }
+        }
+
+        function toggleProgress() {
+            const toggleBtn = document.getElementById('progressToggleBtn');
+
+            if (isProgressRunning) {
+                // Stop progress
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                    progressInterval = null;
+                }
+                isProgressRunning = false;
+                toggleBtn.textContent = 'Start Progress';
+            } else {
+                // Start progress
+                if (progressInterval) {
+                    clearInterval(progressInterval);
+                }
+
+                progressInterval = setInterval(() => {
+                    currentProgress += Math.random() * 5; // Random increment for demo
+                    if (currentProgress >= 100) {
+                        currentProgress = 100;
+                        clearInterval(progressInterval);
+                        progressInterval = null;
+                        isProgressRunning = false;
+                        toggleBtn.textContent = 'Start Progress';
+                    }
+                    updateProgressBar(currentProgress);
+                    saveState(); // Save state after each update
+                }, 200);
+
+                isProgressRunning = true;
+                toggleBtn.textContent = 'Stop Progress';
+            }
+        }
+
+        function resetProgress() {
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            isProgressRunning = false;
+            const toggleBtn = document.getElementById('progressToggleBtn');
+            toggleBtn.textContent = 'Start Progress';
+            currentProgress = 0;
+            updateProgressBar(currentProgress);
+            saveState(); // Save state after reset
+        }
+
+        function sendMessage(type) {
+            showLoading();
+
+            // Simulate a brief loading time for better UX
+            setTimeout(() => {
+                vscode.postMessage({
+                    command: type,
+                    context: '{{context}}',
+                    timestamp: new Date().toISOString()
+                });
+                hideLoading();
+            }, 300);
+        }
+
+        function showDemo(demoType) {
+            // Placeholder for demo functionality
+            vscode.postMessage({
+                command: 'showDemo',
+                demoType: demoType,
+                context: '{{context}}',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function loadProjects() {
+            showProjectsLoading();
+            vscode.postMessage({
+                command: 'loadProjects',
+                context: '{{context}}',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function clearProjects() {
+            document.getElementById('projectsTable').style.display = 'none';
+            document.getElementById('projectsTableBody').innerHTML = '';
+            document.getElementById('projectsLoading').style.display = 'none';
+            document.getElementById('projectsError').style.display = 'none';
+        }
+
+        function openSettings() {
+            vscode.postMessage({
+                command: 'openSettings',
+                context: '{{context}}',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function showProjectsLoading() {
+            document.getElementById('projectsTable').style.display = 'none';
+            document.getElementById('projectsLoading').style.display = 'block';
+            document.getElementById('projectsError').style.display = 'none';
+        }
+
+        function showProjectsTable(projects) {
+            const tbody = document.getElementById('projectsTableBody');
+            tbody.innerHTML = '';
+
+            projects.forEach(project => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.name || 'N/A'}</td>
+                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.description || 'N/A'}</td>
+                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.state || 'N/A'}</td>
+                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.owner || 'N/A'}</td>
+                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.childrenCount || 0}</td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('projectsTable').style.display = 'block';
+            document.getElementById('projectsLoading').style.display = 'none';
+            document.getElementById('projectsError').style.display = 'none';
+        }
+
+        function showProjectsError() {
+            document.getElementById('projectsTable').style.display = 'none';
+            document.getElementById('projectsLoading').style.display = 'none';
+            document.getElementById('projectsError').style.display = 'block';
+        }
+
+        // Listen for messages from extension
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'showLogo') {
+                const container = document.querySelector('.container');
+                const LOGO_URI = '{{logoUri}}';
+                if (container) {
+                    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:20px;">' +
+                        '<div style="text-align:center;background:var(--vscode-input-background);padding:16px;border-radius:8px;">' +
+                        '<img src="' + LOGO_URI + '" style="width:64px;height:64px;display:block;margin:0 auto 8px;" />' +
+                        '<h1 style="margin:0;font-size:16px;color:var(--vscode-foreground);">Robert</h1>' +
+                        '<p style="margin:4px 0 0 0;color:var(--vscode-descriptionForeground);font-size:12px;">Click the activity bar to open the full view.</p>' +
+                        '</div></div>';
+                }
+            } else if (message.command === 'restoreState') {
+                // Restore saved state
+                if (message.state && message.state.currentProgress !== undefined) {
+                    currentProgress = message.state.currentProgress;
+                    updateProgressBar(currentProgress);
+                    // Ensure button state is correct
+                    const toggleBtn = document.getElementById('progressToggleBtn');
+                    if (toggleBtn) {
+                        toggleBtn.textContent = 'Start Progress';
+                    }
+                    isProgressRunning = false;
+                    console.log('State restored:', message.state);
+                }
+            } else if (message.command === 'projectsLoaded') {
+                if (message.projects) {
+                    showProjectsTable(message.projects);
+                } else {
+                    showProjectsError();
+                }
+            } else if (message.command === 'projectsError') {
+                showProjectsError();
+                // Si és un error de configuració, mostrem un missatge més específic
+                if (message.needsConfiguration) {
+                    const errorDiv = document.getElementById('projectsError');
+                    if (errorDiv) {
+                        errorDiv.innerHTML = `
+                            <div style="color: var(--vscode-errorForeground); padding: 16px; text-align: center;">
+                                <h3>Configuration Required</h3>
+                                <p>${message.error}</p>
+                                <button onclick="openSettings()" style="margin-top: 8px; padding: 8px 16px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; border-radius: 4px; cursor: pointer;">
+                                    Open Settings
+                                </button>
+                            </div>
+                        `;
+                    }
+                }
+            }
+        });
+
+        // Hide loading after initial render and load saved state
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                hideLoading();
+                loadSavedState(); // Load saved state when page loads
+            }, 100);
+        });
+    </script>
+</body>
+</html>

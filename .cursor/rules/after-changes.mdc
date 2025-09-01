@@ -1,0 +1,6 @@
+---
+description: After finishing changes, run lint, but there's no need to compile every time.
+globs:
+alwaysApply: true
+---
+In this project, after finishing changes, run lint, but there's no need to compile every time.

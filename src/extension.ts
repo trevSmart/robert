@@ -1,6 +1,16 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
 import { RobertWebviewProvider } from './RobertWebviewProvider';
+import type { RallyData } from './types/rally';
+import { OutputChannelManager } from './utils/OutputChannelManager';
+
+// Rally data cache - centralized state management
+export const rallyData: RallyData = {
+	projects: [],
+	users: [],
+	userStories: [],
+	defaultProject: null
+};
 
 // In-memory state for the status popover (dummy content)
 const robertPopoverState = {
@@ -10,14 +20,17 @@ const robertPopoverState = {
 };
 
 export function activate(context: vscode.ExtensionContext) {
-	// Create a dedicated Output channel for the extension
-	const output = vscode.window.createOutputChannel('Robert');
-	output.appendLine('[Robert] Extension activated');
-	context.subscriptions.push(output);
+	// Get the centralized output channel manager
+	const outputManager = OutputChannelManager.getInstance();
+	outputManager.appendLine('[Robert] Extension activated');
+	context.subscriptions.push(outputManager);
 
-	// Initialize error handler with output channel
-	const errorHandler = ErrorHandler.getInstance(output);
-	errorHandler.setOutputChannel(output);
+	// Detect if running in debug mode
+	const isDebugMode = detectDebugMode(context);
+	outputManager.appendLine(`[Robert] Debug mode detected: ${isDebugMode}`);
+
+	// Initialize error handler
+	const errorHandler = ErrorHandler.getInstance();
 
 	// Extension is now active
 	const disposable = vscode.commands.registerCommand('robert.helloWorld', () => {
@@ -29,8 +42,14 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 
 	// Register the webview provider for activity bar
-	const webviewProvider = new RobertWebviewProvider(context.extensionUri, output);
+	const webviewProvider = new RobertWebviewProvider(context.extensionUri);
 	context.subscriptions.push(vscode.window.registerWebviewViewProvider(RobertWebviewProvider.viewType, webviewProvider));
+
+	// If in debug mode, perform additional actions
+	if (isDebugMode) {
+		outputManager.appendLine('[Robert] Running in debug mode - enabling additional features');
+		enableDebugFeatures(context, outputManager, webviewProvider);
+	}
 
 	// Register custom text editor provider
 	context.subscriptions.push(
@@ -40,20 +59,40 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	// Register command to open our panel in a new editor tab
-	const openViewCommand = vscode.commands.registerCommand('robert.openView', async () => {
+	// Register command to open main view
+	const openMainViewCommand = vscode.commands.registerCommand('robert.openMainView', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			output.appendLine('[Robert] Command: openView');
-			// Mostra la view lateral de l'activity bar
+			outputManager.appendLine('[Robert] Command: openMainView');
+			// Open the main view in the activity bar
 			await vscode.commands.executeCommand('workbench.view.extension.robert');
-		}, 'robert.openView command');
+		}, 'robert.openMainView command');
 	});
-	context.subscriptions.push(openViewCommand);
+	context.subscriptions.push(openMainViewCommand);
+
+	// Register command to open settings view
+	const openSettingsCommand = vscode.commands.registerCommand('robert.openSettings', async () => {
+		await errorHandler.executeWithErrorHandling(async () => {
+			outputManager.appendLine('[Robert] Command: openSettings');
+			// Show settings in the current view instead of creating a new panel
+			await webviewProvider.showSettingsInCurrentView();
+		}, 'robert.openSettings command');
+	});
+	context.subscriptions.push(openSettingsCommand);
+
+	// Register command to open extension settings
+	const openExtensionSettingsCommand = vscode.commands.registerCommand('robert.openExtensionSettings', async () => {
+		await errorHandler.executeWithErrorHandling(async () => {
+			outputManager.appendLine('[Robert] Command: openExtensionSettings');
+			// Open VS Code settings for this extension
+			await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:robert');
+		}, 'robert.openExtensionSettings command');
+	});
+	context.subscriptions.push(openExtensionSettingsCommand);
 
 	// Register command to show panel only if it isn't already visible
 	const showIfHiddenCommand = vscode.commands.registerCommand('robert.showPanelIfHidden', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			output.appendLine('[Robert] Command: showPanelIfHidden');
+			outputManager.appendLine('[Robert] Command: showPanelIfHidden');
 			webviewProvider.showMainPanelIfHidden();
 		}, 'robert.showPanelIfHidden command');
 	});
@@ -62,7 +101,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register command used by the status bar to open a small, lightweight popover
 	const openStatusPanelCommand = vscode.commands.registerCommand('robert.openStatusPanel', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			output.appendLine('[Robert] Command: openStatusPanel');
+			outputManager.appendLine('[Robert] Command: openStatusPanel');
 			// Mostra la view lateral de l'activity bar
 			await vscode.commands.executeCommand('workbench.view.extension.robert');
 		}, 'robert.openStatusPanel command');
@@ -70,7 +109,49 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(openStatusPanelCommand);
 
 	// Command to reveal the Output channel
-	context.subscriptions.push(vscode.commands.registerCommand('robert.showOutput', () => output.show(true)));
+	context.subscriptions.push(vscode.commands.registerCommand('robert.showOutput', () => outputManager.show()));
+
+	// Register debug commands (always available)
+	context.subscriptions.push(
+		vscode.commands.registerCommand('robert.debug.enable', async () => {
+			try {
+				outputManager.appendLine('[Robert] Debug: Enabling debug mode');
+				await vscode.workspace.getConfiguration('robert').update('debugMode', true, vscode.ConfigurationTarget.Global);
+				outputManager.appendLine('[Robert] Debug: Debug mode enabled successfully');
+				vscode.window.showInformationMessage('Debug mode enabled! Restart the extension to apply changes.');
+			} catch (error) {
+				outputManager.appendLine(`[Robert] Debug: Error enabling debug mode: ${error}`);
+				vscode.window.showErrorMessage('Failed to enable debug mode. Check the output for details.');
+			}
+		}),
+		vscode.commands.registerCommand('robert.debug.disable', async () => {
+			try {
+				outputManager.appendLine('[Robert] Debug: Disabling debug mode');
+				await vscode.workspace.getConfiguration('robert').update('debugMode', false, vscode.ConfigurationTarget.Global);
+				outputManager.appendLine('[Robert] Debug: Debug mode disabled successfully');
+				vscode.window.showInformationMessage('Debug mode disabled! Restart the extension to apply changes.');
+			} catch (error) {
+				outputManager.appendLine(`[Robert] Debug: Error disabling debug mode: ${error}`);
+				vscode.window.showErrorMessage('Failed to disable debug mode. Check the output for details.');
+			}
+		}),
+		vscode.commands.registerCommand('robert.debug.toggle', async () => {
+			try {
+				const currentDebugMode = vscode.workspace.getConfiguration('robert').get('debugMode', false);
+				const newDebugMode = !currentDebugMode;
+
+				outputManager.appendLine(`[Robert] Debug: Toggling debug mode from ${currentDebugMode} to ${newDebugMode}`);
+				await vscode.workspace.getConfiguration('robert').update('debugMode', newDebugMode, vscode.ConfigurationTarget.Global);
+				outputManager.appendLine(`[Robert] Debug: Debug mode ${newDebugMode ? 'enabled' : 'disabled'} successfully`);
+
+				const message = newDebugMode ? 'Debug mode enabled!' : 'Debug mode disabled!';
+				vscode.window.showInformationMessage(`${message} Restart the extension to apply changes.`);
+			} catch (error) {
+				outputManager.appendLine(`[Robert] Debug: Error toggling debug mode: ${error}`);
+				vscode.window.showErrorMessage('Failed to toggle debug mode. Check the output for details.');
+			}
+		})
+	);
 
 	// Create and setup status bar item
 	const statusBarItem = createStatusBarItem(context, errorHandler);
@@ -99,11 +180,6 @@ export function activate(context: vscode.ExtensionContext) {
 				updateStatusBarItem(statusBarItem, 'idle', errorHandler);
 				vscode.window.showInformationMessage(`Robert snoozed for ${minutes} minutes`);
 			}, 'robert.snooze command');
-		}),
-		vscode.commands.registerCommand('robert.openSettings', () => {
-			errorHandler.executeWithErrorHandlingSync(() => {
-				vscode.commands.executeCommand('workbench.action.openSettings', '@ext:robert');
-			}, 'robert.openSettings command');
 		})
 	);
 
@@ -136,32 +212,25 @@ function createStatusBarItem(context: vscode.ExtensionContext, errorHandler: Err
 
 function updateStatusBarItem(item: vscode.StatusBarItem, state: string, errorHandler: ErrorHandler) {
 	try {
-		const now = new Date();
-		const timeString = now.toLocaleTimeString('ca-ES', {
-			hour: '2-digit',
-			minute: '2-digit',
-			hour12: false
-		});
-
 		switch (state) {
 			case 'idle':
-				item.text = `$(organization) Robert ${timeString}`;
-				item.tooltip = `Robert Extension - Ready | Last updated: ${timeString} | Click to open panel`;
+				item.text = `IBM Robert`;
+				item.tooltip = `IBM Robert Extension - Ready | Click to open panel`;
 				item.backgroundColor = undefined;
 				break;
 			case 'active':
-				item.text = `$(organization) Robert $(check) ${timeString}`;
-				item.tooltip = `Robert Extension - Panel is open | Last activity: ${timeString} | Click to focus`;
+				item.text = `IBM Robert $(check)`;
+				item.tooltip = `IBM Robert Extension - Panel is open | Click to focus`;
 				item.backgroundColor = new vscode.ThemeColor('statusBarItem.activeBackground');
 				break;
 			case 'busy':
-				item.text = `$(organization) Robert $(sync~spin) ${timeString}`;
-				item.tooltip = `Robert Extension - Processing... | Started: ${timeString} | Click to open`;
+				item.text = `IBM Robert $(sync~spin)`;
+				item.tooltip = `IBM Robert Extension - Processing... | Click to open`;
 				item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
 				break;
 			case 'error':
-				item.text = `$(organization) Robert $(error) ${timeString}`;
-				item.tooltip = `Robert Extension - Error occurred | Time: ${timeString} | Click for details`;
+				item.text = `IBM Robert $(error)`;
+				item.tooltip = `IBM Robert Extension - Error occurred | Click for details`;
 				item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
 				break;
 		}
@@ -196,7 +265,7 @@ function buildStatusTooltip(errorHandler: ErrorHandler): vscode.MarkdownString {
 		const snoozed = robertPopoverState.snoozedUntil > Date.now();
 		const snoozeLabel = snoozed ? `Snoozed until ${new Date(robertPopoverState.snoozedUntil).toLocaleTimeString()}` : 'Snooze (5 min)';
 
-		md.appendMarkdown('**Code Completions**  ');
+		md.appendMarkdown('**IBM Robert**  ');
 		md.appendMarkdown(`[$(gear)](${settingsLink} "Settings")\n\n`);
 		md.appendMarkdown(`[$${checked(robertPopoverState.allFiles)}](${allFilesLink}) ${pad('All files')}\n\n`);
 		md.appendMarkdown(`[$${checked(robertPopoverState.nextEditSuggestions)}](${nextEditLink}) ${pad('Next edit suggestions')}\n\n`);
@@ -209,16 +278,72 @@ function buildStatusTooltip(errorHandler: ErrorHandler): vscode.MarkdownString {
 	}
 }
 
+/**
+ * Detect if the extension is running in debug mode
+ */
+function detectDebugMode(context: vscode.ExtensionContext): boolean {
+	// Method 1: Check if extension is running from development host
+	const isDevelopmentHost = context.extensionMode === vscode.ExtensionMode.Development;
+
+	// Method 2: Check if running in Extension Development Host
+	const isExtensionDevelopmentHost = process.env.VSCODE_EXTENSION_DEVELOPMENT === 'true';
+
+	// Method 3: Check if running from source (not packaged)
+	const isRunningFromSource = !context.extensionPath.includes('.vscode/extensions');
+
+	// Method 4: Check if debug configuration is active
+	const isDebugConfiguration = vscode.workspace.getConfiguration('robert').get('debugMode', false);
+
+	const debugMode = isDevelopmentHost || isExtensionDevelopmentHost || isRunningFromSource || isDebugConfiguration;
+
+	return debugMode;
+}
+
+/**
+ * Enable additional features when running in debug mode
+ */
+function enableDebugFeatures(context: vscode.ExtensionContext, outputManager: OutputChannelManager, webviewProvider: RobertWebviewProvider): void {
+	// Log detailed extension information
+	outputManager.appendLine(`[Robert] Extension Path: ${context.extensionPath}`);
+	outputManager.appendLine(`[Robert] Extension Mode: ${vscode.ExtensionMode[context.extensionMode]}`);
+	outputManager.appendLine(`[Robert] Extension URI: ${context.extensionUri}`);
+	outputManager.appendLine(`[Robert] Global Storage URI: ${context.globalStorageUri}`);
+	outputManager.appendLine(`[Robert] Logs URI: ${context.logUri}`);
+
+	// Enable verbose logging
+	outputManager.appendLine('[Robert] Debug mode: Verbose logging enabled');
+
+	// Register additional debug commands
+	context.subscriptions.push(
+		vscode.commands.registerCommand('robert.debug.info', () => {
+			outputManager.appendLine('[Robert] Debug Info Command Executed');
+			vscode.window.showInformationMessage('Debug mode is active! Check the Robert output channel for details.');
+		})
+	);
+
+	// Pass debug mode information to webview provider
+	webviewProvider.setDebugMode(true);
+
+	// Focus on Output panel in debug mode
+	outputManager.show();
+
+	// Ensure the Output panel is visible and focused on Robert channel
+	setTimeout(() => {
+		vscode.commands.executeCommand('workbench.action.output.toggleOutput');
+		outputManager.show();
+	}, 100);
+}
+
 export function deactivate() {
 	// This function is called when the extension is deactivated
 	// Cleanup can go here if needed
 
 	// Log extension deactivation to output
-	const output = vscode.window.createOutputChannel('Robert');
-	output.appendLine('[Robert] 🚫 EXTENSION DEACTIVATED');
-	output.appendLine(`[Robert] Time: ${new Date().toISOString()}`);
-	output.appendLine('[Robert] ---');
-	output.show(true);
+	const outputManager = OutputChannelManager.getInstance();
+	outputManager.appendLine('[Robert] 🚫 EXTENSION DEACTIVATED');
+	outputManager.appendLine(`[Robert] Time: ${new Date().toISOString()}`);
+	outputManager.appendLine('[Robert] ---');
+	outputManager.show();
 }
 
 // Lightweight floating popover using QuickPick (closest to a small panel)

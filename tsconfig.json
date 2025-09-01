@@ -11,6 +11,6 @@
 		"allowJs": true,
 		"checkJs": false
 	},
-	"include": ["src/**/*", "test/**/*"],
+	"include": ["src/**/*", "src/types/**/*", "test/**/*"],
 	"exclude": ["node_modules", ".vscode-test", "out"]
 }

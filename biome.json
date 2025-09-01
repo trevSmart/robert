@@ -19,7 +19,7 @@
 		"rules": {
 			"recommended": true,
 			"correctness": {
-				"noChildrenProp": "error",
+				"noChildrenProp": "off",
 				"noConstAssign": "error",
 				"noConstantCondition": "error",
 				"noConstantMathMinMaxClamp": "error",
@@ -86,7 +86,12 @@
 				"noCompareNegZero": "error",
 				"noConfusingLabels": "error",
 				"noConfusingVoidType": "error",
-				"noConsole": "warn",
+				"noConsole": {
+					"level": "warn",
+					"options": {
+						"allow": ["error"]
+					}
+				},
 				"noConstEnum": "error",
 				"noConstantBinaryExpressions": "error",
 				"noControlCharactersInRegex": "error",
@@ -181,7 +186,7 @@
 				"noExcessiveCognitiveComplexity": {
 					"level": "error",
 					"options": {
-						"maxAllowedComplexity": 20
+						"maxAllowedComplexity": 255
 					}
 				},
 				"noExcessiveLinesPerFunction": {

@@ -1,23 +1,20 @@
 import * as vscode from 'vscode';
+import { OutputChannelManager } from './utils/OutputChannelManager';
 
 export class ErrorHandler {
 	private static instance: ErrorHandler;
-	private outputChannel?: vscode.OutputChannel;
+	private outputManager: OutputChannelManager;
 
-	private constructor(outputChannel?: vscode.OutputChannel) {
-		this.outputChannel = outputChannel;
+	private constructor() {
+		this.outputManager = OutputChannelManager.getInstance();
 		this.setupGlobalErrorHandling();
 	}
 
-	public static getInstance(outputChannel?: vscode.OutputChannel): ErrorHandler {
+	public static getInstance(): ErrorHandler {
 		if (!ErrorHandler.instance) {
-			ErrorHandler.instance = new ErrorHandler(outputChannel);
+			ErrorHandler.instance = new ErrorHandler();
 		}
 		return ErrorHandler.instance;
-	}
-
-	public setOutputChannel(outputChannel: vscode.OutputChannel): void {
-		this.outputChannel = outputChannel;
 	}
 
 	/**
@@ -51,16 +48,14 @@ export class ErrorHandler {
 		const timestamp = new Date().toISOString();
 
 		// Log to output channel
-		if (this.outputChannel) {
-			this.outputChannel.appendLine(`[Robert] ❌ ERROR in ${context}:`);
-			this.outputChannel.appendLine(`[Robert] Time: ${timestamp}`);
-			this.outputChannel.appendLine(`[Robert] Message: ${errorMessage}`);
-			if (stackTrace) {
-				this.outputChannel.appendLine(`[Robert] Stack Trace:`);
-				this.outputChannel.appendLine(`[Robert] ${stackTrace}`);
-			}
-			this.outputChannel.appendLine(`[Robert] ---`);
+		this.outputManager.appendLine(`[Robert] ❌ ERROR in ${context}:`);
+		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
+		this.outputManager.appendLine(`[Robert] Message: ${errorMessage}`);
+		if (stackTrace) {
+			this.outputManager.appendLine(`[Robert] Stack Trace:`);
+			this.outputManager.appendLine(`[Robert] ${stackTrace}`);
 		}
+		this.outputManager.appendLine(`[Robert] ---`);
 
 		// Show error notification to user (optional)
 		vscode.window.showErrorMessage(`Robert Extension Error: ${errorMessage}`);
@@ -72,12 +67,10 @@ export class ErrorHandler {
 	public logWarning(message: string, context: string = 'Unknown'): void {
 		const timestamp = new Date().toISOString();
 
-		if (this.outputChannel) {
-			this.outputChannel.appendLine(`[Robert] ⚠️ WARNING in ${context}:`);
-			this.outputChannel.appendLine(`[Robert] Time: ${timestamp}`);
-			this.outputChannel.appendLine(`[Robert] Message: ${message}`);
-			this.outputChannel.appendLine(`[Robert] ---`);
-		}
+		this.outputManager.appendLine(`[Robert] ⚠️ WARNING in ${context}:`);
+		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
+		this.outputManager.appendLine(`[Robert] Message: ${message}`);
+		this.outputManager.appendLine(`[Robert] ---`);
 	}
 
 	/**
@@ -86,12 +79,10 @@ export class ErrorHandler {
 	public logInfo(message: string, context: string = 'Unknown'): void {
 		const timestamp = new Date().toISOString();
 
-		if (this.outputChannel) {
-			this.outputChannel.appendLine(`[Robert] ℹ️ INFO in ${context}:`);
-			this.outputChannel.appendLine(`[Robert] Time: ${timestamp}`);
-			this.outputChannel.appendLine(`[Robert] Message: ${message}`);
-			this.outputChannel.appendLine(`[Robert] ---`);
-		}
+		this.outputManager.appendLine(`[Robert] ℹ️ INFO in ${context}:`);
+		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
+		this.outputManager.appendLine(`[Robert] Message: ${message}`);
+		this.outputManager.appendLine(`[Robert] ---`);
 	}
 
 	/**
@@ -100,12 +91,10 @@ export class ErrorHandler {
 	public logViewDestruction(viewType: string, context: string = 'Unknown'): void {
 		const timestamp = new Date().toISOString();
 
-		if (this.outputChannel) {
-			this.outputChannel.appendLine(`[Robert] 🗑️ VIEW DESTROYED in ${context}:`);
-			this.outputChannel.appendLine(`[Robert] Time: ${timestamp}`);
-			this.outputChannel.appendLine(`[Robert] View Type: ${viewType}`);
-			this.outputChannel.appendLine(`[Robert] ---`);
-		}
+		this.outputManager.appendLine(`[Robert] 🗑️ VIEW DESTROYED in ${context}:`);
+		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
+		this.outputManager.appendLine(`[Robert] View Type: ${viewType}`);
+		this.outputManager.appendLine(`[Robert] ---`);
 	}
 
 	/**
@@ -114,12 +103,10 @@ export class ErrorHandler {
 	public logViewCreation(viewType: string, context: string = 'Unknown'): void {
 		const timestamp = new Date().toISOString();
 
-		if (this.outputChannel) {
-			this.outputChannel.appendLine(`[Robert] 🆕 VIEW CREATED in ${context}:`);
-			this.outputChannel.appendLine(`[Robert] Time: ${timestamp}`);
-			this.outputChannel.appendLine(`[Robert] View Type: ${viewType}`);
-			this.outputChannel.appendLine(`[Robert] ---`);
-		}
+		this.outputManager.appendLine(`[Robert] 🆕 VIEW CREATED in ${context}:`);
+		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
+		this.outputManager.appendLine(`[Robert] View Type: ${viewType}`);
+		this.outputManager.appendLine(`[Robert] ---`);
 	}
 
 	/**

@@ -1,0 +1,6 @@
+---
+description: The HTML templates for the webviews should be kept in separate files instead of being inline in the view provider TypeScript classes. Keep the templates in the src/templates folder.
+globs:
+alwaysApply: true
+---
+The HTML templates for the webviews should be kept in separate files instead of being inline in the view provider TypeScript classes. Keep the templates in the src/templates folder.

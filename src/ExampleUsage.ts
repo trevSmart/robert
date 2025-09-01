@@ -7,8 +7,8 @@ import { ErrorHandler } from './ErrorHandler';
 export class ExampleUsage {
 	private errorHandler: ErrorHandler;
 
-	constructor(outputChannel?: vscode.OutputChannel) {
-		this.errorHandler = ErrorHandler.getInstance(outputChannel);
+	constructor() {
+		this.errorHandler = ErrorHandler.getInstance();
 	}
 
 	/**
@@ -103,8 +103,8 @@ export class ExampleUsage {
 /**
  * Comanda d'exemple per demostrar el sistema
  */
-export function registerExampleCommands(context: vscode.ExtensionContext, outputChannel: vscode.OutputChannel) {
-	const exampleUsage = new ExampleUsage(outputChannel);
+export function registerExampleCommands(context: vscode.ExtensionContext) {
+	const exampleUsage = new ExampleUsage();
 
 	// Comanda per provar mètodes asíncrons
 	context.subscriptions.push(

@@ -14,14 +14,108 @@
 		"onStartupFinished"
 	],
 	"contributes": {
+		"configuration": {
+			"title": "Robert",
+			"properties": {
+				"robert.apiEndpoint": {
+					"type": "string",
+					"default": "https://rally.example.com",
+					"description": "API endpoint for Robert extension"
+				},
+				"robert.refreshInterval": {
+					"type": "number",
+					"default": 30,
+					"minimum": 5,
+					"maximum": 3600,
+					"description": "Refresh interval in seconds"
+				},
+				"robert.theme": {
+					"type": "string",
+					"enum": [
+						"auto",
+						"light",
+						"dark",
+						"high-contrast"
+					],
+					"default": "auto",
+					"description": "Theme preference for Robert extension"
+				},
+				"robert.autoRefresh": {
+					"type": "boolean",
+					"default": true,
+					"description": "Enable automatic refresh"
+				},
+				"robert.notifications": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show notifications"
+				},
+				"robert.debugMode": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable debug mode"
+				},
+				"robert.advancedFeatures": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable advanced features"
+				},
+				"robert.maxResults": {
+					"type": "number",
+					"default": 100,
+					"minimum": 10,
+					"maximum": 1000,
+					"description": "Maximum number of results to display"
+				},
+				"robert.timeout": {
+					"type": "number",
+					"default": 5000,
+					"minimum": 1000,
+					"maximum": 60000,
+					"description": "Request timeout in milliseconds"
+				},
+				"robert.rallyInstance": {
+					"type": "string",
+					"default": "https://rally1.rallydev.com",
+					"description": "Rally instance URL (e.g., https://rally1.rallydev.com)"
+				},
+				"robert.rallyApiKey": {
+					"type": "string",
+					"default": "",
+					"description": "Rally API key for authentication"
+				},
+				"robert.rallyProjectName": {
+					"type": "string",
+					"default": "",
+					"description": "Rally project name to connect to"
+				}
+			}
+		},
 		"commands": [
 			{
 				"command": "robert.helloWorld",
-				"title": "Hello World"
+				"title": "Hello World",
+				"category": "IBM Robert"
 			},
 			{
 				"command": "robert.openView",
 				"title": "Open IBM Robert View",
+				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.openMainView",
+				"title": "Open Main View",
+				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.openSettings",
+				"title": "Open Settings",
+				"icon": "$(gear)",
+				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.openExtensionSettings",
+				"title": "Open Extension Settings",
 				"category": "IBM Robert"
 			},
 			{
@@ -37,27 +131,47 @@
 			{
 				"command": "robert.example.async",
 				"title": "Example: Async Error Handling",
-				"category": "IBM Robert Examples"
+				"category": "IBM Robert"
 			},
 			{
 				"command": "robert.example.sync",
 				"title": "Example: Sync Error Handling",
-				"category": "IBM Robert Examples"
+				"category": "IBM Robert"
 			},
 			{
 				"command": "robert.example.manual",
 				"title": "Example: Manual Error Handling",
-				"category": "IBM Robert Examples"
+				"category": "IBM Robert"
 			},
 			{
 				"command": "robert.example.logging",
 				"title": "Example: Logging Demo",
-				"category": "IBM Robert Examples"
+				"category": "IBM Robert"
 			},
 			{
 				"command": "robert.example.fallback",
 				"title": "Example: Fallback Values",
-				"category": "IBM Robert Examples"
+				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.debug.info",
+				"title": "Debug: Show Debug Information",
+				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.debug.enable",
+				"title": "Debug: Enable Debug Mode",
+				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.debug.disable",
+				"title": "Debug: Disable Debug Mode",
+				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.debug.toggle",
+				"title": "Debug: Toggle Debug Mode",
+				"category": "IBM Robert"
 			}
 		],
 		"viewsContainers": {
@@ -65,7 +179,7 @@
 				{
 					"id": "robert",
 					"title": "IBM Robert",
-					"icon": "./resources/icons/ibm-logo.webp"
+					"icon": "./resources/icons/ibm-logo-bee.svg"
 				}
 			]
 		},
@@ -75,7 +189,7 @@
 					"id": "robert.mainView",
 					"name": "IBM Robert",
 					"type": "webview",
-					"icon": "./resources/icons/ibm-logo.webp"
+					"icon": "./resources/icons/ibm-logo-bee.svg"
 				}
 			]
 		},
@@ -94,9 +208,22 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "robert.openView",
+					"command": "robert.debug.toggle",
 					"when": "view == robert.mainView",
-					"group": "navigation"
+					"group": "navigation",
+					"icon": "$(debug)"
+				},
+				{
+					"command": "robert.openSettings",
+					"when": "view == robert.mainView",
+					"group": "navigation",
+					"icon": "$(settings-gear)"
+				},
+				{
+					"command": "robert.openSettings",
+					"when": "view == robert.mainView",
+					"group": "navigation",
+					"icon": "$(settings-gear)"
 				}
 			]
 		}
@@ -114,6 +241,7 @@
 		"typescript": "^5.9.2"
 	},
 	"dependencies": {
-		"@vscode/webview-ui-toolkit": "^1.4.0"
+		"@vscode/webview-ui-toolkit": "^1.4.0",
+		"rally": "^2.1.3"
 	}
 }

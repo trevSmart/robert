@@ -1,12 +1,13 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.2.2/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
 	"files": {
-		"ignoreUnknown": false
+		"ignoreUnknown": false,
+		"includes": ["src/**/*", "*.ts", "*.js", "*.json", "*.md", "vite.config.ts"]
 	},
 	"formatter": {
 		"enabled": true,
@@ -47,7 +48,7 @@
 				"noRestrictedElements": "error",
 				"noSelfAssign": "error",
 				"noSetterReturn": "error",
-				"noSolidDestructuredProps": "error",
+				"noSolidDestructuredProps": "off",
 				"noStringCaseMismatch": "error",
 				"noSwitchDeclarations": "error",
 				"noUndeclaredDependencies": "off",

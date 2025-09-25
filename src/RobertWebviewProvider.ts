@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
 import { getProjects } from './libs/rally/rallyServices';
 import { SettingsManager } from './SettingsManager';
-import { TemplateManager } from './utils/TemplateManager';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -12,7 +11,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private _currentPanel: vscode.WebviewPanel | undefined;
 	private _currentView?: vscode.WebviewView;
 	private _errorHandler: ErrorHandler;
-	private _templateManager: TemplateManager;
 	private _settingsManager: SettingsManager;
 
 	// State persistence for webview
@@ -26,7 +24,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	constructor(private readonly _extensionUri: vscode.Uri) {
 		this._errorHandler = ErrorHandler.getInstance();
-		this._templateManager = new TemplateManager(_extensionUri);
 		this._settingsManager = SettingsManager.getInstance();
 
 		this._errorHandler.logInfo('WebviewProvider initialized', 'RobertWebviewProvider.constructor');
@@ -352,34 +349,55 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private async _getHtmlForLogo(webview: vscode.Webview): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
-				this._errorHandler.logInfo('Logo webview content rendered with modern IBM logo', 'RobertWebviewProvider._getHtmlForLogo');
+				this._errorHandler.logInfo('Logo webview content rendered with React component', 'RobertWebviewProvider._getHtmlForLogo');
 
-				const logoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp'));
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp'));
+				const logoJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'logo.js'));
 
-				const placeholders = {
-					logoUri: logoUri.toString(),
-					rebusLogoUri: rebusLogoUri.toString()
-				};
-
-				return await this._templateManager.loadTemplate('logoWebview.html', placeholders);
+				return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robert - Logo</title>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        window.rebusLogoUri = "${rebusLogoUri.toString()}";
+    </script>
+    <script type="module" src="${logoJsUri.toString()}"></script>
+</body>
+</html>`;
 			}, 'getHtmlForLogo')) || '<html><body><p>Error loading logo</p></body></html>'
 		);
 	}
 
-	private async _getHtmlForSettings(_webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
+	private async _getHtmlForSettings(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				this._errorHandler.logInfo(`Settings webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForSettings');
 
-				const placeholders = {
-					context: context,
-					webviewId: webviewId || 'unknown',
-					timestamp: new Date().toISOString(),
-					extensionUri: this._extensionUri.toString()
-				};
+				const settingsJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'settings.js'));
 
-				return await this._templateManager.loadTemplate('settingsWebview.html', placeholders);
+				return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robert - Settings</title>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        window.webviewId = "${webviewId || 'unknown'}";
+        window.context = "${context}";
+        window.timestamp = "${new Date().toISOString()}";
+        window.extensionUri = "${this._extensionUri.toString()}";
+    </script>
+    <script type="module" src="${settingsJsUri.toString()}"></script>
+</body>
+</html>`;
 			}, 'getHtmlForSettings')) || '<html><body><p>Error loading settings</p></body></html>'
 		);
 	}
@@ -391,16 +409,27 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo(`Main webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForWebview');
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
 
-				const placeholders = {
-					context: context,
-					webviewId: webviewId || 'unknown',
-					timestamp: new Date().toISOString(),
-					extensionUri: this._extensionUri.toString(),
-					logoUri: webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp')).toString(),
-					rebusLogoUri: webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp')).toString()
-				};
+				const mainJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'main.js'));
+				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp'));
 
-				return await this._templateManager.loadTemplate('mainWebview.html', placeholders);
+				return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robert</title>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        window.webviewId = "${webviewId || 'unknown'}";
+        window.context = "${context}";
+        window.timestamp = "${new Date().toISOString()}";
+        window.rebusLogoUri = "${rebusLogoUri.toString()}";
+    </script>
+    <script type="module" src="${mainJsUri.toString()}"></script>
+</body>
+</html>`;
 			}, 'getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);
 	}

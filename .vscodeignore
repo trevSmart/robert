@@ -8,13 +8,13 @@ biome.json
 .git/
 .gitignore
 .gitattributes
+scripts/
 
 # Build artifacts (but keep compiled output)
 dist/
 tmp/
 
-# Dependencies
-node_modules/
+# Dependencies (keep runtime packages bundled)
 package-lock.json
 
 # Documentation

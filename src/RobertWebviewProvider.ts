@@ -353,6 +353,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp'));
 				const logoJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'logo.js'));
+				const nonce = this._getNonce();
+				const csp = this._buildCspMeta(webview, nonce);
 
 				return `<!DOCTYPE html>
 <html lang="en">
@@ -360,13 +362,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robert - Logo</title>
+    ${csp}
 </head>
 <body>
     <div id="root"></div>
-    <script>
+    <script nonce="${nonce}">
         window.rebusLogoUri = "${rebusLogoUri.toString()}";
     </script>
-    <script type="module" src="${logoJsUri.toString()}"></script>
+    <script nonce="${nonce}" type="module" src="${logoJsUri.toString()}"></script>
 </body>
 </html>`;
 			}, 'getHtmlForLogo')) || '<html><body><p>Error loading logo</p></body></html>'
@@ -379,6 +382,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo(`Settings webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForSettings');
 
 				const settingsJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'settings.js'));
+				const nonce = this._getNonce();
+				const csp = this._buildCspMeta(webview, nonce);
 
 				return `<!DOCTYPE html>
 <html lang="en">
@@ -386,16 +391,17 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robert - Settings</title>
+    ${csp}
 </head>
 <body>
     <div id="root"></div>
-    <script>
+    <script nonce="${nonce}">
         window.webviewId = "${webviewId || 'unknown'}";
         window.context = "${context}";
         window.timestamp = "${new Date().toISOString()}";
         window.extensionUri = "${this._extensionUri.toString()}";
     </script>
-    <script type="module" src="${settingsJsUri.toString()}"></script>
+    <script nonce="${nonce}" type="module" src="${settingsJsUri.toString()}"></script>
 </body>
 </html>`;
 			}, 'getHtmlForSettings')) || '<html><body><p>Error loading settings</p></body></html>'
@@ -411,6 +417,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				const mainJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'main.js'));
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp'));
+				const nonce = this._getNonce();
+				const csp = this._buildCspMeta(webview, nonce);
 
 				return `<!DOCTYPE html>
 <html lang="en">
@@ -418,20 +426,30 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Robert</title>
+    ${csp}
 </head>
 <body>
     <div id="root"></div>
-    <script>
+    <script nonce="${nonce}">
         window.webviewId = "${webviewId || 'unknown'}";
         window.context = "${context}";
         window.timestamp = "${new Date().toISOString()}";
         window.rebusLogoUri = "${rebusLogoUri.toString()}";
     </script>
-    <script type="module" src="${mainJsUri.toString()}"></script>
+    <script nonce="${nonce}" type="module" src="${mainJsUri.toString()}"></script>
 </body>
 </html>`;
 			}, 'getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);
+	}
+
+	private _buildCspMeta(webview: vscode.Webview, nonce: string): string {
+		const csp = ["default-src 'none'", `img-src ${webview.cspSource} https: data:`, `script-src 'nonce-${nonce}' ${webview.cspSource}`, `style-src ${webview.cspSource} 'unsafe-inline'`, `font-src ${webview.cspSource} https: data:`, `connect-src ${webview.cspSource} https:`].join('; ');
+		return `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
+	}
+
+	private _getNonce(): string {
+		return Array.from({ length: 32 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
 	}
 
 	private _setWebviewMessageListener(webview: vscode.Webview, webviewId?: string) {

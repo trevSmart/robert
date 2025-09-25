@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "Robert",
 	"description": "VSCode extension project",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "ibm-robert",
 	"repository": {
 		"type": "git",

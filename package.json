@@ -3,8 +3,13 @@
 	"displayName": "Robert",
 	"description": "VSCode extension project",
 	"version": "0.0.1",
+	"publisher": "ibm-robert",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/ibm/robert-vscode-extension.git"
+	},
 	"engines": {
-		"vscode": "^1.75.0"
+		"vscode": "^1.104.0"
 	},
 	"categories": [
 		"Other"
@@ -232,12 +237,17 @@
 		"vscode:prepublish": "npm run compile",
 		"compile": "tsc -p ./",
 		"watch": "tsc -p ./ -w",
-		"lint": "biome check --write . && biome format --write ."
+		"lint": "biome check --write . && biome format --write .",
+		"package": "vsce package --out dist/",
+		"package:pre-release": "vsce package --pre-release --out dist/",
+		"publish": "vsce publish",
+		"publish:pre-release": "vsce publish --pre-release"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^2.2.2",
+		"@biomejs/biome": "^2.2.4",
 		"@types/node": "^24.3.0",
-		"@types/vscode": "^1.103.0",
+		"@types/vscode": "^1.104.0",
+		"@vscode/vsce": "^3.6.1",
 		"typescript": "^5.9.2"
 	},
 	"dependencies": {

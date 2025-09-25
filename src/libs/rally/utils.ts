@@ -1,5 +1,5 @@
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-import rally from 'rally';
+const rally = require('rally');
 
 import * as vscode from 'vscode';
 import { SettingsManager } from '../../SettingsManager';

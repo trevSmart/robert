@@ -244,9 +244,7 @@
 		"package": "vsce package --out dist/",
 		"package:pre-release": "vsce package --pre-release --out dist/",
 		"package:patch": "npm run version:patch && npm run package",
-		"install:cursor": "npm run package && cursor --install-extension dist/robert-0.0.1.vsix --force",
-		"install:cursor:pre-release": "npm run package:pre-release && cursor --install-extension dist/robert-0.0.1.vsix",
-		"install:cursor:patch": "npm run package:patch && cursor --install-extension dist/robert-0.0.1.vsix --force",
+		"install:cursor": "npm run package:patch && cursor --install-extension dist/robert-0.0.1.vsix --force",
 		"publish": "vsce publish",
 		"publish:pre-release": "vsce publish --pre-release"
 	},

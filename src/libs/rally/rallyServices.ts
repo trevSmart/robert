@@ -3,12 +3,7 @@ import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQue
 import { getRallyApi, queryUtils, validateRallyConfiguration } from './utils';
 
 function escapeHtml(input: string): string {
-	return input
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#39;');
+	return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 export async function getProjects(query: Record<string, unknown> = {}, limit: number | null = null) {

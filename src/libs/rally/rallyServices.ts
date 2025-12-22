@@ -2,6 +2,15 @@ import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration } from './utils';
 
+function escapeHtml(input: string): string {
+	return input
+		.replace(/&/g, '&amp;')
+		.replace(/</g, '&lt;')
+		.replace(/>/g, '&gt;')
+		.replace(/"/g, '&quot;')
+		.replace(/'/g, '&#39;');
+}
+
 export async function getProjects(query: Record<string, unknown> = {}, limit: number | null = null) {
 	// Validem la configuració de Rally abans de fer la crida
 	const validation = await validateRallyConfiguration();
@@ -73,7 +82,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const projects: RallyProject[] = resultData.Results.map((project: RallyApiObject) => ({
 		objectId: project.objectId,
 		name: project.name,
-		description: typeof project.description === 'string' ? project.description.replace(/<[^>]*>/g, '') : project.description,
+		description: typeof project.description === 'string' ? escapeHtml(project.description) : project.description,
 		state: project.state,
 		creationDate: project.creationDate,
 		lastUpdateDate: project.lastUpdateDate,

@@ -3,15 +3,14 @@
 	"displayName": "Robert",
 	"description": "VSCode extension project",
 	"version": "0.0.9",
-	"publisher": "ibm-robert",
+	"publisher": "trevSmart",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/ibm/robert-vscode-extension.git"
+		"url": "https://github.com/trevSmart/robert.git"
 	},
 	"engines": {
 		"vscode": "^1.107.0"
 	},
-	"type": "module",
 	"categories": [
 		"Other"
 	],

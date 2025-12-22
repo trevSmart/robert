@@ -18,7 +18,7 @@ export class ExampleUsage {
 		return (
 			(await this.errorHandler.executeWithErrorHandling(async () => {
 				// Simulem una operació asíncrona que pot fallar
-				await new Promise((resolve) => setTimeout(resolve, 100));
+				await new Promise(resolve => setTimeout(resolve, 100));
 
 				// Generem un error aleatori per demostrar
 				if (Math.random() > 0.5) {
@@ -54,7 +54,7 @@ export class ExampleUsage {
 			(await this.errorHandler.executeWithErrorHandling(
 				async () => {
 					// Simulem una operació que pot fallar
-					await new Promise((resolve) => setTimeout(resolve, 50));
+					await new Promise(resolve => setTimeout(resolve, 50));
 
 					if (Math.random() > 0.7) {
 						throw new Error('Error en mètode amb gestió manual');

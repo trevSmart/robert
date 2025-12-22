@@ -144,9 +144,9 @@ export const Message = styled.div<{ type: 'success' | 'error' }>`
 	margin: 8px 0;
 	border-radius: 4px;
 	font-size: 13px;
-	background-color: ${(props) => (props.type === 'error' ? 'var(--vscode-inputValidation-errorBackground)' : 'var(--vscode-inputValidation-infoBackground)')};
-	color: ${(props) => (props.type === 'error' ? 'var(--vscode-inputValidation-errorBorder)' : 'var(--vscode-inputValidation-infoBorder)')};
-	border: 1px solid ${(props) => (props.type === 'error' ? 'var(--vscode-inputValidation-errorBorder)' : 'var(--vscode-inputValidation-infoBorder)')};
+	background-color: ${props => (props.type === 'error' ? 'var(--vscode-inputValidation-errorBackground)' : 'var(--vscode-inputValidation-infoBackground)')};
+	color: ${props => (props.type === 'error' ? 'var(--vscode-inputValidation-errorBorder)' : 'var(--vscode-inputValidation-infoBorder)')};
+	border: 1px solid ${props => (props.type === 'error' ? 'var(--vscode-inputValidation-errorBorder)' : 'var(--vscode-inputValidation-infoBorder)')};
 `;
 
 // Debug info
@@ -177,7 +177,7 @@ export const LogoCard = styled.div`
 	text-align: center;
 	padding: 16px;
 	border-radius: 8px;
-	box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 	background: var(--vscode-input-background);
 	border: 1px solid var(--vscode-input-border);
 `;

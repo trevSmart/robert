@@ -192,7 +192,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				.then(() => {
 					this._errorHandler.logInfo('Activity bar view opened successfully', 'RobertWebviewProvider.showMainPanelIfHidden');
 				})
-				.catch(async (error) => {
+				.catch(async error => {
 					this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'showMainPanelIfHidden.activityBar');
 					this._errorHandler.logInfo('Failed to open activity bar view; creating separate panel', 'RobertWebviewProvider.showMainPanelIfHidden');
 					await this.createWebviewPanel();
@@ -454,7 +454,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	private _setWebviewMessageListener(webview: vscode.Webview, webviewId?: string) {
 		webview.onDidReceiveMessage(
-			async (message) => {
+			async message => {
 				await this._errorHandler.executeWithErrorHandling(async () => {
 					// Log webview ID for debugging
 					if (webviewId) {

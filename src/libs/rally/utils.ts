@@ -1,5 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const rally = require('rally');
+import rally from 'ibm-rally-node';
 
 import * as vscode from 'vscode';
 import { SettingsManager } from '../../SettingsManager';
@@ -69,16 +68,16 @@ export const getRallyApi = () => {
 		server: rallyInstance,
 		requestOptions: {
 			headers: {
-				'X-RallyIntegrationName': 'MCP Rally Server',
-				'X-RallyIntegrationVendor': 'My company',
-				'X-RallyIntegrationVersion': '1.0.0'
+				'X-RallyIntegrationName': 'IBM Robert Extension',
+				'X-RallyIntegrationVendor': 'IBM',
+				'X-RallyIntegrationVersion': '0.0.9'
 			}
 		}
 	});
 
 	// Interceptem les crides query per afegir logging
 	const originalQuery = rallyApi.query;
-	rallyApi.query = async function (queryOptions: unknown) {
+	rallyApi.query = async function (queryOptions: any) {
 		// Logging abans de la crida
 		const output = getOutputChannel();
 		output.appendLine('=== RALLY API CALL ===');
@@ -99,16 +98,16 @@ export const getRallyApi = () => {
 		output.appendLine('=====================');
 
 		try {
-			// Fem la crida original
+			// Fem la crida original - the new API uses promises
 			const result = await originalQuery.call(this, queryOptions);
 
 			// Logging de la resposta
 			output.appendLine('=== RALLY API RESPONSE ===');
-			const resultData = result as { results?: unknown[] };
-			output.appendLine(`Results count: ${resultData.results?.length || 0}`);
-			if (resultData.results && resultData.results.length > 0) {
+			const resultData = result as { Results?: unknown[] };
+			output.appendLine(`Results count: ${resultData.Results?.length || 0}`);
+			if (resultData.Results && resultData.Results.length > 0) {
 				output.appendLine('First result sample:');
-				output.appendLine(`  ${JSON.stringify(resultData.results[0], null, 2)}`);
+				output.appendLine(`  ${JSON.stringify(resultData.Results[0], null, 2)}`);
 			}
 			output.appendLine('==========================');
 

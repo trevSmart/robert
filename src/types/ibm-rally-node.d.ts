@@ -1,5 +1,8 @@
 // Type definitions for ibm-rally-node
 declare module 'ibm-rally-node' {
+	// Import the RallyApiObject type from local definitions to ensure consistency
+	import type { RallyApiObject } from '../rally';
+
 	export interface RallyQueryOptions {
 		type: string;
 		fetch?: string[];
@@ -10,13 +13,13 @@ declare module 'ibm-rally-node' {
 	}
 
 	export interface RallyApiResult {
-		Results: any[];
+		Results: RallyApiObject[];
 	}
 
 	export interface RallyApi {
 		query(queryOptions: RallyQueryOptions): Promise<RallyApiResult>;
-		create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: any }>;
-		update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: any }>;
+		create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
+		update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
 		del(options: { type: string; ref: string }): Promise<void>;
 	}
 
@@ -40,8 +43,8 @@ declare module 'ibm-rally-node' {
 	export declare class RestApi implements RallyApi {
 		constructor(options?: RallyOptions);
 		query(queryOptions: RallyQueryOptions): Promise<RallyApiResult>;
-		create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: any }>;
-		update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: any }>;
+		create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
+		update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
 		del(options: { type: string; ref: string }): Promise<void>;
 	}
 

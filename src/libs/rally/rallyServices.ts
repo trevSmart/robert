@@ -222,9 +222,13 @@ function buildUserStoryQuery(query: RallyQuery) {
 }
 
 // Helper function to safely sanitize HTML descriptions
-function sanitizeDescription(description: unknown) {
+function sanitizeDescription(description: unknown): string | null {
+	if (description == null) {
+		return null;
+	}
+
 	if (typeof description !== 'string') {
-		return description;
+		return String(description);
 	}
 
 	let sanitized = description;

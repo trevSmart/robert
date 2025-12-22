@@ -221,6 +221,26 @@ function buildUserStoryQuery(query: RallyQuery) {
 	return rallyQueries.length ? rallyQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)) : null;
 }
 
+// Helper function to safely sanitize HTML descriptions
+function sanitizeDescription(description: unknown) {
+	if (typeof description !== 'string') {
+		return description;
+	}
+
+	let sanitized = description;
+	let previous: string;
+	// Repeatedly remove HTML-like tags to avoid incomplete multi-character sanitization
+	do {
+		previous = sanitized;
+		sanitized = sanitized.replace(/<[^>]*>/g, '');
+	} while (sanitized !== previous);
+
+	// Remove any remaining angle brackets to avoid HTML element injection
+	sanitized = sanitized.replace(/[<>]/g, '');
+
+	return sanitized;
+}
+
 // Helper function to format user stories
 function formatUserStories(result: RallyApiResult): RallyUserStory[] {
 	// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
@@ -228,7 +248,7 @@ function formatUserStories(result: RallyApiResult): RallyUserStory[] {
 		objectId: userStory.objectId,
 		formattedId: userStory.formattedId,
 		name: userStory.name,
-		description: typeof userStory.description === 'string' ? userStory.description.replace(/<[^>]*>/g, '') : userStory.description,
+		description: sanitizeDescription(userStory.description),
 		state: userStory.state,
 		planEstimate: userStory.planEstimate,
 		toDo: userStory.toDo,

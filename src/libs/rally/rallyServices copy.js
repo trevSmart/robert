@@ -66,7 +66,7 @@ export async function getProjects(query = {}, limit = null) {
 	const projects = result.results.map((project) => ({
 		objectId: project.objectId,
 		name: project.name,
-		description: typeof project.description === 'string' ? project.description.replace(/<[^>]*>/g, '') : project.description,
+		description: typeof project.description === 'string' ? striptags(project.description) : project.description,
 		state: project.state,
 		creationDate: project.creationDate,
 		lastUpdateDate: project.lastUpdateDate,

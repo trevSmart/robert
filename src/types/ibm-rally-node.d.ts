@@ -1,7 +1,7 @@
 // Type definitions for ibm-rally-node
 declare module 'ibm-rally-node' {
 	// Import the RallyApiObject type from local definitions to ensure consistency
-	import type { RallyApiObject } from '../rally';
+	import type { RallyApiObject, RallyApiResult } from '../rally';
 
 	export interface RallyQueryOptions {
 		type: string;
@@ -10,10 +10,6 @@ declare module 'ibm-rally-node' {
 		limit?: number;
 		order?: unknown;
 		where?: string;
-	}
-
-	export interface RallyApiResult {
-		Results: RallyApiObject[];
 	}
 
 	export interface RallyApi {

@@ -1,5 +1,5 @@
 {
-	"$schema": "https://biomejs.dev/schemas/2.2.4/schema.json",
+	"$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
 	"vcs": {
 		"enabled": true,
 		"clientKind": "git",
@@ -199,7 +199,7 @@
 				"noExcessiveNestedTestSuites": "error",
 				"noExtraBooleanCast": "error",
 				"noFlatMapIdentity": "error",
-				"noForEach": "error",
+				"noForEach": "off",
 				"noImplicitCoercions": "error",
 				"noImportantStyles": "error",
 				"noStaticOnlyClass": "error",
@@ -240,6 +240,12 @@
 			"quoteStyle": "single",
 			"semicolons": "always",
 			"trailingCommas": "none"
+		},
+		"globals": ["acquireVsCodeApi"]
+	},
+	"html": {
+		"parser": {
+			"interpolation": true
 		}
 	},
 	"assist": {

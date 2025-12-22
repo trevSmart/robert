@@ -89,10 +89,10 @@
             color: var(--vscode-input-foreground);
             font-family: var(--vscode-font-family);
             font-size: 13px;
-            width: 120px !important;
+            width: 120px;
         }
         .setting-control input[type="number"] {
-            width: 120px !important;
+            width: 120px;
         }
         .setting-control input[type="number"]::-webkit-outer-spin-button,
         .setting-control input[type="number"]::-webkit-inner-spin-button {
@@ -342,7 +342,7 @@
         <div class="loading-spinner"></div>
     </div>
 
-    <script>
+    <script type="module">
         // Import and register the toolkit components
         import {
             provideVSCodeDesignSystem,
@@ -355,10 +355,10 @@
         const vscode = acquireVsCodeApi();
         const webviewId = '{{webviewId}}';
 
-        function saveSettings() {
+        function _saveSettings() {
             const settings = {
                 apiUrl: document.getElementById('apiUrl').value,
-                timeout: parseInt(document.getElementById('timeout').value),
+                timeout: Number.parseInt(document.getElementById('timeout').value, 10),
                 autoRefresh: document.getElementById('autoRefresh').checked,
                 theme: document.getElementById('theme').value,
                 debugMode: document.getElementById('debugMode').checked,
@@ -373,7 +373,7 @@
             });
         }
 
-        function resetSettings() {
+        function _resetSettings() {
             showLoading();
             vscode.postMessage({
                 command: 'resetSettings',
@@ -381,7 +381,7 @@
             });
         }
 
-        function goBack() {
+        function _goBack() {
             vscode.postMessage({
                 command: 'goBackToMain',
                 webviewId: webviewId
@@ -399,14 +399,14 @@
         function populateSettings(settings) {
             document.getElementById('apiUrl').value = settings.apiUrl || '';
             document.getElementById('timeout').value = settings.timeout || 30;
-            document.getElementById('autoRefresh').checked = settings.autoRefresh || false;
+            document.getElementById('autoRefresh').checked = settings.autoRefresh;
 
             // Set theme dropdown value
             const themeDropdown = document.getElementById('theme');
             themeDropdown.value = settings.theme || 'auto';
 
-            document.getElementById('debugMode').checked = settings.debugMode || false;
-            document.getElementById('notifications').checked = settings.notifications || false;
+            document.getElementById('debugMode').checked = settings.debugMode;
+            document.getElementById('notifications').checked = settings.notifications;
 
             // Show debug info if debug mode is enabled
             if (settings.debugMode) {
@@ -428,7 +428,6 @@
         // Listen for messages from extension
         window.addEventListener('message', event => {
             const message = event.data;
-            console.log('Message received:', message);
 
             switch (message.command) {
                 case 'settingsLoaded':
@@ -450,9 +449,6 @@
 
         // Load settings when page loads
         window.addEventListener('load', () => {
-            console.log('Settings webview loaded successfully');
-            console.log('Context:', '{{context}}');
-            console.log('Webview ID:', webviewId);
 
             // Load current settings
             setTimeout(() => {

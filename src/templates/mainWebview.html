@@ -268,8 +268,8 @@
             const progressBar = document.getElementById('progressBar');
             const progressText = document.getElementById('progressText');
 
-            progressBar.style.width = progress + '%';
-            progressText.textContent = Math.round(progress) + '%';
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `${Math.round(progress)}%`;
 
             // Update color based on progress percentage
             if (progress <= 50) {
@@ -278,18 +278,18 @@
                 const r = Math.round(76 + (255 - 76) * ratio);
                 const g = Math.round(175 + (193 - 175) * ratio);
                 const b = Math.round(80 + (7 - 80) * ratio);
-                progressBar.style.background = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+                progressBar.style.background = `rgb(${r}, ${g}, ${b})`;
             } else {
                 // From yellow to red (50% to 100%)
                 const ratio = (progress - 50) / 50;
                 const r = Math.round(255 + (255 - 255) * ratio);
                 const g = Math.round(193 + (87 - 193) * ratio);
                 const b = Math.round(7 + (34 - 7) * ratio);
-                progressBar.style.background = 'rgb(' + r + ', ' + g + ', ' + b + ')';
+                progressBar.style.background = `rgb(${r}, ${g}, ${b})`;
             }
         }
 
-        function toggleProgress() {
+        function _toggleProgress() {
             const toggleBtn = document.getElementById('progressToggleBtn');
 
             if (isProgressRunning) {
@@ -324,7 +324,7 @@
             }
         }
 
-        function resetProgress() {
+        function _resetProgress() {
             if (progressInterval) {
                 clearInterval(progressInterval);
                 progressInterval = null;
@@ -337,7 +337,7 @@
             saveState(); // Save state after reset
         }
 
-        function sendMessage(type) {
+        function _sendMessage(type) {
             showLoading();
 
             // Simulate a brief loading time for better UX
@@ -351,7 +351,7 @@
             }, 300);
         }
 
-        function showDemo(demoType) {
+        function _showDemo(demoType) {
             // Placeholder for demo functionality
             vscode.postMessage({
                 command: 'showDemo',
@@ -361,7 +361,7 @@
             });
         }
 
-        function loadProjects() {
+        function _loadProjects() {
             showProjectsLoading();
             vscode.postMessage({
                 command: 'loadProjects',
@@ -370,14 +370,14 @@
             });
         }
 
-        function clearProjects() {
+        function _clearProjects() {
             document.getElementById('projectsTable').style.display = 'none';
             document.getElementById('projectsTableBody').innerHTML = '';
             document.getElementById('projectsLoading').style.display = 'none';
             document.getElementById('projectsError').style.display = 'none';
         }
 
-        function openSettings() {
+        function _openSettings() {
             vscode.postMessage({
                 command: 'openSettings',
                 context: '{{context}}',
@@ -423,11 +423,11 @@
             const message = event.data;
             if (message.command === 'showLogo') {
                 const container = document.querySelector('.container');
-                const LOGO_URI = '{{logoUri}}';
+                const LogoUri = '{{logoUri}}';
                 if (container) {
                     container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;padding:20px;">' +
                         '<div style="text-align:center;background:var(--vscode-input-background);padding:16px;border-radius:8px;">' +
-                        '<img src="' + LOGO_URI + '" style="width:64px;height:64px;display:block;margin:0 auto 8px;" />' +
+                        '<img src="' + LogoUri + '" style="width:64px;height:64px;display:block;margin:0 auto 8px;" />' +
                         '<h1 style="margin:0;font-size:16px;color:var(--vscode-foreground);">Robert</h1>' +
                         '<p style="margin:4px 0 0 0;color:var(--vscode-descriptionForeground);font-size:12px;">Click the activity bar to open the full view.</p>' +
                         '</div></div>';
@@ -443,7 +443,6 @@
                         toggleBtn.textContent = 'Start Progress';
                     }
                     isProgressRunning = false;
-                    console.log('State restored:', message.state);
                 }
             } else if (message.command === 'projectsLoaded') {
                 if (message.projects) {

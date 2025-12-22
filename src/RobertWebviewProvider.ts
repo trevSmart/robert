@@ -546,6 +546,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								}
 							}
 							break;
+						case 'webviewError':
+							this._errorHandler.logWarning(`Frontend error (${message.type ?? 'unknown'}) from ${message.webviewId ?? 'unknown webview'}: ${message.errorMessage ?? 'No message provided'}`, 'WebviewMessageListener.webviewError');
+							if (message.errorStack) {
+								this._errorHandler.logInfo(String(message.errorStack), 'WebviewMessageListener.webviewErrorStack');
+							}
+							break;
 						case 'loadProjects':
 							try {
 								this._errorHandler.logInfo('Loading projects from Rally API', 'WebviewMessageListener');

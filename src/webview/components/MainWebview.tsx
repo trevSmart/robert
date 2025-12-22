@@ -38,7 +38,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 		return {
 			postMessage: () => {
-				console.warn('Robert MainWebview fallback postMessage invoked without VS Code API');
+				// Fallback postMessage - no action needed when VS Code API is not available
 			},
 			setState: () => undefined,
 			getState: () => undefined
@@ -102,7 +102,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [sendMessage, webviewId]);
+	}, [sendMessage]);
 
 	useEffect(() => {
 		if (!hasVsCodeApi) {

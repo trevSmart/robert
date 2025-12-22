@@ -1,5 +1,6 @@
 import { rallyData } from '../../extension.js';
 import { getRallyApi, queryUtils } from './utils.js';
+import striptags from 'striptags';
 
 export async function getProjects(query = {}, limit = null) {
 	const rallyApi = getRallyApi();
@@ -218,7 +219,7 @@ function formatUserStories(result) {
 		objectId: userStory.objectId,
 		formattedId: userStory.formattedId,
 		name: userStory.name,
-		description: typeof userStory.description === 'string' ? userStory.description.replace(/<[^>]*>/g, '') : userStory.description,
+		description: typeof userStory.description === 'string' ? striptags(userStory.description) : userStory.description,
 		state: userStory.state,
 		planEstimate: userStory.planEstimate,
 		toDo: userStory.toDo,

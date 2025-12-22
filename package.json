@@ -3,7 +3,7 @@
 	"displayName": "For IBM internal use only.",
 	"description": "IBM Robert",
 	"version": "0.0.9",
-	"icon": "resources/icons/ibm-logo-bee.svg",
+	"icon": "resources/image.png",
 	"publisher": "trevSmart",
 	"repository": {
 		"type": "git",
@@ -185,7 +185,7 @@
 				{
 					"id": "robert",
 					"title": "IBM Robert",
-					"icon": "./resources/icons/ibm-logo-bee.svg"
+					"icon": "./resources/image.png"
 				}
 			]
 		},
@@ -195,7 +195,7 @@
 					"id": "robert.mainView",
 					"name": "IBM Robert",
 					"type": "webview",
-					"icon": "./resources/icons/ibm-logo-bee.svg"
+					"icon": "./resources/image.png"
 				}
 			]
 		},

@@ -277,6 +277,7 @@
 		"react-dom": "^19.2.3",
 		"styled-components": "^6.1.19",
 		"vite": "^7.3.0",
-		"vscrui": "^0.3.0"
+		"vscrui": "^0.3.0",
+		"striptags": "^3.2.0"
 	}
 }

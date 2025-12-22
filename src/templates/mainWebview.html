@@ -397,13 +397,32 @@
 
             projects.forEach(project => {
                 const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.name || 'N/A'}</td>
-                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.description || 'N/A'}</td>
-                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.state || 'N/A'}</td>
-                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.owner || 'N/A'}</td>
-                    <td style="padding: 8px; border: 1px solid var(--vscode-input-border);">${project.childrenCount || 0}</td>
-                `;
+
+                const nameCell = document.createElement('td');
+                nameCell.style.cssText = 'padding: 8px; border: 1px solid var(--vscode-input-border);';
+                nameCell.textContent = project.name || 'N/A';
+                row.appendChild(nameCell);
+
+                const descriptionCell = document.createElement('td');
+                descriptionCell.style.cssText = 'padding: 8px; border: 1px solid var(--vscode-input-border);';
+                descriptionCell.textContent = project.description || 'N/A';
+                row.appendChild(descriptionCell);
+
+                const stateCell = document.createElement('td');
+                stateCell.style.cssText = 'padding: 8px; border: 1px solid var(--vscode-input-border);';
+                stateCell.textContent = project.state || 'N/A';
+                row.appendChild(stateCell);
+
+                const ownerCell = document.createElement('td');
+                ownerCell.style.cssText = 'padding: 8px; border: 1px solid var(--vscode-input-border);';
+                ownerCell.textContent = project.owner || 'N/A';
+                row.appendChild(ownerCell);
+
+                const childrenCountCell = document.createElement('td');
+                childrenCountCell.style.cssText = 'padding: 8px; border: 1px solid var(--vscode-input-border);';
+                childrenCountCell.textContent = project.childrenCount != null ? project.childrenCount : 0;
+                row.appendChild(childrenCountCell);
+
                 tbody.appendChild(row);
             });
 

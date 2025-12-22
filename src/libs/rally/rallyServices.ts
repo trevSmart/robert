@@ -14,7 +14,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
 	if (Object.keys(query).length && rallyData.projects.length) {
 		const filteredProjects = rallyData.projects.filter((project: RallyProject) =>
-			Object.keys(query).every((key) => {
+			Object.keys(query).every(key => {
 				if (project[key as keyof RallyProject] === undefined) {
 					return false;
 				}
@@ -45,7 +45,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	}
 
 	if (Object.keys(query).length) {
-		const rallyQueries = Object.keys(query).map((key) => {
+		const rallyQueries = Object.keys(query).map(key => {
 			//Per al camp Name, utilitzem 'contains' per fer cerca parcial
 			if (key === 'Name') {
 				return queryUtils.where(key, 'contains', query[key]);
@@ -61,7 +61,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.results.length) {
+	if (!resultData.Results.length) {
 		return {
 			projects: [],
 			source: 'api',
@@ -70,7 +70,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	}
 
 	//Formatem la resposta per ser més llegible
-	const projects: RallyProject[] = resultData.results.map((project: RallyApiObject) => ({
+	const projects: RallyProject[] = resultData.Results.map((project: RallyApiObject) => ({
 		objectId: project.objectId,
 		name: project.name,
 		description: typeof project.description === 'string' ? project.description.replace(/<[^>]*>/g, '') : project.description,
@@ -108,7 +108,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
 	if (Object.keys(query).length && rallyData.users && rallyData.users.length) {
 		const filteredUsers = rallyData.users.filter((user: RallyUser) =>
-			Object.keys(query).every((key) => {
+			Object.keys(query).every(key => {
 				if (user[key as keyof RallyUser] === undefined) {
 					return false;
 				}
@@ -139,7 +139,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 	}
 
 	if (Object.keys(query).length) {
-		const rallyQueries = Object.keys(query).map((key) => {
+		const rallyQueries = Object.keys(query).map(key => {
 			//Per al camp DisplayName, utilitzem 'contains' per fer cerca parcial
 			if (key === 'DisplayName') {
 				return queryUtils.where(key, 'contains', query[key]);
@@ -156,7 +156,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.results || resultData.results.length === 0) {
+	if (!resultData.Results || resultData.Results.length === 0) {
 		return {
 			users: [],
 			source: 'api',
@@ -164,7 +164,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 		};
 	}
 
-	const users: RallyUser[] = resultData.results.map((user: RallyApiObject) => ({
+	const users: RallyUser[] = resultData.Results.map((user: RallyApiObject) => ({
 		objectId: user?.objectId,
 		userName: user?.userName,
 		displayName: user?.displayName,
@@ -201,7 +201,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 
 // Helper function to reduce complexity
 function buildUserStoryQuery(query: RallyQuery) {
-	const rallyQueries = Object.keys(query).map((key) => {
+	const rallyQueries = Object.keys(query).map(key => {
 		//Per al camp Name, utilitzem 'contains' per fer cerca parcial
 		if (key === 'Name') {
 			return queryUtils.where(key, 'contains', query[key]);
@@ -248,7 +248,7 @@ function sanitizeDescription(description: unknown): string | null {
 // Helper function to format user stories
 function formatUserStories(result: RallyApiResult): RallyUserStory[] {
 	// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
-	return result.results.map((userStory: any) => ({
+	return result.Results.map((userStory: any) => ({
 		objectId: userStory.objectId,
 		formattedId: userStory.formattedId,
 		name: userStory.name,
@@ -273,8 +273,8 @@ function formatUserStories(result: RallyApiResult): RallyUserStory[] {
 // Helper function to check cache for filtered results
 function checkCacheForFilteredResults(query: RallyQuery, dataArray: RallyUserStory[]) {
 	if (Object.keys(query).length && dataArray && dataArray.length) {
-		const filteredResults = dataArray.filter((item) =>
-			Object.keys(query).every((key) => {
+		const filteredResults = dataArray.filter(item =>
+			Object.keys(query).every(key => {
 				if (item[key as keyof RallyUserStory] === undefined) {
 					return false;
 				}
@@ -300,7 +300,7 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 	}
 
 	for (const newItem of newItems) {
-		const existingIndex = cacheArray.findIndex((existingItem) => existingItem.objectId === newItem[idField as keyof RallyUserStory]);
+		const existingIndex = cacheArray.findIndex(existingItem => existingItem.objectId === newItem[idField as keyof RallyUserStory]);
 
 		if (existingIndex === -1) {
 			//Item nou, l'afegim
@@ -371,7 +371,7 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.results.length) {
+	if (!resultData.Results.length) {
 		return {
 			userStories: [],
 			source: 'api',

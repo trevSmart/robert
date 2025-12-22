@@ -50,7 +50,7 @@ export interface RallyApiObject {
 }
 
 export interface RallyApiResult {
-	results: RallyApiObject[];
+	Results: RallyApiObject[];
 }
 
 export interface RallyProject {
@@ -112,6 +112,9 @@ export interface RallyQueryOptions {
 // Rally module types
 export interface RallyApi {
 	query(queryOptions: RallyQueryOptions): Promise<RallyApiResult>;
+	create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
+	update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
+	del(options: { type: string; ref: string }): Promise<void>;
 }
 
 export interface RallyOptions {
@@ -129,9 +132,18 @@ export interface RallyQueryBuilder {
 
 export interface RallyModule {
 	(options: RallyOptions): RallyApi;
+	createClient(options: RallyOptions): RallyApi;
 	util: {
 		query: RallyQueryBuilder;
 	};
+}
+
+export declare class RestApi implements RallyApi {
+	constructor(options: RallyOptions);
+	query(queryOptions: RallyQueryOptions): Promise<RallyApiResult>;
+	create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
+	update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
+	del(options: { type: string; ref: string }): Promise<void>;
 }
 
 // Data structure for managing Rally data in the extension

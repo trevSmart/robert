@@ -83,7 +83,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 	}, [vscode, webviewId, settings, showMessage]);
 
 	const updateSetting = <K extends keyof SettingsData>(key: K, value: SettingsData[K]) => {
-		setSettings((prev) => ({ ...prev, [key]: value }));
+		setSettings(prev => ({ ...prev, [key]: value }));
 	};
 
 	const saveSettings = () => {
@@ -193,7 +193,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 								</div>
 								<div style={{ marginLeft: '16px', flexShrink: 0 }}>
-									<Checkbox checked={settings.autoRefresh} onChange={(checked) => updateSetting('autoRefresh', checked)} />
+									<Checkbox checked={settings.autoRefresh} onChange={checked => updateSetting('autoRefresh', checked)} />
 								</div>
 							</div>
 							<div style={{ backgroundColor: 'color(srgb 0.8 0.8 0.8 / 0.08)', height: '1px', margin: '0 12px' }} />
@@ -223,7 +223,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 								</div>
 								<div style={{ marginLeft: '16px', flexShrink: 0 }}>
-									<Checkbox checked={settings.debugMode} onChange={(checked) => updateSetting('debugMode', checked)} />
+									<Checkbox checked={settings.debugMode} onChange={checked => updateSetting('debugMode', checked)} />
 								</div>
 							</div>
 							<div style={{ backgroundColor: 'color(srgb 0.8 0.8 0.8 / 0.08)', height: '1px', margin: '0 12px' }} />
@@ -253,7 +253,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 								</div>
 								<div style={{ marginLeft: '16px', flexShrink: 0 }}>
-									<Checkbox checked={settings.notifications} onChange={(checked) => updateSetting('notifications', checked)} />
+									<Checkbox checked={settings.notifications} onChange={checked => updateSetting('notifications', checked)} />
 								</div>
 							</div>
 						</div>
@@ -306,7 +306,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 								</div>
 								<div style={{ marginLeft: '16px', flexShrink: 0 }}>
-									<Dropdown options={themeOptions} value={themeOptions.find((opt) => opt.value === settings.theme)} onChange={(value) => updateSetting('theme', typeof value === 'string' ? value : value?.value || 'auto')} />
+									<Dropdown options={themeOptions} value={themeOptions.find(opt => opt.value === settings.theme)} onChange={value => updateSetting('theme', typeof value === 'string' ? value : value?.value || 'auto')} />
 								</div>
 							</div>
 						</div>
@@ -359,7 +359,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 								</div>
 								<div style={{ marginLeft: '16px', flexShrink: 0 }}>
-									<TextField value={settings.apiUrl} onChange={(value) => updateSetting('apiUrl', value)} placeholder="https://api.example.com" />
+									<TextField value={settings.apiUrl} onChange={value => updateSetting('apiUrl', value)} placeholder="https://api.example.com" />
 								</div>
 							</div>
 							<div style={{ backgroundColor: 'color(srgb 0.8 0.8 0.8 / 0.08)', height: '1px', margin: '0 12px' }} />
@@ -389,7 +389,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 								</div>
 								<div style={{ marginLeft: '16px', flexShrink: 0 }}>
-									<TextField value={settings.timeout?.toString() || '30'} onChange={(value) => updateSetting('timeout', Number.parseInt(value, 10) || 30)} placeholder="30" />
+									<TextField value={settings.timeout?.toString() || '30'} onChange={value => updateSetting('timeout', Number.parseInt(value, 10) || 30)} placeholder="30" />
 								</div>
 							</div>
 						</div>

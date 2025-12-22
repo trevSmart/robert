@@ -110,7 +110,7 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 						<TableCell>Owner</TableCell>
 						<TableCell>Children</TableCell>
 					</TableRow>
-					{projects.map((project) => (
+					{projects.map(project => (
 						<TableRow key={project.name || 'unknown'}>
 							<TableCell>{project.name || 'N/A'}</TableCell>
 							<TableCell>{project.description || 'N/A'}</TableCell>

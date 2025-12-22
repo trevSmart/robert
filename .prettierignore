@@ -1,0 +1,6 @@
+out/
+dist/
+node_modules/
+*.js
+*.d.ts
+*.vsix

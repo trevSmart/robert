@@ -1,8 +1,9 @@
 {
 	"name": "robert",
-	"displayName": "Robert",
-	"description": "VSCode extension project",
+	"displayName": "For IBM internal use only.",
+	"description": "IBM Robert",
 	"version": "0.0.9",
+	"icon": "resources/icons/ibm-logo-bee.svg",
 	"publisher": "trevSmart",
 	"repository": {
 		"type": "git",

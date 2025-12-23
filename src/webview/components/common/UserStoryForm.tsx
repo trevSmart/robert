@@ -173,7 +173,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 		<div
 			style={{
 				margin: '20px 0',
-				padding: '20px',
+				padding: '20px 40px 20px 20px',
 				backgroundColor: '#282828',
 				borderRadius: '6px'
 			}}
@@ -355,6 +355,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 								borderRadius: '3px',
 								fontSize: '13px',
 								fontFamily: 'var(--vscode-font-family)',
+								lineHeight: '1.6',
 								resize: 'vertical'
 							}}
 						/>
@@ -382,25 +383,6 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.discussionCount}</span>
 						</StatPill>
 					</div>
-				</div>
-
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Object ID</label>
-					<input
-						type="text"
-						value={userStory.objectId}
-						readOnly
-						style={{
-							width: '100%',
-							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '12px',
-							fontFamily: 'monospace'
-						}}
-					/>
 				</div>
 			</div>
 		</div>

@@ -812,7 +812,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 						</div>
 					)}
 
-					{activeSection === 'salesforce' && (
+					{activeSection === 'salesforce' && !selectedTutorial && (
 						<div style={{ padding: '20px' }}>
 							{/* Salesforce Banners */}
 							<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1160,7 +1160,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 					)}
 
 					{/* Tutorial Content */}
-					{showTutorial && selectedTutorial && (
+					{selectedTutorial && (
 						<div style={{ padding: '20px' }}>
 							{/* Back Button */}
 							<div style={{ marginBottom: '20px' }}>
@@ -1182,7 +1182,10 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 										gap: '6px'
 									}}
 								>
-									← Back to Salesforce
+									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px', marginRight: '6px' }}>
+										<path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+									</svg>
+									Back to Salesforce
 								</button>
 							</div>
 

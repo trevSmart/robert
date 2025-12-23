@@ -1,6 +1,8 @@
 import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory, RallyIteration } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
+import { ErrorHandler } from '../../ErrorHandler';
+import { SettingsManager } from '../../SettingsManager';
 
 function escapeHtml(input: string): string {
 	return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -107,53 +109,75 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 }
 
 export async function getCurrentUser() {
+	const errorHandler = ErrorHandler.getInstance();
+
+	// If we already have the current user from prefetch, return it
+	if (rallyData.currentUser) {
+		errorHandler.logInfo(`Returning cached current user: ${rallyData.currentUser.displayName || rallyData.currentUser.userName}`, 'getCurrentUser');
+		return {
+			user: rallyData.currentUser,
+			source: 'cache'
+		};
+	}
+
+	errorHandler.logInfo('No cached current user found, fetching from Rally API', 'getCurrentUser');
+
 	// Validem la configuració de Rally abans de fer la crida
 	const validation = await validateRallyConfiguration();
 	if (!validation.isValid) {
+		errorHandler.logError(`Rally configuration validation failed: ${validation.errors.join(', ')}`, 'getCurrentUser');
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
+	// Get the authenticated user from Rally API
 	const rallyApi = getRallyApi();
+	errorHandler.logInfo('Executing Rally user query to get authenticated user', 'getCurrentUser');
 
 	try {
-		// Try to get current user info - Rally API usually returns current user when querying without specific filters
-		// This is a common pattern in Rally API where the authenticated user's context is used
 		const userResult = await rallyApi.query({
 			type: 'user',
 			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled'],
 			limit: 1
 		});
 
-		// Alternative approach: try to get user by checking if we can infer from API context
-		// For now, we'll use the first result as it typically represents the authenticated user
-		console.log('[Robert] Current user query result:', userResult);
+		errorHandler.logInfo(`Rally user query completed. Result type: ${typeof userResult}`, 'getCurrentUser');
 
 		const resultData = userResult as RallyApiResult;
 
 		if (resultData.Results && resultData.Results.length > 0) {
 			const user = resultData.Results[0];
+			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
+
+			const userData = {
+				objectId: user.ObjectID ?? user.objectId,
+				userName: user.UserName ?? user.userName,
+				displayName: user.DisplayName ?? user.displayName,
+				emailAddress: user.EmailAddress ?? user.emailAddress,
+				firstName: user.FirstName ?? user.firstName,
+				lastName: user.LastName ?? user.lastName,
+				disabled: user.Disabled ?? user.disabled,
+				_ref: user._ref
+			};
+
+			// Cache the user data
+			rallyData.currentUser = userData;
+
+			errorHandler.logInfo(`Processed and cached user data: ${JSON.stringify(userData)}`, 'getCurrentUser');
+
 			return {
-				user: {
-					objectId: user.ObjectID ?? user.objectId,
-					userName: user.UserName ?? user.userName,
-					displayName: user.DisplayName ?? user.displayName,
-					emailAddress: user.EmailAddress ?? user.emailAddress,
-					firstName: user.FirstName ?? user.firstName,
-					lastName: user.LastName ?? user.lastName,
-					disabled: user.Disabled ?? user.disabled,
-					_ref: user._ref
-				},
+				user: userData,
 				source: 'api'
 			};
 		}
 
+		errorHandler.logWarning('Rally user query returned no results', 'getCurrentUser');
 		return {
 			user: null,
 			source: 'api'
 		};
 	} catch (error) {
-		// If the above fails, try alternative approach
-		console.warn('[Robert] Could not retrieve current user info:', error);
+		const errorMessage = error instanceof Error ? error.message : String(error);
+		errorHandler.logError(`Failed to retrieve current user info from Rally API: ${errorMessage}`, 'getCurrentUser');
 		return {
 			user: null,
 			source: 'api'
@@ -604,7 +628,7 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'task',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkItem', 'ObjectID']
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID']
 	};
 
 	if (limit) {
@@ -612,7 +636,7 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 	}
 
 	// Query per trobar tasks d'aquesta user story
-	const rallyQueries = [queryUtils.where('WorkItem', '=', `/hierarchicalrequirement/${userStoryId}`)];
+	const rallyQueries = [queryUtils.where('WorkProduct', '=', `/hierarchicalrequirement/${userStoryId}`)];
 
 	if (Object.keys(query).length) {
 		const additionalQueries = Object.keys(query).map(key => {
@@ -650,7 +674,7 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 		estimate: task.Estimate ?? task.estimate,
 		toDo: task.ToDo ?? task.toDo,
 		timeSpent: task.TimeSpent ?? task.timeSpent,
-		workItem: task.WorkItem ? (task.WorkItem._refObjectName ?? task.WorkItem.refObjectName) : task.workItem ? (task.workItem._refObjectName ?? task.workItem.refObjectName) : null
+		workItem: task.WorkProduct ? (task.WorkProduct._refObjectName ?? task.WorkProduct.refObjectName) : task.workProduct ? (task.workProduct._refObjectName ?? task.workProduct.refObjectName) : null
 	}));
 
 	//Afegim les noves tasks a rallyData sense duplicats

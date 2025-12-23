@@ -85,7 +85,13 @@ const BaseTextarea = styled.textarea`
 	border: 1px solid var(--vscode-input-border);
 	border-radius: 4px;
 	font-size: 13px;
-	font-family: var(--vscode-font-family);
+	font-family:
+		'Inter',
+		var(--vscode-font-family),
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		sans-serif;
 	line-height: 1.4;
 	resize: vertical;
 	min-height: 120px;
@@ -180,20 +186,9 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 		>
 			<div
 				style={{
-					fontSize: '12px',
-					fontWeight: 400,
-					color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
-					letterSpacing: '0.5px',
-					margin: '0 0 15px 0',
-					paddingLeft: '7px'
-				}}
-			>
-				User Story Details
-			</div>
-
-			<div
-				style={{
-					textAlign: 'center',
+					display: 'flex',
+					justifyContent: 'space-between',
+					alignItems: 'center',
 					marginBottom: '20px'
 				}}
 			>
@@ -208,6 +203,17 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 				>
 					{userStory.formattedId}
 				</h2>
+				{userStory.taskStatus && userStory.taskStatus !== 'NONE' && (
+					<div
+						style={{
+							fontSize: '14px',
+							fontWeight: '500',
+							color: userStory.taskStatus === 'DEFINED' ? 'color(srgb 0.4 0.9 0.6 / 0.9)' : userStory.taskStatus === 'BLOCKED' ? 'color(srgb 1 0.5 0.5 / 0.95)' : 'var(--vscode-descriptionForeground)'
+						}}
+					>
+						{userStory.taskStatus}
+					</div>
+				)}
 			</div>
 
 			<div style={{ marginBottom: '16px' }}>
@@ -241,41 +247,41 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
 				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
 
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>State</label>
-					<select
-						value={userStory.state}
-						disabled
-						style={{
-							width: '100%',
-							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px'
-						}}
-					>
-						<option value={userStory.state}>{userStory.state}</option>
-					</select>
-				</div>
-
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Plan Estimate</label>
-					<input
-						type="number"
-						value={userStory.planEstimate || 0}
-						readOnly
-						style={{
-							width: '100%',
-							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px'
-						}}
-					/>
+				<div style={{ display: 'flex', gap: '16px' }}>
+					<div style={{ flex: '1' }}>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Plan Estimate</label>
+						<input
+							type="number"
+							value={userStory.planEstimate || 0}
+							readOnly
+							style={{
+								width: '100%',
+								padding: '6px 8px',
+								backgroundColor: 'var(--vscode-input-background)',
+								color: 'var(--vscode-input-foreground)',
+								border: '1px solid var(--vscode-input-border)',
+								borderRadius: '3px',
+								fontSize: '13px'
+							}}
+						/>
+					</div>
+					<div style={{ flex: '1' }}>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>To Do</label>
+						<input
+							type="number"
+							value={userStory.toDo}
+							readOnly
+							style={{
+								width: '100%',
+								padding: '6px 8px',
+								backgroundColor: 'var(--vscode-input-background)',
+								color: 'var(--vscode-input-foreground)',
+								border: '1px solid var(--vscode-input-border)',
+								borderRadius: '3px',
+								fontSize: '13px'
+							}}
+						/>
+					</div>
 				</div>
 
 				<div>
@@ -297,44 +303,8 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 				</div>
 
 				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>To Do</label>
-					<input
-						type="number"
-						value={userStory.toDo}
-						readOnly
-						style={{
-							width: '100%',
-							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px'
-						}}
-					/>
-				</div>
-
-				<div>
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
 					<StatusPill>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
-				</div>
-
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Task Status</label>
-					<input
-						type="text"
-						value={userStory.taskStatus}
-						readOnly
-						style={{
-							width: '100%',
-							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px'
-						}}
-					/>
 				</div>
 
 				{/* Description */}
@@ -354,7 +324,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 								border: '1px solid var(--vscode-input-border)',
 								borderRadius: '3px',
 								fontSize: '13px',
-								fontFamily: 'var(--vscode-font-family)',
+								fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 								lineHeight: '1.6',
 								resize: 'vertical'
 							}}

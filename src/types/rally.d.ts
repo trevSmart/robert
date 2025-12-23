@@ -243,4 +243,5 @@ export interface RallyData {
 	userStories: RallyUserStory[];
 	tasks: RallyTask[];
 	defaultProject: RallyProject | null;
+	currentUser: RallyUser | null;
 }

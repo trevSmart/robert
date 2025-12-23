@@ -2,9 +2,10 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getCurrentUser } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getCurrentUser, getUsers } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
+import { rallyData } from './extension';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -70,9 +71,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 			this._errorHandler.logInfo('Validation passed, starting data fetch...', 'RobertWebviewProvider.prefetchRallyData');
 
-			this._errorHandler.logInfo('Starting parallel fetch of projects and iterations...', 'RobertWebviewProvider.prefetchRallyData');
-			const [projectsResult, iterationsResult] = await Promise.all([getProjects(), getIterations()]);
-			this._errorHandler.logInfo(`Prefetch completed: ${projectsResult?.count ?? 0} projects, ${iterationsResult?.count ?? 0} iterations`, 'RobertWebviewProvider.prefetchRallyData');
+			this._errorHandler.logInfo('Starting parallel fetch of projects, iterations and current user...', 'RobertWebviewProvider.prefetchRallyData');
+			const [projectsResult, iterationsResult, userResult] = await Promise.all([getProjects(), getIterations(), getCurrentUser()]);
+			this._errorHandler.logInfo(`Prefetch completed: ${projectsResult?.count ?? 0} projects, ${iterationsResult?.count ?? 0} iterations, user: ${userResult?.user ? 'loaded' : 'not loaded'}`, 'RobertWebviewProvider.prefetchRallyData');
 		}, 'RobertWebviewProvider.prefetchRallyData');
 	}
 
@@ -390,8 +391,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				this._errorHandler.logInfo('Logo webview content rendered from build HTML', 'RobertWebviewProvider._getHtmlForLogo');
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
+				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'logo.html', {
-					__REBUS_LOGO_URI__: rebusLogoUri.toString()
+					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
+					__INTER_FONT_URI__: interFontUri.toString()
 				});
 			}, 'getHtmlForLogo')) || '<html><body><p>Error loading logo</p></body></html>'
 		);
@@ -401,11 +404,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				this._errorHandler.logInfo(`Settings webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForSettings');
+				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'settings.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',
 					__CONTEXT__: context,
 					__TIMESTAMP__: new Date().toISOString(),
-					__EXTENSION_URI__: this._extensionUri.toString()
+					__EXTENSION_URI__: this._extensionUri.toString(),
+					__INTER_FONT_URI__: interFontUri.toString()
 				});
 			}, 'getHtmlForSettings')) || '<html><body><p>Error loading settings</p></body></html>'
 		);
@@ -419,11 +424,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
 
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
+				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',
 					__CONTEXT__: context,
 					__TIMESTAMP__: new Date().toISOString(),
-					__REBUS_LOGO_URI__: rebusLogoUri.toString()
+					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
+					__INTER_FONT_URI__: interFontUri.toString()
 				});
 			}, 'getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);
@@ -579,6 +586,16 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 										command: 'settingsError',
 										errors: ['Failed to reset settings']
 									});
+								}
+							}
+							break;
+						case 'openTutorialInEditor':
+							if (message.tutorial) {
+								try {
+									await this._openTutorialInEditor(message.tutorial);
+									this._errorHandler.logInfo(`Tutorial opened in editor: ${message.tutorial.title}`, 'WebviewMessageListener');
+								} catch (error) {
+									this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openTutorialInEditor');
 								}
 							}
 							break;
@@ -802,6 +819,108 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 */
 	private _generateWebviewId(context: string): string {
 		return `${context}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+	}
+
+	/**
+	 * Open a tutorial in a new editor window
+	 */
+	private async _openTutorialInEditor(tutorial: any): Promise<void> {
+		const tutorialContent = this._generateTutorialMarkdown(tutorial);
+		const fileName = `${tutorial.title.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
+
+		// Create a new untitled document with the tutorial content
+		const document = await vscode.workspace.openTextDocument({
+			content: tutorialContent,
+			language: 'markdown'
+		});
+
+		// Show the document in a new editor
+		await vscode.window.showTextDocument(document, {
+			viewColumn: vscode.ViewColumn.One,
+			preview: false
+		});
+
+		// Open the Markdown preview
+		await vscode.commands.executeCommand('markdown.showPreviewToSide');
+	}
+
+	/**
+	 * Generate markdown content for a tutorial
+	 */
+	private _generateTutorialMarkdown(tutorial: any): string {
+		let markdown = `# ${tutorial.title}\n\n`;
+		markdown += `> Master ${tutorial.title.toLowerCase()} with hands-on examples and best practices.\n\n`;
+
+		// Add tutorial-specific content based on title
+		switch (tutorial.title) {
+			case 'Salesforce CRM Fundamentals':
+				markdown += `## Understanding Salesforce CRM\n\n`;
+				markdown += `Salesforce CRM is the world's leading customer relationship management platform that helps businesses connect with customers, partners, and prospects.\n\n`;
+				markdown += `### Key Concepts\n\n`;
+				markdown += `- **Leads**: Potential customers\n`;
+				markdown += `- **Accounts**: Companies or organizations\n`;
+				markdown += `- **Contacts**: Individuals within accounts\n`;
+				markdown += `- **Opportunities**: Potential sales\n`;
+				markdown += `- **Cases**: Customer support issues\n\n`;
+				markdown += `### Getting Started\n\n`;
+				markdown += `Begin by familiarizing yourself with the Salesforce interface and basic navigation. Learn how to create and manage records, and understand the relationship between different objects.\n\n`;
+				break;
+
+			case 'Lightning Web Components':
+				markdown += `## Lightning Web Components (LWC)\n\n`;
+				markdown += `LWC is Salesforce's modern programming model for building fast, reusable components on the Lightning Platform.\n\n`;
+				markdown += `### Benefits\n\n`;
+				markdown += `- Built on web standards\n`;
+				markdown += `- Reusable across Salesforce experiences\n`;
+				markdown += `- Performance optimized\n`;
+				markdown += `- Modern JavaScript features\n\n`;
+				break;
+
+			case 'Salesforce Integration APIs':
+				markdown += `## Connecting Systems with Salesforce APIs\n\n`;
+				markdown += `Salesforce provides powerful APIs to integrate with external systems and build connected experiences.\n\n`;
+				markdown += `### Available APIs\n\n`;
+				markdown += `- **REST API**: Modern, resource-based API\n`;
+				markdown += `- **SOAP API**: Enterprise-grade API\n`;
+				markdown += `- **Bulk API**: High-volume data operations\n`;
+				markdown += `- **Streaming API**: Real-time data updates\n\n`;
+				markdown += `### Authentication\n\n`;
+				markdown += `Use OAuth 2.0 for secure authentication. Salesforce supports various OAuth flows including:\n\n`;
+				markdown += `- Authorization Code Flow\n`;
+				markdown += `- Client Credentials Flow\n`;
+				markdown += `- Username-Password Flow\n\n`;
+				break;
+
+			case 'Salesforce Einstein AI':
+				markdown += `## Leveraging AI in Salesforce\n\n`;
+				markdown += `Salesforce Einstein brings artificial intelligence capabilities to your CRM, helping you gain insights and automate processes.\n\n`;
+				markdown += `### Einstein Products\n\n`;
+				markdown += `- **Salesforce Einstein Sales**: Predictive lead scoring and opportunity insights\n`;
+				markdown += `- **Salesforce Einstein Service**: Case classification and automated solutions\n`;
+				markdown += `- **Salesforce Einstein Marketing**: Personalized campaigns and recommendations\n`;
+				markdown += `- **Salesforce Einstein Relationship Insights**: Contact and account insights\n\n`;
+				break;
+
+			case 'Salesforce DevOps & CI/CD':
+				markdown += `## Implementing DevOps in Salesforce\n\n`;
+				markdown += `DevOps practices help teams deliver Salesforce changes faster and more reliably through automation and collaboration.\n\n`;
+				markdown += `### Key Tools\n\n`;
+				markdown += `- **Salesforce CLI**: Command-line interface\n`;
+				markdown += `- **Git**: Version control\n`;
+				markdown += `- **CI/CD Platforms**: GitHub Actions, Jenkins, etc.\n`;
+				markdown += `- **Testing Frameworks**: Jest, Selenium\n\n`;
+				markdown += `### Best Practices\n\n`;
+				markdown += `- Use source control for all metadata\n`;
+				markdown += `- Implement automated testing\n`;
+				markdown += `- Use deployment pipelines\n`;
+				markdown += `- Monitor and measure performance\n\n`;
+				break;
+		}
+
+		markdown += `---\n\n`;
+		markdown += `*Generated by IBM Robert - ${new Date().toLocaleDateString()}*`;
+
+		return markdown;
 	}
 
 	public dispose() {

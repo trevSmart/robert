@@ -50,7 +50,7 @@ export class TemplateManager {
     <title>Robert - Error</title>
     <style>
         body {
-            font-family: var(--vscode-font-family);
+            font-family: 'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             color: var(--vscode-foreground);
             background-color: var(--vscode-editor-background);
             padding: 20px;

@@ -45,8 +45,8 @@ const MetricsIcon = () => (
 	</svg>
 );
 // HeroIcons components for Salesforce and Assets
-const TargetIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+const TargetIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -55,8 +55,8 @@ const TargetIcon = () => (
 	</svg>
 );
 
-const TrophyIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+const TrophyIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -65,8 +65,8 @@ const TrophyIcon = () => (
 	</svg>
 );
 
-const ChartBarSquareIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+const ChartBarSquareIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -75,8 +75,8 @@ const ChartBarSquareIcon = () => (
 	</svg>
 );
 
-const LightBulbIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+const LightBulbIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -85,8 +85,8 @@ const LightBulbIcon = () => (
 	</svg>
 );
 
-const ArrowPathIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+const ArrowPathIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
 	</svg>
 );
@@ -117,6 +117,28 @@ const SwatchIcon = () => (
 			strokeLinecap="round"
 			strokeLinejoin="round"
 			d="M4.098 19.902a3.75 3.75 0 0 0 5.304 0l6.401-6.402M6.75 21A3.75 3.75 0 0 1 3 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 0 0 3.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008Z"
+		/>
+	</svg>
+);
+
+// Icons for user story detail tabs
+const TasksTabIcon = ({ size = '14px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M21.75 6.75a4.5 4.5 0 0 1-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 1 1-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 0 1 6.336-4.486l-3.276 3.276a3.004 3.004 0 0 0 2.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852Z"
+		/>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M4.867 19.125h.008v.008h-.008v-.008Z" />
+	</svg>
+);
+
+const TestsTabIcon = ({ size = '14px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M16.712 4.33a9.027 9.027 0 0 1 1.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 0 0-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 0 1 0 9.424m-4.138-5.976a3.736 3.736 0 0 0-.88-1.388 3.737 3.737 0 0 0-1.388-.88m2.268 2.268a3.765 3.765 0 0 1 0 2.528m-2.268-4.796a3.765 3.765 0 0 0-2.528 0m4.796 4.796c-.181.506-.475.982-.88 1.388a3.736 3.736 0 0 1-1.388.88m2.268-2.268 4.138 3.448m0 0a9.027 9.027 0 0 1-1.306 1.652c-.51.51-1.064.944-1.652 1.306m0 0-3.448-4.138m3.448 4.138a9.014 9.014 0 0 1-9.424 0m5.976-4.138a3.765 3.765 0 0 1-2.528 0m0 0a3.736 3.736 0 0 1-1.388-.88 3.737 3.737 0 0 1-.88-1.388m2.268 2.268L7.288 19.67m0 0a9.024 9.024 0 0 1-1.652-1.306 9.027 9.027 0 0 1-1.306-1.652m0 0 4.138-3.448M4.33 16.712a9.014 9.014 0 0 1 0-9.424m4.138 5.976a3.765 3.765 0 0 1 0-2.528m0 0c.181-.506.475-.982.88-1.388a3.736 3.736 0 0 1 1.388-.88m-2.268 2.268L4.33 7.288m6.406 1.18L7.288 4.33m0 0a9.024 9.024 0 0 0-1.652 1.306A9.025 9.025 0 0 0 4.33 7.288"
 		/>
 	</svg>
 );
@@ -238,6 +260,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [tasks, setTasks] = useState<any[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
 	const [tasksError, setTasksError] = useState<string | null>(null);
+	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests'>('tasks');
 
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
@@ -279,6 +302,14 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		[loadUserStories]
 	);
 
+	const handleIterationClickFromCalendar = useCallback(
+		(iteration: Iteration) => {
+			setActiveSection('portfolio');
+			handleIterationSelected(iteration);
+		},
+		[handleIterationSelected]
+	);
+
 	const loadTasks = useCallback(
 		(userStoryId: string) => {
 			// eslint-disable-next-line no-console
@@ -299,6 +330,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			console.log('[Frontend] User story selected:', userStory.formattedId);
 			setSelectedUserStory(userStory);
 			setCurrentScreen('userStoryDetail');
+			setActiveUserStoryTab('tasks');
 			// Load tasks for this user story
 			loadTasks(userStory.objectId);
 		},
@@ -317,17 +349,20 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		setSelectedUserStory(null);
 		setTasks([]);
 		setTasksError(null);
+		setActiveUserStoryTab('tasks');
 	}, []);
 
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
 			setActiveSection(section);
 			if (section === 'portfolio') {
-				// Load iterations when switching to portfolio
-				loadIterations();
+				// Load iterations only if we don't already have them and we're not already loading / in error
+				if (!iterations.length && !iterationsLoading && !iterationsError) {
+					loadIterations();
+				}
 			}
 		},
-		[loadIterations]
+		[loadIterations, iterations, iterationsLoading, iterationsError]
 	);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {
@@ -527,7 +562,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} />
 
 				<ContentArea>
-					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} />}
+					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} onIterationClick={handleIterationClickFromCalendar} />}
 
 					{activeSection === 'team' && (
 						<div style={{ padding: '20px' }}>
@@ -548,7 +583,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 							>
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+										background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
 										borderRadius: '8px',
 										padding: '12px',
 										textAlign: 'center',
@@ -560,7 +595,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 								</div>
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+										background: 'linear-gradient(135deg, #9a7a8a 0%, #9a6b7a 100%)',
 										borderRadius: '8px',
 										padding: '12px',
 										textAlign: 'center',
@@ -572,7 +607,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 								</div>
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+										background: 'linear-gradient(135deg, #6b8a9a 0%, #7a9a9a 100%)',
 										borderRadius: '8px',
 										padding: '12px',
 										textAlign: 'center',
@@ -584,7 +619,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 								</div>
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+										background: 'linear-gradient(135deg, #7a9a8a 0%, #8a9a7a 100%)',
 										borderRadius: '8px',
 										padding: '12px',
 										textAlign: 'center',
@@ -665,7 +700,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 										<div
 											key={member.name}
 											style={{
-												backgroundColor: 'var(--vscode-editor-background)',
+												backgroundColor: '#1e1e1e',
 												border: '1px solid var(--vscode-panel-border)',
 												borderRadius: '8px',
 												padding: '12px',
@@ -691,55 +726,26 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 													width: '36px',
 													height: '36px',
 													borderRadius: '50%',
-													background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+													background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
 													display: 'flex',
 													alignItems: 'center',
 													justifyContent: 'center',
 													color: 'white',
 													fontWeight: 'bold',
 													fontSize: '12px',
-													position: 'relative',
 													marginBottom: '6px'
 												}}
 											>
 												{member.avatar}
-												<div
-													style={{
-														position: 'absolute',
-														bottom: '-2px',
-														right: '-2px',
-														width: '10px',
-														height: '10px',
-														borderRadius: '50%',
-														backgroundColor: member.status === 'online' ? '#4caf50' : member.status === 'away' ? '#ff9800' : member.status === 'busy' ? '#f44336' : '#9e9e9e',
-														border: '1px solid var(--vscode-editor-background)'
-													}}
-												/>
 											</div>
 
 											{/* Member Info */}
 											<div style={{ width: '100%' }}>
 												<div style={{ marginBottom: '6px' }}>
 													<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '600' }}>{member.name}</h4>
-													<span
-														style={{
-															fontSize: '9px',
-															padding: '1px 4px',
-															borderRadius: '6px',
-															backgroundColor: member.status === 'online' ? 'rgba(76, 175, 80, 0.1)' : member.status === 'away' ? 'rgba(255, 152, 0, 0.1)' : member.status === 'busy' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(158, 158, 158, 0.1)',
-															color: member.status === 'online' ? '#4caf50' : member.status === 'away' ? '#ff9800' : member.status === 'busy' ? '#f44336' : '#9e9e9e',
-															fontWeight: '500'
-														}}
-													>
-														{member.status === 'in-meeting' ? 'meeting' : member.status}
-													</span>
 												</div>
 												<p style={{ margin: '0 0 4px 0', color: 'var(--vscode-descriptionForeground)', fontSize: '11px' }}>{member.role}</p>
-												<p style={{ margin: '0 0 6px 0', color: 'var(--vscode-foreground)', fontSize: '11px', lineHeight: '1.3' }}>{member.currentTask}</p>
-												<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--vscode-descriptionForeground)' }}>
-													<span>📋 {member.tasks}</span>
-													<span>🕒 {member.lastActive}</span>
-												</div>
+												<p style={{ margin: '0 0 0 0', color: 'var(--vscode-foreground)', fontSize: '11px', lineHeight: '1.3' }}>{member.currentTask}</p>
 											</div>
 										</div>
 									))}
@@ -821,41 +827,41 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 									{
 										title: 'Salesforce CRM Fundamentals',
 										kicker: 'PLATFORM',
-										accent: '#7c4dff',
-										bg: 'linear-gradient(135deg, #3a1c71 0%, #d76d77 50%, #ffaf7b 100%)',
-										shadow: 'rgba(124, 77, 255, 0.25)',
+										accent: '#c86dd7',
+										bg: 'linear-gradient(135deg, #4a2c81 0%, #c86dd7 60%, #f0b7ff 100%)',
+										shadow: 'rgba(72, 36, 129, 0.18)',
 										icon: TargetIcon
 									},
 									{
 										title: 'Lightning Web Components',
 										kicker: 'DEVELOPMENT',
-										accent: '#00bcd4',
-										bg: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-										shadow: 'rgba(0, 188, 212, 0.25)',
+										accent: '#2a6fd8',
+										bg: 'linear-gradient(135deg, #2e4c82 0%, #2a6fd8 100%)',
+										shadow: 'rgba(30, 60, 114, 0.18)',
 										icon: TrophyIcon
 									},
 									{
 										title: 'Salesforce Integration APIs',
 										kicker: 'CONNECTIVITY',
-										accent: '#4caf50',
-										bg: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 50%, #bbe1fa 100%)',
-										shadow: 'rgba(76, 175, 80, 0.25)',
+										accent: '#3a8bbb',
+										bg: 'linear-gradient(135deg, #1f5c85 0%, #3a8bbb 60%, #c3e4ff 100%)',
+										shadow: 'rgba(15, 76, 117, 0.18)',
 										icon: ChartBarSquareIcon
 									},
 									{
 										title: 'Salesforce Einstein AI',
 										kicker: 'INTELLIGENCE',
-										accent: '#ff9800',
-										bg: 'linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #7f8c8d 100%)',
-										shadow: 'rgba(255, 152, 0, 0.25)',
+										accent: '#546a8a',
+										bg: 'linear-gradient(135deg, #3c4e60 0%, #546a8a 55%, #8a9ba6 100%)',
+										shadow: 'rgba(44, 62, 80, 0.18)',
 										icon: LightBulbIcon
 									},
 									{
 										title: 'Salesforce DevOps & CI/CD',
 										kicker: 'AUTOMATION',
-										accent: '#e91e63',
-										bg: 'linear-gradient(135deg, #4a0e4e 0%, #7b1fa2 50%, #ba68c8 100%)',
-										shadow: 'rgba(233, 30, 99, 0.25)',
+										accent: '#b27bff',
+										bg: 'linear-gradient(135deg, #5b3ea6 0%, #b27bff 55%, #e0c8ff 100%)',
+										shadow: 'rgba(91, 62, 166, 0.18)',
 										icon: ArrowPathIcon
 									}
 								].map(banner => (
@@ -871,7 +877,6 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 											padding: '16px 20px',
 											color: '#ffffff',
 											cursor: 'pointer',
-											border: '1px solid rgba(255,255,255,0.1)',
 											transition: 'transform 0.2s ease'
 										}}
 										onMouseEnter={e => {
@@ -881,8 +886,16 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 											e.currentTarget.style.transform = 'translateY(0)';
 										}}
 										onClick={() => {
-											setSelectedTutorial(banner);
-											setShowTutorial(true);
+											sendMessage({
+												command: 'openTutorialInEditor',
+												tutorial: {
+													title: banner.title,
+													kicker: banner.kicker,
+													accent: banner.accent,
+													bg: banner.bg,
+													shadow: banner.shadow
+												}
+											});
 										}}
 									>
 										<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -905,16 +918,16 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 												width: '46px',
 												height: '46px',
 												borderRadius: '50%',
-												backgroundColor: 'rgba(255,255,255,0.15)',
+												backgroundColor: '#f5f5f5',
 												display: 'flex',
 												alignItems: 'center',
 												justifyContent: 'center',
-												color: '#ffffff',
+												color: banner.accent,
 												border: `2px solid ${banner.accent}`,
 												backdropFilter: 'blur(10px)'
 											}}
 										>
-											<banner.icon />
+											{banner.icon && typeof banner.icon === 'function' ? <banner.icon size="28px" /> : <banner.icon />}
 										</div>
 									</div>
 								))}
@@ -934,14 +947,14 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 							<div
 								style={{
 									display: 'grid',
-									gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+									gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
 									gap: '16px',
 									marginBottom: '30px'
 								}}
 							>
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #3a1c71 0%, #d76d77 50%, #ffaf7b 100%)',
+										background: 'linear-gradient(135deg, #3a1c71 0%, #c86dd7 60%, #f0b7ff 100%)',
 										borderRadius: '12px',
 										padding: '20px',
 										textAlign: 'center',
@@ -955,7 +968,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+										background: 'linear-gradient(135deg, #1e3c72 0%, #3b6fd6 100%)',
 										borderRadius: '12px',
 										padding: '20px',
 										textAlign: 'center',
@@ -969,7 +982,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 50%, #bbe1fa 100%)',
+										background: 'linear-gradient(135deg, #0f4c75 0%, #3a8bbb 60%, #c3e4ff 100%)',
 										borderRadius: '12px',
 										padding: '20px',
 										textAlign: 'center',
@@ -979,20 +992,6 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>4.2</div>
 									<div style={{ fontSize: '12px', opacity: 0.9 }}>Avg Cycle Time (days)</div>
 									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>↓ 18% improvement</div>
-								</div>
-
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #7f8c8d 100%)',
-										borderRadius: '12px',
-										padding: '20px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>87%</div>
-									<div style={{ fontSize: '12px', opacity: 0.9 }}>Test Coverage</div>
-									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>↑ 5% from last month</div>
 								</div>
 							</div>
 
@@ -1005,40 +1004,46 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 										border: '1px solid var(--vscode-panel-border)',
 										borderRadius: '12px',
 										padding: '20px',
-										height: '300px'
+										height: '300px',
+										maxWidth: '90%',
+										width: '90%',
+										margin: '0 auto'
 									}}
 								>
-									<svg width="100%" height="100%" viewBox="0 0 400 250" style={{ display: 'block' }}>
+									<svg width="100%" height="100%" viewBox="0 0 600 250" style={{ display: 'block' }}>
 										{/* Grid lines */}
 										<g stroke="var(--vscode-panel-border)" strokeWidth="0.5" opacity="0.3">
 											{/* Horizontal grid lines */}
-											<line x1="40" y1="30" x2="380" y2="30" />
-											<line x1="40" y1="80" x2="380" y2="80" />
-											<line x1="40" y1="130" x2="380" y2="130" />
-											<line x1="40" y1="180" x2="380" y2="180" />
-											<line x1="40" y1="230" x2="380" y2="230" />
+											<line x1="60" y1="30" x2="570" y2="30" />
+											<line x1="60" y1="80" x2="570" y2="80" />
+											<line x1="60" y1="130" x2="570" y2="130" />
+											<line x1="60" y1="180" x2="570" y2="180" />
+											<line x1="60" y1="230" x2="570" y2="230" />
 
 											{/* Vertical grid lines */}
-											<line x1="80" y1="20" x2="80" y2="230" />
-											<line x1="140" y1="20" x2="140" y2="230" />
-											<line x1="200" y1="20" x2="200" y2="230" />
-											<line x1="260" y1="20" x2="260" y2="230" />
-											<line x1="320" y1="20" x2="320" y2="230" />
+											<line x1="120" y1="20" x2="120" y2="230" />
+											<line x1="210" y1="20" x2="210" y2="230" />
+											<line x1="300" y1="20" x2="300" y2="230" />
+											<line x1="390" y1="20" x2="390" y2="230" />
+											<line x1="480" y1="20" x2="480" y2="230" />
 										</g>
 
 										{/* Ideal burndown line (straight line from 25 to 0) */}
-										<path d="M40,230 L100,184 L160,138 L220,92 L280,46 L340,0" stroke="#4caf50" strokeWidth="3" fill="none" strokeDasharray="5,5" opacity="0.7" />
+										<path d="M60,230 L120,184 L180,138 L240,92 L300,46 L360,0 L420,-46 L480,-92 L540,-138" stroke="#4caf50" strokeWidth="3" fill="none" strokeDasharray="5,5" opacity="0.7" />
 
 										{/* Actual burndown line (more realistic progress) */}
-										<path d="M40,230 L100,200 L160,160 L220,140 L280,100 L340,60" stroke="#2196f3" strokeWidth="3" fill="none" />
+										<path d="M60,230 L120,200 L180,160 L240,140 L300,100 L360,60 L420,40 L480,20 L540,10" stroke="#2196f3" strokeWidth="3" fill="none" />
 
 										{/* Data points for actual line */}
-										<circle cx="40" cy="230" r="4" fill="#2196f3" />
-										<circle cx="100" cy="200" r="4" fill="#2196f3" />
-										<circle cx="160" cy="160" r="4" fill="#2196f3" />
-										<circle cx="220" cy="140" r="4" fill="#2196f3" />
-										<circle cx="280" cy="100" r="4" fill="#2196f3" />
-										<circle cx="340" cy="60" r="4" fill="#2196f3" />
+										<circle cx="60" cy="230" r="4" fill="#2196f3" />
+										<circle cx="120" cy="200" r="4" fill="#2196f3" />
+										<circle cx="180" cy="160" r="4" fill="#2196f3" />
+										<circle cx="240" cy="140" r="4" fill="#2196f3" />
+										<circle cx="300" cy="100" r="4" fill="#2196f3" />
+										<circle cx="360" cy="60" r="4" fill="#2196f3" />
+										<circle cx="420" cy="40" r="4" fill="#2196f3" />
+										<circle cx="480" cy="20" r="4" fill="#2196f3" />
+										<circle cx="540" cy="10" r="4" fill="#2196f3" />
 
 										{/* Labels */}
 										<text x="20" y="235" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
@@ -1061,27 +1066,36 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 										</text>
 
 										{/* Day labels */}
-										<text x="40" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+										<text x="60" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
 											Day 1
 										</text>
-										<text x="100" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+										<text x="120" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
 											Day 2
 										</text>
-										<text x="160" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+										<text x="180" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
 											Day 3
 										</text>
-										<text x="220" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+										<text x="240" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
 											Day 4
 										</text>
-										<text x="280" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+										<text x="300" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
 											Day 5
 										</text>
-										<text x="340" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+										<text x="360" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
 											Day 6
+										</text>
+										<text x="420" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 7
+										</text>
+										<text x="480" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 8
+										</text>
+										<text x="540" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 9
 										</text>
 
 										{/* Legend */}
-										<g transform="translate(40, 15)">
+										<g transform="translate(60, 15)">
 											<line x1="0" y1="0" x2="20" y2="0" stroke="#2196f3" strokeWidth="3" />
 											<text x="25" y="4" fontSize="11" fill="var(--vscode-foreground)">
 												Actual
@@ -1094,7 +1108,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 										</g>
 
 										{/* Title */}
-										<text x="200" y="15" fontSize="14" fontWeight="bold" fill="var(--vscode-foreground)" textAnchor="middle">
+										<text x="300" y="15" fontSize="14" fontWeight="bold" fill="var(--vscode-foreground)" textAnchor="middle">
 											Sprint Burndown
 										</text>
 									</svg>
@@ -1639,49 +1653,49 @@ jobs:
 										title: 'Project Templates',
 										description: 'Reusable project templates and checklists',
 										icon: DocumentTextIcon,
-										gradient: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
-										shadow: 'rgba(30, 60, 114, 0.25)',
-										accent: '#4a90e2'
+										gradient: 'linear-gradient(135deg, #4a2c81 0%, #c586d8 65%, #f2c7ff 100%)',
+										shadow: 'rgba(72, 36, 129, 0.18)',
+										accent: '#c586d8'
 									},
 									{
 										title: 'Dashboards',
 										description: 'Interactive dashboards and reports',
 										icon: ChartBarIcon,
-										gradient: 'linear-gradient(135deg, #4a0e4e 0%, #7b1fa2 100%)',
-										shadow: 'rgba(123, 31, 162, 0.25)',
-										accent: '#9c27b0'
+										gradient: 'linear-gradient(135deg, #2e4c82 0%, #3b6fd6 100%)',
+										shadow: 'rgba(30, 60, 114, 0.18)',
+										accent: '#3b6fd6'
 									},
 									{
 										title: 'Lightning Web Components',
 										description: 'Reusable Lightning components for Salesforce',
 										icon: WrenchScrewdriverIcon,
-										gradient: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 100%)',
-										shadow: 'rgba(15, 76, 117, 0.25)',
-										accent: '#2196f3'
+										gradient: 'linear-gradient(135deg, #1f5c85 0%, #3a8bbb 60%, #c3e4ff 100%)',
+										shadow: 'rgba(15, 76, 117, 0.18)',
+										accent: '#3a8bbb'
 									},
 									{
 										title: 'Checklists',
 										description: 'Standardized checklists and procedures',
 										icon: ClipboardDocumentCheckIcon,
-										gradient: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
-										shadow: 'rgba(44, 62, 80, 0.25)',
-										accent: '#607d8b'
+										gradient: 'linear-gradient(135deg, #3c4e60 0%, #546a8a 55%, #8a9ba6 100%)',
+										shadow: 'rgba(44, 62, 80, 0.18)',
+										accent: '#546a8a'
 									},
 									{
 										title: 'Documentation',
 										description: 'Guides, manuals, and documentation',
 										icon: BookOpenIcon,
-										gradient: 'linear-gradient(135deg, #3a1c71 0%, #d76d77 100%)',
-										shadow: 'rgba(58, 28, 113, 0.25)',
-										accent: '#ff5722'
+										gradient: 'linear-gradient(135deg, #4a2c81 0%, #c586d8 65%, #f2c7ff 100%)',
+										shadow: 'rgba(72, 36, 129, 0.18)',
+										accent: '#c586d8'
 									},
 									{
 										title: 'Tools & Scripts',
 										description: 'Automation scripts and utilities',
 										icon: WrenchScrewdriverIcon,
-										gradient: 'linear-gradient(135deg, #134e5e 0%, #71b280 100%)',
-										shadow: 'rgba(19, 78, 94, 0.25)',
-										accent: '#4caf50'
+										gradient: 'linear-gradient(135deg, #2e4c82 0%, #3b6fd6 100%)',
+										shadow: 'rgba(30, 60, 114, 0.18)',
+										accent: '#3b6fd6'
 									}
 								].map(asset => (
 									<div
@@ -1696,7 +1710,6 @@ jobs:
 											textAlign: 'center',
 											cursor: 'pointer',
 											minHeight: '140px',
-											border: '1px solid rgba(255,255,255,0.1)',
 											transition: 'transform 0.2s ease'
 										}}
 										onMouseEnter={e => {
@@ -1763,7 +1776,85 @@ jobs:
 								<>
 									<ScreenHeader title={`User Story Details - ${selectedUserStory.formattedId}`} showBackButton={true} onBack={handleBackToUserStories} />
 									<UserStoryForm userStory={selectedUserStory} />
-									<TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && loadTasks(selectedUserStory.objectId)} />
+									<div
+										style={{
+											marginTop: '8px',
+											marginBottom: '4px',
+											display: 'flex',
+											gap: '8px',
+											borderBottom: '1px solid var(--vscode-panel-border)'
+										}}
+									>
+										<button
+											type="button"
+											onClick={() => setActiveUserStoryTab('tasks')}
+											style={{
+												display: 'inline-flex',
+												alignItems: 'center',
+												gap: '6px',
+												padding: '6px 10px',
+												border: 'none',
+												borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+												backgroundColor: 'transparent',
+												color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+												cursor: 'pointer',
+												fontSize: '12px',
+												fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
+											}}
+										>
+											<TasksTabIcon />
+											<span>Tasks</span>
+										</button>
+										<button
+											type="button"
+											onClick={() => setActiveUserStoryTab('tests')}
+											style={{
+												display: 'inline-flex',
+												alignItems: 'center',
+												gap: '6px',
+												padding: '6px 10px',
+												border: 'none',
+												borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+												backgroundColor: 'transparent',
+												color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+												cursor: 'pointer',
+												fontSize: '12px',
+												fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
+											}}
+										>
+											<TestsTabIcon />
+											<span>Tests</span>
+										</button>
+									</div>
+									{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && loadTasks(selectedUserStory.objectId)} />}
+									{activeUserStoryTab === 'tests' && (
+										<div
+											style={{
+												margin: '20px 0',
+												padding: '20px',
+												backgroundColor: '#282828',
+												borderRadius: '6px'
+											}}
+										>
+											<div
+												style={{
+													fontSize: '13px',
+													color: 'var(--vscode-foreground)',
+													marginBottom: '6px'
+												}}
+											>
+												This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
+											</div>
+											<div
+												style={{
+													fontSize: '12px',
+													color: 'var(--vscode-descriptionForeground)'
+												}}
+											>
+												Detailed test listing will be available in a future version of this view.
+											</div>
+										</div>
+									)}
 								</>
 							)}
 						</>

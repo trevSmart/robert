@@ -11,4 +11,6 @@ const container = document.getElementById('root');
 if (container) {
 	const root = createRoot(container);
 	root.render(<MainWebview webviewId={webviewId} context={context} timestamp={timestamp} rebusLogoUri={rebusLogoUri} />);
+} else {
+	console.error('[Robert] Failed to find root element for React app');
 }

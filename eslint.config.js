@@ -21,6 +21,11 @@ module.exports = [
       globals: {
         console: "readonly",
         acquireVsCodeApi: "readonly",
+        process: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
+        setInterval: "readonly",
+        clearInterval: "readonly",
       },
     },
     plugins: {
@@ -57,6 +62,11 @@ module.exports = [
       globals: {
         window: "readonly",
         document: "readonly",
+        MessageEvent: "readonly",
+        ErrorEvent: "readonly",
+        PromiseRejectionEvent: "readonly",
+        setTimeout: "readonly",
+        clearTimeout: "readonly",
       },
     },
   },

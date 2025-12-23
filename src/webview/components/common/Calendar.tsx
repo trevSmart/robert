@@ -322,7 +322,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								? 'rgba(33, 150, 243, 0.3)' // More prominent blue background for today
 								: dayInfo.iterations.length > 0
 									? 'rgba(0, 122, 204, 0.1)' // Light blue background for iteration days
-									: 'var(--vscode-editor-background)', // Same background for all days
+									: 'rgba(0, 0, 0, 0.03)', // Slightly darker background for all days
 							color: dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : dayInfo.isCurrentMonth ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
 							borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
 							display: 'flex',
@@ -348,7 +348,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						onMouseLeave={e => {
 							setHoveredDay(null);
 							if (!dayInfo.isToday) {
-								e.currentTarget.style.backgroundColor = dayInfo.iterations.length > 0 ? 'rgba(0, 122, 204, 0.1)' : 'var(--vscode-editor-background)'; // Same background for all days
+								e.currentTarget.style.backgroundColor = dayInfo.iterations.length > 0 ? 'rgba(0, 122, 204, 0.1)' : 'rgba(0, 0, 0, 0.03)'; // Same background for all days
 							}
 						}}
 					>
@@ -399,8 +399,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									<div
 										style={{
 											position: 'absolute',
-											bottom: '10px',
-											left: '2px',
+											top: '50%',
+											left: '50%',
+											transform: 'translate(-50%, -50%)',
 											padding: '1px 4px',
 											borderRadius: '6px',
 											backgroundColor: '#ff6b35',
@@ -421,8 +422,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									<div
 										style={{
 											position: 'absolute',
-											bottom: '10px',
-											left: '2px',
+											top: '50%',
+											left: '50%',
+											transform: 'translate(-50%, -50%)',
 											padding: '1px 4px',
 											borderRadius: '6px',
 											backgroundColor: '#8e44ad',

@@ -15,9 +15,10 @@ interface CalendarProps {
 	iterations?: Iteration[];
 	onMonthChange?: (date: Date) => void;
 	debugMode?: boolean;
+	currentUser?: any;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false }) => {
+const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false, currentUser }) => {
 	const today = new Date();
 	const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -278,6 +279,25 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					<NextMonthIcon />
 				</button>
 			</div>
+
+			{/* Welcome message */}
+			{currentUser && (
+				<div
+					style={{
+						textAlign: 'center',
+						marginBottom: '16px',
+						padding: '12px',
+						backgroundColor: 'var(--vscode-textBlockQuote-background)',
+						borderRadius: '8px',
+						border: '1px solid var(--vscode-textBlockQuote-border)'
+					}}
+				>
+					<div style={{ fontSize: '14px', color: 'var(--vscode-descriptionForeground)' }}>
+						Benvingut, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{currentUser.displayName || currentUser.userName || 'Usuari'}</span>! 👋
+					</div>
+					<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>Bon treball amb les teves user stories i tasques</div>
+				</div>
+			)}
 
 			{/* Calendar Grid */}
 			<div

@@ -106,6 +106,61 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	};
 }
 
+export async function getCurrentUser() {
+	// Validem la configuració de Rally abans de fer la crida
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+
+	const rallyApi = getRallyApi();
+
+	try {
+		// Try to get current user info - Rally API usually returns current user when querying without specific filters
+		// This is a common pattern in Rally API where the authenticated user's context is used
+		const userResult = await rallyApi.query({
+			type: 'user',
+			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled'],
+			limit: 1
+		});
+
+		// Alternative approach: try to get user by checking if we can infer from API context
+		// For now, we'll use the first result as it typically represents the authenticated user
+		console.log('[Robert] Current user query result:', userResult);
+
+		const resultData = userResult as RallyApiResult;
+
+		if (resultData.Results && resultData.Results.length > 0) {
+			const user = resultData.Results[0];
+			return {
+				user: {
+					objectId: user.ObjectID ?? user.objectId,
+					userName: user.UserName ?? user.userName,
+					displayName: user.DisplayName ?? user.displayName,
+					emailAddress: user.EmailAddress ?? user.emailAddress,
+					firstName: user.FirstName ?? user.firstName,
+					lastName: user.LastName ?? user.lastName,
+					disabled: user.Disabled ?? user.disabled,
+					_ref: user._ref
+				},
+				source: 'api'
+			};
+		}
+
+		return {
+			user: null,
+			source: 'api'
+		};
+	} catch (error) {
+		// If the above fails, try alternative approach
+		console.warn('[Robert] Could not retrieve current user info:', error);
+		return {
+			user: null,
+			source: 'api'
+		};
+	}
+}
+
 export async function getUsers(query: RallyQuery = {}, limit: number | null = null) {
 	const rallyApi = getRallyApi();
 

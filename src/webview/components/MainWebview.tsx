@@ -226,6 +226,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const [debugMode, setDebugMode] = useState<boolean>(false);
+	const [currentUser, setCurrentUser] = useState<any>(null);
 	const [selectedTutorial, setSelectedTutorial] = useState<any>(null);
 	const [showTutorial, setShowTutorial] = useState<boolean>(false);
 
@@ -400,7 +401,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 						setIterations(message.iterations);
 						setIterationsError(null);
 						setDebugMode(message.debugMode || false);
-						setDebugMode(message.debugMode || false);
+						setCurrentUser(message.currentUser || null);
 
 						// Auto-select current iteration if available
 						const currentIteration = findCurrentIteration(message.iterations);
@@ -526,7 +527,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} />
 
 				<ContentArea>
-					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} />}
+					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} />}
 
 					{activeSection === 'team' && (
 						<div style={{ padding: '20px' }}>

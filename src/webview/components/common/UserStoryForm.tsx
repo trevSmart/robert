@@ -337,6 +337,30 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 					/>
 				</div>
 
+				{/* Description */}
+				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
+					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+
+					<div>
+						<textarea
+							value={userStory.description || 'No description available'}
+							readOnly
+							rows={6}
+							style={{
+								width: '100%',
+								padding: '6px 8px',
+								backgroundColor: 'var(--vscode-input-background)',
+								color: 'var(--vscode-input-foreground)',
+								border: '1px solid var(--vscode-input-border)',
+								borderRadius: '3px',
+								fontSize: '13px',
+								fontFamily: 'var(--vscode-font-family)',
+								resize: 'vertical'
+							}}
+						/>
+					</div>
+				</div>
+
 				{/* Additional Information */}
 				<h3 style={{ margin: '16px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
 				<div style={{ gridColumn: '1 / -1' }}>
@@ -360,47 +384,23 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 					</div>
 				</div>
 
-				{/* Description */}
-				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
-
-					<div>
-						<textarea
-							value={userStory.description || 'No description available'}
-							readOnly
-							rows={6}
-							style={{
-								width: '100%',
-								padding: '6px 8px',
-								backgroundColor: 'var(--vscode-input-background)',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '3px',
-								fontSize: '13px',
-								fontFamily: 'var(--vscode-font-family)',
-								resize: 'vertical'
-							}}
-						/>
-					</div>
-
-					<div>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Object ID</label>
-						<input
-							type="text"
-							value={userStory.objectId}
-							readOnly
-							style={{
-								width: '100%',
-								padding: '6px 8px',
-								backgroundColor: 'var(--vscode-input-background)',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '3px',
-								fontSize: '12px',
-								fontFamily: 'monospace'
-							}}
-						/>
-					</div>
+				<div>
+					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Object ID</label>
+					<input
+						type="text"
+						value={userStory.objectId}
+						readOnly
+						style={{
+							width: '100%',
+							padding: '6px 8px',
+							backgroundColor: 'var(--vscode-input-background)',
+							color: 'var(--vscode-input-foreground)',
+							border: '1px solid var(--vscode-input-border)',
+							borderRadius: '3px',
+							fontSize: '12px',
+							fontFamily: 'monospace'
+						}}
+					/>
 				</div>
 			</div>
 		</div>

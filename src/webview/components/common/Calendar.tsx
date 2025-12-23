@@ -488,7 +488,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									style={{
 										width: `${getIterationProgress(iteration)}%`,
 										height: '100%',
-										backgroundImage: `linear-gradient(90deg, ${iterationColorMap.get(iteration.objectId) || '#2196f3'}, #ff6b6b)`
+										backgroundImage: `linear-gradient(90deg, ${iterationColorMap.get(iteration.objectId) || '#2196f3'}, #ffeaea)`
 									}}
 								/>
 								<div

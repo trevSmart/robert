@@ -20,6 +20,7 @@ interface CalendarProps {
 const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false }) => {
 	const today = new Date();
 	const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
+	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 	// Get first day of the month
 	const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -69,17 +70,47 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	// Filter iterations that overlap with current month
 	const currentMonthIterations = iterations.filter(doesIterationOverlapMonth);
 
-	// Assign colors by iteration order so adjacent iterations don't share colors
+	// Assign colors deterministically across all iterations for cross-month consistency
+	const orderedAllIterations = [...iterations].sort((a, b) => {
+		const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
+		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
+		if (aStart !== bStart) return aStart - bStart;
+		const nameCompare = a.name.localeCompare(b.name);
+		if (nameCompare !== 0) return nameCompare;
+		return a.objectId.localeCompare(b.objectId);
+	});
+
+	const iterationColorMap = new Map<string, string>();
+	orderedAllIterations.forEach((iteration, index) => {
+		iterationColorMap.set(iteration.objectId, iterationColors[index % iterationColors.length]);
+	});
+
+	const getIterationProgress = (iteration: Iteration) => {
+		const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
+		const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
+
+		if (!startDate || !endDate) return 0;
+
+		const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate()).getTime();
+		const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate()).getTime();
+
+		if (end <= start) return 0;
+
+		const total = end - start;
+		const elapsed = todayStart.getTime() - start;
+		const rawProgress = (elapsed / total) * 100;
+
+		return Math.max(0, Math.min(100, rawProgress));
+	};
+
+	// Order current-month iterations for legend display
 	const orderedIterations = [...currentMonthIterations].sort((a, b) => {
 		const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
 		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
 		if (aStart !== bStart) return aStart - bStart;
-		return a.name.localeCompare(b.name);
-	});
-
-	const iterationColorMap = new Map<string, string>();
-	orderedIterations.forEach((iteration, index) => {
-		iterationColorMap.set(iteration.objectId, iterationColors[index % iterationColors.length]);
+		const nameCompare = a.name.localeCompare(b.name);
+		if (nameCompare !== 0) return nameCompare;
+		return a.objectId.localeCompare(b.objectId);
 	});
 
 	// Generate calendar days
@@ -333,21 +364,70 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								))}
 							</div>
 						)}
-						{/* Show debug milestone on 20th of each month */}
-						{debugMode && dayInfo.day === 20 && dayInfo.isCurrentMonth && (
+						{/* Show debug indicators */}
+						{debugMode && dayInfo.isCurrentMonth && (
+							<>
+								{/* IOP badge on 20th */}
+								{dayInfo.day === 20 && (
+									<div
+										style={{
+											position: 'absolute',
+											top: '2px',
+											right: '2px',
+											padding: '2px 6px',
+											borderRadius: '8px',
+											backgroundColor: '#ff6b35',
+											color: 'white',
+											fontSize: '9px',
+											fontWeight: 'bold',
+											border: '1px solid var(--vscode-editor-background)',
+											zIndex: 3,
+											pointerEvents: 'none'
+										}}
+										title="IOP - Debug indicator"
+									>
+										IOP
+									</div>
+								)}
+								{/* Pkg closed badge on 12th */}
+								{dayInfo.day === 12 && (
+									<div
+										style={{
+											position: 'absolute',
+											top: '2px',
+											right: '2px',
+											padding: '2px 6px',
+											borderRadius: '8px',
+											backgroundColor: '#8e44ad',
+											color: 'white',
+											fontSize: '9px',
+											fontWeight: 'bold',
+											border: '1px solid var(--vscode-editor-background)',
+											zIndex: 3,
+											pointerEvents: 'none'
+										}}
+										title="Package closed - Debug indicator"
+									>
+										Pkg closed
+									</div>
+								)}
+							</>
+						)}
+						{/* Show current day indicator */}
+						{dayInfo.isToday && (
 							<div
 								style={{
 									position: 'absolute',
 									top: '2px',
-									right: '2px',
+									left: '2px',
 									width: '8px',
 									height: '8px',
 									borderRadius: '50%',
-									backgroundColor: '#ff6b35',
+									backgroundColor: '#42a5f5',
 									border: '1px solid var(--vscode-editor-background)',
 									zIndex: 2
 								}}
-								title="Debug Milestone - 20th of month"
+								title="Today"
 							/>
 						)}
 					</div>
@@ -371,10 +451,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
 							<div
 								style={{
-									width: '12px',
-									height: '12px',
-									backgroundColor: 'rgba(33, 150, 243, 0.3)',
-									borderRadius: '2px'
+									width: '10px',
+									height: '10px',
+									backgroundColor: '#42a5f5',
+									borderRadius: '50%',
+									border: '1px solid var(--vscode-editor-background)'
 								}}
 							></div>
 							<span>Today</span>
@@ -392,6 +473,39 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								}}
 							></div>
 							<span>{iteration.name}</span>
+							<div
+								style={{
+									position: 'relative',
+									width: '80px',
+									height: '6px',
+									borderRadius: '999px',
+									backgroundColor: 'rgba(120, 120, 120, 0.2)',
+									overflow: 'hidden'
+								}}
+								title="Iteration progress"
+							>
+								<div
+									style={{
+										width: `${getIterationProgress(iteration)}%`,
+										height: '100%',
+										backgroundImage: 'linear-gradient(90deg, rgba(46, 134, 222, 0.45), rgba(56, 173, 169, 0.45))'
+									}}
+								/>
+								<div
+									style={{
+										position: 'absolute',
+										top: '50%',
+										left: `calc(${getIterationProgress(iteration)}% - 4px)`,
+										width: '8px',
+										height: '8px',
+										borderRadius: '50%',
+										backgroundColor: 'rgba(255, 255, 255, 0.9)',
+										border: '1px solid rgba(0, 0, 0, 0.2)',
+										transform: 'translateY(-50%)',
+										boxShadow: '0 0 4px rgba(0, 0, 0, 0.15)'
+									}}
+								/>
+							</div>
 						</div>
 					))}
 

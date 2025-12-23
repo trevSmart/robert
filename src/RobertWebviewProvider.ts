@@ -388,6 +388,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private async _getHtmlForLogo(webview: vscode.Webview): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
+				// Check if webview files exist
+				if (!this._checkWebviewFilesExist()) {
+					this._errorHandler.logWarning('Logo webview build files not found. Extension needs to be built.', 'RobertWebviewProvider._getHtmlForLogo');
+					return this._getMissingFilesErrorHtml();
+				}
+
 				this._errorHandler.logInfo('Logo webview content rendered with React component', 'RobertWebviewProvider._getHtmlForLogo');
 
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
@@ -520,7 +526,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private _checkWebviewFilesExist(): boolean {
 		const mainJsPath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'main.js');
 		const settingsJsPath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'settings.js');
-		return fs.existsSync(mainJsPath) && fs.existsSync(settingsJsPath);
+		const logoJsPath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'logo.js');
+		return fs.existsSync(mainJsPath) && fs.existsSync(settingsJsPath) && fs.existsSync(logoJsPath);
 	}
 
 	/**

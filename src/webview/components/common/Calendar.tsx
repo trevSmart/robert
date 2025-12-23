@@ -66,7 +66,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 	// Iteration colors - cycle through these colors in order
-	const iterationColors = ['#2E86DE', '#F6B93B', '#38ADA9', '#E55039', '#6A89CC', '#B71540'];
+	const iterationColors = ['#2E86DE', '#F6B93B', '#38ADA9', '#9B59B6', '#6A89CC', '#27AE60'];
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {

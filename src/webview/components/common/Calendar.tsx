@@ -165,6 +165,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					style={{
 						padding: '8px 12px',
 						border: 'none',
+						outline: 'none',
 						backgroundColor: 'transparent',
 						color: 'var(--vscode-foreground)',
 						borderRadius: '4px',
@@ -204,6 +205,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					style={{
 						padding: '8px 12px',
 						border: 'none',
+						outline: 'none',
 						backgroundColor: 'transparent',
 						color: 'var(--vscode-foreground)',
 						borderRadius: '4px',

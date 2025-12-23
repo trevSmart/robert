@@ -390,15 +390,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									<div
 										style={{
 											position: 'absolute',
-											bottom: '6px',
+											bottom: '10px',
 											left: '2px',
 											padding: '1px 4px',
 											borderRadius: '6px',
 											backgroundColor: '#ff6b35',
 											color: 'white',
-											fontSize: '8px',
+											fontSize: '10px',
 											fontWeight: 'bold',
-											border: '1px solid var(--vscode-editor-background)',
+											border: 'none',
 											zIndex: 3,
 											pointerEvents: 'none'
 										}}
@@ -412,15 +412,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									<div
 										style={{
 											position: 'absolute',
-											bottom: '6px',
+											bottom: '10px',
 											left: '2px',
 											padding: '1px 4px',
 											borderRadius: '6px',
 											backgroundColor: '#8e44ad',
 											color: 'white',
-											fontSize: '8px',
+											fontSize: '10px',
 											fontWeight: 'bold',
-											border: '1px solid var(--vscode-editor-background)',
+											border: 'none',
 											zIndex: 3,
 											pointerEvents: 'none'
 										}}

@@ -21,23 +21,17 @@ Robert is a VS Code extension that integrates with Rally (Agile project manageme
    cd robert
    ```
 
-2. Install dependencies:
+2. Install dependencies (automatically builds webview components via `prepare` script):
    ```bash
    npm install
    ```
 
-3. Build the extension:
-   ```bash
-   npm run compile
-   npm run build:webview
-   ```
-
-4. Open the project in VS Code:
+3. Open the project in VS Code:
    ```bash
    code .
    ```
 
-5. Press `F5` to run the extension in a new Extension Development Host window.
+4. Press `F5` to run the extension in a new Extension Development Host window.
 
 ### Installation from VSIX
 
@@ -68,13 +62,11 @@ If you encounter a blank view or other issues, rebuild the extension:
 # Clean build artifacts
 rm -rf out/ dist/
 
-# Reinstall dependencies
+# Reinstall dependencies (automatically rebuilds via prepare script)
 npm install
-
-# Build everything
-npm run compile
-npm run build:webview
 ```
+
+**Note:** The `prepare` script automatically runs `npm run build:webview` and compiles TypeScript after `npm install`.
 
 ## 📋 Configuration
 
@@ -94,16 +86,15 @@ Or use the command palette:
 
 ### Blank View Issue
 
-If you see a blank view when opening Robert:
+**Note:** As of version 0.0.12, the extension automatically builds webview components after `npm install` via the `prepare` script. If you still encounter a blank view:
 
-1. Ensure you've built the webview components:
+1. The extension will show a helpful error page with instructions if build files are missing
+2. Check if the `out/webview/` directory exists and contains `.js` files
+3. If missing, run:
    ```bash
    npm run build:webview
    ```
-
-2. Verify that `out/webview/` directory exists and contains `.js` files
-
-3. Reload VS Code window (`Developer: Reload Window`)
+4. Reload VS Code window (`Developer: Reload Window`)
 
 ### Other Issues
 

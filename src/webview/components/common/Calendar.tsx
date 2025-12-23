@@ -374,7 +374,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									<div
 										key={iteration.objectId}
 										style={{
-											height: '4px',
+											height: '5px',
 											backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
 											opacity: 0.9
 										}}
@@ -455,7 +455,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							<div
 								style={{
 									width: '20px',
-									height: '4px',
+									height: '5px',
 									backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
 									opacity: 0.9,
 									flexShrink: 0

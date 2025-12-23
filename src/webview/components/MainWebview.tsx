@@ -241,7 +241,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [tasksError, setTasksError] = useState<string | null>(null);
 
 	// Navigation state
-	const [activeSection, setActiveSection] = useState<SectionType>('portfolio');
+	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
 	const [calendarDate, setCalendarDate] = useState(new Date());
 
@@ -379,8 +379,8 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			command: 'getState'
 		});
 
-		// Automatically load iterations when webview initializes (only for portfolio section)
-		if (activeSection === 'portfolio') {
+		// Automatically load iterations when webview initializes (only for calendar section)
+		if (activeSection === 'calendar') {
 			// eslint-disable-next-line no-console
 			console.log('[Frontend] Calling loadIterations automatically...');
 			loadIterations();

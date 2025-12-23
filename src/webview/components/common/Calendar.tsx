@@ -460,7 +460,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				>
 					{/* Show iteration legends dynamically for any month */}
 					{orderedIterations.map(iteration => (
-						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'space-between' }}>
+						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
 							<div
 								style={{
 									width: '20px',
@@ -470,7 +470,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									flexShrink: 0
 								}}
 							></div>
-							<span style={{ flex: 1, textAlign: 'left' }}>{iteration.name}</span>
+							<span style={{ flex: '1 1 auto', textAlign: 'left', minWidth: 0 }}>{iteration.name}</span>
 							<div
 								style={{
 									position: 'relative',
@@ -479,7 +479,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									borderRadius: '999px',
 									backgroundColor: 'rgba(120, 120, 120, 0.2)',
 									overflow: 'hidden',
-									flexShrink: 0
+									flexShrink: 0,
+									marginLeft: 'auto'
 								}}
 								title="Iteration progress"
 							>

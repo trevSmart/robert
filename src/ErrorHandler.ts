@@ -19,24 +19,11 @@ export class ErrorHandler {
 
 	/**
 	 * Setup global error handling for uncaught errors
+	 * NOTE: Global listeners removed to avoid capturing errors from other extensions
 	 */
 	private setupGlobalErrorHandling(): void {
-		// Capture uncaught promise rejections
-		globalThis.process.on('unhandledRejection', (reason: unknown, _promise: Promise<unknown>) => {
-			this.handleError(new Error(`Unhandled Promise Rejection: ${reason}`), 'Unhandled Promise Rejection');
-		});
-
-		// Capture uncaught exceptions
-		globalThis.process.on('uncaughtException', (error: Error) => {
-			this.handleError(error, 'Uncaught Exception');
-		});
-
-		// Capture VS Code errors
-		if (vscode.window.onDidChangeWindowState) {
-			vscode.window.onDidChangeWindowState(() => {
-				// This can help catch some VS Code related errors
-			});
-		}
+		// Global error listeners removed to prevent capturing errors from other extensions
+		// Only handle errors that originate from our extension code
 	}
 
 	/**
@@ -57,7 +44,7 @@ export class ErrorHandler {
 		}
 		this.outputManager.appendLine(`[Robert] ---`);
 
-		// Show error notification to user (optional)
+		// Show error notification for our extension errors
 		vscode.window.showErrorMessage(`Robert Extension Error: ${errorMessage}`);
 	}
 

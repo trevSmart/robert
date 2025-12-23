@@ -1,6 +1,6 @@
 import { rallyData } from '../../extension.js';
-import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory } from '../../types/rally';
-import { getRallyApi, queryUtils, validateRallyConfiguration } from './utils';
+import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory, RallyIteration } from '../../types/rally';
+import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 
 function escapeHtml(input: string): string {
 	return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -75,15 +75,15 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 
 	//Formatem la resposta per ser més llegible
 	const projects: RallyProject[] = resultData.Results.map((project: RallyApiObject) => ({
-		objectId: project.objectId,
-		name: project.name,
-		description: typeof project.description === 'string' ? escapeHtml(project.description) : project.description,
-		state: project.state,
-		creationDate: project.creationDate,
-		lastUpdateDate: project.lastUpdateDate,
-		owner: project.owner ? project.owner.refObjectName : 'Sense propietari',
-		parent: project.parent ? project.parent.refObjectName : null,
-		childrenCount: project.children ? project.children.count : 0
+		objectId: project.ObjectID ?? project.objectId,
+		name: project.Name ?? project.name,
+		description: typeof (project.Description ?? project.description) === 'string' ? escapeHtml(String(project.Description ?? project.description)) : (project.Description ?? project.description),
+		state: project.State ?? project.state,
+		creationDate: project.CreationDate ?? project.creationDate,
+		lastUpdateDate: project.LastUpdateDate ?? project.lastUpdateDate,
+		owner: project.Owner ? (project.Owner._refObjectName ?? project.Owner.refObjectName) : project.owner ? (project.owner._refObjectName ?? project.owner.refObjectName) : 'Sense propietari',
+		parent: project.Parent ? (project.Parent._refObjectName ?? project.Parent.refObjectName) : project.parent ? (project.parent._refObjectName ?? project.parent.refObjectName) : null,
+		childrenCount: project.Children?.Count ?? project.children?.count ?? 0
 	}));
 
 	//Afegim els nous projectes a rallyData sense duplicats
@@ -169,13 +169,13 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 	}
 
 	const users: RallyUser[] = resultData.Results.map((user: RallyApiObject) => ({
-		objectId: user?.objectId,
-		userName: user?.userName,
-		displayName: user?.displayName,
-		emailAddress: user?.emailAddress,
-		firstName: user?.firstName,
-		lastName: user?.lastName,
-		disabled: user?.disabled,
+		objectId: user?.ObjectID ?? user?.objectId,
+		userName: user?.UserName ?? user?.userName,
+		displayName: user?.DisplayName ?? user?.displayName,
+		emailAddress: user?.EmailAddress ?? user?.emailAddress,
+		firstName: user?.FirstName ?? user?.firstName,
+		lastName: user?.LastName ?? user?.lastName,
+		disabled: user?.Disabled ?? user?.disabled,
 		_ref: user?._ref
 	}));
 
@@ -253,24 +253,24 @@ function sanitizeDescription(description: unknown): string | null {
 function formatUserStories(result: RallyApiResult): RallyUserStory[] {
 	// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 	return result.Results.map((userStory: any) => ({
-		objectId: userStory.objectId,
-		formattedId: userStory.formattedId,
-		name: userStory.name,
-		description: sanitizeDescription(userStory.description),
-		state: userStory.state,
-		planEstimate: userStory.planEstimate,
-		toDo: userStory.toDo,
-		owner: userStory.owner ? userStory.owner.refObjectName : 'Sense propietari',
-		project: userStory.project ? userStory.project.refObjectName : null,
-		iteration: userStory.iteration ? userStory.iteration.refObjectName : null,
-		blocked: userStory.blocked,
-		taskEstimateTotal: userStory.taskEstimateTotal,
-		taskStatus: userStory.taskStatus,
-		tasksCount: userStory.tasks ? userStory.tasks.count : 0,
-		testCasesCount: userStory.testCases ? userStory.testCases.count : 0,
-		defectsCount: userStory.defects ? userStory.defects.count : 0,
-		discussionCount: userStory.discussion ? userStory.discussion.count : 0,
-		appgar: userStory.appgar
+		objectId: userStory.ObjectID ?? userStory.objectId,
+		formattedId: userStory.FormattedID ?? userStory.formattedId,
+		name: userStory.Name ?? userStory.name,
+		description: sanitizeDescription(userStory.Description ?? userStory.description),
+		state: userStory.State ?? userStory.state,
+		planEstimate: userStory.PlanEstimate ?? userStory.planEstimate,
+		toDo: userStory.ToDo ?? userStory.toDo,
+		owner: userStory.Owner ? (userStory.Owner._refObjectName ?? userStory.Owner.refObjectName) : userStory.owner ? (userStory.owner._refObjectName ?? userStory.owner.refObjectName) : 'Sense propietari',
+		project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
+		iteration: userStory.Iteration ? (userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName) : userStory.iteration ? (userStory.iteration._refObjectName ?? userStory.iteration.refObjectName) : null,
+		blocked: userStory.Blocked ?? userStory.blocked,
+		taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
+		taskStatus: userStory.TaskStatus ?? userStory.taskStatus,
+		tasksCount: userStory.Tasks?.Count ?? userStory.tasks?.count ?? 0,
+		testCasesCount: userStory.TestCases?.Count ?? userStory.testCases?.count ?? 0,
+		defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
+		discussionCount: userStory.Discussion?.Count ?? userStory.discussion?.count ?? 0,
+		appgar: userStory.c_Appgar ?? userStory.appgar
 	}));
 }
 
@@ -353,7 +353,110 @@ function handleDefaultProject(query: RallyQuery, queryOptions: RallyQueryOptions
 	}
 }
 
+export async function getIterations(query: RallyQuery = {}, limit: number | null = null) {
+	console.log('[Robert] 📅 getIterations called with query:', query, 'limit:', limit);
+
+	const rallyApi = getRallyApi();
+
+	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
+	if (Object.keys(query).length && rallyData.iterations && rallyData.iterations.length) {
+		const filteredIterations = rallyData.iterations.filter((iteration: any) =>
+			Object.keys(query).every(key => {
+				if (iteration[key as keyof any] === undefined) {
+					return false;
+				}
+				return iteration[key as keyof any] === query[key];
+			})
+		);
+
+		if (filteredIterations.length) {
+			return {
+				iterations: filteredIterations,
+				source: 'cache',
+				count: filteredIterations.length
+			};
+		}
+	}
+
+	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
+	const queryOptions: RallyQueryOptions = {
+		type: 'iteration',
+		fetch: ['ObjectID', 'Name', 'StartDate', 'EndDate', 'State', 'Project']
+	};
+
+	if (limit) {
+		queryOptions.limit = limit;
+	}
+
+	// Sempre filtrem per projecte
+	const projectId = await getProjectId();
+	queryOptions.query = queryUtils.where('Project', '=', `/project/${projectId}`);
+
+	if (Object.keys(query).length) {
+		const iterationQueries = Object.keys(query).map(key => {
+			if (key === 'Name') {
+				return queryUtils.where(key, 'contains', query[key]);
+			}
+			return queryUtils.where(key, '=', query[key]);
+		});
+
+		if (iterationQueries.length) {
+			if (queryOptions.query) {
+				// @ts-ignore - Rally query builder has and method
+				queryOptions.query = queryOptions.query.and(iterationQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)));
+			} else {
+				queryOptions.query = iterationQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b));
+			}
+		}
+	}
+
+	const result = await rallyApi.query(queryOptions);
+	const resultData = result as RallyApiResult;
+
+	if (!resultData.Results || resultData.Results.length === 0) {
+		return {
+			iterations: [],
+			source: 'api',
+			count: 0
+		};
+	}
+
+	//Formatem la resposta
+	const iterations = resultData.Results.map((iteration: any) => ({
+		objectId: iteration.ObjectID ?? iteration.objectId,
+		name: iteration.Name ?? iteration.name,
+		startDate: iteration.StartDate ?? iteration.startDate,
+		endDate: iteration.EndDate ?? iteration.endDate,
+		state: iteration.State ?? iteration.state,
+		project: iteration.Project ? (iteration.Project._refObjectName ?? iteration.Project.refObjectName) : iteration.project ? (iteration.project._refObjectName ?? iteration.project.refObjectName) : null,
+		_ref: iteration._ref
+	}));
+
+	//Afegim les noves iterations a rallyData sense duplicats
+	if (!rallyData.iterations) {
+		rallyData.iterations = [];
+	}
+
+	for (const newIteration of iterations) {
+		const existingIterationIndex = rallyData.iterations.findIndex((existingIteration: any) => existingIteration.objectId === newIteration.objectId);
+
+		if (existingIterationIndex === -1) {
+			rallyData.iterations.push(newIteration);
+		} else {
+			rallyData.iterations[existingIterationIndex] = newIteration;
+		}
+	}
+
+	return {
+		iterations: iterations,
+		source: 'api',
+		count: iterations.length
+	};
+}
+
 export async function getUserStories(query: RallyQuery = {}, limit: number | null = null) {
+	console.log('[Robert] 📋 getUserStories called with query:', query, 'limit:', limit);
+
 	const rallyApi = getRallyApi();
 
 	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache

@@ -1,10 +1,10 @@
 {
 	"name": "robert",
-	"displayName": "For IBM internal use only.",
-	"description": "IBM Robert",
-	"version": "0.0.16",
-	"type": "module",
-	"icon": "resources/icons/ibm-logo-modern.webp",
+	"displayName": "IBM Robert",
+	"description": "For IBM internal use only.",
+	"version": "0.0.12",
+	"type": "commonjs",
+	"icon": "resources/icons/ibm-logo-bee.png",
 	"publisher": "trevSmart",
 	"repository": {
 		"type": "git",
@@ -186,7 +186,7 @@
 				{
 					"id": "robert",
 					"title": "IBM Robert",
-					"icon": "./resources/image.png"
+					"icon": "./resources/icons/ibm-logo-bee.svg"
 				}
 			]
 		},
@@ -196,7 +196,7 @@
 					"id": "robert.mainView",
 					"name": "IBM Robert",
 					"type": "webview",
-					"icon": "./resources/image.png"
+					"icon": "./resources/icons/ibm-logo-bee.svg"
 				}
 			]
 		},
@@ -249,7 +249,8 @@
 		"package": "vsce package --out dist/",
 		"package:pre-release": "vsce package --pre-release --out dist/",
 		"package:patch": "npm run version:patch && npm run package",
-		"install:cursor": "node scripts/installCursor.js",
+		"install:cursor": "node scripts/installCursor.cjs",
+		"install:vscode-insiders": "node scripts/installVSCodeInsiders.cjs",
 		"publish": "vsce publish",
 		"publish:pre-release": "vsce publish --pre-release"
 	},

@@ -173,6 +173,19 @@ export interface RallyUserStory {
 	appgar: string;
 }
 
+export interface RallyTask {
+	objectId: string;
+	formattedId: string;
+	name: string;
+	description: string | null;
+	state: string;
+	owner: string;
+	estimate: number;
+	toDo: number;
+	timeSpent: number;
+	workItem: string | null;
+}
+
 export interface RallyQuery {
 	[key: string]: unknown;
 }
@@ -228,5 +241,6 @@ export interface RallyData {
 	users: RallyUser[];
 	iterations: RallyIteration[];
 	userStories: RallyUserStory[];
+	tasks: RallyTask[];
 	defaultProject: RallyProject | null;
 }

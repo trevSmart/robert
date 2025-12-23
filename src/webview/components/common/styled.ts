@@ -1,4 +1,19 @@
-import styled from 'styled-components';
+import styled, { createGlobalStyle } from 'styled-components';
+
+export const GlobalStyle = createGlobalStyle`
+	:root {
+		--vscode-panel-border: #444444;
+	}
+
+	@keyframes spin {
+		0% {
+			transform: rotate(0deg);
+		}
+		100% {
+			transform: rotate(360deg);
+		}
+	}
+`;
 
 // Base container styles
 export const Container = styled.div`
@@ -34,8 +49,8 @@ export const LogoContainer = styled.div`
 `;
 
 export const LogoImage = styled.img`
-	width: 72px;
-	height: auto;
+	height: 32px;
+	width: auto;
 	margin-right: 5px;
 `;
 

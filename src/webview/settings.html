@@ -1,12 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robert - Settings</title>
-</head>
-<body>
-    <div id="root"></div>
-    <script type="module" src="./settings.js"></script>
-</body>
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Robert - Settings</title>
+	</head>
+	<body>
+		<div id="root"></div>
+		<script>
+			window.webviewId = "__WEBVIEW_ID__";
+			window.context = "__CONTEXT__";
+			window.timestamp = "__TIMESTAMP__";
+			window.extensionUri = "__EXTENSION_URI__";
+		</script>
+		<script type="module" src="/src/webview/settings.tsx"></script>
+	</body>
 </html>

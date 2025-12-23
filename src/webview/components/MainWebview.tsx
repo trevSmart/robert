@@ -2,7 +2,16 @@ import type React from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import 'vscrui/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
-import { CenteredContainer, Container, ContentArea, Header, LogoContainer, LogoImage, Title } from './common/styled';
+import UserStoryForm from './common/UserStoryForm';
+import TasksTable from './common/TasksTable';
+import ScreenHeader from './common/ScreenHeader';
+import NavigationBar from './common/NavigationBar';
+import Calendar from './common/Calendar';
+import { CenteredContainer, Container, ContentArea, GlobalStyle, Header, LogoContainer, LogoImage, Title } from './common/styled';
+import { getVsCodeApi } from '../utils/vscodeApi';
+
+type SectionType = 'calendar' | 'portfolio';
+type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail';
 
 interface MainWebviewProps {
 	webviewId: string;
@@ -42,40 +51,13 @@ interface UserStory {
 	appgar: string;
 }
 
-type VsCodeApi = {
-	postMessage(message: Record<string, unknown>): void;
-	setState?(state: unknown): void;
-	getState?(): unknown;
-};
-
 const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogoUri }) => {
-	const [hasVsCodeApi] = useState(() => {
-		const hasApi = typeof window.acquireVsCodeApi === 'function';
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] hasVsCodeApi:', hasApi);
-		return hasApi;
-	});
-	const vscode = useMemo<VsCodeApi>(() => {
-		if (hasVsCodeApi) {
-			try {
-				return window.acquireVsCodeApi();
-			} catch (error) {
-				console.error('Robert MainWebview failed to acquire VS Code API', error);
-			}
-		}
-
-		return {
-			postMessage: () => {
-				// Fallback postMessage - no action needed when VS Code API is not available
-			},
-			setState: () => undefined,
-			getState: () => undefined
-		};
-	}, [hasVsCodeApi]);
+	const vscode = useMemo(() => getVsCodeApi(), []);
+	const hasVsCodeApi = Boolean(vscode);
 
 	const sendMessage = useCallback(
 		(message: Record<string, unknown>) => {
-			if (!hasVsCodeApi) {
+			if (!vscode) {
 				return;
 			}
 
@@ -92,7 +74,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 			vscode.postMessage(payload);
 		},
-		[context, hasVsCodeApi, vscode, webviewId]
+		[context, vscode, webviewId]
 	);
 
 	const [iterations, setIterations] = useState<Iteration[]>([]);
@@ -103,6 +85,15 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [userStories, setUserStories] = useState<UserStory[]>([]);
 	const [userStoriesLoading, setUserStoriesLoading] = useState(false);
 	const [userStoriesError, setUserStoriesError] = useState<string | null>(null);
+	const [selectedUserStory, setSelectedUserStory] = useState<UserStory | null>(null);
+
+	const [tasks, setTasks] = useState<any[]>([]);
+	const [tasksLoading, setTasksLoading] = useState(false);
+	const [tasksError, setTasksError] = useState<string | null>(null);
+
+	// Navigation state
+	const [activeSection, setActiveSection] = useState<SectionType>('portfolio');
+	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
 
 	const loadIterations = useCallback(() => {
 		// eslint-disable-next-line no-console
@@ -134,9 +125,96 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			console.log('[Frontend] Iteration selected:', iteration.name);
 			setSelectedIteration(iteration);
 			loadUserStories(iteration);
+			setCurrentScreen('userStories');
 		},
 		[loadUserStories]
 	);
+
+	const loadTasks = useCallback(
+		(userStoryId: string) => {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Loading tasks for user story:', userStoryId);
+			setTasksLoading(true);
+			setTasksError(null);
+			sendMessage({
+				command: 'loadTasks',
+				userStoryId: userStoryId
+			});
+		},
+		[sendMessage]
+	);
+
+	const handleUserStorySelected = useCallback(
+		(userStory: UserStory) => {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] User story selected:', userStory.formattedId);
+			setSelectedUserStory(userStory);
+			setCurrentScreen('userStoryDetail');
+			// Load tasks for this user story
+			loadTasks(userStory.objectId);
+		},
+		[loadTasks]
+	);
+
+	const handleBackToIterations = useCallback(() => {
+		setCurrentScreen('iterations');
+		setSelectedIteration(null);
+		setSelectedUserStory(null);
+		setUserStories([]);
+	}, []);
+
+	const handleBackToUserStories = useCallback(() => {
+		setCurrentScreen('userStories');
+		setSelectedUserStory(null);
+		setTasks([]);
+		setTasksError(null);
+	}, []);
+
+	const handleSectionChange = useCallback(
+		(section: SectionType) => {
+			setActiveSection(section);
+			if (section === 'portfolio') {
+				// Load iterations when switching to portfolio
+				loadIterations();
+			}
+		},
+		[loadIterations]
+	);
+
+	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {
+		const today = new Date();
+		today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+
+		// Find iterations where today is between start and end dates
+		const activeIterations = iterations.filter(iteration => {
+			const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
+			const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
+
+			if (startDate) startDate.setHours(0, 0, 0, 0);
+			if (endDate) endDate.setHours(0, 0, 0, 0);
+
+			// If both dates are set, check if today is within range
+			if (startDate && endDate) {
+				return today >= startDate && today <= endDate;
+			}
+
+			// If only start date is set, check if today is after or equal to start
+			if (startDate && !endDate) {
+				return today >= startDate;
+			}
+
+			// If only end date is set, check if today is before or equal to end
+			if (!startDate && endDate) {
+				return today <= endDate;
+			}
+
+			// If no dates are set, consider it inactive
+			return false;
+		});
+
+		// Return the first active iteration (in case of overlapping)
+		return activeIterations.length > 0 ? activeIterations[0] : null;
+	}, []);
 
 	useEffect(() => {
 		// eslint-disable-next-line no-console
@@ -151,10 +229,12 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			command: 'getState'
 		});
 
-		// Automatically load iterations when webview initializes
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] Calling loadIterations automatically...');
-		loadIterations();
+		// Automatically load iterations when webview initializes (only for portfolio section)
+		if (activeSection === 'portfolio') {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Calling loadIterations automatically...');
+			loadIterations();
+		}
 
 		// Listen for messages from extension
 		const handleMessage = (event: MessageEvent) => {
@@ -171,6 +251,19 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 					if (message.iterations) {
 						setIterations(message.iterations);
 						setIterationsError(null);
+
+						// Auto-select current iteration if available
+						const currentIteration = findCurrentIteration(message.iterations);
+						if (currentIteration) {
+							// eslint-disable-next-line no-console
+							console.log('[Frontend] Auto-selecting current iteration:', currentIteration.name);
+							setSelectedIteration(currentIteration);
+							loadUserStories(currentIteration);
+							setCurrentScreen('userStories');
+						} else {
+							// eslint-disable-next-line no-console
+							console.log('[Frontend] No active iteration found for today');
+						}
 					} else {
 						setIterationsError('Failed to load iterations');
 					}
@@ -192,13 +285,26 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 					setUserStoriesLoading(false);
 					setUserStoriesError(message.error || 'Error loading user stories');
 					break;
+				case 'tasksLoaded':
+					setTasksLoading(false);
+					if (message.tasks) {
+						setTasks(message.tasks);
+						setTasksError(null);
+					} else {
+						setTasksError('Failed to load tasks');
+					}
+					break;
+				case 'tasksError':
+					setTasksLoading(false);
+					setTasksError(message.error || 'Error loading tasks');
+					break;
 			}
 		};
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [sendMessage]);
+	}, [sendMessage, findCurrentIteration, loadUserStories, activeSection, loadIterations]);
 
 	useEffect(() => {
 		if (!hasVsCodeApi) {
@@ -253,6 +359,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	if (!hasVsCodeApi) {
 		return (
 			<Container>
+				<GlobalStyle />
 				<CenteredContainer>
 					<Header>
 						<LogoContainer>
@@ -271,6 +378,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 	return (
 		<Container>
+			<GlobalStyle />
 			<CenteredContainer>
 				<Header>
 					<LogoContainer>
@@ -279,12 +387,44 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 					</LogoContainer>
 				</Header>
 
+				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} />
+
 				<ContentArea>
-					<h1>HOLA MÓN!</h1>
+					{activeSection === 'calendar' && <Calendar />}
 
-					<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={loadIterations} onIterationSelected={handleIterationSelected} selectedIteration={selectedIteration} />
+					{activeSection === 'portfolio' && (
+						<>
+							{currentScreen === 'iterations' && (
+								<>
+									<ScreenHeader title="Rally Iterations" />
+									<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={loadIterations} onIterationSelected={handleIterationSelected} selectedIteration={selectedIteration} />
+								</>
+							)}
 
-					{selectedIteration && <UserStoriesTable userStories={userStories} loading={userStoriesLoading} error={userStoriesError} onLoadUserStories={() => loadUserStories(selectedIteration)} onClearUserStories={clearUserStories} />}
+							{currentScreen === 'userStories' && selectedIteration && (
+								<>
+									<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={handleBackToIterations} />
+									<UserStoriesTable
+										userStories={userStories}
+										loading={userStoriesLoading}
+										error={userStoriesError}
+										onLoadUserStories={() => loadUserStories(selectedIteration)}
+										onClearUserStories={clearUserStories}
+										onUserStorySelected={handleUserStorySelected}
+										selectedUserStory={selectedUserStory}
+									/>
+								</>
+							)}
+
+							{currentScreen === 'userStoryDetail' && selectedUserStory && (
+								<>
+									<ScreenHeader title={`User Story Details - ${selectedUserStory.formattedId}`} showBackButton={true} onBack={handleBackToUserStories} />
+									<UserStoryForm userStory={selectedUserStory} />
+									<TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && loadTasks(selectedUserStory.objectId)} />
+								</>
+							)}
+						</>
+					)}
 				</ContentArea>
 			</CenteredContainer>
 		</Container>

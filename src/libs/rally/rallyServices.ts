@@ -382,7 +382,7 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'iteration',
-		fetch: ['ObjectID', 'Name', 'StartDate', 'EndDate', 'State', 'Project']
+		fetch: ['ObjectID', 'Name', 'StartDate', 'EndDate', 'State', 'Project', 'CreationDate', 'LastUpdateDate', 'PlannedVelocity', 'Theme', 'Notes', 'RevisionHistory']
 	};
 
 	if (limit) {
@@ -420,6 +420,19 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 			source: 'api',
 			count: 0
 		};
+	}
+
+	// DEBUG: Show all available fields for the first iteration
+	if (resultData.Results && resultData.Results.length > 0) {
+		const firstIteration = resultData.Results[0];
+		console.log('[Robert] 🔍 All available fields for iteration:', JSON.stringify(firstIteration, null, 2));
+
+		// Check for date-related fields
+		const dateFields = Object.keys(firstIteration).filter(key => key.toLowerCase().includes('date') || key.toLowerCase().includes('time') || key.toLowerCase().includes('created') || key.toLowerCase().includes('updated'));
+		console.log('[Robert] 📅 Date-related fields found:', dateFields);
+		dateFields.forEach(field => {
+			console.log(`[Robert]   ${field}: ${(firstIteration as any)[field]}`);
+		});
 	}
 
 	//Formatem la resposta

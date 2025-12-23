@@ -539,58 +539,58 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 							<div
 								style={{
 									display: 'grid',
-									gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-									gap: '16px',
-									marginBottom: '30px'
+									gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+									gap: '12px',
+									marginBottom: '20px'
 								}}
 							>
 								<div
 									style={{
 										background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-										borderRadius: '12px',
-										padding: '20px',
+										borderRadius: '8px',
+										padding: '12px',
 										textAlign: 'center',
 										color: 'white'
 									}}
 								>
-									<div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>8</div>
-									<div style={{ fontSize: '12px', opacity: 0.9 }}>Active Members</div>
+									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>8</div>
+									<div style={{ fontSize: '10px', opacity: 0.9 }}>Active Members</div>
 								</div>
 								<div
 									style={{
 										background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
-										borderRadius: '12px',
-										padding: '20px',
+										borderRadius: '8px',
+										padding: '12px',
 										textAlign: 'center',
 										color: 'white'
 									}}
 								>
-									<div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>12</div>
-									<div style={{ fontSize: '12px', opacity: 0.9 }}>Tasks in Progress</div>
+									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>12</div>
+									<div style={{ fontSize: '10px', opacity: 0.9 }}>Tasks in Progress</div>
 								</div>
 								<div
 									style={{
 										background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
-										borderRadius: '12px',
-										padding: '20px',
+										borderRadius: '8px',
+										padding: '12px',
 										textAlign: 'center',
 										color: 'white'
 									}}
 								>
-									<div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>95%</div>
-									<div style={{ fontSize: '12px', opacity: 0.9 }}>Sprint Completion</div>
+									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>95%</div>
+									<div style={{ fontSize: '10px', opacity: 0.9 }}>Sprint Completion</div>
 								</div>
 								<div
 									style={{
 										background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
-										borderRadius: '12px',
-										padding: '20px',
+										borderRadius: '8px',
+										padding: '12px',
 										textAlign: 'center',
 										color: 'white'
 									}}
 								>
-									<div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>24</div>
-									<div style={{ fontSize: '12px', opacity: 0.9 }}>Messages Today</div>
+									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>24</div>
+									<div style={{ fontSize: '10px', opacity: 0.9 }}>Messages Today</div>
 								</div>
 							</div>
 
@@ -600,8 +600,8 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 								<div
 									style={{
 										display: 'grid',
-										gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-										gap: '16px'
+										gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+										gap: '12px'
 									}}
 								>
 									{[
@@ -665,11 +665,12 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 											style={{
 												backgroundColor: 'var(--vscode-editor-background)',
 												border: '1px solid var(--vscode-panel-border)',
-												borderRadius: '12px',
-												padding: '20px',
+												borderRadius: '8px',
+												padding: '12px',
 												display: 'flex',
+												flexDirection: 'column',
 												alignItems: 'center',
-												gap: '16px',
+												textAlign: 'center',
 												cursor: 'pointer',
 												transition: 'transform 0.2s ease, box-shadow 0.2s ease'
 											}}
@@ -685,8 +686,8 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 											{/* Avatar */}
 											<div
 												style={{
-													width: '50px',
-													height: '50px',
+													width: '36px',
+													height: '36px',
 													borderRadius: '50%',
 													background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
 													display: 'flex',
@@ -694,46 +695,47 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 													justifyContent: 'center',
 													color: 'white',
 													fontWeight: 'bold',
-													fontSize: '16px',
-													position: 'relative'
+													fontSize: '12px',
+													position: 'relative',
+													marginBottom: '6px'
 												}}
 											>
 												{member.avatar}
 												<div
 													style={{
 														position: 'absolute',
-														bottom: '2px',
-														right: '2px',
-														width: '12px',
-														height: '12px',
+														bottom: '-2px',
+														right: '-2px',
+														width: '10px',
+														height: '10px',
 														borderRadius: '50%',
 														backgroundColor: member.status === 'online' ? '#4caf50' : member.status === 'away' ? '#ff9800' : member.status === 'busy' ? '#f44336' : '#9e9e9e',
-														border: '2px solid var(--vscode-editor-background)'
+														border: '1px solid var(--vscode-editor-background)'
 													}}
 												/>
 											</div>
 
 											{/* Member Info */}
-											<div style={{ flex: 1 }}>
-												<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-													<h4 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '16px', fontWeight: '600' }}>{member.name}</h4>
+											<div style={{ width: '100%' }}>
+												<div style={{ marginBottom: '6px' }}>
+													<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '600' }}>{member.name}</h4>
 													<span
 														style={{
-															fontSize: '10px',
-															padding: '2px 6px',
-															borderRadius: '10px',
+															fontSize: '9px',
+															padding: '1px 4px',
+															borderRadius: '6px',
 															backgroundColor: member.status === 'online' ? 'rgba(76, 175, 80, 0.1)' : member.status === 'away' ? 'rgba(255, 152, 0, 0.1)' : member.status === 'busy' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(158, 158, 158, 0.1)',
 															color: member.status === 'online' ? '#4caf50' : member.status === 'away' ? '#ff9800' : member.status === 'busy' ? '#f44336' : '#9e9e9e',
 															fontWeight: '500'
 														}}
 													>
-														{member.status === 'in-meeting' ? 'in meeting' : member.status}
+														{member.status === 'in-meeting' ? 'meeting' : member.status}
 													</span>
 												</div>
-												<p style={{ margin: '0 0 8px 0', color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>{member.role}</p>
-												<p style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '13px' }}>{member.currentTask}</p>
-												<div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
-													<span>📋 {member.tasks} tasks</span>
+												<p style={{ margin: '0 0 4px 0', color: 'var(--vscode-descriptionForeground)', fontSize: '11px' }}>{member.role}</p>
+												<p style={{ margin: '0 0 6px 0', color: 'var(--vscode-foreground)', fontSize: '11px', lineHeight: '1.3' }}>{member.currentTask}</p>
+												<div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--vscode-descriptionForeground)' }}>
+													<span>📋 {member.tasks}</span>
 													<span>🕒 {member.lastActive}</span>
 												</div>
 											</div>
@@ -915,16 +917,159 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 					)}
 
 					{activeSection === 'metrics' && (
-						<div
-							style={{
-								padding: '40px 20px',
-								textAlign: 'center',
-								color: 'var(--vscode-descriptionForeground)'
-							}}
-						>
-							<MetricsIcon />
-							<h3 style={{ margin: '20px 0 10px 0', color: 'var(--vscode-foreground)' }}>Metrics Section</h3>
-							<p>Analytics and metrics dashboard coming soon.</p>
+						<div style={{ padding: '20px' }}>
+							{/* Metrics Header */}
+							<div style={{ marginBottom: '30px', textAlign: 'center' }}>
+								<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '600' }}>Project Analytics</h2>
+								<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Track performance, identify trends, and make data-driven decisions</p>
+							</div>
+
+							{/* Key Metrics Grid */}
+							<div
+								style={{
+									display: 'grid',
+									gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+									gap: '16px',
+									marginBottom: '30px'
+								}}
+							>
+								<div
+									style={{
+										background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+										borderRadius: '12px',
+										padding: '20px',
+										textAlign: 'center',
+										color: 'white'
+									}}
+								>
+									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>94%</div>
+									<div style={{ fontSize: '12px', opacity: 0.9 }}>Sprint Velocity</div>
+									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>↑ 12% from last sprint</div>
+								</div>
+
+								<div
+									style={{
+										background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+										borderRadius: '12px',
+										padding: '20px',
+										textAlign: 'center',
+										color: 'white'
+									}}
+								>
+									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>23</div>
+									<div style={{ fontSize: '12px', opacity: 0.9 }}>Story Points Delivered</div>
+									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>Target: 25 points</div>
+								</div>
+
+								<div
+									style={{
+										background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+										borderRadius: '12px',
+										padding: '20px',
+										textAlign: 'center',
+										color: 'white'
+									}}
+								>
+									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>4.2</div>
+									<div style={{ fontSize: '12px', opacity: 0.9 }}>Avg Cycle Time (days)</div>
+									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>↓ 18% improvement</div>
+								</div>
+
+								<div
+									style={{
+										background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+										borderRadius: '12px',
+										padding: '20px',
+										textAlign: 'center',
+										color: 'white'
+									}}
+								>
+									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>87%</div>
+									<div style={{ fontSize: '12px', opacity: 0.9 }}>Test Coverage</div>
+									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>↑ 5% from last month</div>
+								</div>
+							</div>
+
+							{/* Charts Section */}
+							<div style={{ marginBottom: '30px' }}>
+								<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Burndown Chart</h3>
+								<div
+									style={{
+										backgroundColor: 'var(--vscode-editor-background)',
+										border: '1px solid var(--vscode-panel-border)',
+										borderRadius: '12px',
+										padding: '20px',
+										height: '250px',
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										color: 'var(--vscode-descriptionForeground)'
+									}}
+								>
+									<div style={{ textAlign: 'center' }}>
+										<div style={{ fontSize: '48px', marginBottom: '12px' }}>📈</div>
+										<div style={{ fontSize: '16px', marginBottom: '8px' }}>Burndown Chart</div>
+										<div style={{ fontSize: '12px', opacity: 0.7 }}>Interactive chart showing sprint progress over time</div>
+									</div>
+								</div>
+							</div>
+
+							{/* Additional Metrics */}
+							<div
+								style={{
+									display: 'grid',
+									gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+									gap: '16px'
+								}}
+							>
+								<div
+									style={{
+										backgroundColor: 'var(--vscode-editor-background)',
+										border: '1px solid var(--vscode-panel-border)',
+										borderRadius: '8px',
+										padding: '16px'
+									}}
+								>
+									<h4 style={{ margin: '0 0 12px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Code Quality</h4>
+									<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+										<span style={{ fontSize: '18px', fontWeight: 'bold', color: '#4caf50' }}>A</span>
+										<span style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>Grade</span>
+									</div>
+									<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>0 critical issues, 3 minor issues</div>
+								</div>
+
+								<div
+									style={{
+										backgroundColor: 'var(--vscode-editor-background)',
+										border: '1px solid var(--vscode-panel-border)',
+										borderRadius: '8px',
+										padding: '16px'
+									}}
+								>
+									<h4 style={{ margin: '0 0 12px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Team Productivity</h4>
+									<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+										<span style={{ fontSize: '18px', fontWeight: 'bold', color: '#2196f3' }}>8.5h</span>
+										<span style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>Avg daily</span>
+									</div>
+									<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>↑ 15% from last month</div>
+								</div>
+
+								<div
+									style={{
+										backgroundColor: 'var(--vscode-editor-background)',
+										border: '1px solid var(--vscode-panel-border)',
+										borderRadius: '8px',
+										padding: '16px'
+									}}
+								>
+									<h4 style={{ margin: '0 0 12px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Risk Assessment</h4>
+									<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+										<span style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff9800' }}>Medium</span>
+										<span style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>Risk Level</span>
+									</div>
+									<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>2 dependencies need attention</div>
+								</div>
+							</div>
 						</div>
 					)}
 

@@ -36,6 +36,54 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	// Calculate total days needed (including previous/next month days)
 	const totalDays = lastDay.getDate() + startDay + (6 - endDay);
 
+	const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+	// Iteration colors - cycle through these 5 distinct colors
+	const iterationColors = ['#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#f44336'];
+
+	// Function to get a consistent color for iteration based on its objectId
+	const getIterationColor = (objectId: string): string => {
+		// Create a simple hash from the objectId to ensure consistent coloring
+		let hash = 0;
+		for (let i = 0; i < objectId.length; i++) {
+			hash = (hash << 5) - hash + objectId.charCodeAt(i);
+			hash = hash & hash; // Convert to 32-bit integer
+		}
+		return iterationColors[Math.abs(hash) % iterationColors.length];
+	};
+
+	// Helper function to check if iteration overlaps with current month
+	const doesIterationOverlapMonth = (iteration: Iteration) => {
+		const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
+		const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
+
+		if (!startDate || !endDate) return false;
+
+		// Check if iteration overlaps with current month
+		const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+		const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+		// Reset time for date comparison
+		startDate.setHours(0, 0, 0, 0);
+		endDate.setHours(23, 59, 59, 999);
+		monthStart.setHours(0, 0, 0, 0);
+		monthEnd.setHours(23, 59, 59, 999);
+
+		// Check for overlap: iteration starts before month ends AND iteration ends after month starts
+		return startDate <= monthEnd && endDate >= monthStart;
+	};
+
+	// Filter iterations that overlap with current month
+	const currentMonthIterations = iterations.filter(doesIterationOverlapMonth);
+
+	// Create color mapping for iterations (consistent colors based on objectId)
+	const iterationColorMap = new Map<string, string>();
+	currentMonthIterations.forEach(iteration => {
+		iterationColorMap.set(iteration.objectId, getIterationColor(iteration.objectId));
+	});
+
 	// Generate calendar days
 	const calendarDays = [];
 	let dayCounter = 1 - startDay; // Start from previous month
@@ -45,7 +93,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const isCurrentMonth = dayCounter >= 1 && dayCounter <= lastDay.getDate();
 		const isToday = isCurrentMonth && dayCounter === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 
-		// Check which iterations are active on this day
+		// Check which iterations are active on this day (only from current month iterations)
 		const activeIterations = currentMonthIterations.filter(iteration => {
 			const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
 			const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
@@ -68,31 +116,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		dayCounter++;
 	}
-
-	const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-
-	// Filter iterations that overlap with current month
-	const currentMonthIterations = iterations.filter(iteration => {
-		const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
-		const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
-
-		if (!startDate || !endDate) return false;
-
-		// Check if iteration overlaps with current month
-		const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-		const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-
-		// Reset time for date comparison
-		startDate.setHours(0, 0, 0, 0);
-		endDate.setHours(23, 59, 59, 999);
-		monthStart.setHours(0, 0, 0, 0);
-		monthEnd.setHours(23, 59, 59, 999);
-
-		// Check for overlap: iteration starts before month ends AND iteration ends after month starts
-		return startDate <= monthEnd && endDate >= monthStart;
-	});
 
 	const goToPreviousMonth = () => {
 		const newDate = new Date(currentDate);
@@ -140,7 +163,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					onClick={goToPreviousMonth}
 					style={{
 						padding: '8px 12px',
-						border: '1px solid var(--vscode-panel-border)',
+						border: 'none',
 						backgroundColor: 'transparent',
 						color: 'var(--vscode-foreground)',
 						borderRadius: '4px',
@@ -166,7 +189,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					style={{
 						margin: '0',
 						color: 'var(--vscode-foreground)',
-						fontSize: '24px',
+						fontSize: '23px',
 						fontWeight: '600',
 						minWidth: '200px',
 						textAlign: 'center'
@@ -179,7 +202,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					onClick={goToNextMonth}
 					style={{
 						padding: '8px 12px',
-						border: '1px solid var(--vscode-panel-border)',
+						border: 'none',
 						backgroundColor: 'transparent',
 						color: 'var(--vscode-foreground)',
 						borderRadius: '4px',
@@ -297,24 +320,17 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								}}
 								title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
 							>
-								{/* First iteration line */}
-								<div
-									style={{
-										height: '4px',
-										backgroundColor: 'var(--vscode-progressBar-background)',
-										opacity: 0.9
-									}}
-								/>
-								{/* Second iteration line (if overlapping) */}
-								{dayInfo.iterations.length > 1 && (
+								{/* Show up to 2 iteration lines with assigned colors */}
+								{dayInfo.iterations.slice(0, 2).map((iteration, index) => (
 									<div
+										key={iteration.objectId}
 										style={{
 											height: '4px',
-											backgroundColor: 'var(--vscode-charts-orange)',
+											backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
 											opacity: 0.9
 										}}
 									/>
-								)}
+								))}
 							</div>
 						)}
 					</div>
@@ -344,13 +360,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					<span>Today</span>
 				</div>
 				{/* Show iteration legends dynamically */}
-				{currentMonthIterations.slice(0, 2).map((iteration, index) => (
+				{currentMonthIterations.map((iteration, index) => (
 					<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
 						<div
 							style={{
 								width: '20px',
 								height: '4px',
-								backgroundColor: index === 0 ? 'var(--vscode-progressBar-background)' : 'var(--vscode-charts-orange)',
+								backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
 								opacity: 0.9
 							}}
 						></div>

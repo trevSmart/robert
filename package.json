@@ -236,6 +236,7 @@
 		}
 	},
 	"scripts": {
+		"prepare": "npm run build:webview && tsc -p ./",
 		"vscode:prepublish": "npm run compile && npm run build:webview",
 		"compile": "npm run format && npm run lint:fix && tsc -p ./",
 		"watch": "tsc -p ./ -w",

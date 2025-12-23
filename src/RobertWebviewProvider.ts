@@ -393,6 +393,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
 				const logoJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'logo.js'));
 				const logoCssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'textfield.css'));
+				const webviewBaseUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview'));
 				const nonce = this._getNonce();
 				const csp = this._buildCspMeta(webview, nonce);
 
@@ -401,6 +402,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="${webviewBaseUri.toString()}/">
     <title>Robert - Logo</title>
     ${csp}
     <link rel="stylesheet" href="${logoCssUri.toString()}">
@@ -433,6 +435,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				const settingsJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'settings.js'));
 				const settingsCssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'textfield.css'));
+				const webviewBaseUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview'));
 				const nonce = this._getNonce();
 				const csp = this._buildCspMeta(webview, nonce);
 
@@ -441,6 +444,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="${webviewBaseUri.toString()}/">
     <title>Robert - Settings</title>
     ${csp}
     <link rel="stylesheet" href="${settingsCssUri.toString()}">
@@ -481,6 +485,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				const mainJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'main.js'));
 				const mainCssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'textfield.css'));
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
+				const webviewBaseUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview'));
 				const nonce = this._getNonce();
 				const csp = this._buildCspMeta(webview, nonce);
 
@@ -489,6 +494,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="${webviewBaseUri.toString()}/">
     <title>Robert</title>
     ${csp}
     <link rel="stylesheet" href="${mainCssUri.toString()}">

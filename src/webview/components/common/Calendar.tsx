@@ -440,33 +440,37 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				<div
 					style={{
 						display: 'flex',
-						justifyContent: 'center',
-						gap: '20px',
+						flexDirection: 'column',
+						alignItems: 'center',
+						gap: '8px',
 						marginTop: '20px',
 						fontSize: '12px',
-						color: 'var(--vscode-descriptionForeground)'
+						color: 'var(--vscode-descriptionForeground)',
+						maxWidth: '400px'
 					}}
 				>
 					{/* Show iteration legends dynamically for any month */}
 					{orderedIterations.map(iteration => (
-						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', justifyContent: 'space-between' }}>
 							<div
 								style={{
 									width: '20px',
 									height: '4px',
 									backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-									opacity: 0.9
+									opacity: 0.9,
+									flexShrink: 0
 								}}
 							></div>
-							<span>{iteration.name}</span>
+							<span style={{ flex: 1, textAlign: 'left' }}>{iteration.name}</span>
 							<div
 								style={{
 									position: 'relative',
-									width: '80px',
-									height: '6px',
+									width: '120px',
+									height: '8px',
 									borderRadius: '999px',
 									backgroundColor: 'rgba(120, 120, 120, 0.2)',
-									overflow: 'hidden'
+									overflow: 'hidden',
+									flexShrink: 0
 								}}
 								title="Iteration progress"
 							>

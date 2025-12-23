@@ -46,7 +46,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const isToday = isCurrentMonth && dayCounter === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 
 		// Check which iterations are active on this day
-		const activeIterations = iterations.filter(iteration => {
+		const activeIterations = currentMonthIterations.filter(iteration => {
 			const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
 			const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
 
@@ -72,6 +72,27 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+	// Filter iterations that overlap with current month
+	const currentMonthIterations = iterations.filter(iteration => {
+		const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
+		const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
+
+		if (!startDate || !endDate) return false;
+
+		// Check if iteration overlaps with current month
+		const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+		const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+		// Reset time for date comparison
+		startDate.setHours(0, 0, 0, 0);
+		endDate.setHours(23, 59, 59, 999);
+		monthStart.setHours(0, 0, 0, 0);
+		monthEnd.setHours(23, 59, 59, 999);
+
+		// Check for overlap: iteration starts before month ends AND iteration ends after month starts
+		return startDate <= monthEnd && endDate >= monthStart;
+	});
 
 	const goToPreviousMonth = () => {
 		const newDate = new Date(currentDate);
@@ -226,7 +247,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									? 'rgba(0, 122, 204, 0.1)' // Light blue background for iteration days
 									: dayInfo.isCurrentMonth
 										? 'var(--vscode-editor-background)'
-										: 'var(--vscode-input-background)',
+										: 'rgba(128, 128, 128, 0.1)', // Darker background for days outside current month
 							color: dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : dayInfo.isCurrentMonth ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
 							borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
 							display: 'flex',
@@ -246,7 +267,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						}}
 						onMouseLeave={e => {
 							if (!dayInfo.isToday) {
-								e.currentTarget.style.backgroundColor = dayInfo.iterations.length > 0 ? 'rgba(0, 122, 204, 0.1)' : dayInfo.isCurrentMonth ? 'var(--vscode-editor-background)' : 'var(--vscode-input-background)';
+								e.currentTarget.style.backgroundColor = dayInfo.iterations.length > 0 ? 'rgba(0, 122, 204, 0.1)' : dayInfo.isCurrentMonth ? 'var(--vscode-editor-background)' : 'rgba(128, 128, 128, 0.1)'; // Darker background for days outside current month
 							}
 						}}
 					>
@@ -323,7 +344,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					<span>Today</span>
 				</div>
 				{/* Show iteration legends dynamically */}
-				{iterations.slice(0, 2).map((iteration, index) => (
+				{currentMonthIterations.slice(0, 2).map((iteration, index) => (
 					<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
 						<div
 							style={{
@@ -338,9 +359,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				))}
 
 				{/* Show message if more than 2 iterations */}
-				{iterations.length > 2 && (
+				{currentMonthIterations.length > 2 && (
 					<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-						<span>+{iterations.length - 2} more</span>
+						<span>+{currentMonthIterations.length - 2} more</span>
 					</div>
 				)}
 			</div>

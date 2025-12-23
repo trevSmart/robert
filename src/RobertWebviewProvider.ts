@@ -1,6 +1,8 @@
 import * as vscode from 'vscode';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 
@@ -386,34 +388,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private async _getHtmlForLogo(webview: vscode.Webview): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
-				this._errorHandler.logInfo('Logo webview content rendered with React component', 'RobertWebviewProvider._getHtmlForLogo');
-
+				this._errorHandler.logInfo('Logo webview content rendered from build HTML', 'RobertWebviewProvider._getHtmlForLogo');
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
-				const logoJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'logo.js'));
-				const logoCssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'textfield.css'));
-				const nonce = this._getNonce();
-				const csp = this._buildCspMeta(webview, nonce);
-
-				return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robert - Logo</title>
-    ${csp}
-    <link rel="stylesheet" href="${logoCssUri.toString()}">
-</head>
-<body>
-    <div id="preload" style="padding: 16px; color: var(--vscode-foreground); font-family: var(--vscode-font-family);">
-        Loading Robert UI…
-    </div>
-    <div id="root"></div>
-    <script nonce="${nonce}">
-        window.rebusLogoUri = "${rebusLogoUri.toString()}";
-    </script>
-    <script nonce="${nonce}" type="module" src="${logoJsUri.toString()}"></script>
-</body>
-</html>`;
+				return this._getHtmlFromBuild(webview, 'logo.html', {
+					__REBUS_LOGO_URI__: rebusLogoUri.toString()
+				});
 			}, 'getHtmlForLogo')) || '<html><body><p>Error loading logo</p></body></html>'
 		);
 	}
@@ -422,32 +401,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				this._errorHandler.logInfo(`Settings webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForSettings');
-
-				const settingsJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'settings.js'));
-				const settingsCssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'textfield.css'));
-				const nonce = this._getNonce();
-				const csp = this._buildCspMeta(webview, nonce);
-
-				return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robert - Settings</title>
-    ${csp}
-    <link rel="stylesheet" href="${settingsCssUri.toString()}">
-</head>
-<body>
-    <div id="root"></div>
-    <script nonce="${nonce}">
-        window.webviewId = "${webviewId || 'unknown'}";
-        window.context = "${context}";
-        window.timestamp = "${new Date().toISOString()}";
-        window.extensionUri = "${this._extensionUri.toString()}";
-    </script>
-    <script nonce="${nonce}" type="module" src="${settingsJsUri.toString()}"></script>
-</body>
-</html>`;
+				return this._getHtmlFromBuild(webview, 'settings.html', {
+					__WEBVIEW_ID__: webviewId || 'unknown',
+					__CONTEXT__: context,
+					__TIMESTAMP__: new Date().toISOString(),
+					__EXTENSION_URI__: this._extensionUri.toString()
+				});
 			}, 'getHtmlForSettings')) || '<html><body><p>Error loading settings</p></body></html>'
 		);
 	}
@@ -459,43 +418,67 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo(`Main webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForWebview');
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
 
-				const mainJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'main.js'));
-				const mainCssUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'textfield.css'));
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
-				const nonce = this._getNonce();
-				const csp = this._buildCspMeta(webview, nonce);
-
-				return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Robert</title>
-    ${csp}
-    <link rel="stylesheet" href="${mainCssUri.toString()}">
-</head>
-<body>
-    <div id="root"></div>
-    <script nonce="${nonce}">
-        window.webviewId = "${webviewId || 'unknown'}";
-        window.context = "${context}";
-        window.timestamp = "${new Date().toISOString()}";
-        window.rebusLogoUri = "${rebusLogoUri.toString()}";
-    </script>
-    <script nonce="${nonce}" type="module" src="${mainJsUri.toString()}"></script>
-</body>
-</html>`;
+				return this._getHtmlFromBuild(webview, 'main.html', {
+					__WEBVIEW_ID__: webviewId || 'unknown',
+					__CONTEXT__: context,
+					__TIMESTAMP__: new Date().toISOString(),
+					__REBUS_LOGO_URI__: rebusLogoUri.toString()
+				});
 			}, 'getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);
 	}
 
-	private _buildCspMeta(webview: vscode.Webview, nonce: string): string {
-		const csp = ["default-src 'none'", `img-src ${webview.cspSource} https: data:`, `script-src 'nonce-${nonce}' ${webview.cspSource}`, `style-src ${webview.cspSource} 'unsafe-inline'`, `font-src ${webview.cspSource} https: data:`, `connect-src ${webview.cspSource} https:`].join('; ');
-		return `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
+	private _getHtmlFromBuild(webview: vscode.Webview, htmlFile: string, placeholders: Record<string, string>): string {
+		const buildDirFsPath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'src', 'webview');
+		const htmlPath = path.join(buildDirFsPath, htmlFile);
+
+		let html = '';
+		try {
+			html = fs.readFileSync(htmlPath, 'utf8');
+		} catch (error) {
+			this._errorHandler.logWarning(`Failed to read ${htmlFile}: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider._getHtmlFromBuild');
+			return '<html><body><p>Webview UI is missing. Please rebuild the webview bundle.</p></body></html>';
+		}
+
+		for (const [key, value] of Object.entries(placeholders)) {
+			html = html.split(key).join(value);
+		}
+
+		const toWebviewUri = (rawPath: string): string => {
+			const clean = rawPath.replace(/^\.?\/?/, '');
+			const parts = clean.split('/');
+			return webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', ...parts)).toString();
+		};
+
+		html = html.replace(/\b(href|src)="([^"]+)"/g, (match, attr, value) => {
+			if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:') || value.startsWith('vscode-resource:') || value.startsWith('vscode-webview-resource:') || value.startsWith('#') || value.startsWith('mailto:')) {
+				return match;
+			}
+			const uri = toWebviewUri(value.replace(/^\//, ''));
+			return `${attr}="${uri}"`;
+		});
+
+		const cspMeta = this._buildCspMeta(webview);
+		const bridgeUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'media', 'webview-bridge.js'));
+		const bridgeScript = `<script src="${bridgeUri.toString()}"></script>`;
+		html = html.replace('<head>', `<head>${cspMeta}${bridgeScript}`);
+
+		return html;
 	}
 
-	private _getNonce(): string {
-		return Array.from({ length: 32 }, () => Math.floor(Math.random() * 36).toString(36)).join('');
+	private _buildCspMeta(webview: vscode.Webview): string {
+		const csp = [
+			"default-src 'none'",
+			`img-src ${webview.cspSource} https: data:`,
+			`script-src ${webview.cspSource} 'unsafe-eval' 'unsafe-inline'`,
+			`style-src ${webview.cspSource} 'unsafe-inline'`,
+			`font-src ${webview.cspSource} https: data:`,
+			`connect-src ${webview.cspSource} https:`,
+			"frame-ancestors 'none'",
+			"base-uri 'self'"
+		].join('; ');
+		return `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
 	}
 
 	private _setWebviewMessageListener(webview: vscode.Webview, webviewId?: string) {
@@ -600,9 +583,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							}
 							break;
 						case 'webviewError':
-							this._errorHandler.logWarning(`Frontend error (${message.type ?? 'unknown'}) from ${message.webviewId ?? 'unknown webview'}: ${message.errorMessage ?? 'No message provided'}`, 'WebviewMessageListener.webviewError');
-							if (message.errorStack) {
-								this._errorHandler.logInfo(String(message.errorStack), 'WebviewMessageListener.webviewErrorStack');
+							this._errorHandler.logWarning(`Frontend error (${message.type ?? message.source ?? 'unknown'}) from ${message.webviewId ?? 'unknown webview'}: ${message.errorMessage ?? message.message ?? 'No message provided'}`, 'WebviewMessageListener.webviewError');
+							if (message.errorStack || message.stack) {
+								this._errorHandler.logInfo(String(message.errorStack ?? message.stack), 'WebviewMessageListener.webviewErrorStack');
 							}
 							break;
 						case 'loadProjects':
@@ -735,6 +718,50 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									this._currentPanel.dispose();
 								}
 								this.showMainPanelIfHidden();
+							}
+							break;
+						case 'loadTasks':
+							try {
+								this._errorHandler.logInfo('Loading tasks from Rally API', 'WebviewMessageListener');
+								// eslint-disable-next-line no-console
+								console.log('[Robert] 📋 Webview received loadTasks command for user story:', message.userStoryId);
+
+								const tasksResult = await getTasks(message.userStoryId);
+
+								if (tasksResult?.tasks) {
+									webview.postMessage({
+										command: 'tasksLoaded',
+										tasks: tasksResult.tasks,
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo(`Tasks loaded successfully: ${tasksResult.count} tasks for user story ${message.userStoryId}`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'tasksError',
+										error: 'No tasks found',
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo('No tasks found', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadTasks');
+
+								// Si és un error de configuració, mostrem un missatge més específic
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'tasksError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true,
+										userStoryId: message.userStoryId
+									});
+								} else {
+									webview.postMessage({
+										command: 'tasksError',
+										error: 'Failed to load tasks',
+										userStoryId: message.userStoryId
+									});
+								}
 							}
 							break;
 						default:

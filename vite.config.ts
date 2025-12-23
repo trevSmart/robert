@@ -4,13 +4,14 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
 	plugins: [react()],
+	appType: 'mpa',
 	build: {
 		outDir: 'out/webview',
 		rollupOptions: {
 			input: {
-				main: resolve(__dirname, 'src/webview/main.tsx'),
-				settings: resolve(__dirname, 'src/webview/settings.tsx'),
-				logo: resolve(__dirname, 'src/webview/logo.tsx')
+				main: resolve(__dirname, 'src/webview/main.html'),
+				settings: resolve(__dirname, 'src/webview/settings.html'),
+				logo: resolve(__dirname, 'src/webview/logo.html')
 			},
 			output: {
 				entryFileNames: '[name].js',

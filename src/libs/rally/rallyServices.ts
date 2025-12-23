@@ -500,3 +500,111 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 		count: userStories.length
 	};
 }
+
+export async function getTasks(userStoryId: string, query: RallyQuery = {}, limit: number | null = null) {
+	// eslint-disable-next-line no-console
+	console.log('[Robert] 📋 getTasks called for user story:', userStoryId, 'with query:', query, 'limit:', limit);
+
+	const rallyApi = getRallyApi();
+
+	// Validem la configuració de Rally abans de fer la crida
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+
+	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
+	if (Object.keys(query).length && rallyData.tasks && rallyData.tasks.length) {
+		const filteredTasks = rallyData.tasks.filter((task: any) =>
+			Object.keys(query).every(key => {
+				if (task[key as keyof any] === undefined) {
+					return false;
+				}
+				return task[key as keyof any] === query[key];
+			})
+		);
+
+		if (filteredTasks.length) {
+			return {
+				tasks: filteredTasks,
+				source: 'cache',
+				count: filteredTasks.length
+			};
+		}
+	}
+
+	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
+	const queryOptions: RallyQueryOptions = {
+		type: 'task',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkItem', 'ObjectID']
+	};
+
+	if (limit) {
+		queryOptions.limit = limit;
+	}
+
+	// Query per trobar tasks d'aquesta user story
+	const rallyQueries = [queryUtils.where('WorkItem', '=', `/hierarchicalrequirement/${userStoryId}`)];
+
+	if (Object.keys(query).length) {
+		const additionalQueries = Object.keys(query).map(key => {
+			if (key === 'Name') {
+				return queryUtils.where(key, 'contains', query[key]);
+			}
+			return queryUtils.where(key, '=', query[key]);
+		});
+		rallyQueries.push(...additionalQueries);
+	}
+
+	if (rallyQueries.length) {
+		queryOptions.query = rallyQueries.length > 1 ? rallyQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)) : rallyQueries[0];
+	}
+
+	const result = await rallyApi.query(queryOptions);
+	const resultData = result as RallyApiResult;
+
+	if (!resultData.Results.length) {
+		return {
+			tasks: [],
+			source: 'api',
+			count: 0
+		};
+	}
+
+	//Formatem la resposta per ser més llegible
+	const tasks = resultData.Results.map((task: any) => ({
+		objectId: task.ObjectID ?? task.objectId,
+		formattedId: task.FormattedID ?? task.formattedId,
+		name: task.Name ?? task.name,
+		description: sanitizeDescription(task.Description ?? task.description),
+		state: task.State ?? task.state,
+		owner: task.Owner ? (task.Owner._refObjectName ?? task.Owner.refObjectName) : task.owner ? (task.owner._refObjectName ?? task.owner.refObjectName) : 'Sense propietari',
+		estimate: task.Estimate ?? task.estimate,
+		toDo: task.ToDo ?? task.toDo,
+		timeSpent: task.TimeSpent ?? task.timeSpent,
+		workItem: task.WorkItem ? (task.WorkItem._refObjectName ?? task.WorkItem.refObjectName) : task.workItem ? (task.workItem._refObjectName ?? task.workItem.refObjectName) : null
+	}));
+
+	//Afegim les noves tasks a rallyData sense duplicats
+	if (!rallyData.tasks) {
+		rallyData.tasks = [];
+	}
+
+	for (const newTask of tasks) {
+		const existingTaskIndex = rallyData.tasks.findIndex((existingTask: any) => existingTask.objectId === newTask.objectId);
+
+		if (existingTaskIndex === -1) {
+			//Task nova, l'afegim
+			rallyData.tasks.push(newTask);
+		} else {
+			//Task existent, l'actualitzem
+			rallyData.tasks[existingTaskIndex] = newTask;
+		}
+	}
+
+	return {
+		tasks: tasks,
+		source: 'api',
+		count: tasks.length
+	};
+}

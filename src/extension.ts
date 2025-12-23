@@ -14,6 +14,7 @@ export const rallyData: RallyData = {
 	users: [],
 	iterations: [],
 	userStories: [],
+	tasks: [],
 	defaultProject: null
 };
 

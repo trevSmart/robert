@@ -1,7 +1,9 @@
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button, Checkbox, Dropdown, TextField } from 'vscrui';
 import 'vscrui/dist/codicon.css';
+import { GlobalStyle } from './common/styled';
+import { getVsCodeApi } from '../utils/vscodeApi';
 
 interface SettingsProps {
 	webviewId: string;
@@ -20,16 +22,7 @@ interface SettingsData {
 }
 
 const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensionUri }) => {
-	let vscode: ReturnType<typeof window.acquireVsCodeApi>;
-	if (window?.acquireVsCodeApi) {
-		vscode = window.acquireVsCodeApi();
-	} else {
-		vscode = {
-			postMessage: () => {
-				/* No-op fallback */
-			}
-		};
-	}
+	const vscode = useMemo(() => getVsCodeApi(), []);
 
 	const [settings, setSettings] = useState<SettingsData>({
 		apiUrl: '',
@@ -50,6 +43,9 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 	useEffect(() => {
 		// Load settings when page loads
 		setTimeout(() => {
+			if (!vscode) {
+				return;
+			}
 			vscode.postMessage({
 				command: 'getSettings',
 				webviewId: webviewId
@@ -87,6 +83,9 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 	};
 
 	const saveSettings = () => {
+		if (!vscode) {
+			return;
+		}
 		setIsLoading(true);
 		vscode.postMessage({
 			command: 'saveSettings',
@@ -96,6 +95,9 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 	};
 
 	const resetSettings = () => {
+		if (!vscode) {
+			return;
+		}
 		setIsLoading(true);
 		vscode.postMessage({
 			command: 'resetSettings',
@@ -104,6 +106,9 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 	};
 
 	const goBack = () => {
+		if (!vscode) {
+			return;
+		}
 		vscode.postMessage({
 			command: 'goBackToMain',
 			webviewId: webviewId
@@ -127,6 +132,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 				minHeight: '100vh'
 			}}
 		>
+			<GlobalStyle />
 			<div style={{ maxWidth: '600px', margin: '0 auto' }}>
 				<div style={{ marginBottom: '28px' }}>
 					<h1

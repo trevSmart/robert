@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.12",
+	"version": "0.0.46",
 	"type": "commonjs",
 	"icon": "resources/icons/ibm-logo-bee.png",
 	"publisher": "trevSmart",
@@ -225,12 +225,6 @@
 					"when": "view == robert.mainView",
 					"group": "navigation",
 					"icon": "$(settings-gear)"
-				},
-				{
-					"command": "robert.openSettings",
-					"when": "view == robert.mainView",
-					"group": "navigation",
-					"icon": "$(settings-gear)"
 				}
 			]
 		}
@@ -270,13 +264,13 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
-		"@types/react": "^19.2.7",
-		"@types/react-dom": "^19.2.3",
+		"@types/react": "^18.2.75",
+		"@types/react-dom": "^18.2.25",
 		"@types/styled-components": "^5.1.36",
 		"@vitejs/plugin-react": "^5.1.2",
 		"ibm-rally-node": "^0.0.15",
-		"react": "^19.2.3",
-		"react-dom": "^19.2.3",
+		"react": "^18.2.0",
+		"react-dom": "^18.2.0",
 		"striptags": "^3.2.0",
 		"styled-components": "^6.1.19",
 		"vite": "^7.3.0",

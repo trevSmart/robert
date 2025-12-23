@@ -6,6 +6,11 @@ declare global {
 			setState(state: unknown): void;
 			getState(): unknown;
 		};
+		__vscodeApi?: {
+			postMessage(message: Record<string, unknown>): void;
+			setState?(state: unknown): void;
+			getState?(): unknown;
+		};
 		webviewId?: string;
 		context?: string;
 		timestamp?: string;

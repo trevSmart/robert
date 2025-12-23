@@ -1,5 +1,4 @@
 import type React from 'react';
-import { Table, TableCell, TableRow } from 'vscrui';
 
 interface Iteration {
 	objectId: string;
@@ -38,9 +37,11 @@ interface UserStoriesTableProps {
 	error?: string;
 	onLoadUserStories?: () => void;
 	onClearUserStories?: () => void;
+	onUserStorySelected?: (userStory: UserStory) => void;
+	selectedUserStory?: UserStory | null;
 }
 
-const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loading = false, error, onLoadUserStories, onClearUserStories }) => {
+const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loading = false, error, onLoadUserStories, onClearUserStories, onUserStorySelected, selectedUserStory }) => {
 	return (
 		<div
 			style={{
@@ -73,25 +74,10 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 						border: 'none',
 						padding: '6px 12px',
 						borderRadius: '5px',
-						cursor: 'pointer',
-						marginRight: '10px'
-					}}
-				>
-					Load User Stories
-				</button>
-				<button
-					type="button"
-					onClick={onClearUserStories}
-					style={{
-						backgroundColor: 'var(--vscode-button-secondaryBackground)',
-						color: 'var(--vscode-button-secondaryForeground)',
-						border: 'none',
-						padding: '6px 12px',
-						borderRadius: '5px',
 						cursor: 'pointer'
 					}}
 				>
-					Clear User Stories
+					Refresh User Stories
 				</button>
 			</div>
 
@@ -125,26 +111,51 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 			)}
 
 			{userStories.length > 0 && !loading && !error && (
-				<Table stripped>
-					<TableRow isHeader>
-						<TableCell>ID</TableCell>
-						<TableCell>Name</TableCell>
-						<TableCell>State</TableCell>
-						<TableCell>Owner</TableCell>
-						<TableCell>Estimate</TableCell>
-						<TableCell>Blocked</TableCell>
-					</TableRow>
-					{userStories.map(userStory => (
-						<TableRow key={userStory.objectId}>
-							<TableCell>{userStory.formattedId}</TableCell>
-							<TableCell>{userStory.name}</TableCell>
-							<TableCell>{userStory.state}</TableCell>
-							<TableCell>{userStory.owner || 'N/A'}</TableCell>
-							<TableCell>{userStory.planEstimate || 0}</TableCell>
-							<TableCell>{userStory.blocked ? 'Yes' : 'No'}</TableCell>
-						</TableRow>
-					))}
-				</Table>
+				<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid var(--vscode-panel-border)' }}>
+					<thead>
+						<tr style={{ backgroundColor: 'var(--vscode-titleBar-activeBackground)', color: 'var(--vscode-titleBar-activeForeground)' }}>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>ID</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Name</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>State</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Owner</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Estimate</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>To Do</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Blocked</th>
+						</tr>
+					</thead>
+					<tbody>
+						{userStories.map(userStory => (
+							<tr
+								key={userStory.objectId}
+								onClick={() => onUserStorySelected?.(userStory)}
+								style={{
+									cursor: onUserStorySelected ? 'pointer' : 'default',
+									backgroundColor: selectedUserStory?.objectId === userStory.objectId ? 'var(--vscode-list-activeSelectionBackground)' : undefined,
+									color: selectedUserStory?.objectId === userStory.objectId ? 'var(--vscode-list-activeSelectionForeground)' : undefined,
+									borderBottom: '1px solid var(--vscode-panel-border)'
+								}}
+								onMouseEnter={e => {
+									if (selectedUserStory?.objectId !== userStory.objectId) {
+										e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+									}
+								}}
+								onMouseLeave={e => {
+									if (selectedUserStory?.objectId !== userStory.objectId) {
+										e.currentTarget.style.backgroundColor = selectedUserStory?.objectId === userStory.objectId ? 'var(--vscode-list-activeSelectionBackground)' : '';
+									}
+								}}
+							>
+								<td style={{ padding: '8px 12px' }}>{userStory.formattedId}</td>
+								<td style={{ padding: '8px 12px' }}>{userStory.name}</td>
+								<td style={{ padding: '8px 12px' }}>{userStory.state}</td>
+								<td style={{ padding: '8px 12px' }}>{userStory.owner || 'N/A'}</td>
+								<td style={{ padding: '8px 12px' }}>{userStory.planEstimate || 0}</td>
+								<td style={{ padding: '8px 12px' }}>{userStory.toDo}</td>
+								<td style={{ padding: '8px 12px' }}>{userStory.blocked ? 'Yes' : 'No'}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			)}
 		</div>
 	);
@@ -235,40 +246,45 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 			)}
 
 			{iterations.length > 0 && !loading && !error && (
-				<Table stripped>
-					<TableRow isHeader>
-						<TableCell>Name</TableCell>
-						<TableCell>Start Date</TableCell>
-						<TableCell>End Date</TableCell>
-						<TableCell>State</TableCell>
-						<TableCell>Action</TableCell>
-					</TableRow>
-					{iterations.map(iteration => (
-						<TableRow key={iteration.objectId}>
-							<TableCell>{iteration.name}</TableCell>
-							<TableCell>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</TableCell>
-							<TableCell>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</TableCell>
-							<TableCell>{iteration.state}</TableCell>
-							<TableCell>
-								<button
-									type="button"
-									onClick={() => onIterationSelected?.(iteration)}
-									style={{
-										backgroundColor: selectedIteration?.objectId === iteration.objectId ? 'var(--vscode-button-background)' : 'var(--vscode-button-secondaryBackground)',
-										color: selectedIteration?.objectId === iteration.objectId ? 'var(--vscode-button-foreground)' : 'var(--vscode-button-secondaryForeground)',
-										border: 'none',
-										padding: '4px 8px',
-										borderRadius: '3px',
-										cursor: 'pointer',
-										fontSize: '11px'
-									}}
-								>
-									{selectedIteration?.objectId === iteration.objectId ? 'Selected' : 'Select'}
-								</button>
-							</TableCell>
-						</TableRow>
-					))}
-				</Table>
+				<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid var(--vscode-panel-border)' }}>
+					<thead>
+						<tr style={{ backgroundColor: 'var(--vscode-titleBar-activeBackground)', color: 'var(--vscode-titleBar-activeForeground)' }}>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Name</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Start Date</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>End Date</th>
+							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>State</th>
+						</tr>
+					</thead>
+					<tbody>
+						{iterations.map(iteration => (
+							<tr
+								key={iteration.objectId}
+								onClick={() => onIterationSelected?.(iteration)}
+								style={{
+									cursor: onIterationSelected ? 'pointer' : 'default',
+									backgroundColor: selectedIteration?.objectId === iteration.objectId ? 'var(--vscode-list-activeSelectionBackground)' : undefined,
+									color: selectedIteration?.objectId === iteration.objectId ? 'var(--vscode-list-activeSelectionForeground)' : undefined,
+									borderBottom: '1px solid var(--vscode-panel-border)'
+								}}
+								onMouseEnter={e => {
+									if (selectedIteration?.objectId !== iteration.objectId) {
+										e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+									}
+								}}
+								onMouseLeave={e => {
+									if (selectedIteration?.objectId !== iteration.objectId) {
+										e.currentTarget.style.backgroundColor = selectedIteration?.objectId === iteration.objectId ? 'var(--vscode-list-activeSelectionBackground)' : '';
+									}
+								}}
+							>
+								<td style={{ padding: '8px 12px' }}>{iteration.name}</td>
+								<td style={{ padding: '8px 12px' }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
+								<td style={{ padding: '8px 12px' }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>
+								<td style={{ padding: '8px 12px' }}>{iteration.state}</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
 			)}
 		</div>
 	);

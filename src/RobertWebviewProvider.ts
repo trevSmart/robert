@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories } from './libs/rally/rallyServices';
+import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
@@ -35,6 +36,42 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	public setDebugMode(isDebug: boolean): void {
 		this._isDebugMode = isDebug;
 		this._errorHandler.logInfo(`Debug mode set to: ${isDebug}`, 'RobertWebviewProvider.setDebugMode');
+	}
+
+	/**
+	 * Prefetch Rally data to warm the cache when the extension activates.
+	 */
+	public async prefetchRallyData(trigger: string = 'activation'): Promise<void> {
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			const settings = this._settingsManager.getSettings();
+			if (!settings.autoRefresh) {
+				this._errorHandler.logInfo('Auto refresh disabled; skipping Rally prefetch', 'RobertWebviewProvider.prefetchRallyData');
+				return;
+			}
+
+			this._errorHandler.logInfo(`Prefetching Rally data (${trigger})`, 'RobertWebviewProvider.prefetchRallyData');
+
+			// Log current Rally settings for debugging
+			const rallyInstance = this._settingsManager.getSetting('rallyInstance');
+			const rallyApiKey = this._settingsManager.getSetting('rallyApiKey');
+			const rallyProjectName = this._settingsManager.getSetting('rallyProjectName')?.trim();
+			this._errorHandler.logInfo(`Rally Settings - Instance: ${rallyInstance || '(not set)'}, API Key: ${rallyApiKey ? '***' + rallyApiKey.slice(-4) : '(not set)'}, Project: ${rallyProjectName || '(not set)'}`, 'RobertWebviewProvider.prefetchRallyData');
+
+			this._errorHandler.logInfo('Starting Rally configuration validation...', 'RobertWebviewProvider.prefetchRallyData');
+			const validation = await validateRallyConfiguration();
+			this._errorHandler.logInfo(`Validation completed: isValid=${validation.isValid}, errors=${validation.errors.length}`, 'RobertWebviewProvider.prefetchRallyData');
+
+			if (!validation.isValid) {
+				this._errorHandler.logWarning(`Skipping Rally prefetch: ${validation.errors.join(', ')}`, 'RobertWebviewProvider.prefetchRallyData');
+				return;
+			}
+
+			this._errorHandler.logInfo('Validation passed, starting data fetch...', 'RobertWebviewProvider.prefetchRallyData');
+
+			this._errorHandler.logInfo('Starting parallel fetch of projects and iterations...', 'RobertWebviewProvider.prefetchRallyData');
+			const [projectsResult, iterationsResult] = await Promise.all([getProjects(), getIterations()]);
+			this._errorHandler.logInfo(`Prefetch completed: ${projectsResult?.count ?? 0} projects, ${iterationsResult?.count ?? 0} iterations`, 'RobertWebviewProvider.prefetchRallyData');
+		}, 'RobertWebviewProvider.prefetchRallyData');
 	}
 
 	// WebviewView implementation (for activity bar)
@@ -351,7 +388,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				this._errorHandler.logInfo('Logo webview content rendered with React component', 'RobertWebviewProvider._getHtmlForLogo');
 
-				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp'));
+				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
 				const logoJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'logo.js'));
 				const nonce = this._getNonce();
 				const csp = this._buildCspMeta(webview, nonce);
@@ -365,6 +402,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
     ${csp}
 </head>
 <body>
+    <div id="preload" style="padding: 16px; color: var(--vscode-foreground); font-family: var(--vscode-font-family);">
+        Loading Robert UI…
+    </div>
     <div id="root"></div>
     <script nonce="${nonce}">
         window.rebusLogoUri = "${rebusLogoUri.toString()}";
@@ -416,7 +456,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
 
 				const mainJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'main.js'));
-				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-modern.webp'));
+				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
 				const nonce = this._getNonce();
 				const csp = this._buildCspMeta(webview, nonce);
 
@@ -453,14 +493,21 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	}
 
 	private _setWebviewMessageListener(webview: vscode.Webview, webviewId?: string) {
+		this._errorHandler.logInfo(`Setting up message listener for webview: ${webviewId || 'unknown'}`, 'WebviewMessageListener');
 		webview.onDidReceiveMessage(
 			async message => {
 				await this._errorHandler.executeWithErrorHandling(async () => {
+					// Log all incoming messages for debugging
+					this._errorHandler.logInfo(`Received message: ${message.command} from webview: ${webviewId || 'unknown'}`, 'WebviewMessageListener');
+
 					// Log webview ID for debugging
 					if (webviewId) {
 						this._errorHandler.logInfo(`Message from webview: ${webviewId}`, 'WebviewMessageListener');
 					}
 					switch (message.command) {
+						case 'webviewReady':
+							this._errorHandler.logInfo(`Webview ready: context=${message.context}`, 'WebviewMessageListener');
+							break;
 						case 'hello':
 							vscode.window.showInformationMessage(`Hello from ${message.context}!`);
 							this._errorHandler.logInfo(`Message received: hello — context=${message.context}`, 'WebviewMessageListener');
@@ -585,6 +632,84 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									webview.postMessage({
 										command: 'projectsError',
 										error: 'Failed to load projects'
+									});
+								}
+							}
+							break;
+						case 'loadIterations':
+							try {
+								this._errorHandler.logInfo('Loading iterations from Rally API', 'WebviewMessageListener');
+								console.log('[Robert] 🔄 Webview received loadIterations command');
+								const iterationsResult = await getIterations();
+
+								if (iterationsResult?.iterations) {
+									webview.postMessage({
+										command: 'iterationsLoaded',
+										iterations: iterationsResult.iterations
+									});
+									this._errorHandler.logInfo(`Iterations loaded successfully: ${iterationsResult.count} iterations`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'iterationsError',
+										error: 'No iterations found'
+									});
+									this._errorHandler.logInfo('No iterations found', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadIterations');
+
+								// Si és un error de configuració, mostrem un missatge més específic
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'iterationsError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true
+									});
+								} else {
+									webview.postMessage({
+										command: 'iterationsError',
+										error: 'Failed to load iterations'
+									});
+								}
+							}
+							break;
+						case 'loadUserStories':
+							try {
+								this._errorHandler.logInfo('Loading user stories from Rally API', 'WebviewMessageListener');
+								console.log('[Robert] 🔄 Webview received loadUserStories command', message.iteration ? `for iteration: ${message.iteration}` : 'for all');
+
+								const query = message.iteration ? { Iteration: message.iteration } : {};
+								const userStoriesResult = await getUserStories(query);
+
+								if (userStoriesResult?.userStories) {
+									webview.postMessage({
+										command: 'userStoriesLoaded',
+										userStories: userStoriesResult.userStories
+									});
+									this._errorHandler.logInfo(`User stories loaded successfully: ${userStoriesResult.count} user stories`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'userStoriesError',
+										error: 'No user stories found'
+									});
+									this._errorHandler.logInfo('No user stories found', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStories');
+
+								// Si és un error de configuració, mostrem un missatge més específic
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'userStoriesError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true
+									});
+								} else {
+									webview.postMessage({
+										command: 'userStoriesError',
+										error: 'Failed to load user stories'
 									});
 								}
 							}

@@ -1,67 +1,15 @@
 import rally from 'ibm-rally-node';
 
-import * as vscode from 'vscode';
 import { SettingsManager } from '../../SettingsManager';
 
 export const {
 	util: { query: queryUtils }
 } = rally;
 
-// Centralized output channel instance
-let outputChannel: vscode.OutputChannel | undefined;
-
-/**
- * Get or create the centralized output channel
- */
-function getOutputChannel(): vscode.OutputChannel {
-	if (!outputChannel) {
-		outputChannel = vscode.window.createOutputChannel('Robert');
-	}
-	return outputChannel;
-}
-
-/**
- * Funció per logging de crides a Rally
- * @param method - Mètode HTTP
- * @param url - URL de la crida
- * @param headers - Headers de la request
- * @param body - Body de la request (si n'hi ha)
- * @param params - Paràmetres de la query (si n'hi ha)
- */
-export function logRallyRequest(method: string, url: string, headers: Record<string, string>, body?: unknown, params?: unknown) {
-	const output = getOutputChannel();
-
-	output.appendLine('=== RALLY API REQUEST ===');
-	output.appendLine(`Method: ${method}`);
-	output.appendLine(`URL: ${url}`);
-	output.appendLine('Headers:');
-	for (const [key, value] of Object.entries(headers)) {
-		output.appendLine(`  ${key}: ${value}`);
-	}
-
-	if (params) {
-		output.appendLine('Query Parameters:');
-		output.appendLine(`  ${JSON.stringify(params, null, 2)}`);
-	}
-
-	if (body) {
-		output.appendLine('Request Body:');
-		output.appendLine(`  ${JSON.stringify(body, null, 2)}`);
-	}
-
-	output.appendLine('========================');
-}
-
 export const getRallyApi = () => {
 	const settingsManager = SettingsManager.getInstance();
 	const rallyInstance = settingsManager.getSetting('rallyInstance');
 	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
-
-	const output = getOutputChannel();
-	output.appendLine(`Rally instance: ${rallyInstance}`);
-	output.appendLine(`Rally API key: ${rallyApiKey}`);
-	output.appendLine(`Rally project name: ${settingsManager.getSetting('rallyProjectName')}`);
-	output.appendLine('========================');
 
 	const rallyApi = rally({
 		apiKey: rallyApiKey,
@@ -75,52 +23,6 @@ export const getRallyApi = () => {
 		}
 	});
 
-	// Interceptem les crides query per afegir logging
-	const originalQuery = rallyApi.query;
-	rallyApi.query = async function (queryOptions: any) {
-		// Logging abans de la crida
-		const output = getOutputChannel();
-		output.appendLine('=== RALLY API CALL ===');
-
-		// Type assertion per accedir a les propietats
-		const options = queryOptions as Record<string, unknown>;
-		output.appendLine(`Type: ${options.type}`);
-		output.appendLine(`Fetch: ${JSON.stringify(options.fetch)}`);
-		if (options.query) {
-			output.appendLine(`Query: ${JSON.stringify(options.query)}`);
-		}
-		if (options.limit) {
-			output.appendLine(`Limit: ${options.limit}`);
-		}
-		if (options.order) {
-			output.appendLine(`Order: ${JSON.stringify(options.order)}`);
-		}
-		output.appendLine('=====================');
-
-		try {
-			// Fem la crida original - the new API uses promises
-			const result = await originalQuery.call(this, queryOptions);
-
-			// Logging de la resposta
-			output.appendLine('=== RALLY API RESPONSE ===');
-			const resultData = result as { Results?: unknown[] };
-			output.appendLine(`Results count: ${resultData.Results?.length || 0}`);
-			if (resultData.Results && resultData.Results.length > 0) {
-				output.appendLine('First result sample:');
-				output.appendLine(`  ${JSON.stringify(resultData.Results[0], null, 2)}`);
-			}
-			output.appendLine('==========================');
-
-			return result;
-		} catch (error) {
-			// Logging d'errors
-			output.appendLine('=== RALLY API ERROR ===');
-			output.appendLine(`Error: ${error instanceof Error ? error.message : String(error)}`);
-			output.appendLine('======================');
-			throw error;
-		}
-	};
-
 	return rallyApi;
 };
 
@@ -129,6 +31,8 @@ export const getRallyApi = () => {
  * @returns {Promise<{isValid: boolean, errors: string[]}>} - Resultat de la validació
  */
 export async function validateRallyConfiguration(): Promise<{ isValid: boolean; errors: string[] }> {
+	console.log('[Robert] 🔧 Starting Rally configuration validation...');
+
 	const settingsManager = SettingsManager.getInstance();
 	const errors: string[] = [];
 
@@ -136,6 +40,13 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 	const rallyInstance = settingsManager.getSetting('rallyInstance');
 	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
 	const rallyProjectName = settingsManager.getSetting('rallyProjectName');
+
+	// Log current Rally configuration for debugging
+	console.log('[Robert] 🔧 Rally Configuration Check:');
+	console.log(`[Robert]   Instance URL: ${rallyInstance || '(not set)'}`);
+	console.log(`[Robert]   API Key: ${rallyApiKey ? '***' + rallyApiKey.slice(-4) : '(not set)'}`);
+	console.log(`[Robert]   Project Name: ${rallyProjectName || '(not set)'}`);
+	console.log('[Robert] ---');
 
 	// Validem la instància de Rally
 	if (!rallyInstance || rallyInstance.trim() === '') {
@@ -160,15 +71,20 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 	}
 
 	// Intentem fer una crida de prova a l'API per verificar l'autenticació
+	console.log('[Robert] 🔧 Testing Rally API connection...');
 	try {
 		const rallyApi = getRallyApi();
-		await rallyApi.query({
+		console.log('[Robert] 🔧 Making test query to Rally API...');
+		const result = await rallyApi.query({
 			type: 'project',
 			fetch: ['ObjectID', 'Name'],
 			limit: 1
 		});
+		console.log(`[Robert] 🔧 Test query successful, found ${result.length || 0} projects`);
 	} catch (error: unknown) {
+		console.log('[Robert] 🔧 Test query failed with error');
 		const errorMessage = error instanceof Error ? error.message : String(error);
+		console.log(`[Robert] 🔧 Error details: ${errorMessage}`);
 		if (errorMessage?.includes('401')) {
 			errors.push('Invalid Rally API key or insufficient permissions');
 		} else if (errorMessage?.includes('404')) {
@@ -178,10 +94,14 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 		}
 	}
 
-	return {
+	const result = {
 		isValid: errors.length === 0,
 		errors
 	};
+
+	console.log(`[Robert] 🔧 Validation result: isValid=${result.isValid}, errors=[${result.errors.join(', ')}]`);
+
+	return result;
 }
 
 /**
@@ -190,7 +110,7 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
  */
 export async function getProjectId(): Promise<string> {
 	const settingsManager = SettingsManager.getInstance();
-	const rallyProjectName = settingsManager.getSetting('rallyProjectName');
+	const rallyProjectName = settingsManager.getSetting('rallyProjectName')?.trim();
 
 	if (!rallyProjectName) {
 		throw new Error("No s'ha trobat la configuració RALLY_PROJECT_NAME");
@@ -204,10 +124,10 @@ export async function getProjectId(): Promise<string> {
 		query: queryUtils.where('Name', '=', rallyProjectName)
 	});
 
-	const resultData = result as { results?: Array<{ objectId: string }> };
-	if (!resultData.results || resultData.results.length === 0) {
+	const resultData = result as { Results?: Array<{ ObjectID: string; Name?: string }> };
+	if (!resultData.Results || resultData.Results.length === 0) {
 		throw new Error(`No s'ha trobat cap projecte amb el nom "${rallyProjectName}"`);
 	}
 
-	return resultData.results[0].objectId;
+	return resultData.Results[0].ObjectID;
 }

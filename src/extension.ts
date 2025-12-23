@@ -4,10 +4,15 @@ import { RobertWebviewProvider } from './RobertWebviewProvider';
 import type { RallyData } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
 
+// Immediate logging when module is loaded
+const immediateOutput = OutputChannelManager.getInstance();
+immediateOutput.appendLine('[Robert] 📦 Module loaded - extension.ts imported');
+
 // Rally data cache - centralized state management
 export const rallyData: RallyData = {
 	projects: [],
 	users: [],
+	iterations: [],
 	userStories: [],
 	defaultProject: null
 };
@@ -22,6 +27,7 @@ const robertPopoverState = {
 export function activate(context: vscode.ExtensionContext) {
 	// Get the centralized output channel manager
 	const outputManager = OutputChannelManager.getInstance();
+	outputManager.appendLine('[Robert] 🚀 Extension activate() function called');
 	outputManager.appendLine('[Robert] Extension activated');
 	context.subscriptions.push(outputManager);
 
@@ -30,9 +36,12 @@ export function activate(context: vscode.ExtensionContext) {
 	outputManager.appendLine(`[Robert] Debug mode detected: ${isDebugMode}`);
 
 	// Initialize error handler
+	outputManager.appendLine('[Robert] 🔧 Initializing ErrorHandler');
 	const errorHandler = ErrorHandler.getInstance();
+	outputManager.appendLine('[Robert] ✅ ErrorHandler initialized successfully');
 
 	// Extension is now active
+	outputManager.appendLine('[Robert] 📝 Registering helloWorld command');
 	const disposable = vscode.commands.registerCommand('robert.helloWorld', () => {
 		errorHandler.executeWithErrorHandlingSync(() => {
 			vscode.window.showInformationMessage('Hello World from Robert!');
@@ -40,10 +49,16 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	context.subscriptions.push(disposable);
+	outputManager.appendLine('[Robert] ✅ helloWorld command registered successfully');
 
 	// Register the webview provider for activity bar
+	outputManager.appendLine('[Robert] 📋 Registering webview provider for activity bar');
 	const webviewProvider = new RobertWebviewProvider(context.extensionUri);
 	context.subscriptions.push(vscode.window.registerWebviewViewProvider(RobertWebviewProvider.viewType, webviewProvider));
+	outputManager.appendLine('[Robert] ✅ Webview provider registered successfully');
+
+	// Prefetch Rally data on activation to warm the cache (non-blocking)
+	void webviewProvider.prefetchRallyData('activation');
 
 	// If in debug mode, perform additional actions
 	if (isDebugMode) {

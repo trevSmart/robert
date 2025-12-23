@@ -8,12 +8,15 @@ export interface RallyApiObject {
 	lastUpdateDate?: string;
 	owner?: {
 		refObjectName: string;
+		_refObjectName?: string;
 	};
 	parent?: {
 		refObjectName: string;
+		_refObjectName?: string;
 	};
 	children?: {
 		count: number;
+		Count?: number;
 	};
 	userName?: string;
 	displayName?: string;
@@ -27,26 +30,89 @@ export interface RallyApiObject {
 	toDo?: number;
 	project?: {
 		refObjectName: string;
+		_refObjectName?: string;
 	};
 	iteration?: {
 		refObjectName: string;
+		_refObjectName?: string;
 	};
 	blocked?: boolean;
 	taskEstimateTotal?: number;
 	taskStatus?: string;
 	tasks?: {
 		count: number;
+		Count?: number;
 	};
 	testCases?: {
 		count: number;
+		Count?: number;
 	};
 	defects?: {
 		count: number;
+		Count?: number;
 	};
 	discussion?: {
 		count: number;
+		Count?: number;
 	};
 	appgar?: string;
+	ObjectID?: string;
+	Name?: string;
+	Description?: string;
+	State?: string;
+	CreationDate?: string;
+	LastUpdateDate?: string;
+	Owner?: {
+		_refObjectName: string;
+		refObjectName?: string;
+	};
+	Parent?: {
+		_refObjectName: string;
+		refObjectName?: string;
+	};
+	Children?: {
+		Count: number;
+		count?: number;
+	};
+	UserName?: string;
+	DisplayName?: string;
+	EmailAddress?: string;
+	FirstName?: string;
+	LastName?: string;
+	Disabled?: boolean;
+	FormattedID?: string;
+	PlanEstimate?: number;
+	ToDo?: number;
+	Project?: {
+		_refObjectName: string;
+		refObjectName?: string;
+	};
+	Iteration?: {
+		_refObjectName: string;
+		refObjectName?: string;
+	};
+	Blocked?: boolean;
+	TaskEstimateTotal?: number;
+	TaskStatus?: string;
+	Tasks?: {
+		Count: number;
+		count?: number;
+	};
+	TestCases?: {
+		Count: number;
+		count?: number;
+	};
+	Defects?: {
+		Count: number;
+		count?: number;
+	};
+	Discussion?: {
+		Count: number;
+		count?: number;
+	};
+	c_Appgar?: string;
+	StartDate?: string;
+	EndDate?: string;
 }
 
 export interface RallyApiResult {
@@ -74,6 +140,16 @@ export interface RallyUser {
 	lastName: string | undefined;
 	disabled: boolean | undefined;
 	_ref: string | undefined;
+}
+
+export interface RallyIteration {
+	objectId: string;
+	name: string;
+	startDate: string;
+	endDate: string;
+	state: string;
+	project: string | null;
+	_ref: string;
 }
 
 export interface RallyUserStory {
@@ -150,6 +226,7 @@ export declare class RestApi implements RallyApi {
 export interface RallyData {
 	projects: RallyProject[];
 	users: RallyUser[];
+	iterations: RallyIteration[];
 	userStories: RallyUserStory[];
 	defaultProject: RallyProject | null;
 }

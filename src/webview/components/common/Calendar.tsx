@@ -287,7 +287,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					gap: '1px',
 					backgroundColor: 'var(--vscode-panel-border)',
 					border: '1px solid var(--vscode-panel-border)',
-					borderRadius: '6px',
+					borderRadius: '12px',
 					overflow: 'hidden',
 					maxWidth: '800px',
 					margin: '0 auto'

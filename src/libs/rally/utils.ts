@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import rally from 'ibm-rally-node';
 
 import { SettingsManager } from '../../SettingsManager';

@@ -51,6 +51,7 @@ type VsCodeApi = {
 const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogoUri }) => {
 	const [hasVsCodeApi] = useState(() => {
 		const hasApi = typeof window.acquireVsCodeApi === 'function';
+		// eslint-disable-next-line no-console
 		console.log('[Frontend] hasVsCodeApi:', hasApi);
 		return hasApi;
 	});
@@ -104,6 +105,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [userStoriesError, setUserStoriesError] = useState<string | null>(null);
 
 	const loadIterations = useCallback(() => {
+		// eslint-disable-next-line no-console
 		console.log('[Frontend] Loading iterations...');
 		setIterationsLoading(true);
 		setIterationsError(null);
@@ -114,6 +116,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 	const loadUserStories = useCallback(
 		(iteration?: Iteration) => {
+			// eslint-disable-next-line no-console
 			console.log('[Frontend] Loading user stories...', iteration ? `for iteration: ${iteration.name}` : 'for all');
 			setUserStoriesLoading(true);
 			setUserStoriesError(null);
@@ -127,6 +130,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 	const handleIterationSelected = useCallback(
 		(iteration: Iteration) => {
+			// eslint-disable-next-line no-console
 			console.log('[Frontend] Iteration selected:', iteration.name);
 			setSelectedIteration(iteration);
 			loadUserStories(iteration);
@@ -135,6 +139,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	);
 
 	useEffect(() => {
+		// eslint-disable-next-line no-console
 		console.log('[Frontend] MainWebview useEffect executing - initializing...');
 
 		sendMessage({
@@ -147,12 +152,14 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		});
 
 		// Automatically load iterations when webview initializes
+		// eslint-disable-next-line no-console
 		console.log('[Frontend] Calling loadIterations automatically...');
 		loadIterations();
 
 		// Listen for messages from extension
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data;
+			// eslint-disable-next-line no-console
 			console.log('[Frontend] Received message from extension:', message.command);
 
 			switch (message.command) {
@@ -190,6 +197,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [sendMessage]);
 
 	useEffect(() => {
@@ -231,7 +239,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		});
 	};
 
-	const clearIterations = () => {
+	const _clearIterations = () => {
 		setIterations([]);
 		setIterationsError(null);
 		setSelectedIteration(null);

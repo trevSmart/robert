@@ -639,6 +639,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'loadIterations':
 							try {
 								this._errorHandler.logInfo('Loading iterations from Rally API', 'WebviewMessageListener');
+								// eslint-disable-next-line no-console
 								console.log('[Robert] 🔄 Webview received loadIterations command');
 								const iterationsResult = await getIterations();
 
@@ -677,6 +678,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'loadUserStories':
 							try {
 								this._errorHandler.logInfo('Loading user stories from Rally API', 'WebviewMessageListener');
+								// eslint-disable-next-line no-console
 								console.log('[Robert] 🔄 Webview received loadUserStories command', message.iteration ? `for iteration: ${message.iteration}` : 'for all');
 
 								const query = message.iteration ? { Iteration: message.iteration } : {};

@@ -354,6 +354,7 @@ function handleDefaultProject(query: RallyQuery, queryOptions: RallyQueryOptions
 }
 
 export async function getIterations(query: RallyQuery = {}, limit: number | null = null) {
+	// eslint-disable-next-line no-console
 	console.log('[Robert] 📅 getIterations called with query:', query, 'limit:', limit);
 
 	const rallyApi = getRallyApi();
@@ -402,7 +403,7 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 
 		if (iterationQueries.length) {
 			if (queryOptions.query) {
-				// @ts-ignore - Rally query builder has and method
+				// @ts-expect-error - Rally query builder has and method
 				queryOptions.query = queryOptions.query.and(iterationQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)));
 			} else {
 				queryOptions.query = iterationQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b));
@@ -455,6 +456,7 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 }
 
 export async function getUserStories(query: RallyQuery = {}, limit: number | null = null) {
+	// eslint-disable-next-line no-console
 	console.log('[Robert] 📋 getUserStories called with query:', query, 'limit:', limit);
 
 	const rallyApi = getRallyApi();

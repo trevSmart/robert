@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getCurrentUser } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 
@@ -630,15 +630,21 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._errorHandler.logInfo('Loading iterations from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
 								console.log('[Robert] 🔄 Webview received loadIterations command');
-								const iterationsResult = await getIterations();
+
+								// Load iterations and current user in parallel
+								const [iterationsResult, userResult] = await Promise.all([getIterations(), getCurrentUser()]);
 
 								if (iterationsResult?.iterations) {
 									webview.postMessage({
 										command: 'iterationsLoaded',
 										iterations: iterationsResult.iterations,
-										debugMode: this._isDebugMode
+										debugMode: this._isDebugMode,
+										currentUser: userResult?.user || null
 									});
 									this._errorHandler.logInfo(`Iterations loaded successfully: ${iterationsResult.count} iterations`, 'WebviewMessageListener');
+									if (userResult?.user) {
+										this._errorHandler.logInfo(`Current user loaded: ${userResult.user.displayName || userResult.user.userName}`, 'WebviewMessageListener');
+									}
 								} else {
 									webview.postMessage({
 										command: 'iterationsError',

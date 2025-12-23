@@ -1651,9 +1651,9 @@ jobs:
 										accent: '#9c27b0'
 									},
 									{
-										title: 'Design Assets',
-										description: 'Logos, icons, and design resources',
-										icon: SwatchIcon,
+										title: 'Lightning Web Components',
+										description: 'Reusable Lightning components for Salesforce',
+										icon: WrenchScrewdriverIcon,
 										gradient: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 100%)',
 										shadow: 'rgba(15, 76, 117, 0.25)',
 										accent: '#2196f3'

@@ -358,8 +358,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				))}
 			</div>
 
-			{/* Legend - only show when viewing current month and there are iterations */}
-			{isCurrentMonth && currentMonthIterations.length > 0 && (
+			{/* Legend - show iteration legends for any month, Today only for current month */}
+			{currentMonthIterations.length > 0 && (
 				<div
 					style={{
 						display: 'flex',
@@ -370,18 +370,21 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						color: 'var(--vscode-descriptionForeground)'
 					}}
 				>
-					<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-						<div
-							style={{
-								width: '12px',
-								height: '12px',
-								backgroundColor: 'rgba(33, 150, 243, 0.3)',
-								borderRadius: '2px'
-							}}
-						></div>
-						<span>Today</span>
-					</div>
-					{/* Show iteration legends dynamically */}
+					{/* Show Today indicator only when viewing current month */}
+					{isCurrentMonth && (
+						<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+							<div
+								style={{
+									width: '12px',
+									height: '12px',
+									backgroundColor: 'rgba(33, 150, 243, 0.3)',
+									borderRadius: '2px'
+								}}
+							></div>
+							<span>Today</span>
+						</div>
+					)}
+					{/* Show iteration legends dynamically for any month */}
 					{currentMonthIterations.map((iteration, index) => (
 						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
 							<div

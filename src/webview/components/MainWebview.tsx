@@ -7,10 +7,158 @@ import TasksTable from './common/TasksTable';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
+
+// Icon components (copied from NavigationBar for now)
+const TeamIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
+		/>
+	</svg>
+);
+
+const LearningIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+		/>
+	</svg>
+);
+
+const AssetsIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M4.098 19.902a3.75 3.75 0 0 0 5.304 0l6.401-6.402M6.75 21A3.75 3.75 0 0 1 3 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 0 0 3.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008Z"
+		/>
+	</svg>
+);
+
+const MetricsIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
+		/>
+	</svg>
+);
+// HeroIcons components for Learning and Assets
+const TargetIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 21a9.004 9.004 0 0 0 8.716-6.747M12 21a9.004 9.004 0 0 1-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9s-2.015-9-4.5-9m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 0 1 7.843 4.582M12 3a8.997 8.997 0 0 0-7.843 4.582m15.686 2.84L5.107 14.668M5.107 14.668L9.468 6.98M5.107 14.668L9.468 6.98"
+		/>
+	</svg>
+);
+
+const TrophyIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M16.5 18.75h-9m9 0a3 3 0 0 1 3 3h-15a3 3 0 0 1 3-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 0 1-.982-3.172M9.497 14.25a7.454 7.454 0 0 0 .981-3.172M5.25 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 0 7.73 9.728M5.25 4.236c.982.143 1.954.317 2.916.52a6.003 6.003 0 0 1 4.804 5.592M5.25 4.236c.982.143 1.954.317 2.916.52A6.003 6.003 0 0 1 7.73 9.728M5.25 4.236c.982.143 1.954.317 2.916.52a6.003 6.003 0 0 1 4.804 5.592m4.804-5.592a6.003 6.003 0 0 1 4.804-5.592 6.003 6.003 0 0 1 4.804 5.592M18.75 4.236c-.982.143-1.954.317-2.916.52a6.003 6.003 0 0 1 4.804 5.592M18.75 4.236c-.982.143-1.954.317-2.916.52A6.003 6.003 0 0 1 16.5 9.728"
+		/>
+	</svg>
+);
+
+const ChartBarSquareIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M7.5 14.25v2.25m3-6v6m3-10.5v10.5m3-6v6M3 16.5V18a2.25 2.25 0 0 0 2.25 2.25H18a2.25 2.25 0 0 0 2.25-2.25V16.5m-15 0H21m-21 0a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 6.75v7.5A2.25 2.25 0 0 1 18.75 16.5m-15 0H3m15-7.5V6.75a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v7.5c0 .414.336.75.75.75h10.5a.75.75 0 0 0 .75-.75V9m-9 0v.75h.75V9H9m3 0v.75h.75V9h-.75m3 0v.75h.75V9h-.75"
+		/>
+	</svg>
+);
+
+const LightBulbIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 18v-5.25m0 0a6.01 6.01 0 0 0 1.5-.189m-1.5.189a6.01 6.01 0 0 1-1.5-.189m3.75 7.478a12.06 12.06 0 0 1-4.5 0m3.75 2.383a14.406 14.406 0 0 1-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 1 0-7.517 0c.85.493 1.509 1.333 1.509 2.316V18"
+		/>
+	</svg>
+);
+
+const ArrowPathIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
+	</svg>
+);
+
+const DocumentTextIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m.75 12 3 3m0 0 3-3m-3 3v-6m-1.5-9H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z"
+		/>
+	</svg>
+);
+
+const ChartBarIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"
+		/>
+	</svg>
+);
+
+const SwatchIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M4.098 19.902a3.75 3.75 0 0 0 5.304 0l6.401-6.402M6.75 21A3.75 3.75 0 0 1 3 17.25V4.125C3 3.504 3.504 3 4.125 3h5.25c.621 0 1.125.504 1.125 1.125v4.072M6.75 21a3.75 3.75 0 0 0 3.75-3.75V8.197M6.75 21h13.125c.621 0 1.125-.504 1.125-1.125v-5.25c0-.621-.504-1.125-1.125-1.125h-4.072M10.5 8.197l2.88-2.88c.438-.439 1.15-.439 1.59 0l3.712 3.713c.44.44.44 1.152 0 1.59l-2.879 2.88M6.75 17.25h.008v.008H6.75v-.008Z"
+		/>
+	</svg>
+);
+
+const ClipboardDocumentCheckIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M11.35 3.836c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m8.9-4.414c.376.023.75.05 1.124.08 1.131.094 1.976 1.057 1.976 2.192V16.5A2.25 2.25 0 0 1 18 18.75h-2.25m-7.5-10.5H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V8.25c0-.621-.504-1.125-1.125-1.125H12M10.5 7.5H8.25m6.75 0H12m-6.75 3h.008v.008H8.25v-.008m0 2.25h.008v.008H8.25V12m0 2.25h.008v.008H8.25V14.25m6.75-6.75H12m6.75 0H15m-3 2.25h.008v.008H12v-.008m0 2.25h.008v.008H12V12m0 2.25h.008v.008H12V14.25m6.75-6.75H15m3-2.25h.008v.008H18V6m0 2.25h.008v.008H18V8.25M18 12h.008v.008H18V12m0 2.25h.008v.008H18V14.25m0-6.75h.008v.008H18V8.25M12 2.25h.008v.008H12V2.25m0 2.25h.008v.008H12V4.5m0 2.25h.008v.008H12V6.75"
+		/>
+	</svg>
+);
+
+const BookOpenIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+		/>
+	</svg>
+);
+
+const WrenchScrewdriverIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M11.42 15.17 17.25 21A2.652 2.652 0 0 0 21 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 1 1-3.586-3.586l6.837-5.63m5.108-.233c.55-.164 1.163-.188 1.743-.14a4.5 4.5 0 0 0 4.486-6.336l-3.53 3.53a3.124 3.124 0 0 1-3.767-3.77L9 7.5l-.697-.697a4.5 4.5 0 0 0-6.336 4.486c.091 1.076-.071 2.264-.904 2.95l-.102.085m13.915 11.003a2.5 2.5 0 1 1 3.536 3.536L9.5 10.5 8.5 9.5l6.915-6.915a2.5 2.5 0 1 1 3.536 3.536L12.5 10.5l1 1z"
+		/>
+	</svg>
+);
+
 import { CenteredContainer, Container, ContentArea, GlobalStyle, Header, LogoContainer, LogoImage, Title } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 
-type SectionType = 'calendar' | 'portfolio';
+type SectionType = 'calendar' | 'portfolio' | 'team' | 'learning' | 'assets' | 'metrics';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail';
 
 interface MainWebviewProps {
@@ -94,6 +242,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('portfolio');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
+	const [calendarDate, setCalendarDate] = useState(new Date());
 
 	const loadIterations = useCallback(() => {
 		// eslint-disable-next-line no-console
@@ -361,13 +510,6 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			<Container>
 				<GlobalStyle />
 				<CenteredContainer>
-					<Header>
-						<LogoContainer>
-							<LogoImage src={rebusLogoUri} alt="IBM Logo" />
-							<Title>Robert</Title>
-						</LogoContainer>
-					</Header>
-
 					<ContentArea>
 						<p style={{ margin: 0 }}>Unable to initialize the VS Code webview API. Please reload VS Code and try again.</p>
 					</ContentArea>
@@ -380,17 +522,523 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		<Container>
 			<GlobalStyle />
 			<CenteredContainer>
-				<Header>
-					<LogoContainer>
-						<LogoImage src={rebusLogoUri} alt="IBM Logo" />
-						<Title>Robert</Title>
-					</LogoContainer>
-				</Header>
-
 				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} />
 
 				<ContentArea>
-					{activeSection === 'calendar' && <Calendar />}
+					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} />}
+
+					{activeSection === 'team' && (
+						<div style={{ padding: '20px' }}>
+							{/* Team Header */}
+							<div style={{ marginBottom: '30px', textAlign: 'center' }}>
+								<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '600' }}>Team Dashboard</h2>
+								<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Monitor team activity, collaboration, and project progress</p>
+							</div>
+
+							{/* Team Stats */}
+							<div
+								style={{
+									display: 'grid',
+									gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+									gap: '16px',
+									marginBottom: '30px'
+								}}
+							>
+								<div
+									style={{
+										background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+										borderRadius: '12px',
+										padding: '20px',
+										textAlign: 'center',
+										color: 'white'
+									}}
+								>
+									<div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>8</div>
+									<div style={{ fontSize: '12px', opacity: 0.9 }}>Active Members</div>
+								</div>
+								<div
+									style={{
+										background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+										borderRadius: '12px',
+										padding: '20px',
+										textAlign: 'center',
+										color: 'white'
+									}}
+								>
+									<div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>12</div>
+									<div style={{ fontSize: '12px', opacity: 0.9 }}>Tasks in Progress</div>
+								</div>
+								<div
+									style={{
+										background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+										borderRadius: '12px',
+										padding: '20px',
+										textAlign: 'center',
+										color: 'white'
+									}}
+								>
+									<div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>95%</div>
+									<div style={{ fontSize: '12px', opacity: 0.9 }}>Sprint Completion</div>
+								</div>
+								<div
+									style={{
+										background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+										borderRadius: '12px',
+										padding: '20px',
+										textAlign: 'center',
+										color: 'white'
+									}}
+								>
+									<div style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px' }}>24</div>
+									<div style={{ fontSize: '12px', opacity: 0.9 }}>Messages Today</div>
+								</div>
+							</div>
+
+							{/* Team Members */}
+							<div style={{ marginBottom: '20px' }}>
+								<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+								<div
+									style={{
+										display: 'grid',
+										gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+										gap: '16px'
+									}}
+								>
+									{[
+										{
+											name: 'Sarah Johnson',
+											role: 'Product Owner',
+											avatar: 'SJ',
+											status: 'online',
+											tasks: 5,
+											lastActive: '2 min ago',
+											currentTask: 'Reviewing user stories'
+										},
+										{
+											name: 'Mike Chen',
+											role: 'Scrum Master',
+											avatar: 'MC',
+											status: 'in-meeting',
+											tasks: 3,
+											lastActive: '15 min ago',
+											currentTask: 'Sprint planning'
+										},
+										{
+											name: 'Emily Davis',
+											role: 'Senior Developer',
+											avatar: 'ED',
+											status: 'online',
+											tasks: 4,
+											lastActive: '5 min ago',
+											currentTask: 'Code review'
+										},
+										{
+											name: 'Alex Rodriguez',
+											role: 'UI/UX Designer',
+											avatar: 'AR',
+											status: 'away',
+											tasks: 2,
+											lastActive: '1 hour ago',
+											currentTask: 'Wireframe design'
+										},
+										{
+											name: 'Lisa Wang',
+											role: 'QA Engineer',
+											avatar: 'LW',
+											status: 'online',
+											tasks: 6,
+											lastActive: '1 min ago',
+											currentTask: 'Test case execution'
+										},
+										{
+											name: 'David Kim',
+											role: 'DevOps Engineer',
+											avatar: 'DK',
+											status: 'busy',
+											tasks: 3,
+											lastActive: '30 min ago',
+											currentTask: 'CI/CD pipeline'
+										}
+									].map(member => (
+										<div
+											key={member.name}
+											style={{
+												backgroundColor: 'var(--vscode-editor-background)',
+												border: '1px solid var(--vscode-panel-border)',
+												borderRadius: '12px',
+												padding: '20px',
+												display: 'flex',
+												alignItems: 'center',
+												gap: '16px',
+												cursor: 'pointer',
+												transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+											}}
+											onMouseEnter={e => {
+												e.currentTarget.style.transform = 'translateY(-2px)';
+												e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+											}}
+											onMouseLeave={e => {
+												e.currentTarget.style.transform = 'translateY(0)';
+												e.currentTarget.style.boxShadow = 'none';
+											}}
+										>
+											{/* Avatar */}
+											<div
+												style={{
+													width: '50px',
+													height: '50px',
+													borderRadius: '50%',
+													background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+													display: 'flex',
+													alignItems: 'center',
+													justifyContent: 'center',
+													color: 'white',
+													fontWeight: 'bold',
+													fontSize: '16px',
+													position: 'relative'
+												}}
+											>
+												{member.avatar}
+												<div
+													style={{
+														position: 'absolute',
+														bottom: '2px',
+														right: '2px',
+														width: '12px',
+														height: '12px',
+														borderRadius: '50%',
+														backgroundColor: member.status === 'online' ? '#4caf50' : member.status === 'away' ? '#ff9800' : member.status === 'busy' ? '#f44336' : '#9e9e9e',
+														border: '2px solid var(--vscode-editor-background)'
+													}}
+												/>
+											</div>
+
+											{/* Member Info */}
+											<div style={{ flex: 1 }}>
+												<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+													<h4 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '16px', fontWeight: '600' }}>{member.name}</h4>
+													<span
+														style={{
+															fontSize: '10px',
+															padding: '2px 6px',
+															borderRadius: '10px',
+															backgroundColor: member.status === 'online' ? 'rgba(76, 175, 80, 0.1)' : member.status === 'away' ? 'rgba(255, 152, 0, 0.1)' : member.status === 'busy' ? 'rgba(244, 67, 54, 0.1)' : 'rgba(158, 158, 158, 0.1)',
+															color: member.status === 'online' ? '#4caf50' : member.status === 'away' ? '#ff9800' : member.status === 'busy' ? '#f44336' : '#9e9e9e',
+															fontWeight: '500'
+														}}
+													>
+														{member.status === 'in-meeting' ? 'in meeting' : member.status}
+													</span>
+												</div>
+												<p style={{ margin: '0 0 8px 0', color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>{member.role}</p>
+												<p style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '13px' }}>{member.currentTask}</p>
+												<div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
+													<span>📋 {member.tasks} tasks</span>
+													<span>🕒 {member.lastActive}</span>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+
+							{/* Recent Activity */}
+							<div>
+								<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Recent Activity</h3>
+								<div
+									style={{
+										backgroundColor: 'var(--vscode-editor-background)',
+										border: '1px solid var(--vscode-panel-border)',
+										borderRadius: '12px',
+										padding: '20px'
+									}}
+								>
+									{[
+										{ user: 'Sarah Johnson', action: 'completed task', target: '"User authentication flow"', time: '5 min ago', type: 'task' },
+										{ user: 'Mike Chen', action: 'commented on', target: '"Sprint Review Meeting"', time: '12 min ago', type: 'comment' },
+										{ user: 'Emily Davis', action: 'pushed code to', target: 'feature/user-profile', time: '18 min ago', type: 'code' },
+										{ user: 'Lisa Wang', action: 'reported bug in', target: 'QA-247', time: '25 min ago', type: 'bug' },
+										{ user: 'Alex Rodriguez', action: 'shared design for', target: 'New Dashboard Layout', time: '32 min ago', type: 'design' }
+									].map((activity, index) => (
+										<div
+											key={index}
+											style={{
+												display: 'flex',
+												alignItems: 'center',
+												gap: '12px',
+												padding: '12px 0',
+												borderBottom: index < 4 ? '1px solid var(--vscode-panel-border)' : 'none'
+											}}
+										>
+											<div
+												style={{
+													width: '32px',
+													height: '32px',
+													borderRadius: '50%',
+													background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+													display: 'flex',
+													alignItems: 'center',
+													justifyContent: 'center',
+													color: 'white',
+													fontSize: '12px',
+													fontWeight: 'bold'
+												}}
+											>
+												{activity.user
+													.split(' ')
+													.map(n => n[0])
+													.join('')}
+											</div>
+											<div style={{ flex: 1 }}>
+												<span style={{ color: 'var(--vscode-foreground)', fontSize: '13px' }}>
+													<strong>{activity.user}</strong> {activity.action} <em style={{ color: 'var(--vscode-textLink-foreground)' }}>{activity.target}</em>
+												</span>
+												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>{activity.time}</div>
+											</div>
+											<div style={{ fontSize: '14px' }}>
+												{activity.type === 'task' && '✅'}
+												{activity.type === 'comment' && '💬'}
+												{activity.type === 'code' && '💻'}
+												{activity.type === 'bug' && '🐛'}
+												{activity.type === 'design' && '🎨'}
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						</div>
+					)}
+
+					{activeSection === 'learning' && (
+						<div style={{ padding: '20px' }}>
+							{/* Learning Banners */}
+							<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+								{[
+									{
+										title: 'Introduction to Agile Development',
+										kicker: 'NEW COURSE',
+										accent: '#7c4dff',
+										bg: 'linear-gradient(135deg, #3a1c71 0%, #d76d77 50%, #ffaf7b 100%)',
+										shadow: 'rgba(124, 77, 255, 0.25)',
+										icon: TargetIcon
+									},
+									{
+										title: 'Scrum Master Certification Prep',
+										kicker: 'CERTIFICATION',
+										accent: '#00bcd4',
+										bg: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+										shadow: 'rgba(0, 188, 212, 0.25)',
+										icon: TrophyIcon
+									},
+									{
+										title: 'Advanced Project Management',
+										kicker: 'PRO SERIES',
+										accent: '#4caf50',
+										bg: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 50%, #bbe1fa 100%)',
+										shadow: 'rgba(76, 175, 80, 0.25)',
+										icon: ChartBarSquareIcon
+									},
+									{
+										title: 'Innovation & Design Thinking',
+										kicker: 'STUDIO',
+										accent: '#ff9800',
+										bg: 'linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #7f8c8d 100%)',
+										shadow: 'rgba(255, 152, 0, 0.25)',
+										icon: LightBulbIcon
+									},
+									{
+										title: 'Continuous Improvement Techniques',
+										kicker: 'WORKSHOP',
+										accent: '#e91e63',
+										bg: 'linear-gradient(135deg, #4a0e4e 0%, #7b1fa2 50%, #ba68c8 100%)',
+										shadow: 'rgba(233, 30, 99, 0.25)',
+										icon: ArrowPathIcon
+									}
+								].map(banner => (
+									<div
+										key={banner.title}
+										style={{
+											height: '110px',
+											borderRadius: '16px',
+											background: banner.bg,
+											display: 'flex',
+											alignItems: 'center',
+											justifyContent: 'space-between',
+											padding: '16px 20px',
+											color: '#ffffff',
+											cursor: 'pointer',
+											border: '1px solid rgba(255,255,255,0.1)',
+											transition: 'transform 0.2s ease'
+										}}
+										onMouseEnter={e => {
+											e.currentTarget.style.transform = 'translateY(-1px)';
+										}}
+										onMouseLeave={e => {
+											e.currentTarget.style.transform = 'translateY(0)';
+										}}
+									>
+										<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+											<div
+												style={{
+													fontSize: '11px',
+													letterSpacing: '0.12em',
+													fontWeight: 700,
+													color: 'rgba(255,255,255,0.8)',
+													textTransform: 'uppercase'
+												}}
+											>
+												{banner.kicker}
+											</div>
+											<div style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>{banner.title}</div>
+											<div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Interactive learning with hands-on exercises.</div>
+										</div>
+										<div
+											style={{
+												width: '46px',
+												height: '46px',
+												borderRadius: '50%',
+												backgroundColor: 'rgba(255,255,255,0.15)',
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'center',
+												color: '#ffffff',
+												border: `2px solid ${banner.accent}`,
+												backdropFilter: 'blur(10px)'
+											}}
+										>
+											<banner.icon />
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
+
+					{activeSection === 'metrics' && (
+						<div
+							style={{
+								padding: '40px 20px',
+								textAlign: 'center',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							<MetricsIcon />
+							<h3 style={{ margin: '20px 0 10px 0', color: 'var(--vscode-foreground)' }}>Metrics Section</h3>
+							<p>Analytics and metrics dashboard coming soon.</p>
+						</div>
+					)}
+
+					{activeSection === 'assets' && (
+						<div style={{ padding: '20px' }}>
+							{/* Assets Grid */}
+							<div
+								style={{
+									display: 'grid',
+									gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+									gap: '16px',
+									marginTop: '20px'
+								}}
+							>
+								{[
+									{
+										title: 'Project Templates',
+										description: 'Reusable project templates and checklists',
+										icon: DocumentTextIcon,
+										gradient: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+										shadow: 'rgba(30, 60, 114, 0.25)',
+										accent: '#4a90e2'
+									},
+									{
+										title: 'Dashboards',
+										description: 'Interactive dashboards and reports',
+										icon: ChartBarIcon,
+										gradient: 'linear-gradient(135deg, #4a0e4e 0%, #7b1fa2 100%)',
+										shadow: 'rgba(123, 31, 162, 0.25)',
+										accent: '#9c27b0'
+									},
+									{
+										title: 'Design Assets',
+										description: 'Logos, icons, and design resources',
+										icon: SwatchIcon,
+										gradient: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 100%)',
+										shadow: 'rgba(15, 76, 117, 0.25)',
+										accent: '#2196f3'
+									},
+									{
+										title: 'Checklists',
+										description: 'Standardized checklists and procedures',
+										icon: ClipboardDocumentCheckIcon,
+										gradient: 'linear-gradient(135deg, #2c3e50 0%, #34495e 100%)',
+										shadow: 'rgba(44, 62, 80, 0.25)',
+										accent: '#607d8b'
+									},
+									{
+										title: 'Documentation',
+										description: 'Guides, manuals, and documentation',
+										icon: BookOpenIcon,
+										gradient: 'linear-gradient(135deg, #3a1c71 0%, #d76d77 100%)',
+										shadow: 'rgba(58, 28, 113, 0.25)',
+										accent: '#ff5722'
+									},
+									{
+										title: 'Tools & Scripts',
+										description: 'Automation scripts and utilities',
+										icon: WrenchScrewdriverIcon,
+										gradient: 'linear-gradient(135deg, #134e5e 0%, #71b280 100%)',
+										shadow: 'rgba(19, 78, 94, 0.25)',
+										accent: '#4caf50'
+									}
+								].map(asset => (
+									<div
+										key={asset.title}
+										style={{
+											background: asset.gradient,
+											borderRadius: '12px',
+											padding: '20px',
+											display: 'flex',
+											flexDirection: 'column',
+											alignItems: 'center',
+											textAlign: 'center',
+											cursor: 'pointer',
+											minHeight: '140px',
+											border: '1px solid rgba(255,255,255,0.1)',
+											transition: 'transform 0.2s ease'
+										}}
+										onMouseEnter={e => {
+											e.currentTarget.style.transform = 'translateY(-1px)';
+										}}
+										onMouseLeave={e => {
+											e.currentTarget.style.transform = 'translateY(0)';
+										}}
+									>
+										<div style={{ marginBottom: '16px' }}>
+											<asset.icon />
+										</div>
+										<h4
+											style={{
+												margin: '0 0 8px 0',
+												color: '#ffffff',
+												fontSize: '16px',
+												fontWeight: '600'
+											}}
+										>
+											{asset.title}
+										</h4>
+										<p
+											style={{
+												margin: 0,
+												color: 'rgba(255,255,255,0.8)',
+												fontSize: '12px',
+												lineHeight: '1.4'
+											}}
+										>
+											{asset.description}
+										</p>
+									</div>
+								))}
+							</div>
+						</div>
+					)}
 
 					{activeSection === 'portfolio' && (
 						<>

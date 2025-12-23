@@ -339,15 +339,6 @@ function enableDebugFeatures(context: vscode.ExtensionContext, outputManager: Ou
 
 	// Pass debug mode information to webview provider
 	webviewProvider.setDebugMode(true);
-
-	// Focus on Output panel in debug mode
-	outputManager.show();
-
-	// Ensure the Output panel is visible and focused on Robert channel
-	setTimeout(() => {
-		vscode.commands.executeCommand('workbench.action.output.toggleOutput');
-		outputManager.show();
-	}, 100);
 }
 
 export function deactivate() {
@@ -359,7 +350,7 @@ export function deactivate() {
 	outputManager.appendLine('[Robert] 🚫 EXTENSION DEACTIVATED');
 	outputManager.appendLine(`[Robert] Time: ${new Date().toISOString()}`);
 	outputManager.appendLine('[Robert] ---');
-	outputManager.show();
+	// Note: Not showing output channel on deactivation to avoid annoying users
 }
 
 // Lightweight floating popover using QuickPick (closest to a small panel)

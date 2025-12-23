@@ -171,6 +171,21 @@ interface IterationsTableProps {
 }
 
 export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, loading = false, error, onLoadIterations, onIterationSelected, selectedIteration }) => {
+	// Function to check if iteration corresponds to current day
+	const isCurrentDayIteration = (iteration: any) => {
+		if (!iteration.startDate || !iteration.endDate) return false;
+
+		const today = new Date();
+		const startDate = new Date(iteration.startDate);
+		const endDate = new Date(iteration.endDate);
+
+		// Reset time for date comparison
+		today.setHours(0, 0, 0, 0);
+		startDate.setHours(0, 0, 0, 0);
+		endDate.setHours(23, 59, 59, 999);
+
+		return today >= startDate && today <= endDate;
+	};
 	return (
 		<div
 			style={{
@@ -249,6 +264,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid var(--vscode-panel-border)' }}>
 					<thead>
 						<tr style={{ backgroundColor: 'var(--vscode-titleBar-activeBackground)', color: 'var(--vscode-titleBar-activeForeground)' }}>
+							<th style={{ padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '40px' }}></th>
 							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Name</th>
 							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Start Date</th>
 							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>End Date</th>
@@ -277,6 +293,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 									}
 								}}
 							>
+								<td style={{ padding: '8px 4px', textAlign: 'center' }}>{isCurrentDayIteration(iteration) && <span style={{ fontSize: '14px' }}>📅</span>}</td>
 								<td style={{ padding: '8px 12px' }}>{iteration.name}</td>
 								<td style={{ padding: '8px 12px' }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
 								<td style={{ padding: '8px 12px' }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>

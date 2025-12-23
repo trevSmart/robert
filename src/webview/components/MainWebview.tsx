@@ -19,13 +19,9 @@ const TeamIcon = () => (
 	</svg>
 );
 
-const LearningIcon = () => (
+const SalesforceIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
-		/>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
 	</svg>
 );
 
@@ -48,7 +44,7 @@ const MetricsIcon = () => (
 		/>
 	</svg>
 );
-// HeroIcons components for Learning and Assets
+// HeroIcons components for Salesforce and Assets
 const TargetIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
 		<path
@@ -158,7 +154,7 @@ const WrenchScrewdriverIcon = () => (
 import { CenteredContainer, Container, ContentArea, GlobalStyle, Header, LogoContainer, LogoImage, Title } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 
-type SectionType = 'calendar' | 'portfolio' | 'team' | 'learning' | 'assets' | 'metrics';
+type SectionType = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail';
 
 interface MainWebviewProps {
@@ -814,46 +810,46 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 						</div>
 					)}
 
-					{activeSection === 'learning' && (
+					{activeSection === 'salesforce' && (
 						<div style={{ padding: '20px' }}>
-							{/* Learning Banners */}
+							{/* Salesforce Banners */}
 							<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
 								{[
 									{
-										title: 'Introduction to Agile Development',
-										kicker: 'NEW COURSE',
+										title: 'Salesforce CRM Fundamentals',
+										kicker: 'PLATFORM',
 										accent: '#7c4dff',
 										bg: 'linear-gradient(135deg, #3a1c71 0%, #d76d77 50%, #ffaf7b 100%)',
 										shadow: 'rgba(124, 77, 255, 0.25)',
 										icon: TargetIcon
 									},
 									{
-										title: 'Scrum Master Certification Prep',
-										kicker: 'CERTIFICATION',
+										title: 'Lightning Web Components',
+										kicker: 'DEVELOPMENT',
 										accent: '#00bcd4',
 										bg: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
 										shadow: 'rgba(0, 188, 212, 0.25)',
 										icon: TrophyIcon
 									},
 									{
-										title: 'Advanced Project Management',
-										kicker: 'PRO SERIES',
+										title: 'Salesforce Integration APIs',
+										kicker: 'CONNECTIVITY',
 										accent: '#4caf50',
 										bg: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 50%, #bbe1fa 100%)',
 										shadow: 'rgba(76, 175, 80, 0.25)',
 										icon: ChartBarSquareIcon
 									},
 									{
-										title: 'Innovation & Design Thinking',
-										kicker: 'STUDIO',
+										title: 'Salesforce Einstein AI',
+										kicker: 'INTELLIGENCE',
 										accent: '#ff9800',
 										bg: 'linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #7f8c8d 100%)',
 										shadow: 'rgba(255, 152, 0, 0.25)',
 										icon: LightBulbIcon
 									},
 									{
-										title: 'Continuous Improvement Techniques',
-										kicker: 'WORKSHOP',
+										title: 'Salesforce DevOps & CI/CD',
+										kicker: 'AUTOMATION',
 										accent: '#e91e63',
 										bg: 'linear-gradient(135deg, #4a0e4e 0%, #7b1fa2 50%, #ba68c8 100%)',
 										shadow: 'rgba(233, 30, 99, 0.25)',
@@ -895,7 +891,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 												{banner.kicker}
 											</div>
 											<div style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>{banner.title}</div>
-											<div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Interactive learning with hands-on exercises.</div>
+											<div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Hands-on Salesforce development and administration.</div>
 										</div>
 										<div
 											style={{

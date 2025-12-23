@@ -1,6 +1,6 @@
 import type React from 'react';
 
-type Section = 'calendar' | 'portfolio' | 'team' | 'learning' | 'assets' | 'metrics';
+type Section = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
 
 interface NavigationBarProps {
 	activeSection: Section;
@@ -34,13 +34,9 @@ const TeamIcon = () => (
 	</svg>
 );
 
-const LearningIcon = () => (
+const SalesforceIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
-		/>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
 	</svg>
 );
 
@@ -166,24 +162,24 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				</button>
 				<button
 					type="button"
-					onClick={() => onSectionChange('learning')}
+					onClick={() => onSectionChange('salesforce')}
 					style={{
 						padding: '12px 20px',
 						border: 'none',
-						backgroundColor: activeSection === 'learning' ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-						color: activeSection === 'learning' ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-						borderBottom: activeSection === 'learning' ? `2px solid var(--vscode-progressBar-background)` : 'none',
+						backgroundColor: activeSection === 'salesforce' ? 'var(--vscode-tab-activeBackground)' : 'transparent',
+						color: activeSection === 'salesforce' ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
+						borderBottom: activeSection === 'salesforce' ? `2px solid var(--vscode-progressBar-background)` : 'none',
 						cursor: 'pointer',
 						fontSize: '13px',
-						fontWeight: activeSection === 'learning' ? '600' : '400',
+						fontWeight: activeSection === 'salesforce' ? '600' : '400',
 						transition: 'all 0.2s ease',
 						display: 'flex',
 						alignItems: 'center',
 						gap: '8px'
 					}}
 				>
-					<LearningIcon />
-					<span>Learning</span>
+					<SalesforceIcon />
+					<span>Salesforce</span>
 				</button>
 				<button
 					type="button"

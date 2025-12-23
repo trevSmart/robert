@@ -22,9 +22,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
+	const [hoveredDay, setHoveredDay] = useState<any>(null);
+	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
 	// Function to calculate days difference and create tooltip
 	const getDayTooltip = (dayInfo: any) => {
-		const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayInfo.day);
+		const targetDate = new Date(dayInfo.date.getFullYear(), dayInfo.date.getMonth(), dayInfo.date.getDate());
 		const diffTime = targetDate.getTime() - todayStart.getTime();
 		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
@@ -157,6 +160,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		calendarDays.push({
 			day: dayCounter,
+			date: currentDayDate,
 			isCurrentMonth,
 			isToday,
 			iterations: activeIterations
@@ -331,13 +335,18 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							transition: 'background-color 0.2s ease',
 							position: 'relative'
 						}}
-						title={getDayTooltip(dayInfo)}
 						onMouseEnter={e => {
+							setHoveredDay(dayInfo);
+							setMousePosition({ x: e.clientX, y: e.clientY });
 							if (!dayInfo.isToday) {
 								e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
 							}
 						}}
+						onMouseMove={e => {
+							setMousePosition({ x: e.clientX, y: e.clientY });
+						}}
 						onMouseLeave={e => {
+							setHoveredDay(null);
 							if (!dayInfo.isToday) {
 								e.currentTarget.style.backgroundColor = dayInfo.iterations.length > 0 ? 'rgba(0, 122, 204, 0.1)' : 'var(--vscode-editor-background)'; // Same background for all days
 							}
@@ -498,6 +507,31 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							</div>
 						</div>
 					))}
+				</div>
+			)}
+
+			{/* Custom tooltip for day hover */}
+			{hoveredDay && (
+				<div
+					style={{
+						position: 'fixed',
+						left: mousePosition.x + 10,
+						top: mousePosition.y - 30,
+						backgroundColor: 'var(--vscode-quickInput-background)',
+						color: 'var(--vscode-quickInput-foreground)',
+						border: '1px solid var(--vscode-panel-border)',
+						borderRadius: '4px',
+						padding: '4px 8px',
+						fontSize: '12px',
+						pointerEvents: 'none',
+						zIndex: 1000,
+						boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+						maxWidth: '200px',
+						wordWrap: 'break-word',
+						whiteSpace: 'nowrap'
+					}}
+				>
+					{getDayTooltip(hoveredDay)}
 				</div>
 			)}
 		</div>

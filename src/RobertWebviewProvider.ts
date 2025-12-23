@@ -635,7 +635,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								if (iterationsResult?.iterations) {
 									webview.postMessage({
 										command: 'iterationsLoaded',
-										iterations: iterationsResult.iterations
+										iterations: iterationsResult.iterations,
+										debugMode: this._isDebugMode
 									});
 									this._errorHandler.logInfo(`Iterations loaded successfully: ${iterationsResult.count} iterations`, 'WebviewMessageListener');
 								} else {

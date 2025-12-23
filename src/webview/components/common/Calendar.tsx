@@ -14,9 +14,10 @@ interface CalendarProps {
 	currentDate?: Date;
 	iterations?: Iteration[];
 	onMonthChange?: (date: Date) => void;
+	debugMode?: boolean;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange }) => {
+const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false }) => {
 	const today = new Date();
 	const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 
@@ -335,6 +336,23 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									/>
 								))}
 							</div>
+						)}
+						{/* Show debug milestone on 20th of each month */}
+						{debugMode && dayInfo.day === 20 && dayInfo.isCurrentMonth && (
+							<div
+								style={{
+									position: 'absolute',
+									top: '2px',
+									right: '2px',
+									width: '8px',
+									height: '8px',
+									borderRadius: '50%',
+									backgroundColor: '#ff6b35',
+									border: '1px solid var(--vscode-editor-background)',
+									zIndex: 2
+								}}
+								title="Debug Milestone - 20th of month"
+							/>
 						)}
 					</div>
 				))}

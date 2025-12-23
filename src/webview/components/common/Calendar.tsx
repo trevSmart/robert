@@ -22,6 +22,25 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
+	// Function to calculate days difference and create tooltip
+	const getDayTooltip = (dayInfo: any) => {
+		const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayInfo.day);
+		const diffTime = targetDate.getTime() - todayStart.getTime();
+		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+		if (diffDays === 0) {
+			return 'Avui';
+		} else if (diffDays === 1) {
+			return '1 dia';
+		} else if (diffDays === -1) {
+			return 'Fa 1 dia';
+		} else if (diffDays > 0) {
+			return `${diffDays} dies`;
+		} else {
+			return `Fa ${Math.abs(diffDays)} dies`;
+		}
+	};
+
 	// Get first day of the month
 	const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
 	// Get last day of the month
@@ -312,6 +331,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							transition: 'background-color 0.2s ease',
 							position: 'relative'
 						}}
+						title={getDayTooltip(dayInfo)}
 						onMouseEnter={e => {
 							if (!dayInfo.isToday) {
 								e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';

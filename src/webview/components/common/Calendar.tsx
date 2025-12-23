@@ -42,19 +42,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-	// Iteration colors - cycle through these 5 distinct colors
-	const iterationColors = ['#2196f3', '#4caf50', '#ff9800', '#9c27b0', '#f44336'];
-
-	// Function to get a consistent color for iteration based on its objectId
-	const getIterationColor = (objectId: string): string => {
-		// Create a simple hash from the objectId to ensure consistent coloring
-		let hash = 0;
-		for (let i = 0; i < objectId.length; i++) {
-			hash = (hash << 5) - hash + objectId.charCodeAt(i);
-			hash = hash & hash; // Convert to 32-bit integer
-		}
-		return iterationColors[Math.abs(hash) % iterationColors.length];
-	};
+	// Iteration colors - cycle through these colors in order
+	const iterationColors = ['#2E86DE', '#F6B93B', '#38ADA9', '#E55039', '#6A89CC', '#B71540'];
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {
@@ -80,10 +69,17 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	// Filter iterations that overlap with current month
 	const currentMonthIterations = iterations.filter(doesIterationOverlapMonth);
 
-	// Create color mapping for iterations (consistent colors based on objectId)
+	// Assign colors by iteration order so adjacent iterations don't share colors
+	const orderedIterations = [...currentMonthIterations].sort((a, b) => {
+		const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
+		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
+		if (aStart !== bStart) return aStart - bStart;
+		return a.name.localeCompare(b.name);
+	});
+
 	const iterationColorMap = new Map<string, string>();
-	currentMonthIterations.forEach(iteration => {
-		iterationColorMap.set(iteration.objectId, getIterationColor(iteration.objectId));
+	orderedIterations.forEach((iteration, index) => {
+		iterationColorMap.set(iteration.objectId, iterationColors[index % iterationColors.length]);
 	});
 
 	// Generate calendar days
@@ -359,7 +355,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			</div>
 
 			{/* Legend - show iteration legends for any month, Today only for current month */}
-			{currentMonthIterations.length > 0 && (
+			{orderedIterations.length > 0 && (
 				<div
 					style={{
 						display: 'flex',
@@ -385,7 +381,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						</div>
 					)}
 					{/* Show iteration legends dynamically for any month */}
-					{currentMonthIterations.map((iteration, index) => (
+					{orderedIterations.map(iteration => (
 						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
 							<div
 								style={{
@@ -400,9 +396,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					))}
 
 					{/* Show message if more than 2 iterations */}
-					{currentMonthIterations.length > 2 && (
+					{orderedIterations.length > 2 && (
 						<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-							<span>+{currentMonthIterations.length - 2} more</span>
+							<span>+{orderedIterations.length - 2} more</span>
 						</div>
 					)}
 				</div>

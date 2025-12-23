@@ -1,10 +1,22 @@
 import type React from 'react';
 
-interface CalendarProps {
-	currentDate?: Date;
+interface Iteration {
+	objectId: string;
+	name: string;
+	startDate: string;
+	endDate: string;
+	state: string;
+	project: string | null;
+	_ref: string;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
+interface CalendarProps {
+	currentDate?: Date;
+	iterations?: Iteration[];
+	onMonthChange?: (date: Date) => void;
+}
+
+const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange }) => {
 	const today = new Date();
 
 	// Get first day of the month
@@ -29,13 +41,29 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
 	let dayCounter = 1 - startDay; // Start from previous month
 
 	for (let i = 0; i < totalDays; i++) {
+		const currentDayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayCounter);
 		const isCurrentMonth = dayCounter >= 1 && dayCounter <= lastDay.getDate();
 		const isToday = isCurrentMonth && dayCounter === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
+
+		// Check which iterations are active on this day
+		const activeIterations = iterations.filter(iteration => {
+			const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
+			const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
+
+			if (!startDate || !endDate) return false;
+
+			// Reset time for date comparison
+			startDate.setHours(0, 0, 0, 0);
+			endDate.setHours(23, 59, 59, 999);
+
+			return currentDayDate >= startDate && currentDayDate <= endDate;
+		});
 
 		calendarDays.push({
 			day: dayCounter,
 			isCurrentMonth,
-			isToday
+			isToday,
+			iterations: activeIterations
 		});
 
 		dayCounter++;
@@ -44,6 +72,31 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
 	const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+	const goToPreviousMonth = () => {
+		const newDate = new Date(currentDate);
+		newDate.setMonth(newDate.getMonth() - 1);
+		onMonthChange?.(newDate);
+	};
+
+	const goToNextMonth = () => {
+		const newDate = new Date(currentDate);
+		newDate.setMonth(newDate.getMonth() + 1);
+		onMonthChange?.(newDate);
+	};
+
+	// Icon components
+	const PreviousMonthIcon = () => (
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '20px', height: '20px' }}>
+			<path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+		</svg>
+	);
+
+	const NextMonthIcon = () => (
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '20px', height: '20px' }}>
+			<path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+		</svg>
+	);
 
 	return (
 		<div
@@ -56,19 +109,76 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
 			<div
 				style={{
 					marginBottom: '20px',
-					textAlign: 'center'
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					gap: '20px'
 				}}
 			>
+				<button
+					onClick={goToPreviousMonth}
+					style={{
+						padding: '8px 12px',
+						border: '1px solid var(--vscode-panel-border)',
+						backgroundColor: 'transparent',
+						color: 'var(--vscode-foreground)',
+						borderRadius: '4px',
+						cursor: 'pointer',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						transition: 'background-color 0.2s ease'
+					}}
+					onMouseEnter={e => {
+						e.currentTarget.style.backgroundColor = 'var(--vscode-button-secondaryBackground)';
+					}}
+					onMouseLeave={e => {
+						e.currentTarget.style.backgroundColor = 'transparent';
+					}}
+					disabled={!onMonthChange}
+					title="Previous Month"
+				>
+					<PreviousMonthIcon />
+				</button>
+
 				<h2
 					style={{
 						margin: '0',
 						color: 'var(--vscode-foreground)',
 						fontSize: '24px',
-						fontWeight: '600'
+						fontWeight: '600',
+						minWidth: '200px',
+						textAlign: 'center'
 					}}
 				>
 					{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
 				</h2>
+
+				<button
+					onClick={goToNextMonth}
+					style={{
+						padding: '8px 12px',
+						border: '1px solid var(--vscode-panel-border)',
+						backgroundColor: 'transparent',
+						color: 'var(--vscode-foreground)',
+						borderRadius: '4px',
+						cursor: 'pointer',
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						transition: 'background-color 0.2s ease'
+					}}
+					onMouseEnter={e => {
+						e.currentTarget.style.backgroundColor = 'var(--vscode-button-secondaryBackground)';
+					}}
+					onMouseLeave={e => {
+						e.currentTarget.style.backgroundColor = 'transparent';
+					}}
+					disabled={!onMonthChange}
+					title="Next Month"
+				>
+					<NextMonthIcon />
+				</button>
 			</div>
 
 			{/* Calendar Grid */}
@@ -80,7 +190,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
 					backgroundColor: 'var(--vscode-panel-border)',
 					border: '1px solid var(--vscode-panel-border)',
 					borderRadius: '6px',
-					overflow: 'hidden'
+					overflow: 'hidden',
+					maxWidth: '800px',
+					margin: '0 auto'
 				}}
 			>
 				{/* Day headers */}
@@ -106,9 +218,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
 					<div
 						key={index}
 						style={{
-							minHeight: '80px',
+							aspectRatio: '1',
 							padding: '8px',
-							backgroundColor: dayInfo.isToday ? 'var(--vscode-list-activeSelectionBackground)' : dayInfo.isCurrentMonth ? 'var(--vscode-editor-background)' : 'var(--vscode-input-background)',
+							backgroundColor: dayInfo.isToday
+								? 'var(--vscode-list-activeSelectionBackground)'
+								: dayInfo.iterations.length > 0
+									? 'rgba(0, 122, 204, 0.1)' // Light blue background for iteration days
+									: dayInfo.isCurrentMonth
+										? 'var(--vscode-editor-background)'
+										: 'var(--vscode-input-background)',
 							color: dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : dayInfo.isCurrentMonth ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
 							borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
 							display: 'flex',
@@ -118,7 +236,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
 							fontSize: '14px',
 							fontWeight: dayInfo.isToday ? '600' : '400',
 							cursor: 'pointer',
-							transition: 'background-color 0.2s ease'
+							transition: 'background-color 0.2s ease',
+							position: 'relative'
 						}}
 						onMouseEnter={e => {
 							if (!dayInfo.isToday) {
@@ -127,23 +246,56 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
 						}}
 						onMouseLeave={e => {
 							if (!dayInfo.isToday) {
-								e.currentTarget.style.backgroundColor = dayInfo.isCurrentMonth ? 'var(--vscode-editor-background)' : 'var(--vscode-input-background)';
+								e.currentTarget.style.backgroundColor = dayInfo.iterations.length > 0 ? 'rgba(0, 122, 204, 0.1)' : dayInfo.isCurrentMonth ? 'var(--vscode-editor-background)' : 'var(--vscode-input-background)';
 							}
 						}}
 					>
-						{dayInfo.isCurrentMonth && (
-							<span
+						<span
+							style={{
+								fontSize: '16px',
+								fontWeight: dayInfo.isToday ? '700' : '500',
+								marginBottom: '4px',
+								opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
+								color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)') : 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							{dayInfo.day}
+						</span>
+						{/* Show iteration indicator lines */}
+						{dayInfo.iterations.length > 0 && (
+							<div
 								style={{
-									fontSize: '16px',
-									fontWeight: dayInfo.isToday ? '700' : '500',
-									marginBottom: '4px'
+									position: 'absolute',
+									bottom: '0',
+									left: '-1px',
+									right: '-1px',
+									display: 'flex',
+									flexDirection: 'column',
+									gap: '1px',
+									zIndex: 1
 								}}
+								title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
 							>
-								{dayInfo.day}
-							</span>
+								{/* First iteration line */}
+								<div
+									style={{
+										height: '4px',
+										backgroundColor: 'var(--vscode-progressBar-background)',
+										opacity: 0.9
+									}}
+								/>
+								{/* Second iteration line (if overlapping) */}
+								{dayInfo.iterations.length > 1 && (
+									<div
+										style={{
+											height: '4px',
+											backgroundColor: 'var(--vscode-charts-orange)',
+											opacity: 0.9
+										}}
+									/>
+								)}
+							</div>
 						)}
-						{/* Here you could add events/tasks for this day */}
-						<div style={{ fontSize: '10px', opacity: 0.7 }}>{/* Placeholder for events */}</div>
 					</div>
 				))}
 			</div>
@@ -170,6 +322,27 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date() }) => {
 					></div>
 					<span>Today</span>
 				</div>
+				{/* Show iteration legends dynamically */}
+				{iterations.slice(0, 2).map((iteration, index) => (
+					<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+						<div
+							style={{
+								width: '20px',
+								height: '4px',
+								backgroundColor: index === 0 ? 'var(--vscode-progressBar-background)' : 'var(--vscode-charts-orange)',
+								opacity: 0.9
+							}}
+						></div>
+						<span>{iteration.name}</span>
+					</div>
+				))}
+
+				{/* Show message if more than 2 iterations */}
+				{iterations.length > 2 && (
+					<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+						<span>+{iterations.length - 2} more</span>
+					</div>
+				)}
 			</div>
 		</div>
 	);

@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ErrorHandler } from './ErrorHandler';
 import { getProjects, getIterations, getUserStories } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
@@ -421,6 +423,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private async _getHtmlForSettings(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
+				// Check if webview files exist
+				if (!this._checkWebviewFilesExist()) {
+					this._errorHandler.logWarning('Settings webview build files not found. Extension needs to be built.', 'RobertWebviewProvider._getHtmlForSettings');
+					return this._getMissingFilesErrorHtml();
+				}
+
 				this._errorHandler.logInfo(`Settings webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForSettings');
 
 				const settingsJsUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'out', 'webview', 'settings.js'));
@@ -455,6 +463,17 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private async _getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
+				// Check if webview files exist
+				if (!this._checkWebviewFilesExist()) {
+					this._errorHandler.logWarning('Webview build files not found. Extension needs to be built.', 'RobertWebviewProvider._getHtmlForWebview');
+					vscode.window.showWarningMessage('Robert extension webview files are missing. Run "npm run build:webview" and reload the window.', 'Show Instructions').then(selection => {
+						if (selection === 'Show Instructions') {
+							vscode.commands.executeCommand('robert.showOutput');
+						}
+					});
+					return this._getMissingFilesErrorHtml();
+				}
+
 				// Log quan es renderitza la view principal
 				this._errorHandler.logInfo(`Main webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForWebview');
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
@@ -487,6 +506,102 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 </html>`;
 			}, 'getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);
+	}
+
+	/**
+	 * Check if the webview build artifacts exist
+	 */
+	private _checkWebviewFilesExist(): boolean {
+		const mainJsPath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'main.js');
+		const settingsJsPath = path.join(this._extensionUri.fsPath, 'out', 'webview', 'settings.js');
+		return fs.existsSync(mainJsPath) && fs.existsSync(settingsJsPath);
+	}
+
+	/**
+	 * Generate helpful error HTML when webview files are missing
+	 */
+	private _getMissingFilesErrorHtml(): string {
+		return `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Robert - Build Required</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            color: var(--vscode-foreground);
+            background-color: var(--vscode-editor-background);
+            padding: 40px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            text-align: center;
+        }
+        h1 {
+            color: var(--vscode-errorForeground);
+            margin-bottom: 20px;
+        }
+        .message {
+            background: var(--vscode-inputValidation-errorBackground);
+            border: 1px solid var(--vscode-inputValidation-errorBorder);
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        code {
+            background: var(--vscode-textCodeBlock-background);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: var(--vscode-editor-font-family);
+        }
+        .code-block {
+            background: var(--vscode-textCodeBlock-background);
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: var(--vscode-editor-font-family);
+            text-align: left;
+            overflow-x: auto;
+        }
+        .steps {
+            text-align: left;
+            margin: 20px 0;
+        }
+        .steps li {
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚠️ Build Required</h1>
+        <div class="message">
+            <p><strong>The Robert extension webview files are missing.</strong></p>
+            <p>This usually happens when you've just cloned the repository or pulled new changes.</p>
+        </div>
+        <div class="steps">
+            <h3>To fix this issue:</h3>
+            <ol>
+                <li>Open a terminal in the extension directory</li>
+                <li>Run the following commands:
+                    <div class="code-block">npm install<br>npm run build:webview</div>
+                </li>
+                <li>Reload VS Code window: <code>Developer: Reload Window</code></li>
+            </ol>
+        </div>
+        <div class="message" style="background: var(--vscode-inputValidation-infoBackground); border-color: var(--vscode-inputValidation-infoBorder);">
+            <p><strong>Note:</strong> The <code>prepare</code> script should automatically build these files after <code>npm install</code> in the future.</p>
+        </div>
+    </div>
+</body>
+</html>`;
 	}
 
 	private _buildCspMeta(webview: vscode.Webview, nonce: string): string {

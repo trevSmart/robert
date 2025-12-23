@@ -16,9 +16,10 @@ interface CalendarProps {
 	onMonthChange?: (date: Date) => void;
 	debugMode?: boolean;
 	currentUser?: any;
+	onIterationClick?: (iteration: Iteration) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false, currentUser }) => {
+const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false, currentUser, onIterationClick }) => {
 	const today = new Date();
 	const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -26,23 +27,35 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const [hoveredDay, setHoveredDay] = useState<any>(null);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
+	// Function to get day name
+	const getDayName = (date: Date) => {
+		const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+		return dayNames[date.getDay()];
+	};
+
 	// Function to calculate days difference and create tooltip
 	const getDayTooltip = (dayInfo: any) => {
 		const targetDate = new Date(dayInfo.date.getFullYear(), dayInfo.date.getMonth(), dayInfo.date.getDate());
 		const diffTime = targetDate.getTime() - todayStart.getTime();
 		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
+		let content = '';
 		if (diffDays === 0) {
-			return 'Avui';
+			content = 'Today';
 		} else if (diffDays === 1) {
-			return '1 dia';
+			content = '1 day left';
 		} else if (diffDays === -1) {
-			return 'Fa 1 dia';
+			content = '1 day ago';
 		} else if (diffDays > 0) {
-			return `${diffDays} dies`;
+			content = `${diffDays} days left`;
 		} else {
-			return `Fa ${Math.abs(diffDays)} dies`;
+			content = `${Math.abs(diffDays)} days ago`;
 		}
+
+		return {
+			title: `${dayInfo.day} ${getDayName(targetDate)}`,
+			content: content
+		};
 	};
 
 	// Get first day of the month
@@ -67,7 +80,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 	// Iteration colors - cycle through these colors in order
-	const iterationColors = ['#2E86DE', '#F6B93B', '#38ADA9', '#9B59B6', '#6A89CC', '#27AE60'];
+	const iterationColors = ['#66c5cc', '#f6cf71', '#f89c75', '#dcb0f2', '#a8d5a8'];
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {
@@ -98,8 +111,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
 		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
 		if (aStart !== bStart) return aStart - bStart;
-		const nameCompare = a.name.localeCompare(b.name);
-		if (nameCompare !== 0) return nameCompare;
+		// When start dates are equal, use objectId for deterministic ordering (no alphabetical fallback)
 		return a.objectId.localeCompare(b.objectId);
 	});
 
@@ -107,6 +119,25 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	orderedAllIterations.forEach((iteration, index) => {
 		iterationColorMap.set(iteration.objectId, iterationColors[index % iterationColors.length]);
 	});
+
+	// Function to add red component to a hex color
+	const addRedToColor = (hexColor: string, redAmount: number = 120): string => {
+		// Remove # if present
+		const hex = hexColor.replace('#', '');
+
+		// Parse RGB values
+		const r = parseInt(hex.substring(0, 2), 16);
+		const g = parseInt(hex.substring(2, 4), 16);
+		const b = parseInt(hex.substring(4, 6), 16);
+
+		// Add red component (clamp to 0-255)
+		const newR = Math.min(255, r + redAmount);
+
+		// Convert back to hex
+		const newHex = `#${newR.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+
+		return newHex;
+	};
 
 	const getIterationProgress = (iteration: Iteration) => {
 		const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
@@ -131,8 +162,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
 		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
 		if (aStart !== bStart) return aStart - bStart;
-		const nameCompare = a.name.localeCompare(b.name);
-		if (nameCompare !== 0) return nameCompare;
+		// When start dates are equal, use objectId for deterministic ordering (no alphabetical fallback)
 		return a.objectId.localeCompare(b.objectId);
 	});
 
@@ -243,8 +273,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					style={{
 						margin: '0',
 						color: 'var(--vscode-foreground)',
-						fontSize: '21px',
-						fontWeight: '600',
+						fontSize: '19px',
+						fontWeight: '500',
 						minWidth: '200px',
 						textAlign: 'center'
 					}}
@@ -322,7 +352,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							backgroundColor: 'var(--vscode-titleBar-activeBackground)',
 							color: 'var(--vscode-titleBar-activeForeground)',
 							textAlign: 'center',
-							fontSize: '12px',
+							fontSize: '11px',
 							fontWeight: '600',
 							borderBottom: '1px solid var(--vscode-panel-border)'
 						}}
@@ -332,202 +362,241 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				))}
 
 				{/* Calendar days */}
-				{calendarDays.map((dayInfo, index) => (
-					<div
-						key={index}
-						style={{
-							aspectRatio: '1',
-							padding: '8px',
-							backgroundColor: dayInfo.isToday
-								? 'rgba(33, 150, 243, 0.3)' // More prominent blue background for today
-								: dayInfo.iterations.length > 0
-									? 'rgba(0, 122, 204, 0.1)' // Light blue background for iteration days
-									: 'rgba(0, 0, 0, 0.03)', // Slightly darker background for all days
-							color: dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : dayInfo.isCurrentMonth ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-							borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
-							display: 'flex',
-							flexDirection: 'column',
-							alignItems: 'flex-start',
-							justifyContent: 'flex-start',
-							fontSize: '14px',
-							fontWeight: '400',
-							cursor: 'pointer',
-							transition: 'background-color 0.2s ease',
-							position: 'relative'
-						}}
-						onMouseEnter={e => {
-							setHoveredDay(dayInfo);
-							setMousePosition({ x: e.clientX, y: e.clientY });
-							if (!dayInfo.isToday) {
-								e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
-							}
-						}}
-						onMouseMove={e => {
-							setMousePosition({ x: e.clientX, y: e.clientY });
-						}}
-						onMouseLeave={e => {
-							setHoveredDay(null);
-							if (!dayInfo.isToday) {
-								e.currentTarget.style.backgroundColor = dayInfo.iterations.length > 0 ? 'rgba(0, 122, 204, 0.1)' : 'rgba(0, 0, 0, 0.03)'; // Same background for all days
-							}
-						}}
-					>
-						<span
+				{calendarDays.map((dayInfo, index) => {
+					// Determine if this is Saturday (index % 7 === 5) or Sunday (index % 7 === 6)
+					const dayOfWeek = index % 7;
+					const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
+					const isHoveredDay = hoveredDay?.date && hoveredDay.date.getTime() === dayInfo.date.getTime();
+
+					return (
+						<div
+							key={index}
 							style={{
-								fontSize: '16px',
-								fontWeight: '200',
-								marginBottom: '4px',
-								opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
-								color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)') : 'var(--vscode-descriptionForeground)'
+								aspectRatio: '1',
+								padding: '8px',
+								backgroundColor: dayInfo.isToday
+									? 'rgba(33, 150, 243, 0.3)' // More prominent blue background for today
+									: !dayInfo.isCurrentMonth || (isWeekend && dayInfo.isCurrentMonth)
+										? 'rgba(0, 0, 0, 0.18)' // background for weekends and days outside current month
+										: 'transparent',
+								color: dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : dayInfo.isCurrentMonth ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+								borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
+								display: 'flex',
+								flexDirection: 'column',
+								alignItems: 'flex-start',
+								justifyContent: 'flex-start',
+								fontSize: '14px',
+								fontWeight: '400',
+								cursor: 'pointer',
+								transition: 'background-color 0.2s ease',
+								position: 'relative'
+							}}
+							onMouseEnter={e => {
+								setHoveredDay(dayInfo);
+								setMousePosition({ x: e.clientX, y: e.clientY });
+								if (!dayInfo.isToday) {
+									e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+								}
+							}}
+							onMouseMove={e => {
+								setMousePosition({ x: e.clientX, y: e.clientY });
+							}}
+							onMouseLeave={e => {
+								setHoveredDay(null);
+								if (!dayInfo.isToday) {
+									const dayOfWeek = index % 7;
+									const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
+									e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth || (isWeekend && dayInfo.isCurrentMonth) ? 'rgba(0, 0, 0, 0.18)' : 'transparent';
+								}
 							}}
 						>
-							{dayInfo.day}
-						</span>
-						{/* Show iteration indicator lines */}
-						{dayInfo.iterations.length > 0 && (
-							<div
+							<span
 								style={{
-									position: 'absolute',
-									bottom: '0',
-									left: '-1px',
-									right: '-1px',
-									display: 'flex',
-									flexDirection: 'column',
-									gap: '1px',
-									zIndex: 1
+									fontSize: '13px',
+									fontWeight: '200',
+									marginBottom: '4px',
+									opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
+									color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)') : 'var(--vscode-descriptionForeground)'
 								}}
-								title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
 							>
-								{/* Show up to 2 iteration lines with assigned colors */}
-								{dayInfo.iterations.slice(0, 2).map((iteration, index) => (
-									<div
-										key={iteration.objectId}
-										style={{
-											height: '5px',
-											backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-											opacity: 0.9
-										}}
-									/>
-								))}
-							</div>
-						)}
-						{/* Show debug indicators below day number */}
-						{debugMode && dayInfo.isCurrentMonth && (
-							<>
-								{/* IOP badge on 20th */}
-								{dayInfo.day === 20 && (
-									<div
-										style={{
-											position: 'absolute',
-											top: '50%',
-											left: '50%',
-											transform: 'translate(-50%, -50%)',
-											padding: '1px 4px',
-											borderRadius: '6px',
-											backgroundColor: '#ff6b35',
-											color: 'white',
-											fontSize: '10px',
-											fontWeight: 'bold',
-											border: 'none',
-											zIndex: 3,
-											pointerEvents: 'none'
-										}}
-										title="IOP - Debug indicator"
-									>
-										IOP
-									</div>
-								)}
-								{/* Pkg closed badge on 12th */}
-								{dayInfo.day === 12 && (
-									<div
-										style={{
-											position: 'absolute',
-											top: '50%',
-											left: '50%',
-											transform: 'translate(-50%, -50%)',
-											padding: '1px 4px',
-											borderRadius: '6px',
-											backgroundColor: '#8e44ad',
-											color: 'white',
-											fontSize: '10px',
-											fontWeight: 'bold',
-											border: 'none',
-											zIndex: 3,
-											pointerEvents: 'none'
-										}}
-										title="Package closed - Debug indicator"
-									>
-										Pkg closed
-									</div>
-								)}
-							</>
-						)}
-					</div>
-				))}
+								{dayInfo.day}
+							</span>
+							{/* Show iteration indicator lines */}
+							{dayInfo.iterations.length > 0 && (
+								<div
+									style={{
+										position: 'absolute',
+										bottom: '0',
+										left: '-1px',
+										right: '-1px',
+										display: 'flex',
+										flexDirection: 'column',
+										gap: '1px',
+										zIndex: 1
+									}}
+									title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
+								>
+									{/* Show up to 2 iteration lines with assigned colors */}
+									{dayInfo.iterations.slice(0, 2).map((iteration, index) => {
+										const iterationStartDate = iteration.startDate ? new Date(iteration.startDate) : null;
+										const iterationEndDate = iteration.endDate ? new Date(iteration.endDate) : null;
+
+										if (iterationStartDate) iterationStartDate.setHours(0, 0, 0, 0);
+										if (iterationEndDate) iterationEndDate.setHours(0, 0, 0, 0);
+
+										const dayDate = new Date(dayInfo.date.getFullYear(), dayInfo.date.getMonth(), dayInfo.date.getDate());
+										dayDate.setHours(0, 0, 0, 0);
+
+										const isFirstDay = iterationStartDate && dayDate.getTime() === iterationStartDate.getTime();
+										const isLastDay = iterationEndDate && dayDate.getTime() === iterationEndDate.getTime();
+
+										return (
+											<div
+												key={iteration.objectId}
+												style={{
+													height: '6px',
+													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+													opacity: isHoveredDay ? 1 : 0.15,
+													transition: 'opacity 0.2s ease',
+													borderTopLeftRadius: isFirstDay ? '4px' : '0',
+													borderBottomLeftRadius: isFirstDay ? '4px' : '0',
+													borderTopRightRadius: isLastDay ? '4px' : '0',
+													borderBottomRightRadius: isLastDay ? '4px' : '0',
+													marginLeft: isFirstDay ? '1px' : '0',
+													marginRight: isLastDay ? '2px' : '0'
+												}}
+											/>
+										);
+									})}
+								</div>
+							)}
+							{/* Show debug indicators below day number */}
+							{debugMode && dayInfo.isCurrentMonth && (
+								<>
+									{/* IOP badge on 20th */}
+									{dayInfo.day === 20 && (
+										<div
+											style={{
+												position: 'absolute',
+												top: '50%',
+												left: '50%',
+												transform: 'translate(-50%, -50%)',
+												padding: '1px 4px',
+												borderRadius: '6px',
+												backgroundColor: '#ff6b35',
+												color: 'white',
+												fontSize: '11px',
+												fontWeight: 'normal',
+												border: 'none',
+												zIndex: 3,
+												pointerEvents: 'none'
+											}}
+											title="IOP - Debug indicator"
+										>
+											IOP
+										</div>
+									)}
+									{/* Pkg closed badge on 12th */}
+									{dayInfo.day === 12 && (
+										<div
+											style={{
+												position: 'absolute',
+												top: '50%',
+												left: '50%',
+												transform: 'translate(-50%, -50%)',
+												padding: '1px 4px',
+												borderRadius: '6px',
+												backgroundColor: '#8e44ad',
+												color: 'white',
+												fontSize: '11px',
+												fontWeight: 'normal',
+												border: 'none',
+												zIndex: 3,
+												pointerEvents: 'none'
+											}}
+											title="Package closed - Debug indicator"
+										>
+											Pkg closed
+										</div>
+									)}
+								</>
+							)}
+						</div>
+					);
+				})}
 			</div>
 
 			{/* Legend - show all iteration legends for any month */}
 			{orderedIterations.length > 0 && (
 				<div
 					style={{
-						display: 'flex',
-						flexDirection: 'column',
+						display: 'grid',
+						gridTemplateColumns: 'minmax(0, 1fr) 140px',
+						columnGap: '10px',
+						rowGap: '9px', // increased spacing between legend rows by 1px
 						alignItems: 'center',
-						gap: '8px',
-						marginTop: '20px',
+						width: '100%',
+						marginTop: '24px', // moved legend slightly further from the calendar
 						fontSize: '12px',
-						color: 'var(--vscode-descriptionForeground)',
-						maxWidth: '400px'
+						color: 'var(--vscode-descriptionForeground)'
 					}}
 				>
 					{/* Show iteration legends dynamically for any month */}
 					{orderedIterations.map(iteration => (
-						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-							<div
-								style={{
-									width: '20px',
-									height: '5px',
-									backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-									opacity: 0.9,
-									flexShrink: 0
-								}}
-							></div>
-							<span style={{ flex: '1 1 auto', textAlign: 'left', minWidth: 0 }}>{iteration.name}</span>
+						<div key={iteration.objectId} style={{ display: 'contents' }}>
+							<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', minWidth: 0 }}>
+								<div
+									style={{
+										width: '20px',
+										height: '5px',
+										backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+										opacity: 0.9,
+										flexShrink: 0
+									}}
+								></div>
+								<span
+									style={{
+										textAlign: 'right',
+										cursor: onIterationClick ? 'pointer' : 'default',
+										color: onIterationClick ? 'var(--vscode-textLink-foreground)' : 'var(--vscode-foreground)',
+										textDecoration: 'none',
+										fontSize: '12px',
+										whiteSpace: 'nowrap',
+										overflow: 'hidden',
+										textOverflow: 'ellipsis'
+									}}
+									onClick={() => onIterationClick?.(iteration)}
+									title={onIterationClick ? `Click to view user stories for ${iteration.name}` : undefined}
+								>
+									{iteration.name}
+								</span>
+							</div>
 							<div
 								style={{
 									position: 'relative',
-									width: '120px',
-									height: '8px',
+									width: '140px',
+									height: '6px',
 									borderRadius: '999px',
-									backgroundColor: iterationColorMap.get(iteration.objectId) || '#2196f3',
-									opacity: 0.3,
+									backgroundColor: '#404040',
 									overflow: 'hidden',
-									flexShrink: 0,
-									marginLeft: 'auto'
+									flexShrink: 0
 								}}
 								title="Iteration progress"
 							>
-								<div
-									style={{
-										width: `${getIterationProgress(iteration)}%`,
-										height: '100%',
-										backgroundImage: `linear-gradient(90deg, ${iterationColorMap.get(iteration.objectId) || '#2196f3'}, #ff9999)`
-									}}
-								/>
-								<div
-									style={{
-										position: 'absolute',
-										top: '50%',
-										left: `calc(${getIterationProgress(iteration)}% - 4px)`,
-										width: '8px',
-										height: '8px',
-										borderRadius: '50%',
-										backgroundColor: 'rgba(255, 255, 255, 0.9)',
-										border: '1px solid rgba(0, 0, 0, 0.2)',
-										transform: 'translateY(-50%)',
-										boxShadow: '0 0 4px rgba(0, 0, 0, 0.15)'
-									}}
-								/>
+								{(() => {
+									const baseColor = iterationColorMap.get(iteration.objectId) || '#2196f3';
+									const endColor = addRedToColor(baseColor, 120);
+									return (
+										<div
+											style={{
+												width: `${getIterationProgress(iteration)}%`,
+												height: '100%',
+												backgroundImage: `linear-gradient(90deg, ${baseColor}, ${endColor})`,
+												borderRadius: '999px'
+											}}
+										/>
+									);
+								})()}
 							</div>
 						</div>
 					))}
@@ -535,29 +604,33 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			)}
 
 			{/* Custom tooltip for day hover */}
-			{hoveredDay && (
-				<div
-					style={{
-						position: 'fixed',
-						left: mousePosition.x + 10,
-						top: mousePosition.y - 30,
-						backgroundColor: 'var(--vscode-quickInput-background)',
-						color: 'var(--vscode-quickInput-foreground)',
-						border: '1px solid var(--vscode-panel-border)',
-						borderRadius: '4px',
-						padding: '4px 8px',
-						fontSize: '12px',
-						pointerEvents: 'none',
-						zIndex: 1000,
-						boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-						maxWidth: '200px',
-						wordWrap: 'break-word',
-						whiteSpace: 'nowrap'
-					}}
-				>
-					{getDayTooltip(hoveredDay)}
-				</div>
-			)}
+			{hoveredDay &&
+				(() => {
+					const tooltip = getDayTooltip(hoveredDay);
+					return (
+						<div
+							style={{
+								position: 'fixed',
+								left: mousePosition.x + 10,
+								top: mousePosition.y - 30,
+								backgroundColor: 'var(--vscode-quickInput-background)',
+								color: 'var(--vscode-quickInput-foreground)',
+								border: '1px solid var(--vscode-panel-border)',
+								borderRadius: '4px',
+								padding: '6px 10px',
+								fontSize: '12px',
+								pointerEvents: 'none',
+								zIndex: 1000,
+								boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+								maxWidth: '200px',
+								wordWrap: 'break-word'
+							}}
+						>
+							<div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '13px' }}>{tooltip.title}</div>
+							<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{tooltip.content}</div>
+						</div>
+					);
+				})()}
 		</div>
 	);
 };

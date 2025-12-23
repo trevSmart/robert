@@ -1,4 +1,4 @@
-import type React from 'react';
+import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 type Section = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
 
@@ -34,9 +34,13 @@ const TeamIcon = () => (
 	</svg>
 );
 
-const SalesforceIcon = () => (
+const LearningIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25"
+		/>
 	</svg>
 );
 
@@ -61,6 +65,92 @@ const MetricsIcon = () => (
 );
 
 const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange }) => {
+	const tabs = useMemo(
+		() => [
+			{ id: 'calendar' as const, label: 'Plan', Icon: CalendarIcon },
+			{ id: 'portfolio' as const, label: 'Portfolio', Icon: PortfolioIcon },
+			{ id: 'team' as const, label: 'Team', Icon: TeamIcon },
+			{ id: 'assets' as const, label: 'Assets', Icon: AssetsIcon },
+			{ id: 'salesforce' as const, label: 'Learning', Icon: LearningIcon },
+			{ id: 'metrics' as const, label: 'Metrics', Icon: MetricsIcon }
+		],
+		[]
+	);
+	const [visibleCount, setVisibleCount] = useState(tabs.length);
+	const [overflowOpen, setOverflowOpen] = useState(false);
+	const containerRef = useRef<HTMLDivElement>(null);
+	const measureTabsRef = useRef<HTMLDivElement>(null);
+	const measureOverflowRef = useRef<HTMLButtonElement>(null);
+
+	const recomputeVisibleTabs = () => {
+		if (!containerRef.current || !measureTabsRef.current) return;
+
+		const availableWidth = containerRef.current.getBoundingClientRect().width;
+		const tabWidths = Array.from(measureTabsRef.current.children).map(child => (child as HTMLElement).getBoundingClientRect().width);
+		const overflowWidth = measureOverflowRef.current?.getBoundingClientRect().width ?? 0;
+
+		let usedWidth = 0;
+		let nextVisibleCount = tabs.length;
+		for (let i = 0; i < tabWidths.length; i += 1) {
+			usedWidth += tabWidths[i];
+			if (usedWidth > availableWidth) {
+				nextVisibleCount = i;
+				break;
+			}
+		}
+
+		if (nextVisibleCount < tabs.length) {
+			while (nextVisibleCount > 0 && usedWidth + overflowWidth > availableWidth) {
+				usedWidth -= tabWidths[nextVisibleCount - 1];
+				nextVisibleCount -= 1;
+			}
+		}
+
+		setVisibleCount(Math.max(1, nextVisibleCount));
+	};
+
+	useLayoutEffect(() => {
+		recomputeVisibleTabs();
+	}, [tabs.length]);
+
+	useEffect(() => {
+		const handleResize = () => {
+			recomputeVisibleTabs();
+		};
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
+	useEffect(() => {
+		const observer = new ResizeObserver(() => {
+			recomputeVisibleTabs();
+		});
+		if (containerRef.current) {
+			observer.observe(containerRef.current);
+		}
+		return () => observer.disconnect();
+	}, []);
+
+	const visibleTabs = tabs.slice(0, visibleCount);
+	const overflowTabs = tabs.slice(visibleCount);
+	const isOverflowActive = overflowTabs.some(tab => tab.id === activeSection);
+
+	const getTabStyles = (isActive: boolean): CSSProperties => ({
+		padding: '12px 20px',
+		border: 'none',
+		backgroundColor: isActive ? 'var(--vscode-tab-activeBackground)' : 'transparent',
+		color: isActive ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
+		borderBottom: isActive ? `2px solid var(--vscode-progressBar-background)` : 'none',
+		cursor: 'pointer',
+		fontSize: '13px',
+		fontWeight: isActive ? '600' : '400',
+		transition: 'all 0.2s ease',
+		display: 'flex',
+		alignItems: 'center',
+		gap: '8px',
+		whiteSpace: 'nowrap'
+	});
+
 	return (
 		<div
 			style={{
@@ -73,135 +163,101 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 			<div
 				style={{
 					display: 'flex',
-					gap: '0'
+					gap: '0',
+					flex: 1,
+					minWidth: 0,
+					position: 'relative'
 				}}
+				ref={containerRef}
 			>
-				<button
-					type="button"
-					onClick={() => onSectionChange('calendar')}
+				{visibleTabs.map(({ id, label, Icon }) => (
+					<button key={id} type="button" onClick={() => onSectionChange(id)} style={getTabStyles(activeSection === id)}>
+						<Icon />
+						<span>{label}</span>
+					</button>
+				))}
+				{overflowTabs.length > 0 && (
+					<div style={{ position: 'relative', display: 'flex' }}>
+						<button
+							type="button"
+							aria-label="More tabs"
+							onClick={() => setOverflowOpen(open => !open)}
+							style={{
+								...getTabStyles(isOverflowActive),
+								padding: '12px 14px',
+								minWidth: '44px',
+								justifyContent: 'center'
+							}}
+						>
+							<span style={{ fontSize: '18px', lineHeight: 1 }}>…</span>
+						</button>
+						{overflowOpen && (
+							<div
+								style={{
+									position: 'absolute',
+									right: 0,
+									top: '100%',
+									marginTop: '6px',
+									backgroundColor: 'var(--vscode-editor-background)',
+									border: '1px solid var(--vscode-panel-border)',
+									borderRadius: '6px',
+									boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
+									zIndex: 10,
+									minWidth: '180px',
+									padding: '6px 0'
+								}}
+							>
+								{overflowTabs.map(({ id, label, Icon }) => (
+									<button
+										key={id}
+										type="button"
+										onClick={() => {
+											onSectionChange(id);
+											setOverflowOpen(false);
+										}}
+										style={{
+											width: '100%',
+											border: 'none',
+											backgroundColor: activeSection === id ? 'var(--vscode-list-activeSelectionBackground)' : 'transparent',
+											color: activeSection === id ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)',
+											padding: '8px 14px',
+											display: 'flex',
+											alignItems: 'center',
+											gap: '8px',
+											cursor: 'pointer',
+											fontSize: '12px',
+											textAlign: 'left'
+										}}
+									>
+										<Icon />
+										<span>{label}</span>
+									</button>
+								))}
+							</div>
+						)}
+					</div>
+				)}
+				<div
 					style={{
-						padding: '12px 20px',
-						border: 'none',
-						backgroundColor: activeSection === 'calendar' ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-						color: activeSection === 'calendar' ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-						borderBottom: activeSection === 'calendar' ? `2px solid var(--vscode-progressBar-background)` : 'none',
-						cursor: 'pointer',
-						fontSize: '13px',
-						fontWeight: activeSection === 'calendar' ? '600' : '400',
-						transition: 'all 0.2s ease',
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px'
+						position: 'absolute',
+						visibility: 'hidden',
+						height: 0,
+						overflow: 'hidden',
+						whiteSpace: 'nowrap'
 					}}
 				>
-					<CalendarIcon />
-					<span>Plan</span>
-				</button>
-				<button
-					type="button"
-					onClick={() => onSectionChange('portfolio')}
-					style={{
-						padding: '12px 20px',
-						border: 'none',
-						backgroundColor: activeSection === 'portfolio' ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-						color: activeSection === 'portfolio' ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-						borderBottom: activeSection === 'portfolio' ? `2px solid var(--vscode-progressBar-background)` : 'none',
-						cursor: 'pointer',
-						fontSize: '13px',
-						fontWeight: activeSection === 'portfolio' ? '600' : '400',
-						transition: 'all 0.2s ease',
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px'
-					}}
-				>
-					<PortfolioIcon />
-					<span>Portfolio</span>
-				</button>
-				<button
-					type="button"
-					onClick={() => onSectionChange('team')}
-					style={{
-						padding: '12px 20px',
-						border: 'none',
-						backgroundColor: activeSection === 'team' ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-						color: activeSection === 'team' ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-						borderBottom: activeSection === 'team' ? `2px solid var(--vscode-progressBar-background)` : 'none',
-						cursor: 'pointer',
-						fontSize: '13px',
-						fontWeight: activeSection === 'team' ? '600' : '400',
-						transition: 'all 0.2s ease',
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px'
-					}}
-				>
-					<TeamIcon />
-					<span>Team</span>
-				</button>
-				<button
-					type="button"
-					onClick={() => onSectionChange('assets')}
-					style={{
-						padding: '12px 20px',
-						border: 'none',
-						backgroundColor: activeSection === 'assets' ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-						color: activeSection === 'assets' ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-						borderBottom: activeSection === 'assets' ? `2px solid var(--vscode-progressBar-background)` : 'none',
-						cursor: 'pointer',
-						fontSize: '13px',
-						fontWeight: activeSection === 'assets' ? '600' : '400',
-						transition: 'all 0.2s ease',
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px'
-					}}
-				>
-					<AssetsIcon />
-					<span>Assets</span>
-				</button>
-				<button
-					type="button"
-					onClick={() => onSectionChange('salesforce')}
-					style={{
-						padding: '12px 20px',
-						border: 'none',
-						backgroundColor: activeSection === 'salesforce' ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-						color: activeSection === 'salesforce' ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-						borderBottom: activeSection === 'salesforce' ? `2px solid var(--vscode-progressBar-background)` : 'none',
-						cursor: 'pointer',
-						fontSize: '13px',
-						fontWeight: activeSection === 'salesforce' ? '600' : '400',
-						transition: 'all 0.2s ease',
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px'
-					}}
-				>
-					<SalesforceIcon />
-					<span>Salesforce</span>
-				</button>
-				<button
-					type="button"
-					onClick={() => onSectionChange('metrics')}
-					style={{
-						padding: '12px 20px',
-						border: 'none',
-						backgroundColor: activeSection === 'metrics' ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-						color: activeSection === 'metrics' ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-						borderBottom: activeSection === 'metrics' ? `2px solid var(--vscode-progressBar-background)` : 'none',
-						cursor: 'pointer',
-						fontSize: '13px',
-						fontWeight: activeSection === 'metrics' ? '600' : '400',
-						transition: 'all 0.2s ease',
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px'
-					}}
-				>
-					<MetricsIcon />
-					<span>Metrics</span>
-				</button>
+					<div ref={measureTabsRef} style={{ display: 'inline-flex' }}>
+						{tabs.map(({ id, label, Icon }) => (
+							<button key={id} type="button" style={getTabStyles(false)}>
+								<Icon />
+								<span>{label}</span>
+							</button>
+						))}
+					</div>
+					<button ref={measureOverflowRef} type="button" style={{ ...getTabStyles(false), padding: '12px 14px', minWidth: '44px' }}>
+						<span style={{ fontSize: '18px', lineHeight: 1 }}>…</span>
+					</button>
+				</div>
 			</div>
 		</div>
 	);

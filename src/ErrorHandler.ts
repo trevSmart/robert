@@ -49,6 +49,18 @@ export class ErrorHandler {
 	}
 
 	/**
+	 * Log errors to the output channel without showing user notifications
+	 */
+	public logError(message: string, context: string = 'Unknown'): void {
+		const timestamp = new Date().toISOString();
+
+		this.outputManager.appendLine(`[Robert] ❌ ERROR in ${context}:`);
+		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
+		this.outputManager.appendLine(`[Robert] Message: ${message}`);
+		this.outputManager.appendLine(`[Robert] ---`);
+	}
+
+	/**
 	 * Log warnings to the output channel
 	 */
 	public logWarning(message: string, context: string = 'Unknown'): void {

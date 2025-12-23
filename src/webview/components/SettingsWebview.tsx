@@ -124,7 +124,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 	return (
 		<div
 			style={{
-				fontFamily: 'var(--vscode-font-family)',
+				fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 				color: 'var(--vscode-foreground)',
 				backgroundColor: 'var(--vscode-editor-background)',
 				padding: '16px 32px',

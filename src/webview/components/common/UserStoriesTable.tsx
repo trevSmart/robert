@@ -51,36 +51,6 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 				borderRadius: '6px'
 			}}
 		>
-			<div
-				style={{
-					fontSize: '12px',
-					fontWeight: 400,
-					color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
-					letterSpacing: '0.5px',
-					margin: '0 0 8px 0',
-					paddingLeft: '7px'
-				}}
-			>
-				Rally User Stories
-			</div>
-
-			<div style={{ marginBottom: '15px' }}>
-				<button
-					type="button"
-					onClick={onLoadUserStories}
-					style={{
-						backgroundColor: 'var(--vscode-button-background)',
-						color: 'var(--vscode-button-foreground)',
-						border: 'none',
-						padding: '6px 12px',
-						borderRadius: '5px',
-						cursor: 'pointer'
-					}}
-				>
-					Refresh User Stories
-				</button>
-			</div>
-
 			{loading && (
 				<div style={{ textAlign: 'center', padding: '20px' }}>
 					<div
@@ -114,13 +84,11 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid var(--vscode-panel-border)' }}>
 					<thead>
 						<tr style={{ backgroundColor: 'var(--vscode-titleBar-activeBackground)', color: 'var(--vscode-titleBar-activeForeground)' }}>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>ID</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Name</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>State</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Assigned To</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Estimate</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>To Do</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Blocked</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '10%' }}>ID</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '15%' }}>Name</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '12%' }}>Status</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Estimate</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>To Do</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -132,26 +100,35 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									cursor: onUserStorySelected ? 'pointer' : 'default',
 									backgroundColor: selectedUserStory?.objectId === userStory.objectId ? 'var(--vscode-list-activeSelectionBackground)' : undefined,
 									color: selectedUserStory?.objectId === userStory.objectId ? 'var(--vscode-list-activeSelectionForeground)' : undefined,
-									borderBottom: '1px solid var(--vscode-panel-border)'
+									borderBottom: '1px solid var(--vscode-panel-border)',
+									transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
 								}}
 								onMouseEnter={e => {
 									if (selectedUserStory?.objectId !== userStory.objectId) {
 										e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+										e.currentTarget.style.boxShadow = 'inset 0 0 0 1px var(--vscode-list-hoverBackground)';
 									}
 								}}
 								onMouseLeave={e => {
 									if (selectedUserStory?.objectId !== userStory.objectId) {
 										e.currentTarget.style.backgroundColor = selectedUserStory?.objectId === userStory.objectId ? 'var(--vscode-list-activeSelectionBackground)' : '';
+										e.currentTarget.style.boxShadow = 'none';
 									}
 								}}
 							>
-								<td style={{ padding: '8px 12px' }}>{userStory.formattedId}</td>
-								<td style={{ padding: '8px 12px' }}>{userStory.name}</td>
-								<td style={{ padding: '8px 12px' }}>{userStory.state}</td>
-								<td style={{ padding: '8px 12px' }}>{userStory.owner || 'N/A'}</td>
-								<td style={{ padding: '8px 12px' }}>{userStory.planEstimate || 0}</td>
-								<td style={{ padding: '8px 12px' }}>{userStory.toDo}</td>
-								<td style={{ padding: '8px 12px' }}>{userStory.blocked ? 'Yes' : 'No'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: 'var(--vscode-textLink-foreground)', textDecoration: 'none' }}>{userStory.formattedId}</td>
+								<td style={{ padding: '10px 12px', width: '15%', fontWeight: 'normal' }}>{userStory.name}</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '500',
+										color: userStory.taskStatus === 'DEFINED' ? 'color(srgb 0.4 0.9 0.6 / 0.9)' : userStory.taskStatus === 'BLOCKED' ? 'color(srgb 1 0.5 0.5 / 0.95)' : 'var(--vscode-descriptionForeground)'
+									}}
+								>
+									{userStory.taskStatus && userStory.taskStatus !== 'NONE' ? userStory.taskStatus : ''}
+								</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{userStory.planEstimate || 0}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{userStory.toDo}</td>
 							</tr>
 						))}
 					</tbody>
@@ -195,42 +172,6 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 				borderRadius: '6px'
 			}}
 		>
-			<div
-				style={{
-					fontSize: '12px',
-					fontWeight: 400,
-					color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
-					letterSpacing: '0.5px',
-					margin: '0 0 8px 0',
-					paddingLeft: '7px'
-				}}
-			>
-				Rally Iterations
-			</div>
-
-			<div style={{ marginBottom: '15px' }}>
-				<button
-					type="button"
-					onClick={onLoadIterations}
-					style={{
-						backgroundColor: 'var(--vscode-button-background)',
-						color: 'var(--vscode-button-foreground)',
-						border: 'none',
-						padding: '6px 12px',
-						borderRadius: '5px',
-						cursor: 'pointer',
-						marginRight: '10px'
-					}}
-				>
-					Load Iterations
-				</button>
-				{selectedIteration && (
-					<div style={{ display: 'inline-block', marginLeft: '10px', color: 'var(--vscode-foreground)' }}>
-						Selected: <strong>{selectedIteration.name}</strong>
-					</div>
-				)}
-			</div>
-
 			{loading && (
 				<div style={{ textAlign: 'center', padding: '20px' }}>
 					<div
@@ -264,11 +205,11 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid var(--vscode-panel-border)' }}>
 					<thead>
 						<tr style={{ backgroundColor: 'var(--vscode-titleBar-activeBackground)', color: 'var(--vscode-titleBar-activeForeground)' }}>
-							<th style={{ padding: '8px 12px', textAlign: 'center', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '40px' }}></th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Name</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Start Date</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>End Date</th>
-							<th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>State</th>
+							<th style={{ padding: '10px 12px', textAlign: 'center', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '40px' }}></th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Name</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Start Date</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>End Date</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>State</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -280,24 +221,27 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 									cursor: onIterationSelected ? 'pointer' : 'default',
 									backgroundColor: selectedIteration?.objectId === iteration.objectId ? 'var(--vscode-list-activeSelectionBackground)' : undefined,
 									color: selectedIteration?.objectId === iteration.objectId ? 'var(--vscode-list-activeSelectionForeground)' : undefined,
-									borderBottom: '1px solid var(--vscode-panel-border)'
+									borderBottom: '1px solid var(--vscode-panel-border)',
+									transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
 								}}
 								onMouseEnter={e => {
 									if (selectedIteration?.objectId !== iteration.objectId) {
 										e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+										e.currentTarget.style.boxShadow = 'inset 0 0 0 1px var(--vscode-list-hoverBackground)';
 									}
 								}}
 								onMouseLeave={e => {
 									if (selectedIteration?.objectId !== iteration.objectId) {
 										e.currentTarget.style.backgroundColor = selectedIteration?.objectId === iteration.objectId ? 'var(--vscode-list-activeSelectionBackground)' : '';
+										e.currentTarget.style.boxShadow = 'none';
 									}
 								}}
 							>
-								<td style={{ padding: '8px 4px', textAlign: 'center' }}>{isCurrentDayIteration(iteration) && <span style={{ fontSize: '14px' }}>📅</span>}</td>
-								<td style={{ padding: '8px 12px' }}>{iteration.name}</td>
-								<td style={{ padding: '8px 12px' }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
-								<td style={{ padding: '8px 12px' }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>
-								<td style={{ padding: '8px 12px' }}>{iteration.state}</td>
+								<td style={{ padding: '10px 4px', textAlign: 'center', fontWeight: 'normal' }}>{isCurrentDayIteration(iteration) && <span style={{ fontSize: '14px' }}>📅</span>}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: 'var(--vscode-textLink-foreground)', textDecoration: 'none' }}>{iteration.name}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{iteration.state}</td>
 							</tr>
 						))}
 					</tbody>

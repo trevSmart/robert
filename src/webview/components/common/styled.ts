@@ -5,6 +5,10 @@ export const GlobalStyle = createGlobalStyle`
 		--vscode-panel-border: #444444;
 	}
 
+	* {
+		font-family: 'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+	}
+
 	@keyframes spin {
 		0% {
 			transform: rotate(0deg);
@@ -17,9 +21,15 @@ export const GlobalStyle = createGlobalStyle`
 
 // Base container styles
 export const Container = styled.div`
-	font-family: var(--vscode-font-family);
+	font-family:
+		'Inter',
+		var(--vscode-font-family),
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		sans-serif;
 	color: var(--vscode-foreground);
-	background-color: var(--vscode-editor-background);
+	background-color: transparent;
 	margin: 0;
 	min-height: 100vh;
 `;
@@ -185,7 +195,13 @@ export const LogoContainerFull = styled.div`
 	height: 100vh;
 	background: var(--vscode-editor-background);
 	color: var(--vscode-foreground);
-	font-family: var(--vscode-font-family);
+	font-family:
+		'Inter',
+		var(--vscode-font-family),
+		-apple-system,
+		BlinkMacSystemFont,
+		'Segoe UI',
+		sans-serif;
 `;
 
 export const LogoCard = styled.div`

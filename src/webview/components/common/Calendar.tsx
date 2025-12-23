@@ -499,7 +499,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									width: '120px',
 									height: '8px',
 									borderRadius: '999px',
-									backgroundColor: 'rgba(120, 120, 120, 0.2)',
+									backgroundColor: iterationColorMap.get(iteration.objectId) || '#2196f3',
+									opacity: 0.3,
 									overflow: 'hidden',
 									flexShrink: 0,
 									marginLeft: 'auto'

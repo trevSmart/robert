@@ -242,7 +242,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					style={{
 						margin: '0',
 						color: 'var(--vscode-foreground)',
-						fontSize: '23px',
+						fontSize: '21px',
 						fontWeight: '600',
 						minWidth: '200px',
 						textAlign: 'center'
@@ -355,7 +355,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						<span
 							style={{
 								fontSize: '16px',
-								fontWeight: '300',
+								fontWeight: '200',
 								marginBottom: '4px',
 								opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
 								color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)') : 'var(--vscode-descriptionForeground)'

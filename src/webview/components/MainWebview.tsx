@@ -940,7 +940,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 							>
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+										background: 'linear-gradient(135deg, #3a1c71 0%, #d76d77 50%, #ffaf7b 100%)',
 										borderRadius: '12px',
 										padding: '20px',
 										textAlign: 'center',
@@ -954,7 +954,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+										background: 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
 										borderRadius: '12px',
 										padding: '20px',
 										textAlign: 'center',
@@ -968,7 +968,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+										background: 'linear-gradient(135deg, #0f4c75 0%, #3282b8 50%, #bbe1fa 100%)',
 										borderRadius: '12px',
 										padding: '20px',
 										textAlign: 'center',
@@ -982,7 +982,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 								<div
 									style={{
-										background: 'linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)',
+										background: 'linear-gradient(135deg, #2c3e50 0%, #34495e 50%, #7f8c8d 100%)',
 										borderRadius: '12px',
 										padding: '20px',
 										textAlign: 'center',
@@ -1004,18 +1004,99 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 										border: '1px solid var(--vscode-panel-border)',
 										borderRadius: '12px',
 										padding: '20px',
-										height: '250px',
-										display: 'flex',
-										alignItems: 'center',
-										justifyContent: 'center',
-										color: 'var(--vscode-descriptionForeground)'
+										height: '300px'
 									}}
 								>
-									<div style={{ textAlign: 'center' }}>
-										<div style={{ fontSize: '48px', marginBottom: '12px' }}>📈</div>
-										<div style={{ fontSize: '16px', marginBottom: '8px' }}>Burndown Chart</div>
-										<div style={{ fontSize: '12px', opacity: 0.7 }}>Interactive chart showing sprint progress over time</div>
-									</div>
+									<svg width="100%" height="100%" viewBox="0 0 400 250" style={{ display: 'block' }}>
+										{/* Grid lines */}
+										<g stroke="var(--vscode-panel-border)" strokeWidth="0.5" opacity="0.3">
+											{/* Horizontal grid lines */}
+											<line x1="40" y1="30" x2="380" y2="30" />
+											<line x1="40" y1="80" x2="380" y2="80" />
+											<line x1="40" y1="130" x2="380" y2="130" />
+											<line x1="40" y1="180" x2="380" y2="180" />
+											<line x1="40" y1="230" x2="380" y2="230" />
+
+											{/* Vertical grid lines */}
+											<line x1="80" y1="20" x2="80" y2="230" />
+											<line x1="140" y1="20" x2="140" y2="230" />
+											<line x1="200" y1="20" x2="200" y2="230" />
+											<line x1="260" y1="20" x2="260" y2="230" />
+											<line x1="320" y1="20" x2="320" y2="230" />
+										</g>
+
+										{/* Ideal burndown line (straight line from 25 to 0) */}
+										<path d="M40,230 L100,184 L160,138 L220,92 L280,46 L340,0" stroke="#4caf50" strokeWidth="3" fill="none" strokeDasharray="5,5" opacity="0.7" />
+
+										{/* Actual burndown line (more realistic progress) */}
+										<path d="M40,230 L100,200 L160,160 L220,140 L280,100 L340,60" stroke="#2196f3" strokeWidth="3" fill="none" />
+
+										{/* Data points for actual line */}
+										<circle cx="40" cy="230" r="4" fill="#2196f3" />
+										<circle cx="100" cy="200" r="4" fill="#2196f3" />
+										<circle cx="160" cy="160" r="4" fill="#2196f3" />
+										<circle cx="220" cy="140" r="4" fill="#2196f3" />
+										<circle cx="280" cy="100" r="4" fill="#2196f3" />
+										<circle cx="340" cy="60" r="4" fill="#2196f3" />
+
+										{/* Labels */}
+										<text x="20" y="235" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											25
+										</text>
+										<text x="20" y="185" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											20
+										</text>
+										<text x="20" y="135" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											15
+										</text>
+										<text x="20" y="85" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											10
+										</text>
+										<text x="20" y="35" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											5
+										</text>
+										<text x="20" y="10" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											0
+										</text>
+
+										{/* Day labels */}
+										<text x="40" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 1
+										</text>
+										<text x="100" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 2
+										</text>
+										<text x="160" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 3
+										</text>
+										<text x="220" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 4
+										</text>
+										<text x="280" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 5
+										</text>
+										<text x="340" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
+											Day 6
+										</text>
+
+										{/* Legend */}
+										<g transform="translate(40, 15)">
+											<line x1="0" y1="0" x2="20" y2="0" stroke="#2196f3" strokeWidth="3" />
+											<text x="25" y="4" fontSize="11" fill="var(--vscode-foreground)">
+												Actual
+											</text>
+
+											<line x1="80" y1="0" x2="100" y2="0" stroke="#4caf50" strokeWidth="3" strokeDasharray="5,5" />
+											<text x="105" y="4" fontSize="11" fill="var(--vscode-foreground)">
+												Ideal
+											</text>
+										</g>
+
+										{/* Title */}
+										<text x="200" y="15" fontSize="14" fontWeight="bold" fill="var(--vscode-foreground)" textAnchor="middle">
+											Sprint Burndown
+										</text>
+									</svg>
 								</div>
 							</div>
 

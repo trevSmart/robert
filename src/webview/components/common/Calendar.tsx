@@ -18,6 +18,7 @@ interface CalendarProps {
 
 const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange }) => {
 	const today = new Date();
+	const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 
 	// Get first day of the month
 	const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -265,7 +266,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							aspectRatio: '1',
 							padding: '8px',
 							backgroundColor: dayInfo.isToday
-								? 'var(--vscode-list-activeSelectionBackground)'
+								? 'rgba(33, 150, 243, 0.3)' // More prominent blue background for today
 								: dayInfo.iterations.length > 0
 									? 'rgba(0, 122, 204, 0.1)' // Light blue background for iteration days
 									: dayInfo.isCurrentMonth
@@ -278,7 +279,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							alignItems: 'flex-start',
 							justifyContent: 'flex-start',
 							fontSize: '14px',
-							fontWeight: dayInfo.isToday ? '600' : '400',
+							fontWeight: '400',
 							cursor: 'pointer',
 							transition: 'background-color 0.2s ease',
 							position: 'relative'
@@ -297,7 +298,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						<span
 							style={{
 								fontSize: '16px',
-								fontWeight: dayInfo.isToday ? '700' : '500',
+								fontWeight: '400',
 								marginBottom: '4px',
 								opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
 								color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)') : 'var(--vscode-descriptionForeground)'
@@ -337,50 +338,52 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				))}
 			</div>
 
-			{/* Legend */}
-			<div
-				style={{
-					display: 'flex',
-					justifyContent: 'center',
-					gap: '20px',
-					marginTop: '20px',
-					fontSize: '12px',
-					color: 'var(--vscode-descriptionForeground)'
-				}}
-			>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-					<div
-						style={{
-							width: '12px',
-							height: '12px',
-							backgroundColor: 'var(--vscode-list-activeSelectionBackground)',
-							borderRadius: '2px'
-						}}
-					></div>
-					<span>Today</span>
-				</div>
-				{/* Show iteration legends dynamically */}
-				{currentMonthIterations.map((iteration, index) => (
-					<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+			{/* Legend - only show when viewing current month and there are iterations */}
+			{isCurrentMonth && currentMonthIterations.length > 0 && (
+				<div
+					style={{
+						display: 'flex',
+						justifyContent: 'center',
+						gap: '20px',
+						marginTop: '20px',
+						fontSize: '12px',
+						color: 'var(--vscode-descriptionForeground)'
+					}}
+				>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
 						<div
 							style={{
-								width: '20px',
-								height: '4px',
-								backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-								opacity: 0.9
+								width: '12px',
+								height: '12px',
+								backgroundColor: 'rgba(33, 150, 243, 0.3)',
+								borderRadius: '2px'
 							}}
 						></div>
-						<span>{iteration.name}</span>
+						<span>Today</span>
 					</div>
-				))}
+					{/* Show iteration legends dynamically */}
+					{currentMonthIterations.map((iteration, index) => (
+						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+							<div
+								style={{
+									width: '20px',
+									height: '4px',
+									backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+									opacity: 0.9
+								}}
+							></div>
+							<span>{iteration.name}</span>
+						</div>
+					))}
 
-				{/* Show message if more than 2 iterations */}
-				{currentMonthIterations.length > 2 && (
-					<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-						<span>+{currentMonthIterations.length - 2} more</span>
-					</div>
-				)}
-			</div>
+					{/* Show message if more than 2 iterations */}
+					{currentMonthIterations.length > 2 && (
+						<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+							<span>+{currentMonthIterations.length - 2} more</span>
+						</div>
+					)}
+				</div>
+			)}
 		</div>
 	);
 };

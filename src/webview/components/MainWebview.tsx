@@ -226,6 +226,8 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const [debugMode, setDebugMode] = useState<boolean>(false);
+	const [selectedTutorial, setSelectedTutorial] = useState<any>(null);
+	const [showTutorial, setShowTutorial] = useState<boolean>(false);
 
 	const [userStories, setUserStories] = useState<UserStory[]>([]);
 	const [userStoriesLoading, setUserStoriesLoading] = useState(false);
@@ -877,6 +879,10 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 										onMouseLeave={e => {
 											e.currentTarget.style.transform = 'translateY(0)';
 										}}
+										onClick={() => {
+											setSelectedTutorial(banner);
+											setShowTutorial(true);
+										}}
 									>
 										<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 											<div
@@ -1067,6 +1073,466 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 										<span style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>Risk Level</span>
 									</div>
 									<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>2 dependencies need attention</div>
+								</div>
+							</div>
+						</div>
+					)}
+
+					{/* Tutorial Content */}
+					{showTutorial && selectedTutorial && (
+						<div style={{ padding: '20px' }}>
+							{/* Back Button */}
+							<div style={{ marginBottom: '20px' }}>
+								<button
+									onClick={() => {
+										setShowTutorial(false);
+										setSelectedTutorial(null);
+									}}
+									style={{
+										padding: '8px 16px',
+										backgroundColor: 'var(--vscode-button-background)',
+										color: 'var(--vscode-button-foreground)',
+										border: 'none',
+										borderRadius: '4px',
+										cursor: 'pointer',
+										fontSize: '14px',
+										display: 'flex',
+										alignItems: 'center',
+										gap: '6px'
+									}}
+								>
+									← Back to Salesforce
+								</button>
+							</div>
+
+							{/* Tutorial Header */}
+							<div
+								style={{
+									background: selectedTutorial.bg,
+									borderRadius: '16px',
+									padding: '24px',
+									marginBottom: '24px',
+									color: 'white'
+								}}
+							>
+								<div
+									style={{
+										fontSize: '11px',
+										letterSpacing: '0.12em',
+										fontWeight: 700,
+										color: 'rgba(255,255,255,0.8)',
+										textTransform: 'uppercase',
+										marginBottom: '8px'
+									}}
+								>
+									{selectedTutorial.kicker}
+								</div>
+								<h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 700 }}>{selectedTutorial.title}</h1>
+								<p style={{ margin: 0, fontSize: '16px', opacity: 0.9 }}>Master {selectedTutorial.title.toLowerCase()} with hands-on examples and best practices.</p>
+							</div>
+
+							{/* Tutorial Content */}
+							<div style={{ display: 'flex', gap: '24px' }}>
+								{/* Main Content */}
+								<div style={{ flex: 2 }}>
+									{selectedTutorial.title === 'Salesforce CRM Fundamentals' && (
+										<div>
+											<h2>Understanding Salesforce CRM</h2>
+											<p>Salesforce CRM is the world's leading customer relationship management platform that helps businesses connect with customers, partners, and prospects.</p>
+
+											<h3>Key Concepts</h3>
+											<ul>
+												<li>
+													<strong>Leads:</strong> Potential customers who have shown interest
+												</li>
+												<li>
+													<strong>Accounts:</strong> Companies or organizations
+												</li>
+												<li>
+													<strong>Contacts:</strong> Individuals within accounts
+												</li>
+												<li>
+													<strong>Opportunities:</strong> Potential sales deals
+												</li>
+												<li>
+													<strong>Cases:</strong> Customer support issues
+												</li>
+											</ul>
+
+											<h3>Getting Started</h3>
+											<p>Begin by familiarizing yourself with the Salesforce interface and basic navigation. Learn how to create and manage records, and understand the relationship between different objects.</p>
+
+											<div
+												style={{
+													backgroundColor: 'var(--vscode-textBlockQuote-background)',
+													borderLeft: '4px solid var(--vscode-textBlockQuote-border)',
+													padding: '16px',
+													margin: '20px 0',
+													fontStyle: 'italic'
+												}}
+											>
+												💡 <strong>Pro Tip:</strong> Always use the search functionality to quickly find records instead of browsing through long lists.
+											</div>
+										</div>
+									)}
+
+									{selectedTutorial.title === 'Lightning Web Components' && (
+										<div>
+											<h2>Building with Lightning Web Components</h2>
+											<p>LWC is Salesforce's modern programming model for building fast, reusable components on the Lightning Platform.</p>
+
+											<h3>Why LWC?</h3>
+											<ul>
+												<li>Based on web standards (HTML, CSS, JavaScript)</li>
+												<li>Better performance than Aura components</li>
+												<li>Reusable across Salesforce experiences</li>
+												<li>Easier to learn for web developers</li>
+											</ul>
+
+											<h3>Basic Structure</h3>
+											<pre
+												style={{
+													backgroundColor: 'var(--vscode-textCodeBlock-background)',
+													padding: '16px',
+													borderRadius: '4px',
+													overflow: 'auto',
+													fontSize: '14px'
+												}}
+											>
+												{`// helloWorld.html
+<template>
+    <div class="slds-card">
+        <div class="slds-card__header">
+            <h2>Hello {greeting}!</h2>
+        </div>
+    </div>
+</template>
+
+// helloWorld.js
+import { LightningElement, track } from 'lwc';
+
+export default class HelloWorld extends LightningElement {
+    @track greeting = 'World';
+}
+
+// helloWorld.css
+.slds-card {
+    margin: 10px;
+}`}
+											</pre>
+
+											<h3>Best Practices</h3>
+											<ul>
+												<li>Use @track for reactive properties</li>
+												<li>Leverage SLDS for consistent styling</li>
+												<li>Test your components thoroughly</li>
+												<li>Follow naming conventions</li>
+											</ul>
+										</div>
+									)}
+
+									{selectedTutorial.title === 'Salesforce Integration APIs' && (
+										<div>
+											<h2>Connecting Systems with Salesforce APIs</h2>
+											<p>Salesforce provides powerful APIs to integrate with external systems and build connected experiences.</p>
+
+											<h3>Available APIs</h3>
+											<ul>
+												<li>
+													<strong>REST API:</strong> Standard RESTful web services
+												</li>
+												<li>
+													<strong>SOAP API:</strong> Traditional SOAP-based web services
+												</li>
+												<li>
+													<strong>Bulk API:</strong> For large data operations
+												</li>
+												<li>
+													<strong>Streaming API:</strong> Real-time data updates
+												</li>
+												<li>
+													<strong>Metadata API:</strong> Customize and manage metadata
+												</li>
+											</ul>
+
+											<h3>Authentication</h3>
+											<p>Use OAuth 2.0 for secure authentication. Salesforce supports various OAuth flows including:</p>
+											<ul>
+												<li>Authorization Code Flow</li>
+												<li>Client Credentials Flow</li>
+												<li>Username-Password Flow (for testing)</li>
+											</ul>
+
+											<h3>Example REST API Call</h3>
+											<pre
+												style={{
+													backgroundColor: 'var(--vscode-textCodeBlock-background)',
+													padding: '16px',
+													borderRadius: '4px',
+													overflow: 'auto',
+													fontSize: '14px'
+												}}
+											>
+												{`curl -X GET \\
+  https://yourinstance.salesforce.com/services/data/v58.0/sobjects/Account/ \\
+  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\
+  -H "Content-Type: application/json"`}
+											</pre>
+										</div>
+									)}
+
+									{selectedTutorial.title === 'Salesforce Einstein AI' && (
+										<div>
+											<h2>Leveraging AI in Salesforce</h2>
+											<p>Salesforce Einstein brings artificial intelligence capabilities to your CRM, helping you gain insights and automate processes.</p>
+
+											<h3>Einstein Capabilities</h3>
+											<ul>
+												<li>
+													<strong>Salesforce Einstein Sales:</strong> Predictive lead scoring and opportunity insights
+												</li>
+												<li>
+													<strong>Salesforce Einstein Service:</strong> Case classification and automated solutions
+												</li>
+												<li>
+													<strong>Salesforce Einstein Marketing:</strong> Personalized campaigns and recommendations
+												</li>
+												<li>
+													<strong>Salesforce Einstein Relationship Insights:</strong> Contact and account insights
+												</li>
+											</ul>
+
+											<h3>Getting Started</h3>
+											<p>Enable Einstein in your org and configure it for your specific use cases. Make sure you have sufficient data for the AI models to learn from.</p>
+
+											<h3>Best Practices</h3>
+											<ul>
+												<li>Ensure data quality for better predictions</li>
+												<li>Start with pilot programs</li>
+												<li>Monitor and refine AI recommendations</li>
+												<li>Train users on interpreting AI insights</li>
+											</ul>
+
+											<div
+												style={{
+													backgroundColor: 'var(--vscode-textBlockQuote-background)',
+													borderLeft: '4px solid var(--vscode-textBlockQuote-border)',
+													padding: '16px',
+													margin: '20px 0',
+													fontStyle: 'italic'
+												}}
+											>
+												🤖 <strong>Remember:</strong> AI is a tool to augment human intelligence, not replace it. Always validate AI recommendations with your business knowledge.
+											</div>
+										</div>
+									)}
+
+									{selectedTutorial.title === 'Salesforce DevOps & CI/CD' && (
+										<div>
+											<h2>Implementing DevOps in Salesforce</h2>
+											<p>DevOps practices help teams deliver Salesforce changes faster and more reliably through automation and collaboration.</p>
+
+											<h3>Key DevOps Concepts</h3>
+											<ul>
+												<li>
+													<strong>Version Control:</strong> Git for source control
+												</li>
+												<li>
+													<strong>CI/CD Pipelines:</strong> Automated testing and deployment
+												</li>
+												<li>
+													<strong>Scratch Orgs:</strong> Temporary environments for development
+												</li>
+												<li>
+													<strong>Sandboxes:</strong> Testing environments
+												</li>
+												<li>
+													<strong>Change Sets:</strong> Deployment mechanism
+												</li>
+											</ul>
+
+											<h3>Recommended Tools</h3>
+											<ul>
+												<li>
+													<strong>Salesforce CLI:</strong> Command-line interface
+												</li>
+												<li>
+													<strong>GitHub Actions:</strong> CI/CD platform
+												</li>
+												<li>
+													<strong>CumulusCI:</strong> Open-source DevOps framework
+												</li>
+												<li>
+													<strong>CodeScan:</strong> Static code analysis
+												</li>
+											</ul>
+
+											<h3>Sample CI/CD Pipeline</h3>
+											<pre
+												style={{
+													backgroundColor: 'var(--vscode-textCodeBlock-background)',
+													padding: '16px',
+													borderRadius: '4px',
+													overflow: 'auto',
+													fontSize: '12px'
+												}}
+											>
+												{`name: Salesforce CI/CD
+on: [push, pull_request]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Salesforce CLI
+        run: npm install -g @salesforce/cli
+      - name: Authenticate
+        run: echo \${{ secrets.SFDX_AUTH_URL }} > auth.txt
+      - name: Run Tests
+        run: sf apex run test --code-coverage --result-format json
+      - name: Deploy to Sandbox
+        if: github.ref == 'refs/heads/main'
+        run: sf project deploy start --target-org sandbox`}
+											</pre>
+
+											<h3>Deployment Best Practices</h3>
+											<ul>
+												<li>Always test in scratch orgs first</li>
+												<li>Use named credentials for authentication</li>
+												<li>Implement proper rollback strategies</li>
+												<li>Monitor deployment health</li>
+											</ul>
+										</div>
+									)}
+								</div>
+
+								{/* Sidebar with Images */}
+								<div style={{ flex: 1 }}>
+									<div
+										style={{
+											backgroundColor: 'var(--vscode-editor-background)',
+											borderRadius: '8px',
+											padding: '16px',
+											border: '1px solid var(--vscode-panel-border)'
+										}}
+									>
+										<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)' }}>Resources</h3>
+
+										{selectedTutorial.title === 'Salesforce CRM Fundamentals' && (
+											<div>
+												<div
+													style={{
+														width: '100%',
+														height: '150px',
+														backgroundColor: '#f8f9fa',
+														borderRadius: '8px',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														marginBottom: '12px',
+														border: '2px dashed #dee2e6'
+													}}
+												>
+													📊 CRM Dashboard Preview
+												</div>
+												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Visual representation of Salesforce CRM interface showing leads, accounts, and opportunities.</p>
+											</div>
+										)}
+
+										{selectedTutorial.title === 'Lightning Web Components' && (
+											<div>
+												<div
+													style={{
+														width: '100%',
+														height: '150px',
+														backgroundColor: '#f8f9fa',
+														borderRadius: '8px',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														marginBottom: '12px',
+														border: '2px dashed #0070d2'
+													}}
+												>
+													⚡ LWC Component Demo
+												</div>
+												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Example of a Lightning Web Component with interactive elements and Salesforce styling.</p>
+											</div>
+										)}
+
+										{selectedTutorial.title === 'Salesforce Integration APIs' && (
+											<div>
+												<div
+													style={{
+														width: '100%',
+														height: '150px',
+														backgroundColor: '#f8f9fa',
+														borderRadius: '8px',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														marginBottom: '12px',
+														border: '2px dashed #00a1e0'
+													}}
+												>
+													🔗 API Integration Flow
+												</div>
+												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Diagram showing how external systems connect to Salesforce via REST and SOAP APIs.</p>
+											</div>
+										)}
+
+										{selectedTutorial.title === 'Salesforce Einstein AI' && (
+											<div>
+												<div
+													style={{
+														width: '100%',
+														height: '150px',
+														backgroundColor: '#f8f9fa',
+														borderRadius: '8px',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														marginBottom: '12px',
+														border: '2px dashed #ff6b35'
+													}}
+												>
+													🧠 Einstein AI Insights
+												</div>
+												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Salesforce Einstein providing predictive analytics and AI-powered recommendations.</p>
+											</div>
+										)}
+
+										{selectedTutorial.title === 'Salesforce DevOps & CI/CD' && (
+											<div>
+												<div
+													style={{
+														width: '100%',
+														height: '150px',
+														backgroundColor: '#f8f9fa',
+														borderRadius: '8px',
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														marginBottom: '12px',
+														border: '2px dashed #54698d'
+													}}
+												>
+													🔄 CI/CD Pipeline
+												</div>
+												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Automated deployment pipeline for Salesforce development with testing and quality gates.</p>
+											</div>
+										)}
+
+										<div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--vscode-textBlockQuote-background)', borderRadius: '4px' }}>
+											<h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--vscode-foreground)' }}>Next Steps</h4>
+											<ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>
+												<li>Complete hands-on exercises</li>
+												<li>Take certification exam</li>
+												<li>Join Trailhead community</li>
+												<li>Practice in sandbox org</li>
+											</ul>
+										</div>
+									</div>
 								</div>
 							</div>
 						</div>

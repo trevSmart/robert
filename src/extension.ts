@@ -55,7 +55,11 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register the webview provider for activity bar
 	outputManager.appendLine('[Robert] 📋 Registering webview provider for activity bar');
 	const webviewProvider = new RobertWebviewProvider(context.extensionUri);
-	context.subscriptions.push(vscode.window.registerWebviewViewProvider(RobertWebviewProvider.viewType, webviewProvider));
+	context.subscriptions.push(
+		vscode.window.registerWebviewViewProvider(RobertWebviewProvider.viewType, webviewProvider, {
+			webviewOptions: { retainContextWhenHidden: true }
+		})
+	);
 	outputManager.appendLine('[Robert] ✅ Webview provider registered successfully');
 
 	// Prefetch Rally data on activation to warm the cache (non-blocking)

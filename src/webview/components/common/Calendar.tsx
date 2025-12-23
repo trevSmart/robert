@@ -328,7 +328,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						<span
 							style={{
 								fontSize: '16px',
-								fontWeight: '400',
+								fontWeight: '300',
 								marginBottom: '4px',
 								opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
 								color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)') : 'var(--vscode-descriptionForeground)'
@@ -364,7 +364,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								))}
 							</div>
 						)}
-						{/* Show debug indicators */}
+						{/* Show debug indicators below day number */}
 						{debugMode && dayInfo.isCurrentMonth && (
 							<>
 								{/* IOP badge on 20th */}
@@ -372,13 +372,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									<div
 										style={{
 											position: 'absolute',
-											top: '2px',
-											right: '2px',
-											padding: '2px 6px',
-											borderRadius: '8px',
+											bottom: '6px',
+											left: '2px',
+											padding: '1px 4px',
+											borderRadius: '6px',
 											backgroundColor: '#ff6b35',
 											color: 'white',
-											fontSize: '9px',
+											fontSize: '8px',
 											fontWeight: 'bold',
 											border: '1px solid var(--vscode-editor-background)',
 											zIndex: 3,
@@ -394,13 +394,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									<div
 										style={{
 											position: 'absolute',
-											top: '2px',
-											right: '2px',
-											padding: '2px 6px',
-											borderRadius: '8px',
+											bottom: '6px',
+											left: '2px',
+											padding: '1px 4px',
+											borderRadius: '6px',
 											backgroundColor: '#8e44ad',
 											color: 'white',
-											fontSize: '9px',
+											fontSize: '8px',
 											fontWeight: 'bold',
 											border: '1px solid var(--vscode-editor-background)',
 											zIndex: 3,
@@ -413,28 +413,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								)}
 							</>
 						)}
-						{/* Show current day indicator */}
-						{dayInfo.isToday && (
-							<div
-								style={{
-									position: 'absolute',
-									top: '2px',
-									left: '2px',
-									width: '8px',
-									height: '8px',
-									borderRadius: '50%',
-									backgroundColor: '#42a5f5',
-									border: '1px solid var(--vscode-editor-background)',
-									zIndex: 2
-								}}
-								title="Today"
-							/>
-						)}
 					</div>
 				))}
 			</div>
 
-			{/* Legend - show iteration legends for any month, Today only for current month */}
+			{/* Legend - show all iteration legends for any month */}
 			{orderedIterations.length > 0 && (
 				<div
 					style={{
@@ -446,21 +429,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						color: 'var(--vscode-descriptionForeground)'
 					}}
 				>
-					{/* Show Today indicator only when viewing current month */}
-					{isCurrentMonth && (
-						<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-							<div
-								style={{
-									width: '10px',
-									height: '10px',
-									backgroundColor: '#42a5f5',
-									borderRadius: '50%',
-									border: '1px solid var(--vscode-editor-background)'
-								}}
-							></div>
-							<span>Today</span>
-						</div>
-					)}
 					{/* Show iteration legends dynamically for any month */}
 					{orderedIterations.map(iteration => (
 						<div key={iteration.objectId} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -508,13 +476,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							</div>
 						</div>
 					))}
-
-					{/* Show message if more than 2 iterations */}
-					{orderedIterations.length > 2 && (
-						<div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-							<span>+{orderedIterations.length - 2} more</span>
-						</div>
-					)}
 				</div>
 			)}
 		</div>

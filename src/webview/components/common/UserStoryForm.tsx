@@ -279,7 +279,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 				</div>
 
 				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Owner</label>
+					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Assigned To</label>
 					<input
 						type="text"
 						value={userStory.owner || 'N/A'}

@@ -85,7 +85,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 					<thead>
 						<tr style={{ backgroundColor: 'var(--vscode-titleBar-activeBackground)', color: 'var(--vscode-titleBar-activeForeground)' }}>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '10%' }}>ID</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '15%' }}>Name</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '25%' }}>Name</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold', width: '12%' }}>Status</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Estimate</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>To Do</th>
@@ -117,7 +117,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 								}}
 							>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: 'var(--vscode-textLink-foreground)', textDecoration: 'none' }}>{userStory.formattedId}</td>
-								<td style={{ padding: '10px 12px', width: '15%', fontWeight: 'normal' }}>{userStory.name}</td>
+								<td style={{ padding: '10px 12px', width: '25%', fontWeight: 'normal' }}>{userStory.name}</td>
 								<td
 									style={{
 										padding: '10px 12px',

@@ -157,7 +157,7 @@ interface UserStory {
 	state: string;
 	planEstimate: number;
 	toDo: number;
-	owner: string;
+	assignee: string;
 	project: string | null;
 	iteration: string | null;
 	blocked: boolean;
@@ -288,7 +288,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Assigned To</label>
 					<input
 						type="text"
-						value={userStory.owner || 'N/A'}
+						value={userStory.assignee || 'N/A'}
 						readOnly
 						style={{
 							width: '100%',

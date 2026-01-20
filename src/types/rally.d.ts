@@ -56,6 +56,10 @@ export interface RallyApiObject {
 		Count?: number;
 	};
 	appgar?: string;
+	c_Assignee?: {
+		_refObjectName: string;
+		refObjectName?: string;
+	};
 	ObjectID?: string;
 	Name?: string;
 	Description?: string;
@@ -111,6 +115,10 @@ export interface RallyApiObject {
 		count?: number;
 	};
 	c_Appgar?: string;
+	c_Assignee?: {
+		_refObjectName: string;
+		refObjectName?: string;
+	};
 	StartDate?: string;
 	EndDate?: string;
 }
@@ -160,7 +168,7 @@ export interface RallyUserStory {
 	state: string;
 	planEstimate: number;
 	toDo: number;
-	owner: string;
+	assignee: string;
 	project: string | null;
 	iteration: string | null;
 	blocked: boolean;

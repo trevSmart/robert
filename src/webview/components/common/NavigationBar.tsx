@@ -141,9 +141,23 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		return {
 			padding: '12px 20px',
 			border: 'none',
-			backgroundColor: isActive ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-			color: isActive ? 'var(--vscode-tab-activeForeground)' : lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)',
-			borderBottom: isActive ? `2px solid var(--vscode-progressBar-background)` : 'none',
+			backgroundColor: isActive
+				? lightTheme
+					? 'rgba(0, 123, 255, 0.1)' // Blau clar subtil per temes clars
+					: 'var(--vscode-tab-activeBackground)' // Color estàndard per temes foscos
+				: 'transparent',
+			color: isActive
+				? lightTheme
+					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars
+					: 'var(--vscode-tab-activeForeground)' // Color estàndard per temes foscos
+				: lightTheme
+					? '#333333'
+					: 'var(--vscode-tab-inactiveForeground)',
+			borderBottom: isActive
+				? lightTheme
+					? '2px solid #007acc' // Blau més fosc i visible per temes clars
+					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
+				: 'none',
 			cursor: 'pointer',
 			fontSize: '13px',
 			fontWeight: isActive ? '600' : '400',

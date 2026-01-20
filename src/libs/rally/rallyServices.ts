@@ -628,7 +628,8 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'task',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID']
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID', 'Rank'],
+		order: 'Rank'
 	};
 
 	if (limit) {
@@ -674,7 +675,8 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 		estimate: task.Estimate ?? task.estimate,
 		toDo: task.ToDo ?? task.toDo,
 		timeSpent: task.TimeSpent ?? task.timeSpent,
-		workItem: task.WorkProduct ? (task.WorkProduct._refObjectName ?? task.WorkProduct.refObjectName) : task.workProduct ? (task.workProduct._refObjectName ?? task.workProduct.refObjectName) : null
+		workItem: task.WorkProduct ? (task.WorkProduct._refObjectName ?? task.WorkProduct.refObjectName) : task.workProduct ? (task.workProduct._refObjectName ?? task.workProduct.refObjectName) : null,
+		rank: task.Rank ?? task.rank ?? 0
 	}));
 
 	//Afegim les noves tasks a rallyData sense duplicats

@@ -77,7 +77,7 @@ export const SettingsTitle = styled.h1`
 // Content areas
 export const ContentArea = styled.div`
 	background-color: ${themeColors.background};
-	padding: 20px;
+	padding: 10px;
 	min-height: 300px;
 `;
 

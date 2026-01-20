@@ -7,6 +7,8 @@ import TasksTable from './common/TasksTable';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
+import SprintDetailsForm from './common/SprintDetailsForm';
+import AssigneeHoursChart from './common/AssigneeHoursChart';
 
 // Icon components (copied from NavigationBar for now)
 const TeamIcon = () => (
@@ -1760,6 +1762,8 @@ jobs:
 							{currentScreen === 'userStories' && selectedIteration && (
 								<>
 									<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={handleBackToIterations} />
+									<SprintDetailsForm iteration={selectedIteration} />
+									<AssigneeHoursChart userStories={userStories} />
 									<UserStoriesTable
 										userStories={userStories}
 										loading={userStoriesLoading}

@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { isLightTheme } from '../../utils/themeColors';
 
 type Section = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
 
@@ -135,21 +136,24 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	const overflowTabs = tabs.slice(visibleCount);
 	const isOverflowActive = overflowTabs.some(tab => tab.id === activeSection);
 
-	const getTabStyles = (isActive: boolean): CSSProperties => ({
-		padding: '12px 20px',
-		border: 'none',
-		backgroundColor: isActive ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-		color: isActive ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-		borderBottom: isActive ? `2px solid var(--vscode-progressBar-background)` : 'none',
-		cursor: 'pointer',
-		fontSize: '13px',
-		fontWeight: isActive ? '600' : '400',
-		transition: 'all 0.2s ease',
-		display: 'flex',
-		alignItems: 'center',
-		gap: '8px',
-		whiteSpace: 'nowrap'
-	});
+	const getTabStyles = (isActive: boolean): CSSProperties => {
+		const lightTheme = isLightTheme();
+		return {
+			padding: '12px 20px',
+			border: 'none',
+			backgroundColor: isActive ? 'var(--vscode-tab-activeBackground)' : 'transparent',
+			color: isActive ? 'var(--vscode-tab-activeForeground)' : lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)',
+			borderBottom: isActive ? `2px solid var(--vscode-progressBar-background)` : 'none',
+			cursor: 'pointer',
+			fontSize: '13px',
+			fontWeight: isActive ? '600' : '400',
+			transition: 'all 0.2s ease',
+			display: 'flex',
+			alignItems: 'center',
+			gap: '8px',
+			whiteSpace: 'nowrap'
+		};
+	};
 
 	return (
 		<div

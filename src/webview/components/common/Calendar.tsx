@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { themeColors, isLightTheme } from '../../utils/themeColors';
 
 interface Iteration {
 	objectId: string;
@@ -80,7 +81,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 	// Iteration colors - cycle through these colors in order
-	const iterationColors = ['#66c5cc', '#f6cf71', '#f89c75', '#dcb0f2', '#a8d5a8'];
+	// Darker colors for light theme, brighter for dark theme
+	const lightTheme = isLightTheme();
+	const iterationColors = lightTheme
+		? ['#3a9ca3', '#d9a500', '#d97a3f', '#b868c9', '#5fa85f'] // Darker for light theme
+		: ['#66c5cc', '#f6cf71', '#f89c75', '#dcb0f2', '#a8d5a8']; // Original bright colors for dark theme
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {
@@ -229,7 +234,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		<div
 			style={{
 				padding: '20px',
-				backgroundColor: 'var(--vscode-editor-background)',
+				backgroundColor: themeColors.background,
 				minHeight: '500px'
 			}}
 		>
@@ -249,7 +254,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						border: 'none',
 						outline: 'none',
 						backgroundColor: 'transparent',
-						color: 'var(--vscode-foreground)',
+						color: themeColors.foreground,
 						borderRadius: '4px',
 						cursor: 'pointer',
 						display: 'flex',
@@ -258,7 +263,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						transition: 'background-color 0.2s ease'
 					}}
 					onMouseEnter={e => {
-						e.currentTarget.style.backgroundColor = 'var(--vscode-button-secondaryBackground)';
+						e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
 					}}
 					onMouseLeave={e => {
 						e.currentTarget.style.backgroundColor = 'transparent';
@@ -272,7 +277,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				<h2
 					style={{
 						margin: '0',
-						color: 'var(--vscode-foreground)',
+						color: themeColors.foreground,
 						fontSize: '19px',
 						fontWeight: '500',
 						minWidth: '200px',
@@ -289,7 +294,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						border: 'none',
 						outline: 'none',
 						backgroundColor: 'transparent',
-						color: 'var(--vscode-foreground)',
+						color: themeColors.foreground,
 						borderRadius: '4px',
 						cursor: 'pointer',
 						display: 'flex',
@@ -298,7 +303,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						transition: 'background-color 0.2s ease'
 					}}
 					onMouseEnter={e => {
-						e.currentTarget.style.backgroundColor = 'var(--vscode-button-secondaryBackground)';
+						e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
 					}}
 					onMouseLeave={e => {
 						e.currentTarget.style.backgroundColor = 'transparent';
@@ -317,15 +322,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						textAlign: 'center',
 						marginBottom: '16px',
 						padding: '12px',
-						backgroundColor: 'var(--vscode-textBlockQuote-background)',
+						backgroundColor: themeColors.panelBackground,
 						borderRadius: '8px',
-						border: '1px solid var(--vscode-textBlockQuote-border)'
+						border: `1px solid ${themeColors.panelBorder}`
 					}}
 				>
-					<div style={{ fontSize: '14px', color: 'var(--vscode-descriptionForeground)' }}>
+					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
 						Benvingut, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{currentUser.displayName || currentUser.userName || 'Usuari'}</span>! 👋
 					</div>
-					<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>Bon treball amb les teves user stories i tasques</div>
+					<div style={{ fontSize: '12px', color: themeColors.descriptionForeground, marginTop: '4px' }}>Bon treball amb les teves user stories i tasques</div>
 				</div>
 			)}
 
@@ -335,8 +340,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					display: 'grid',
 					gridTemplateColumns: 'repeat(7, 1fr)',
 					gap: '1px',
-					backgroundColor: 'var(--vscode-panel-border)',
-					border: '1px solid var(--vscode-panel-border)',
+					backgroundColor: themeColors.panelBorder,
+					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					overflow: 'hidden',
 					maxWidth: '800px',
@@ -349,12 +354,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						key={day}
 						style={{
 							padding: '12px 8px',
-							backgroundColor: 'var(--vscode-titleBar-activeBackground)',
-							color: 'var(--vscode-titleBar-activeForeground)',
+							backgroundColor: themeColors.titleBarActiveBackground,
+							color: themeColors.titleBarActiveForeground,
 							textAlign: 'center',
 							fontSize: '11px',
 							fontWeight: '600',
-							borderBottom: '1px solid var(--vscode-panel-border)'
+							borderBottom: `1px solid ${themeColors.panelBorder}`
 						}}
 					>
 						{day}
@@ -379,7 +384,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									: !dayInfo.isCurrentMonth || (isWeekend && dayInfo.isCurrentMonth)
 										? 'rgba(0, 0, 0, 0.18)' // background for weekends and days outside current month
 										: 'transparent',
-								color: dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : dayInfo.isCurrentMonth ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+								color: dayInfo.isToday ? themeColors.listActiveSelectionForeground : dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
 								borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
 								display: 'flex',
 								flexDirection: 'column',
@@ -395,7 +400,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								setHoveredDay(dayInfo);
 								setMousePosition({ x: e.clientX, y: e.clientY });
 								if (!dayInfo.isToday) {
-									e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+									e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
 								}
 							}}
 							onMouseMove={e => {
@@ -416,7 +421,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									fontWeight: '200',
 									marginBottom: '4px',
 									opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
-									color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)') : 'var(--vscode-descriptionForeground)'
+									color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? themeColors.listActiveSelectionForeground : themeColors.foreground) : themeColors.descriptionForeground
 								}}
 							>
 								{dayInfo.day}
@@ -456,7 +461,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												style={{
 													height: '6px',
 													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-													opacity: isHoveredDay ? 1 : 0.15,
+													opacity: isHoveredDay ? 1 : lightTheme ? 0.35 : 0.15,
 													transition: 'opacity 0.2s ease',
 													borderTopLeftRadius: isFirstDay ? '4px' : '0',
 													borderBottomLeftRadius: isFirstDay ? '4px' : '0',
@@ -538,7 +543,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						width: '100%',
 						marginTop: '24px', // moved legend slightly further from the calendar
 						fontSize: '12px',
-						color: 'var(--vscode-descriptionForeground)'
+						color: themeColors.descriptionForeground
 					}}
 				>
 					{/* Show iteration legends dynamically for any month */}
@@ -627,7 +632,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							}}
 						>
 							<div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '13px' }}>{tooltip.title}</div>
-							<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{tooltip.content}</div>
+							<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{tooltip.content}</div>
 						</div>
 					);
 				})()}

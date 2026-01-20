@@ -240,83 +240,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		}, 'showMainPanelIfHidden');
 	}
 
-	// Small, lightweight panel to show the logo and short info
-	public async createSettingsPanel(): Promise<vscode.WebviewPanel> {
-		return (
-			(await this._errorHandler.executeWithErrorHandling(async () => {
-				const settingsTitle = this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings';
-				const panel = vscode.window.createWebviewPanel('robert.settings', settingsTitle, vscode.ViewColumn.One, {
-					enableScripts: true,
-					localResourceRoots: [this._extensionUri]
-				});
-
-				this._errorHandler.logViewCreation('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
-
-				// Generate unique ID for this webview instance
-				const webviewId = this._generateWebviewId('settings');
-				const settingsHtml = await this._getHtmlForSettings(panel.webview, 'settings', webviewId);
-				panel.webview.html = settingsHtml;
-
-				// Handle messages from webview
-				this._setWebviewMessageListener(panel.webview, webviewId);
-
-				panel.onDidDispose(
-					() => {
-						this._errorHandler.logViewDestruction('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
-					},
-					undefined,
-					this._disposables
-				);
-
-				return panel;
-			}, 'createSettingsPanel')) ||
-			vscode.window.createWebviewPanel('robert.settings', this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings', vscode.ViewColumn.One, {
-				enableScripts: true,
-				localResourceRoots: [this._extensionUri]
-			})
-		);
-	}
-
-	/**
-	 * Show settings in the current webview instead of opening a new panel
-	 * This method is used when the settings button is clicked in the activity bar view
-	 * If already in settings view, it toggles back to main view
-	 */
-	public async showSettingsInCurrentView(): Promise<void> {
-		await this._errorHandler.executeWithErrorHandling(async () => {
-			// If already in settings view, toggle back to main view
-			if (this._isInSettingsView) {
-				this._errorHandler.logInfo('Toggling back to main view from settings', 'RobertWebviewProvider.showSettingsInCurrentView');
-				await this.showMainViewInCurrentView();
-				return;
-			}
-
-			// Check if we have a current view (activity bar)
-			if (this._currentView) {
-				this._errorHandler.logInfo('Showing settings in activity bar view', 'RobertWebviewProvider.showSettingsInCurrentView');
-				const webviewId = this._generateWebviewId('settings');
-				const settingsHtml = await this._getHtmlForSettings(this._currentView.webview, 'settings', webviewId);
-				this._currentView.webview.html = settingsHtml;
-				this._isInSettingsView = true;
-				return;
-			}
-
-			// Check if we have a current panel (separate window)
-			if (this._currentPanel) {
-				this._errorHandler.logInfo('Showing settings in separate panel', 'RobertWebviewProvider.showSettingsInCurrentView');
-				const webviewId = this._generateWebviewId('settings');
-				const settingsHtml = await this._getHtmlForSettings(this._currentPanel.webview, 'settings', webviewId);
-				this._currentPanel.webview.html = settingsHtml;
-				this._isInSettingsView = true;
-				return;
-			}
-
-			// Fallback: create a new settings panel if no current view exists
-			this._errorHandler.logInfo('No current view found, creating new settings panel', 'RobertWebviewProvider.showSettingsInCurrentView');
-			await this.createSettingsPanel();
-		}, 'showSettingsInCurrentView');
-	}
-
 	/**
 	 * Show main view in the current webview
 	 * This method is used to return to the main view from settings
@@ -397,22 +320,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					__INTER_FONT_URI__: interFontUri.toString()
 				});
 			}, 'getHtmlForLogo')) || '<html><body><p>Error loading logo</p></body></html>'
-		);
-	}
-
-	private async _getHtmlForSettings(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
-		return (
-			(await this._errorHandler.executeWithErrorHandling(async () => {
-				this._errorHandler.logInfo(`Settings webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForSettings');
-				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
-				return this._getHtmlFromBuild(webview, 'settings.html', {
-					__WEBVIEW_ID__: webviewId || 'unknown',
-					__CONTEXT__: context,
-					__TIMESTAMP__: new Date().toISOString(),
-					__EXTENSION_URI__: this._extensionUri.toString(),
-					__INTER_FONT_URI__: interFontUri.toString()
-				});
-			}, 'getHtmlForSettings')) || '<html><body><p>Error loading settings</p></body></html>'
 		);
 	}
 

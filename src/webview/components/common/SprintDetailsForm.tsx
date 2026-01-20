@@ -1,4 +1,5 @@
 import type React from 'react';
+import { themeColors } from '../../utils/themeColors';
 
 interface Iteration {
 	objectId: string;
@@ -20,7 +21,8 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 			style={{
 				margin: '20px 0',
 				padding: '20px',
-				backgroundColor: '#282828',
+				backgroundColor: themeColors.panelBackground,
+				border: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '6px'
 			}}
 		>
@@ -28,7 +30,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 				style={{
 					fontSize: '16px',
 					fontWeight: '600',
-					color: 'var(--vscode-foreground)',
+					color: themeColors.foreground,
 					margin: '0 0 20px 0',
 					letterSpacing: '0.5px'
 				}}
@@ -40,7 +42,8 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 				style={{
 					display: 'grid',
 					gridTemplateColumns: '1fr 1fr',
-					gap: '16px'
+					columnGap: '40px',
+					rowGap: '16px'
 				}}
 			>
 				<div>
@@ -49,7 +52,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 							display: 'block',
 							marginBottom: '4px',
 							fontSize: '12px',
-							color: 'color(srgb 0.8 0.8 0.8 / 0.68)'
+							color: themeColors.descriptionForeground
 						}}
 					>
 						Name
@@ -61,9 +64,9 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 						style={{
 							width: '100%',
 							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
+							backgroundColor: themeColors.inputBackground,
+							color: themeColors.inputForeground,
+							border: `1px solid ${themeColors.inputBorder}`,
 							borderRadius: '3px',
 							fontSize: '13px'
 						}}
@@ -76,7 +79,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 							display: 'block',
 							marginBottom: '4px',
 							fontSize: '12px',
-							color: 'color(srgb 0.8 0.8 0.8 / 0.68)'
+							color: themeColors.descriptionForeground
 						}}
 					>
 						Start Date
@@ -88,9 +91,9 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 						style={{
 							width: '100%',
 							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
+							backgroundColor: themeColors.inputBackground,
+							color: themeColors.inputForeground,
+							border: `1px solid ${themeColors.inputBorder}`,
 							borderRadius: '3px',
 							fontSize: '13px'
 						}}
@@ -103,7 +106,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 							display: 'block',
 							marginBottom: '4px',
 							fontSize: '12px',
-							color: 'color(srgb 0.8 0.8 0.8 / 0.68)'
+							color: themeColors.descriptionForeground
 						}}
 					>
 						State
@@ -115,9 +118,9 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 						style={{
 							width: '100%',
 							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
+							backgroundColor: themeColors.inputBackground,
+							color: themeColors.inputForeground,
+							border: `1px solid ${themeColors.inputBorder}`,
 							borderRadius: '3px',
 							fontSize: '13px'
 						}}
@@ -130,7 +133,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 							display: 'block',
 							marginBottom: '4px',
 							fontSize: '12px',
-							color: 'color(srgb 0.8 0.8 0.8 / 0.68)'
+							color: themeColors.descriptionForeground
 						}}
 					>
 						End Date
@@ -142,9 +145,9 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 						style={{
 							width: '100%',
 							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
+							backgroundColor: themeColors.inputBackground,
+							color: themeColors.inputForeground,
+							border: `1px solid ${themeColors.inputBorder}`,
 							borderRadius: '3px',
 							fontSize: '13px'
 						}}

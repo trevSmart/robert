@@ -2,6 +2,7 @@ import type React from 'react';
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 import { aggregateHoursByAssignee } from '../../utils/chartUtils';
+import { themeColors } from '../../utils/themeColors';
 
 interface UserStory {
 	assignee: string;
@@ -16,6 +17,12 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 	const chartRef = useRef<HTMLDivElement>(null);
 	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
+	// Detect if theme is light or dark
+	const isLightTheme = () => {
+		const body = document.body;
+		return body.classList.contains('vscode-light') || body.getAttribute('data-vscode-theme-kind') === 'light';
+	};
+
 	useEffect(() => {
 		if (!chartRef.current) return;
 
@@ -27,6 +34,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		// Prepare data
 		const data = aggregateHoursByAssignee(userStories);
 		const totalHours = data.reduce((sum, item) => sum + item.value, 0);
+		const lightTheme = isLightTheme();
 
 		// Configure chart options
 		const option: echarts.EChartsOption = {
@@ -35,12 +43,12 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 				subtext: 'Horizontal Bar Chart',
 				left: 'center',
 				textStyle: {
-					color: 'var(--vscode-foreground)',
+					color: themeColors.foreground,
 					fontSize: 16,
 					fontWeight: 600
 				},
 				subtextStyle: {
-					color: 'var(--vscode-descriptionForeground)',
+					color: themeColors.descriptionForeground,
 					fontSize: 12
 				}
 			},
@@ -50,10 +58,10 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 					type: 'shadow'
 				},
 				formatter: '{b}: {c}h',
-				backgroundColor: 'var(--vscode-editor-background)',
-				borderColor: 'var(--vscode-panel-border)',
+				backgroundColor: themeColors.background,
+				borderColor: themeColors.panelBorder,
 				textStyle: {
-					color: 'var(--vscode-foreground)'
+					color: themeColors.foreground
 				}
 			},
 			grid: {
@@ -66,15 +74,20 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 				type: 'value',
 				name: 'Hours (h)',
 				nameTextStyle: {
-					color: 'var(--vscode-foreground)'
+					color: themeColors.foreground
 				},
 				axisLabel: {
-					color: 'var(--vscode-foreground)',
+					color: themeColors.foreground,
 					formatter: '{value}h'
 				},
 				axisLine: {
 					lineStyle: {
-						color: 'var(--vscode-panel-border)'
+						color: themeColors.panelBorder
+					}
+				},
+				splitLine: {
+					lineStyle: {
+						color: lightTheme ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.06)'
 					}
 				}
 			},
@@ -82,16 +95,19 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 				type: 'category',
 				data: data.map(item => item.name),
 				nameTextStyle: {
-					color: 'var(--vscode-foreground)'
+					color: themeColors.foreground
 				},
 				axisLabel: {
-					color: 'var(--vscode-foreground)',
+					color: lightTheme ? '#333333' : themeColors.foreground,
 					interval: 0
 				},
 				axisLine: {
 					lineStyle: {
-						color: 'var(--vscode-panel-border)'
+						color: themeColors.panelBorder
 					}
+				},
+				splitLine: {
+					show: false
 				}
 			},
 			series: [
@@ -115,7 +131,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 					label: {
 						show: true,
 						position: 'right',
-						color: 'var(--vscode-foreground)',
+						color: themeColors.foreground,
 						fontSize: 12,
 						fontWeight: 500,
 						formatter: '{c}h'
@@ -149,7 +165,8 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 			style={{
 				margin: '20px 0',
 				padding: '5px 10px 10px 10px',
-				backgroundColor: '#282828',
+				backgroundColor: themeColors.panelBackground,
+				border: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '6px'
 			}}
 		>

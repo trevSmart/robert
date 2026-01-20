@@ -1,4 +1,5 @@
 import type React from 'react';
+import { themeColors } from '../../utils/themeColors';
 
 interface Task {
 	objectId: string;
@@ -26,7 +27,8 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 			style={{
 				margin: '20px 0',
 				padding: '20px',
-				backgroundColor: '#282828',
+				backgroundColor: themeColors.panelBackground,
+				border: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '6px'
 			}}
 		>
@@ -34,8 +36,8 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 				<div style={{ textAlign: 'center', padding: '20px' }}>
 					<div
 						style={{
-							border: '2px solid var(--vscode-panel-border)',
-							borderTop: '2px solid var(--vscode-button-background)',
+							border: `2px solid ${themeColors.panelBorder}`,
+							borderTop: `2px solid ${themeColors.progressBarBackground}`,
 							borderRadius: '50%',
 							width: '20px',
 							height: '20px',
@@ -52,7 +54,7 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 					style={{
 						textAlign: 'center',
 						padding: '20px',
-						color: 'var(--vscode-errorForeground)'
+						color: themeColors.errorForeground
 					}}
 				>
 					<p>{error}</p>
@@ -60,16 +62,16 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 			)}
 
 			{tasks.length > 0 && !loading && !error && (
-				<table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid var(--vscode-panel-border)' }}>
+				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
 					<thead>
-						<tr style={{ backgroundColor: 'var(--vscode-titleBar-activeBackground)', color: 'var(--vscode-titleBar-activeForeground)' }}>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>ID</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Name</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>State</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Assigned To</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Estimate</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>To Do</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: '1px solid var(--vscode-panel-border)', fontWeight: 'bold' }}>Time Spent</th>
+						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>ID</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Name</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>State</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Assigned To</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Estimate</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>To Do</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Time Spent</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -77,13 +79,13 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 							<tr
 								key={task.objectId}
 								style={{
-									borderBottom: '1px solid var(--vscode-panel-border)',
+									borderBottom: `1px solid ${themeColors.panelBorder}`,
 									cursor: 'default',
 									transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
 								}}
 								onMouseEnter={e => {
-									e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
-									e.currentTarget.style.boxShadow = 'inset 0 0 0 1px var(--vscode-list-hoverBackground)';
+									e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
+									e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${themeColors.listHoverBackground}`;
 								}}
 								onMouseLeave={e => {
 									e.currentTarget.style.backgroundColor = '';

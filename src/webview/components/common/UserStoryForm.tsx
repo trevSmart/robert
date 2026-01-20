@@ -1,12 +1,13 @@
 import type React from 'react';
 import styled from 'styled-components';
+import { themeColors, getInputBorderColor } from '../../utils/themeColors';
 
 const Card = styled.div`
 	margin: 20px 0;
 	padding: 20px;
-	background-color: #282828;
+	background-color: ${themeColors.panelBackground};
 	border-radius: 8px;
-	border: 1px solid color(srgb 0.8 0.8 0.8 / 0.08);
+	border: 1px solid ${themeColors.panelBorder};
 
 	@media (max-width: 720px) {
 		padding: 16px;
@@ -16,7 +17,7 @@ const Card = styled.div`
 const CardTitle = styled.div`
 	font-size: 12px;
 	font-weight: 400;
-	color: color(srgb 0.8 0.8 0.8 / 0.68);
+	color: ${themeColors.descriptionForeground};
 	letter-spacing: 0.5px;
 	margin: 0 0 16px 0;
 	padding-left: 7px;
@@ -41,7 +42,7 @@ const Group = styled.section`
 
 const GroupTitle = styled.h3`
 	margin: 0 0 6px 0;
-	color: var(--vscode-foreground);
+	color: ${themeColors.foreground};
 	font-size: 14px;
 	font-weight: 600;
 `;
@@ -54,40 +55,52 @@ const Field = styled.div`
 
 const Label = styled.label`
 	font-size: 12px;
-	color: color(srgb 0.8 0.8 0.8 / 0.68);
+	color: ${themeColors.descriptionForeground};
 `;
 
 const BaseInput = styled.input`
 	width: 100%;
 	padding: 8px 10px;
-	background-color: var(--vscode-input-background);
-	color: var(--vscode-input-foreground);
-	border: 1px solid var(--vscode-input-border);
+	background-color: ${themeColors.inputBackground};
+	color: ${themeColors.inputForeground};
+	border: 1px solid ${getInputBorderColor()};
 	border-radius: 4px;
 	font-size: 13px;
+
+	&:focus {
+		outline: none;
+		border-color: ${themeColors.progressBarBackground};
+		box-shadow: 0 0 0 2px rgba(73, 168, 255, 0.1);
+	}
 `;
 
 const BaseSelect = styled.select`
 	width: 100%;
 	padding: 8px 10px;
-	background-color: var(--vscode-input-background);
-	color: var(--vscode-input-foreground);
-	border: 1px solid var(--vscode-input-border);
+	background-color: ${themeColors.inputBackground};
+	color: ${themeColors.inputForeground};
+	border: 1px solid ${getInputBorderColor()};
 	border-radius: 4px;
 	font-size: 13px;
+
+	&:focus {
+		outline: none;
+		border-color: ${themeColors.progressBarBackground};
+		box-shadow: 0 0 0 2px rgba(73, 168, 255, 0.1);
+	}
 `;
 
 const BaseTextarea = styled.textarea`
 	width: 100%;
 	padding: 8px 10px;
-	background-color: var(--vscode-input-background);
-	color: var(--vscode-input-foreground);
-	border: 1px solid var(--vscode-input-border);
+	background-color: ${themeColors.inputBackground};
+	color: ${themeColors.inputForeground};
+	border: 1px solid ${getInputBorderColor()};
 	border-radius: 4px;
 	font-size: 13px;
 	font-family:
 		'Inter',
-		var(--vscode-font-family),
+		${themeColors.fontFamily},
 		-apple-system,
 		BlinkMacSystemFont,
 		'Segoe UI',
@@ -95,6 +108,12 @@ const BaseTextarea = styled.textarea`
 	line-height: 1.4;
 	resize: vertical;
 	min-height: 120px;
+
+	&:focus {
+		outline: none;
+		border-color: ${themeColors.progressBarBackground};
+		box-shadow: 0 0 0 2px rgba(73, 168, 255, 0.1);
+	}
 `;
 
 const CheckboxRow = styled.div`

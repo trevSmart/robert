@@ -527,12 +527,6 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		};
 	}, [hasVsCodeApi, sendMessage]);
 
-	const _openSettings = () => {
-		sendMessage({
-			command: 'openSettings'
-		});
-	};
-
 	const _clearIterations = () => {
 		setIterations([]);
 		setIterationsError(null);

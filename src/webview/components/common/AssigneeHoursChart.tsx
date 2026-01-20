@@ -26,6 +26,11 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		return body.classList.contains('vscode-light') || body.getAttribute('data-vscode-theme-kind') === 'light';
 	};
 
+	const barHeight = 40; // Height per bar in pixels
+	const assigneeData = aggregateUserStoriesByAssignee(userStories);
+	const numBars = assigneeData.length;
+	const chartHeight = Math.max(300, numBars * barHeight + 100); // Min 300px, add 100px for title and margins
+
 	useEffect(() => {
 		if (!chartRef.current) return;
 
@@ -35,7 +40,6 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		}
 
 		// Prepare data
-		const assigneeData = aggregateUserStoriesByAssignee(userStories);
 		const totalHours = assigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
 		const lightTheme = isLightTheme();
 
@@ -77,7 +81,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		});
 
 		// Configure chart options
-		const option: echarts.EChartsOption = {
+		const option: any = {
 			title: {
 				text: `Hours by Assignee (${totalHours}h total)`,
 				subtext: 'Horizontal Bar Chart',
@@ -178,7 +182,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
-	}, [userStories]);
+	}, [userStories, assigneeData]);
 
 	// Cleanup on unmount
 	useEffect(() => {
@@ -186,10 +190,6 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 			chartInstanceRef.current?.dispose();
 		};
 	}, []);
-
-	const barHeight = 40; // Height per bar in pixels
-	const numBars = assigneeData.length;
-	const chartHeight = Math.max(300, numBars * barHeight + 100); // Min 300px, add 100px for title and margins
 
 	return (
 		<div

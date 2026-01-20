@@ -1778,7 +1778,7 @@ jobs:
 
 							{currentScreen === 'userStoryDetail' && selectedUserStory && (
 								<>
-									<ScreenHeader title={`User Story Details - ${selectedUserStory.formattedId}`} showBackButton={true} onBack={handleBackToUserStories} />
+									<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={handleBackToUserStories} />
 									<UserStoryForm userStory={selectedUserStory} />
 									<div
 										style={{

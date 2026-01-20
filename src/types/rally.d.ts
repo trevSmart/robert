@@ -192,6 +192,8 @@ export interface RallyTask {
 	toDo: number;
 	timeSpent: number;
 	workItem: string | null;
+	rank: number;
+	Rank?: number;
 }
 
 export interface RallyQuery {

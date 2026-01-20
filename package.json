@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.114",
+	"version": "0.0.118",
 	"type": "commonjs",
 	"icon": "resources/icons/ibm-logo-bee.png",
 	"publisher": "trevSmart",

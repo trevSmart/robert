@@ -199,7 +199,8 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 			style={{
 				margin: '20px 0',
 				padding: '20px 40px 20px 20px',
-				backgroundColor: '#282828',
+				backgroundColor: 'var(--vscode-editor-background)',
+				border: '1px solid var(--vscode-panel-border)',
 				borderRadius: '6px'
 			}}
 		>
@@ -244,7 +245,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 					style={{
 						width: '100%',
 						padding: '6px 8px',
-						backgroundColor: 'var(--vscode-input-background)',
+						backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 						color: 'var(--vscode-input-foreground)',
 						border: '1px solid var(--vscode-input-border)',
 						borderRadius: '3px',
@@ -276,7 +277,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 							style={{
 								width: '100%',
 								padding: '6px 8px',
-								backgroundColor: 'var(--vscode-input-background)',
+								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 								color: 'var(--vscode-input-foreground)',
 								border: '1px solid var(--vscode-input-border)',
 								borderRadius: '3px',
@@ -293,7 +294,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 							style={{
 								width: '100%',
 								padding: '6px 8px',
-								backgroundColor: 'var(--vscode-input-background)',
+								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 								color: 'var(--vscode-input-foreground)',
 								border: '1px solid var(--vscode-input-border)',
 								borderRadius: '3px',
@@ -338,7 +339,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 							style={{
 								width: '100%',
 								padding: '6px 8px',
-								backgroundColor: 'var(--vscode-input-background)',
+								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 								color: 'var(--vscode-input-foreground)',
 								border: '1px solid var(--vscode-input-border)',
 								borderRadius: '3px',

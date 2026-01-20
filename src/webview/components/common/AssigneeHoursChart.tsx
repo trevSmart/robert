@@ -1,10 +1,13 @@
 import type React from 'react';
 import { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
-import { aggregateHoursByAssignee } from '../../utils/chartUtils';
+import { aggregateUserStoriesByAssignee, AssigneeUserStories } from '../../utils/chartUtils';
 import { themeColors } from '../../utils/themeColors';
 
 interface UserStory {
+	objectId: string;
+	formattedId: string;
+	name: string;
 	assignee: string;
 	taskEstimateTotal: number;
 }
@@ -32,9 +35,46 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		}
 
 		// Prepare data
-		const data = aggregateHoursByAssignee(userStories);
-		const totalHours = data.reduce((sum, item) => sum + item.value, 0);
+		const assigneeData = aggregateUserStoriesByAssignee(userStories);
+		const totalHours = assigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
 		const lightTheme = isLightTheme();
+
+		// Create series data for stacked bars
+		// First, collect all unique user stories across assignees
+		const allUserStories = new Set<string>();
+		assigneeData.forEach(assignee => {
+			assignee.userStories.forEach(story => {
+				allUserStories.add(story.id);
+			});
+		});
+
+		// Create series for each user story
+		const series = Array.from(allUserStories).map(storyId => {
+			const storyData = assigneeData.map(assignee => {
+				const story = assignee.userStories.find(s => s.id === storyId);
+				return story ? story.hours : 0;
+			});
+
+			// Find the story name for the first occurrence
+			const storyName = assigneeData.flatMap(a => a.userStories).find(s => s.id === storyId)?.name || storyId;
+
+			return {
+				name: storyName,
+				type: 'bar' as const,
+				stack: 'hours',
+				data: storyData,
+				itemStyle: {
+					color: ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC', '#F5DEB3', '#DDA0DD', '#98FB98'][Math.abs(storyId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % 12]
+				},
+				emphasis: {
+					itemStyle: {
+						shadowBlur: 10,
+						shadowOffsetX: 0,
+						shadowColor: 'rgba(0, 0, 0, 0.5)'
+					}
+				}
+			};
+		});
 
 		// Configure chart options
 		const option: echarts.EChartsOption = {
@@ -57,7 +97,21 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 				axisPointer: {
 					type: 'shadow'
 				},
-				formatter: '{b}: {c}h',
+				formatter: function (params: any) {
+					const assignee = params[0].name;
+					let content = `<strong>${assignee}</strong><br/>`;
+					let total = 0;
+
+					params.forEach((param: any) => {
+						if (param.value > 0) {
+							content += `${param.seriesName}: ${param.value}h<br/>`;
+							total += param.value;
+						}
+					});
+
+					content += `<strong>Total: ${total}h</strong>`;
+					return content;
+				},
 				backgroundColor: themeColors.background,
 				borderColor: themeColors.panelBorder,
 				textStyle: {
@@ -93,7 +147,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 			},
 			yAxis: {
 				type: 'category',
-				data: data.map(item => item.name),
+				data: assigneeData.map(item => item.name),
 				nameTextStyle: {
 					color: themeColors.foreground
 				},
@@ -110,34 +164,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 					show: false
 				}
 			},
-			series: [
-				{
-					name: 'Hours',
-					type: 'bar',
-					data: data.map((item, index) => ({
-						value: item.value,
-						itemStyle: {
-							color: ['#5470C6', '#91CC75', '#FAC858', '#EE6666', '#73C0DE', '#3BA272', '#FC8452', '#9A60B4', '#EA7CCC', '#F5DEB3', '#DDA0DD', '#98FB98'][index % 12],
-							borderRadius: [0, 4, 4, 0]
-						}
-					})),
-					emphasis: {
-						itemStyle: {
-							shadowBlur: 10,
-							shadowOffsetX: 0,
-							shadowColor: 'rgba(0, 0, 0, 0.5)'
-						}
-					},
-					label: {
-						show: true,
-						position: 'right',
-						color: themeColors.foreground,
-						fontSize: 12,
-						fontWeight: 500,
-						formatter: '{c}h'
-					}
-				}
-			]
+			series: series
 		};
 
 		chartInstanceRef.current.setOption(option);
@@ -160,6 +187,10 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		};
 	}, []);
 
+	const barHeight = 40; // Height per bar in pixels
+	const numBars = assigneeData.length;
+	const chartHeight = Math.max(300, numBars * barHeight + 100); // Min 300px, add 100px for title and margins
+
 	return (
 		<div
 			style={{
@@ -170,7 +201,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 				borderRadius: '6px'
 			}}
 		>
-			<div ref={chartRef} style={{ width: '100%', height: '350px' }} />
+			<div ref={chartRef} style={{ width: '100%', height: `${chartHeight}px` }} />
 		</div>
 	);
 };

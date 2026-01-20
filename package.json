@@ -249,7 +249,7 @@
 		"publish:pre-release": "vsce publish --pre-release"
 	},
 	"devDependencies": {
-		"@types/node": "^25.0.3",
+		"@types/node": "^25.0.9",
 		"@types/vscode": "^1.74.0",
 		"@typescript-eslint/eslint-plugin": "^8.50.1",
 		"@typescript-eslint/parser": "^8.52.0",

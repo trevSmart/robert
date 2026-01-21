@@ -257,12 +257,12 @@ function buildStatusTooltip(errorHandler: ErrorHandler): vscode.MarkdownString {
 		const allFilesLink = `command:robert.toggleAllFiles?${enc([])}`;
 		const nextEditLink = `command:robert.toggleNextEdit?${enc([])}`;
 		const snooze5Link = `command:robert.snooze?${enc([5])}`;
-	
+
 		const snoozed = robertPopoverState.snoozedUntil > Date.now();
 		const snoozeLabel = snoozed ? `Snoozed until ${new Date(robertPopoverState.snoozedUntil).toLocaleTimeString()}` : 'Snooze (5 min)';
 
 		md.appendMarkdown('**IBM Robert**  ');
-			md.appendMarkdown(`[$${checked(robertPopoverState.allFiles)}](${allFilesLink}) ${pad('All files')}\n\n`);
+		md.appendMarkdown(`[$${checked(robertPopoverState.allFiles)}](${allFilesLink}) ${pad('All files')}\n\n`);
 		md.appendMarkdown(`[$${checked(robertPopoverState.nextEditSuggestions)}](${nextEditLink}) ${pad('Next edit suggestions')}\n\n`);
 		md.appendMarkdown(`[Snooze](${snooze5Link} "Hide for 5 minutes") ${pad(snoozeLabel)}\n`);
 

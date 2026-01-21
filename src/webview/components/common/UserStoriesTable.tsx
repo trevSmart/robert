@@ -87,10 +87,10 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 					<thead>
 						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '10%' }}>ID</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '25%' }}>Name</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Name</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '12%' }}>Status</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Estimate</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>To Do</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '50px' }}>Estimate</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '50px' }}>To Do</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -119,7 +119,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 								}}
 							>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, textDecoration: 'none' }}>{userStory.formattedId}</td>
-								<td style={{ padding: '10px 12px', width: '25%', fontWeight: 'normal' }}>{userStory.name}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{userStory.name}</td>
 								<td
 									style={{
 										padding: '10px 12px',
@@ -129,8 +129,8 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 								>
 									{userStory.taskStatus && userStory.taskStatus !== 'NONE' ? userStory.taskStatus : ''}
 								</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{userStory.planEstimate || 0}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{userStory.toDo}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '50px' }}>{userStory.planEstimate || 0}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '50px' }}>{userStory.toDo}</td>
 							</tr>
 						))}
 					</tbody>
@@ -164,6 +164,20 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 		endDate.setHours(23, 59, 59, 999);
 
 		return today >= startDate && today <= endDate;
+	};
+
+	// Function to check if iteration hasn't started yet
+	const isFutureIteration = (iteration: any) => {
+		if (!iteration.startDate) return false;
+
+		const today = new Date();
+		const startDate = new Date(iteration.startDate);
+
+		// Reset time for date comparison
+		today.setHours(0, 0, 0, 0);
+		startDate.setHours(0, 0, 0, 0);
+
+		return startDate > today;
 	};
 	return (
 		<div
@@ -212,41 +226,45 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Name</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Start Date</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>End Date</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>State</th>
 						</tr>
 					</thead>
 					<tbody>
-						{iterations.map(iteration => (
-							<tr
-								key={iteration.objectId}
-								onClick={() => onIterationSelected?.(iteration)}
-								style={{
-									cursor: onIterationSelected ? 'pointer' : 'default',
-									backgroundColor: selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionBackground : undefined,
-									color: selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionForeground : undefined,
-									borderBottom: `1px solid ${themeColors.panelBorder}`,
-									transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
-								}}
-								onMouseEnter={e => {
-									if (selectedIteration?.objectId !== iteration.objectId) {
-										e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
-										e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${themeColors.listHoverBackground}`;
-									}
-								}}
-								onMouseLeave={e => {
-									if (selectedIteration?.objectId !== iteration.objectId) {
-										e.currentTarget.style.backgroundColor = selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionBackground : '';
-										e.currentTarget.style.boxShadow = 'none';
-									}
-								}}
-							>
-								<td style={{ padding: '10px 4px', textAlign: 'center', fontWeight: 'normal' }}>{isCurrentDayIteration(iteration) && <span style={{ fontSize: '14px' }}>📅</span>}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, textDecoration: 'none' }}>{iteration.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{iteration.state}</td>
-							</tr>
-						))}
+						{iterations
+							.sort((a, b) => {
+								const aDate = a.startDate ? new Date(a.startDate) : new Date(0);
+								const bDate = b.startDate ? new Date(b.startDate) : new Date(0);
+								return bDate.getTime() - aDate.getTime(); // Descending order
+							})
+							.map(iteration => (
+								<tr
+									key={iteration.objectId}
+									onClick={() => onIterationSelected?.(iteration)}
+									style={{
+										cursor: onIterationSelected ? 'pointer' : 'default',
+										backgroundColor: selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionBackground : undefined,
+										color: selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionForeground : undefined,
+										borderBottom: `1px solid ${themeColors.panelBorder}`,
+										transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
+									}}
+									onMouseEnter={e => {
+										if (selectedIteration?.objectId !== iteration.objectId) {
+											e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
+											e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${themeColors.listHoverBackground}`;
+										}
+									}}
+									onMouseLeave={e => {
+										if (selectedIteration?.objectId !== iteration.objectId) {
+											e.currentTarget.style.backgroundColor = selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionBackground : '';
+											e.currentTarget.style.boxShadow = 'none';
+										}
+									}}
+								>
+									<td style={{ padding: '10px 4px', textAlign: 'center', fontWeight: 'normal' }}>{isCurrentDayIteration(iteration) && <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: themeColors.buttonBackground }}></span>}</td>
+									<td style={{ padding: '10px 12px', fontWeight: 'normal', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : themeColors.foreground, textDecoration: 'none' }}>{iteration.name}</td>
+									<td style={{ padding: '10px 12px', fontWeight: 'normal', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
+									<td style={{ padding: '10px 12px', fontWeight: 'normal', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>
+								</tr>
+							))}
 					</tbody>
 				</table>
 			)}

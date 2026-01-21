@@ -170,5 +170,5 @@ export const isLightTheme = (): boolean => {
  * Get adaptive input border color based on theme
  */
 export const getInputBorderColor = (): string => {
-	return isLightTheme() ? '#cccccc' : themeColors.inputBorder;
+	return isLightTheme() ? '#b0b0b0' : themeColors.inputBorder;
 };

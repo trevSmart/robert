@@ -1,5 +1,5 @@
 import { rallyData } from '../../extension.js';
-import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory, RallyIteration } from '../../types/rally';
+import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory, RallyIteration, RallyDefect } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
@@ -701,5 +701,114 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 		tasks: tasks,
 		source: 'api',
 		count: tasks.length
+	};
+}
+
+export async function getDefects(query: RallyQuery = {}, limit: number | null = null) {
+	// eslint-disable-next-line no-console
+	console.log('[Robert] 🐛 getDefects called with query:', query, 'limit:', limit);
+
+	const rallyApi = getRallyApi();
+
+	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
+	if (Object.keys(query).length && rallyData.defects && rallyData.defects.length) {
+		const filteredDefects = rallyData.defects.filter((defect: RallyDefect) =>
+			Object.keys(query).every(key => {
+				if (defect[key as keyof RallyDefect] === undefined) {
+					return false;
+				}
+				return defect[key as keyof RallyDefect] === query[key];
+			})
+		);
+
+		if (filteredDefects.length) {
+			return {
+				defects: filteredDefects,
+				source: 'cache',
+				count: filteredDefects.length
+			};
+		}
+	}
+
+	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
+	const queryOptions: RallyQueryOptions = {
+		type: 'defect',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID']
+	};
+
+	if (limit) {
+		queryOptions.limit = limit;
+	}
+
+	// Sempre filtrem per projecte
+	const projectId = await getProjectId();
+	queryOptions.query = queryUtils.where('Project', '=', `/project/${projectId}`);
+
+	if (Object.keys(query).length) {
+		const defectQueries = Object.keys(query).map(key => {
+			if (key === 'Name') {
+				return queryUtils.where(key, 'contains', query[key]);
+			}
+			return queryUtils.where(key, '=', query[key]);
+		});
+
+		if (defectQueries.length) {
+			if (queryOptions.query) {
+				// @ts-expect-error - Rally query builder has and method
+				queryOptions.query = queryOptions.query.and(defectQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)));
+			} else {
+				queryOptions.query = defectQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b));
+			}
+		}
+	}
+
+	const result = await rallyApi.query(queryOptions);
+	const resultData = result as RallyApiResult;
+
+	if (!resultData.Results || resultData.Results.length === 0) {
+		return {
+			defects: [],
+			source: 'api',
+			count: 0
+		};
+	}
+
+	//Formatem la resposta per ser més llegible
+	const defects: RallyDefect[] = resultData.Results.map((defect: any) => ({
+		objectId: defect.ObjectID ?? defect.objectId,
+		formattedId: defect.FormattedID ?? defect.formattedId,
+		name: defect.Name ?? defect.name,
+		description: sanitizeDescription(defect.Description ?? defect.description),
+		state: defect.State ?? defect.state,
+		severity: defect.Severity ?? defect.severity ?? 'Unset',
+		priority: defect.Priority ?? defect.priority ?? 'Unset',
+		owner: defect.Owner ? (defect.Owner._refObjectName ?? defect.Owner.refObjectName) : defect.owner ? (defect.owner._refObjectName ?? defect.owner.refObjectName) : 'Sense assignat',
+		project: defect.Project ? (defect.Project._refObjectName ?? defect.Project.refObjectName) : defect.project ? (defect.project._refObjectName ?? defect.project.refObjectName) : null,
+		iteration: defect.Iteration ? (defect.Iteration._refObjectName ?? defect.Iteration.refObjectName) : defect.iteration ? (defect.iteration._refObjectName ?? defect.iteration.refObjectName) : null,
+		blocked: defect.Blocked ?? defect.blocked ?? false,
+		discussionCount: defect.Discussion?.Count ?? defect.discussion?.count ?? 0
+	}));
+
+	//Afegim els nous defects a rallyData sense duplicats
+	if (!rallyData.defects) {
+		rallyData.defects = [];
+	}
+
+	for (const newDefect of defects) {
+		const existingDefectIndex = rallyData.defects.findIndex((existingDefect: RallyDefect) => existingDefect.objectId === newDefect.objectId);
+
+		if (existingDefectIndex === -1) {
+			//Defect nou, l'afegim
+			rallyData.defects.push(newDefect);
+		} else {
+			//Defect existent, l'actualitzem
+			rallyData.defects[existingDefectIndex] = newDefect;
+		}
+	}
+
+	return {
+		defects: defects,
+		source: 'api',
+		count: defects.length
 	};
 }

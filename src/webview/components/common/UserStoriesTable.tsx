@@ -1,5 +1,5 @@
 import type React from 'react';
-import { themeColors } from '../../utils/themeColors';
+import { themeColors, isLightTheme } from '../../utils/themeColors';
 
 interface Iteration {
 	objectId: string;
@@ -89,8 +89,8 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '10%' }}>ID</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Name</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '12%' }}>Status</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '50px' }}>Estimate</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '50px' }}>To Do</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '29px' }}>Est.</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '29px' }}>To Do</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -124,13 +124,13 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									style={{
 										padding: '10px 12px',
 										fontWeight: '500',
-										color: userStory.taskStatus === 'DEFINED' ? themeColors.successBackground : userStory.taskStatus === 'BLOCKED' ? themeColors.errorBackground : themeColors.descriptionForeground
+										color: userStory.taskStatus === 'DEFINED' ? themeColors.successBackground : userStory.taskStatus === 'BLOCKED' ? themeColors.errorBackground : isLightTheme() ? 'rgba(0, 0, 0, 0.6)' : themeColors.descriptionForeground
 									}}
 								>
 									{userStory.taskStatus && userStory.taskStatus !== 'NONE' ? userStory.taskStatus : ''}
 								</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '50px' }}>{userStory.planEstimate || 0}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '50px' }}>{userStory.toDo}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '29px', textAlign: 'center' }}>{userStory.planEstimate || 0}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '29px', textAlign: 'center' }}>{userStory.toDo}</td>
 							</tr>
 						))}
 					</tbody>

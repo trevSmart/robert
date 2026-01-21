@@ -19,7 +19,6 @@ export function getVsCodeApi(): VsCodeApi | null {
 			window.__vscodeApi = api;
 			return api;
 		} catch (error) {
-			// eslint-disable-next-line no-console
 			console.error('[Robert] Failed to acquire VS Code API', error);
 		}
 	}

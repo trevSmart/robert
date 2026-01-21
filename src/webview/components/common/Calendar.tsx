@@ -383,7 +383,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									? 'rgba(33, 150, 243, 0.3)' // More prominent blue background for today
 									: !dayInfo.isCurrentMonth || (isWeekend && dayInfo.isCurrentMonth)
 										? lightTheme
-											? 'rgba(0, 0, 0, 0.08)'
+											? 'rgba(0, 0, 0, 0.04)'
 											: 'rgba(0, 0, 0, 0.18)' // lighter background for weekends and days outside current month in light theme
 										: 'transparent',
 								color: dayInfo.isToday ? themeColors.listActiveSelectionForeground : dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
@@ -413,7 +413,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								if (!dayInfo.isToday) {
 									const dayOfWeek = index % 7;
 									const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
-									e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth || (isWeekend && dayInfo.isCurrentMonth) ? (lightTheme ? 'rgba(0, 0, 0, 0.08)' : 'rgba(0, 0, 0, 0.18)') : 'transparent';
+									e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth || (isWeekend && dayInfo.isCurrentMonth) ? (lightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(0, 0, 0, 0.18)') : 'transparent';
 								}
 							}}
 						>

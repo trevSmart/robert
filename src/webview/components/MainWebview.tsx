@@ -503,7 +503,6 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [sendMessage, findCurrentIteration, loadUserStories, activeSection, loadIterations]);
 
 	useEffect(() => {

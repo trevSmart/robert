@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.143",
+	"version": "0.0.148",
 	"type": "commonjs",
 	"icon": "resources/icons/ibm-logo-bee.png",
 	"publisher": "trevSmart",
@@ -167,11 +167,6 @@
 			{
 				"command": "robert.debug.disable",
 				"title": "Debug: Disable Debug Mode",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.toggle",
-				"title": "Debug: Toggle Debug Mode",
 				"category": "IBM Robert"
 			}
 		],

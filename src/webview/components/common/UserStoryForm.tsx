@@ -150,15 +150,9 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.2px;
-	background: ${props => props.isBlocked
-		? 'color(srgb 0.2 0.6 0.35 / 0.22)'
-		: 'color(srgb 0.8 0.2 0.2 / 0.22)'};
-	color: ${props => props.isBlocked
-		? 'color(srgb 0.3 0.95 0.6 / 1)'
-		: 'color(srgb 0.95 0.3 0.3 / 1)'};
-	border: 1px solid ${props => props.isBlocked
-		? 'color(srgb 0.2 0.6 0.35 / 0.35)'
-		: 'color(srgb 0.8 0.2 0.2 / 0.35)'};
+	background: ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.25)' : 'color(srgb 0.2 0.6 0.35 / 0.25)')};
+	color: ${props => (props.isBlocked ? 'color(srgb 0.9 0.2 0.2 / 1)' : 'color(srgb 0.2 0.75 0.45 / 1)')};
+	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.45)' : 'color(srgb 0.2 0.6 0.35 / 0.45)')};
 `;
 
 const StatPill = styled.div`
@@ -234,7 +228,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 						style={{
 							fontSize: '14px',
 							fontWeight: '500',
-							color: userStory.taskStatus === 'DEFINED' ? 'color(srgb 0.4 0.9 0.6 / 0.9)' : userStory.taskStatus === 'BLOCKED' ? 'color(srgb 1 0.5 0.5 / 0.95)' : 'var(--vscode-descriptionForeground)'
+							color: userStory.taskStatus === 'DEFINED' ? themeColors.successBackground : userStory.taskStatus === 'BLOCKED' ? themeColors.errorBackground : 'var(--vscode-descriptionForeground)'
 						}}
 					>
 						{userStory.taskStatus}

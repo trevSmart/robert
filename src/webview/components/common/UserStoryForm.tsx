@@ -194,6 +194,24 @@ interface UserStoryFormProps {
 }
 
 const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
+	const getScheduleStateColor = (scheduleState: string) => {
+		switch (scheduleState?.toLowerCase()) {
+			case 'new':
+				return '#6c757d'; // Gris
+			case 'defined':
+				return '#fd7e14'; // Taronja
+			case 'in-progress':
+				return '#ffc107'; // Groc
+			case 'completed':
+				return '#0d6efd'; // Blau
+			case 'accepted':
+				return '#198754'; // Verd
+			case 'closed':
+				return '#495057'; // Gris fosc
+			default:
+				return 'var(--vscode-descriptionForeground)';
+		}
+	};
 	return (
 		<div
 			style={{
@@ -223,15 +241,15 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 				>
 					{userStory.formattedId}
 				</h2>
-				{userStory.taskStatus && userStory.taskStatus !== 'NONE' && (
+				{userStory.scheduleState && (
 					<div
 						style={{
 							fontSize: '14px',
 							fontWeight: '500',
-							color: userStory.taskStatus === 'DEFINED' ? themeColors.successBackground : userStory.taskStatus === 'BLOCKED' ? themeColors.errorBackground : 'var(--vscode-descriptionForeground)'
+							color: getScheduleStateColor(userStory.scheduleState)
 						}}
 					>
-						{userStory.taskStatus}
+						{userStory.scheduleState}
 					</div>
 				)}
 			</div>

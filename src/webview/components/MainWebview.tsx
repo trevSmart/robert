@@ -179,7 +179,369 @@ import { CenteredContainer, Container, ContentArea, GlobalStyle, Header, LogoCon
 import { getVsCodeApi } from '../utils/vscodeApi';
 
 type SectionType = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
-type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail';
+type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories';
+type PortfolioViewType = 'bySprints' | 'allUserStories';
+
+interface PortfolioViewConfig {
+	id: PortfolioViewType;
+	label: string;
+	icon?: string;
+	description?: string;
+	component: React.ComponentType<PortfolioViewProps>;
+	dataLoader: () => Promise<void>;
+	stateCleaner: () => void;
+}
+
+interface PortfolioViewProps {
+	iterations: Iteration[];
+	iterationsLoading: boolean;
+	iterationsError: string | null;
+	selectedIteration: Iteration | null;
+	userStories: UserStory[];
+	userStoriesLoading: boolean;
+	userStoriesError: string | null;
+	selectedUserStory: UserStory | null;
+	tasks: any[];
+	tasksLoading: boolean;
+	tasksError: string | null;
+	activeUserStoryTab: 'tasks' | 'tests';
+	currentScreen: ScreenType;
+	onLoadIterations: () => void;
+	onIterationSelected: (iteration: Iteration) => void;
+	onUserStorySelected: (userStory: UserStory) => void;
+	onLoadUserStories: (iteration?: Iteration) => void;
+	onClearUserStories: () => void;
+	onLoadTasks: (userStoryId: string) => void;
+	onBackToIterations: () => void;
+	onBackToUserStories: () => void;
+	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests') => void;
+}
+
+// Portfolio View Components
+const BySprintsView: React.FC<PortfolioViewProps> = ({
+	iterations,
+	iterationsLoading,
+	iterationsError,
+	selectedIteration,
+	userStories,
+	userStoriesLoading,
+	userStoriesError,
+	selectedUserStory,
+	tasks,
+	tasksLoading,
+	tasksError,
+	activeUserStoryTab,
+	currentScreen,
+	onLoadIterations,
+	onIterationSelected,
+	onUserStorySelected,
+	onLoadUserStories,
+	onClearUserStories,
+	onLoadTasks,
+	onBackToIterations,
+	onBackToUserStories,
+	onActiveUserStoryTabChange
+}) => (
+	<>
+		{currentScreen === 'iterations' && (
+			<>
+				<ScreenHeader title="Sprints" />
+				<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={onLoadIterations} onIterationSelected={onIterationSelected} selectedIteration={selectedIteration} />
+			</>
+		)}
+
+		{currentScreen === 'userStories' && selectedIteration && (
+			<>
+				<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
+				<SprintDetailsForm iteration={selectedIteration} />
+				<AssigneeHoursChart userStories={userStories} />
+				<UserStoriesTable userStories={userStories} loading={userStoriesLoading} error={userStoriesError} onLoadUserStories={() => onLoadUserStories(selectedIteration)} onClearUserStories={onClearUserStories} onUserStorySelected={onUserStorySelected} selectedUserStory={selectedUserStory} />
+			</>
+		)}
+
+		{currentScreen === 'userStoryDetail' && selectedUserStory && (
+			<>
+				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+				<UserStoryForm userStory={selectedUserStory} />
+				<div
+					style={{
+						marginTop: '8px',
+						marginBottom: '4px',
+						display: 'flex',
+						gap: '8px',
+						borderBottom: '1px solid var(--vscode-panel-border)'
+					}}
+				>
+					<button
+						type="button"
+						onClick={() => onActiveUserStoryTabChange('tasks')}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 10px',
+							border: 'none',
+							borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+							backgroundColor: 'transparent',
+							color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+							cursor: 'pointer',
+							fontSize: '12px',
+							fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
+						}}
+					>
+						<TasksTabIcon />
+						<span>Tasks</span>
+					</button>
+					<button
+						type="button"
+						onClick={() => onActiveUserStoryTabChange('tests')}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 10px',
+							border: 'none',
+							borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+							backgroundColor: 'transparent',
+							color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+							cursor: 'pointer',
+							fontSize: '12px',
+							fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
+						}}
+					>
+						<TestsTabIcon />
+						<span>Tests</span>
+					</button>
+				</div>
+				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+				{activeUserStoryTab === 'tests' && (
+					<div
+						style={{
+							margin: '20px 0',
+							padding: '20px',
+							backgroundColor: '#282828',
+							borderRadius: '6px'
+						}}
+					>
+						<div
+							style={{
+								fontSize: '13px',
+								color: 'var(--vscode-foreground)',
+								marginBottom: '6px'
+							}}
+						>
+							This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
+						</div>
+						<div
+							style={{
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Detailed test listing will be available in a future version of this view.
+						</div>
+					</div>
+				)}
+			</>
+		)}
+	</>
+);
+
+const AllUserStoriesView: React.FC<PortfolioViewProps> = ({
+	userStories,
+	userStoriesLoading,
+	userStoriesError,
+	selectedUserStory,
+	tasks,
+	tasksLoading,
+	tasksError,
+	activeUserStoryTab,
+	currentScreen,
+	onLoadUserStories,
+	onClearUserStories,
+	onUserStorySelected,
+	onLoadTasks,
+	onBackToUserStories,
+	onActiveUserStoryTabChange
+}) => (
+	<>
+		{currentScreen === 'allUserStories' && !selectedUserStory && (
+			<>
+				<ScreenHeader title="All User Stories" />
+				<UserStoriesTable
+					userStories={userStories}
+					loading={userStoriesLoading}
+					error={userStoriesError}
+					onLoadUserStories={() => onLoadUserStories()} // Load all user stories
+					onClearUserStories={onClearUserStories}
+					onUserStorySelected={onUserStorySelected}
+					selectedUserStory={selectedUserStory}
+				/>
+			</>
+		)}
+
+		{currentScreen === 'userStoryDetail' && selectedUserStory && (
+			<>
+				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+				<UserStoryForm userStory={selectedUserStory} />
+				<div
+					style={{
+						marginTop: '8px',
+						marginBottom: '4px',
+						display: 'flex',
+						gap: '8px',
+						borderBottom: '1px solid var(--vscode-panel-border)'
+					}}
+				>
+					<button
+						type="button"
+						onClick={() => onActiveUserStoryTabChange('tasks')}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 10px',
+							border: 'none',
+							borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+							backgroundColor: 'transparent',
+							color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+							cursor: 'pointer',
+							fontSize: '12px',
+							fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
+						}}
+					>
+						<TasksTabIcon />
+						<span>Tasks</span>
+					</button>
+					<button
+						type="button"
+						onClick={() => onActiveUserStoryTabChange('tests')}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 10px',
+							border: 'none',
+							borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+							backgroundColor: 'transparent',
+							color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+							cursor: 'pointer',
+							fontSize: '12px',
+							fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
+						}}
+					>
+						<TestsTabIcon />
+						<span>Tests</span>
+					</button>
+				</div>
+				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+				{activeUserStoryTab === 'tests' && (
+					<div
+						style={{
+							margin: '20px 0',
+							padding: '20px',
+							backgroundColor: '#282828',
+							borderRadius: '6px'
+						}}
+					>
+						<div
+							style={{
+								fontSize: '13px',
+								color: 'var(--vscode-foreground)',
+								marginBottom: '6px'
+							}}
+						>
+							This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
+						</div>
+						<div
+							style={{
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Detailed test listing will be available in a future version of this view.
+						</div>
+					</div>
+				)}
+			</>
+		)}
+	</>
+);
+
+// Portfolio Views Configuration
+// FUTURE EXTENSIONS: To add "All Defects" view, simply:
+// 1. Add 'allDefects' to PortfolioViewType
+// 2. Create AllDefectsView component
+// 3. Add entry below with loadAllDefects dataLoader
+// 4. Implement loadAllDefects function in rallyServices.ts
+const portfolioViews: PortfolioViewConfig[] = [
+	{
+		id: 'bySprints',
+		label: 'By Sprints',
+		icon: '🏃',
+		description: 'View user stories organized by sprints',
+		component: BySprintsView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	},
+	{
+		id: 'allUserStories',
+		label: 'All User Stories',
+		icon: '📋',
+		description: 'View all user stories in the project',
+		component: AllUserStoriesView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	}
+];
+
+// Portfolio View Selector Component
+const PortfolioViewSelector: React.FC<{
+	views: PortfolioViewConfig[];
+	activeView: PortfolioViewType;
+	onViewChange: (viewId: PortfolioViewType) => void;
+}> = ({ views, activeView, onViewChange }) => (
+	<div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
+		{views.map(view => (
+			<button
+				key={view.id}
+				onClick={() => onViewChange(view.id)}
+				style={{
+					padding: '8px 16px',
+					border: '1px solid var(--vscode-panel-border)',
+					borderRadius: '6px',
+					backgroundColor: activeView === view.id ? 'var(--vscode-button-background)' : 'var(--vscode-editor-background)',
+					color: activeView === view.id ? 'var(--vscode-button-foreground)' : 'var(--vscode-foreground)',
+					cursor: 'pointer',
+					display: 'flex',
+					alignItems: 'center',
+					gap: '6px',
+					fontSize: '13px',
+					fontWeight: activeView === view.id ? 600 : 400,
+					transition: 'all 0.15s ease'
+				}}
+				title={view.description}
+			>
+				{view.icon && <span>{view.icon}</span>}
+				<span>{view.label}</span>
+			</button>
+		))}
+	</div>
+);
+
+// Portfolio View Renderer Component
+const PortfolioViewRenderer: React.FC<{
+	activeViewType: PortfolioViewType;
+	viewProps: PortfolioViewProps;
+}> = ({ activeViewType, viewProps }) => {
+	const activeView = portfolioViews.find(view => view.id === activeViewType);
+	if (!activeView) {
+		return <div>View not found</div>;
+	}
+
+	const ActiveComponent = activeView.component;
+	return <ActiveComponent {...viewProps} />;
+};
 
 interface MainWebviewProps {
 	webviewId: string;
@@ -267,6 +629,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
+	const [activeViewType, setActiveViewType] = useState<PortfolioViewType>('bySprints');
 	const [calendarDate, setCalendarDate] = useState(new Date());
 
 	const loadIterations = useCallback(() => {
@@ -291,6 +654,59 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			});
 		},
 		[sendMessage]
+	);
+
+	const loadAllUserStories = useCallback(() => {
+		// eslint-disable-next-line no-console
+		console.log('[Frontend] Loading ALL user stories...');
+		setUserStoriesLoading(true);
+		setUserStoriesError(null);
+		sendMessage({
+			command: 'loadUserStories'
+			// Sense filtre d'iteration = carrega totes les US del projecte
+		});
+	}, [sendMessage]);
+
+	const switchViewType = useCallback(
+		(newViewType: PortfolioViewType) => {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Switching to view type:', newViewType);
+
+			// State cleaners for each view type
+			const stateCleaners = {
+				bySprints: () => {
+					setSelectedIteration(null);
+					setUserStories([]);
+					setCurrentScreen('iterations');
+				},
+				allUserStories: () => {
+					setSelectedIteration(null);
+					setCurrentScreen('allUserStories');
+				}
+			};
+
+			// Data loaders for each view type
+			const dataLoaders = {
+				bySprints: loadIterations,
+				allUserStories: loadAllUserStories
+			};
+
+			// Execute state cleaner of current view
+			const currentCleaner = stateCleaners[activeViewType];
+			if (currentCleaner) {
+				currentCleaner();
+			}
+
+			// Change active view
+			setActiveViewType(newViewType);
+
+			// Execute data loader of new view
+			const newLoader = dataLoaders[newViewType];
+			if (newLoader) {
+				newLoader();
+			}
+		},
+		[activeViewType, loadIterations, loadAllUserStories]
 	);
 
 	const handleIterationSelected = useCallback(
@@ -1757,115 +2173,34 @@ jobs:
 
 					{activeSection === 'portfolio' && (
 						<>
-							{currentScreen === 'iterations' && (
-								<>
-									<ScreenHeader title="Sprints" />
-									<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={loadIterations} onIterationSelected={handleIterationSelected} selectedIteration={selectedIteration} />
-								</>
-							)}
-
-							{currentScreen === 'userStories' && selectedIteration && (
-								<>
-									<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={handleBackToIterations} />
-									<SprintDetailsForm iteration={selectedIteration} />
-									<AssigneeHoursChart userStories={userStories} />
-									<UserStoriesTable
-										userStories={userStories}
-										loading={userStoriesLoading}
-										error={userStoriesError}
-										onLoadUserStories={() => loadUserStories(selectedIteration)}
-										onClearUserStories={clearUserStories}
-										onUserStorySelected={handleUserStorySelected}
-										selectedUserStory={selectedUserStory}
-									/>
-								</>
-							)}
-
-							{currentScreen === 'userStoryDetail' && selectedUserStory && (
-								<>
-									<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={handleBackToUserStories} />
-									<UserStoryForm userStory={selectedUserStory} />
-									<div
-										style={{
-											marginTop: '8px',
-											marginBottom: '4px',
-											display: 'flex',
-											gap: '8px',
-											borderBottom: '1px solid var(--vscode-panel-border)'
-										}}
-									>
-										<button
-											type="button"
-											onClick={() => setActiveUserStoryTab('tasks')}
-											style={{
-												display: 'inline-flex',
-												alignItems: 'center',
-												gap: '6px',
-												padding: '6px 10px',
-												border: 'none',
-												borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-												backgroundColor: 'transparent',
-												color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-												cursor: 'pointer',
-												fontSize: '12px',
-												fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
-											}}
-										>
-											<TasksTabIcon />
-											<span>Tasks</span>
-										</button>
-										<button
-											type="button"
-											onClick={() => setActiveUserStoryTab('tests')}
-											style={{
-												display: 'inline-flex',
-												alignItems: 'center',
-												gap: '6px',
-												padding: '6px 10px',
-												border: 'none',
-												borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-												backgroundColor: 'transparent',
-												color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-												cursor: 'pointer',
-												fontSize: '12px',
-												fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
-											}}
-										>
-											<TestsTabIcon />
-											<span>Tests</span>
-										</button>
-									</div>
-									{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && loadTasks(selectedUserStory.objectId)} />}
-									{activeUserStoryTab === 'tests' && (
-										<div
-											style={{
-												margin: '20px 0',
-												padding: '20px',
-												backgroundColor: '#282828',
-												borderRadius: '6px'
-											}}
-										>
-											<div
-												style={{
-													fontSize: '13px',
-													color: 'var(--vscode-foreground)',
-													marginBottom: '6px'
-												}}
-											>
-												This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
-											</div>
-											<div
-												style={{
-													fontSize: '12px',
-													color: 'var(--vscode-descriptionForeground)'
-												}}
-											>
-												Detailed test listing will be available in a future version of this view.
-											</div>
-										</div>
-									)}
-								</>
-							)}
+							<PortfolioViewSelector views={portfolioViews} activeView={activeViewType} onViewChange={switchViewType} />
+							<PortfolioViewRenderer
+								activeViewType={activeViewType}
+								viewProps={{
+									iterations,
+									iterationsLoading,
+									iterationsError,
+									selectedIteration,
+									userStories,
+									userStoriesLoading,
+									userStoriesError,
+									selectedUserStory,
+									tasks,
+									tasksLoading,
+									tasksError,
+									activeUserStoryTab,
+									currentScreen,
+									onLoadIterations: loadIterations,
+									onIterationSelected: handleIterationSelected,
+									onUserStorySelected: handleUserStorySelected,
+									onLoadUserStories: loadUserStories,
+									onClearUserStories: clearUserStories,
+									onLoadTasks: loadTasks,
+									onBackToIterations: handleBackToIterations,
+									onBackToUserStories: handleBackToUserStories,
+									onActiveUserStoryTabChange: setActiveUserStoryTab
+								}}
+							/>
 						</>
 					)}
 				</ContentArea>

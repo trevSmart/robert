@@ -30,6 +30,7 @@ interface UserStory {
 	defectsCount: number;
 	discussionCount: number;
 	appgar: string;
+	scheduleState: string;
 }
 
 interface UserStoriesTableProps {
@@ -43,6 +44,24 @@ interface UserStoriesTableProps {
 }
 
 const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loading = false, error, onLoadUserStories, onClearUserStories, onUserStorySelected, selectedUserStory }) => {
+	const getScheduleStateColor = (scheduleState: string) => {
+		switch (scheduleState?.toLowerCase()) {
+			case 'new':
+				return '#6c757d'; // Gris
+			case 'defined':
+				return '#fd7e14'; // Taronja
+			case 'in-progress':
+				return '#ffc107'; // Groc
+			case 'completed':
+				return '#0d6efd'; // Blau
+			case 'accepted':
+				return '#198754'; // Verd
+			case 'closed':
+				return '#495057'; // Gris fosc
+			default:
+				return isLightTheme() ? 'rgba(0, 0, 0, 0.6)' : themeColors.descriptionForeground;
+		}
+	};
 	return (
 		<div
 			style={{
@@ -88,7 +107,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '10%' }}>ID</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Name</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '12%' }}>Status</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '15%' }}>State</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '29px' }}>Est.</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '29px' }}>To Do</th>
 						</tr>
@@ -123,11 +142,11 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 								<td
 									style={{
 										padding: '10px 12px',
-										fontWeight: '500',
-										color: userStory.taskStatus === 'DEFINED' ? themeColors.successBackground : userStory.taskStatus === 'BLOCKED' ? themeColors.errorBackground : isLightTheme() ? 'rgba(0, 0, 0, 0.6)' : themeColors.descriptionForeground
+										fontWeight: 'normal',
+										color: getScheduleStateColor(userStory.scheduleState)
 									}}
 								>
-									{userStory.taskStatus && userStory.taskStatus !== 'NONE' ? userStory.taskStatus : ''}
+									{userStory.scheduleState || 'N/A'}
 								</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '29px', textAlign: 'center' }}>{userStory.planEstimate || 0}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '29px', textAlign: 'center' }}>{userStory.toDo}</td>

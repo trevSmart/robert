@@ -4,6 +4,7 @@ import 'vscrui/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
 import UserStoryForm from './common/UserStoryForm';
 import TasksTable from './common/TasksTable';
+import DefectsTable from './common/DefectsTable';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
@@ -179,8 +180,8 @@ import { CenteredContainer, Container, ContentArea, GlobalStyle, Header, LogoCon
 import { getVsCodeApi } from '../utils/vscodeApi';
 
 type SectionType = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
-type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories';
-type PortfolioViewType = 'bySprints' | 'allUserStories';
+type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects';
+type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
 
 interface PortfolioViewConfig {
 	id: PortfolioViewType;
@@ -204,6 +205,9 @@ interface PortfolioViewProps {
 	tasks: any[];
 	tasksLoading: boolean;
 	tasksError: string | null;
+	defects: any[];
+	defectsLoading: boolean;
+	defectsError: string | null;
 	activeUserStoryTab: 'tasks' | 'tests';
 	currentScreen: ScreenType;
 	onLoadIterations: () => void;
@@ -212,6 +216,7 @@ interface PortfolioViewProps {
 	onLoadUserStories: (iteration?: Iteration) => void;
 	onClearUserStories: () => void;
 	onLoadTasks: (userStoryId: string) => void;
+	onLoadDefects: () => void;
 	onBackToIterations: () => void;
 	onBackToUserStories: () => void;
 	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests') => void;
@@ -468,17 +473,35 @@ const AllUserStoriesView: React.FC<PortfolioViewProps> = ({
 	</>
 );
 
+const AllDefectsView: React.FC<PortfolioViewProps> = ({
+	defects,
+	defectsLoading,
+	defectsError,
+	currentScreen,
+	onLoadDefects
+}) => (
+	<>
+		{currentScreen === 'defects' && (
+			<>
+				<ScreenHeader title="All Defects" />
+				<DefectsTable
+					defects={defects}
+					loading={defectsLoading}
+					error={defectsError || undefined}
+					onLoadDefects={onLoadDefects}
+					onDefectSelected={undefined}
+					selectedDefect={null}
+				/>
+			</>
+		)}
+	</>
+);
+
 // Portfolio Views Configuration
-// FUTURE EXTENSIONS: To add "All Defects" view, simply:
-// 1. Add 'allDefects' to PortfolioViewType
-// 2. Create AllDefectsView component
-// 3. Add entry below with loadAllDefects dataLoader
-// 4. Implement loadAllDefects function in rallyServices.ts
 const portfolioViews: PortfolioViewConfig[] = [
 	{
 		id: 'bySprints',
-		label: 'By Sprints',
-		icon: '🏃',
+		label: 'Sprints',
 		description: 'View user stories organized by sprints',
 		component: BySprintsView,
 		dataLoader: () => Promise.resolve(), // Will be set dynamically
@@ -486,43 +509,61 @@ const portfolioViews: PortfolioViewConfig[] = [
 	},
 	{
 		id: 'allUserStories',
-		label: 'All User Stories',
-		icon: '📋',
+		label: 'User Stories',
 		description: 'View all user stories in the project',
 		component: AllUserStoriesView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	},
+	{
+		id: 'allDefects',
+		label: 'Defects',
+		description: 'View all defects in the project',
+		component: AllDefectsView,
 		dataLoader: () => Promise.resolve(), // Will be set dynamically
 		stateCleaner: () => {} // Will be set dynamically
 	}
 ];
 
-// Portfolio View Selector Component
+// Portfolio View Selector Component (Tab-like appearance)
 const PortfolioViewSelector: React.FC<{
 	views: PortfolioViewConfig[];
 	activeView: PortfolioViewType;
 	onViewChange: (viewId: PortfolioViewType) => void;
 }> = ({ views, activeView, onViewChange }) => (
-	<div style={{ marginBottom: '20px', display: 'flex', gap: '10px' }}>
-		{views.map(view => (
+	<div
+		style={{
+			marginBottom: '20px',
+			display: 'flex',
+			borderBottom: '1px solid var(--vscode-panel-border)',
+			backgroundColor: 'var(--vscode-tab-inactiveBackground)',
+			borderRadius: '6px 6px 0 0'
+		}}
+	>
+		{views.map((view, index) => (
 			<button
 				key={view.id}
 				onClick={() => onViewChange(view.id)}
 				style={{
-					padding: '8px 16px',
-					border: '1px solid var(--vscode-panel-border)',
-					borderRadius: '6px',
-					backgroundColor: activeView === view.id ? 'var(--vscode-button-background)' : 'var(--vscode-editor-background)',
-					color: activeView === view.id ? 'var(--vscode-button-foreground)' : 'var(--vscode-foreground)',
+					padding: '12px 20px',
+					border: 'none',
+					borderRight: index < views.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
+					borderBottom: activeView === view.id ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+					borderRadius: index === 0 ? '6px 0 0 0' : index === views.length - 1 ? '0 6px 0 0' : '0',
+					backgroundColor: activeView === view.id ? 'var(--vscode-tab-activeBackground)' : 'transparent',
+					color: activeView === view.id ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
 					cursor: 'pointer',
 					display: 'flex',
 					alignItems: 'center',
 					gap: '6px',
 					fontSize: '13px',
 					fontWeight: activeView === view.id ? 600 : 400,
-					transition: 'all 0.15s ease'
+					transition: 'all 0.15s ease',
+					position: 'relative',
+					zIndex: activeView === view.id ? 1 : 0
 				}}
 				title={view.description}
 			>
-				{view.icon && <span>{view.icon}</span>}
 				<span>{view.label}</span>
 			</button>
 		))}
@@ -626,6 +667,10 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [tasksError, setTasksError] = useState<string | null>(null);
 	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests'>('tasks');
 
+	const [defects, setDefects] = useState<any[]>([]);
+	const [defectsLoading, setDefectsLoading] = useState(false);
+	const [defectsError, setDefectsError] = useState<string | null>(null);
+
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
@@ -667,6 +712,16 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		});
 	}, [sendMessage]);
 
+	const loadAllDefects = useCallback(() => {
+		// eslint-disable-next-line no-console
+		console.log('[Frontend] Loading ALL defects...');
+		setDefectsLoading(true);
+		setDefectsError(null);
+		sendMessage({
+			command: 'loadDefects'
+		});
+	}, [sendMessage]);
+
 	const switchViewType = useCallback(
 		(newViewType: PortfolioViewType) => {
 			// eslint-disable-next-line no-console
@@ -682,13 +737,18 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 				allUserStories: () => {
 					setSelectedIteration(null);
 					setCurrentScreen('allUserStories');
+				},
+				allDefects: () => {
+					setDefects([]);
+					setCurrentScreen('defects');
 				}
 			};
 
 			// Data loaders for each view type
 			const dataLoaders = {
 				bySprints: loadIterations,
-				allUserStories: loadAllUserStories
+				allUserStories: loadAllUserStories,
+				allDefects: loadAllDefects
 			};
 
 			// Execute state cleaner of current view
@@ -706,7 +766,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 				newLoader();
 			}
 		},
-		[activeViewType, loadIterations, loadAllUserStories]
+		[activeViewType, loadIterations, loadAllUserStories, loadAllDefects]
 	);
 
 	const handleIterationSelected = useCallback(
@@ -763,12 +823,17 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	}, []);
 
 	const handleBackToUserStories = useCallback(() => {
-		setCurrentScreen('userStories');
+		// Depenent de la vista activa, tornem a la pantalla correcta
+		if (activeViewType === 'allUserStories') {
+			setCurrentScreen('allUserStories');
+		} else {
+			setCurrentScreen('userStories');
+		}
 		setSelectedUserStory(null);
 		setTasks([]);
 		setTasksError(null);
 		setActiveUserStoryTab('tasks');
-	}, []);
+	}, [activeViewType]);
 
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
@@ -893,6 +958,10 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 					if (message.userStories) {
 						setUserStories(message.userStories);
 						setUserStoriesError(null);
+						// Si estem en la vista global i no tenim cap user story seleccionada, establim la pantalla correcta
+						if (activeViewType === 'allUserStories' && !selectedUserStory) {
+							setCurrentScreen('allUserStories');
+						}
 					} else {
 						setUserStoriesError('Failed to load user stories');
 					}
@@ -913,6 +982,22 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 				case 'tasksError':
 					setTasksLoading(false);
 					setTasksError(message.error || 'Error loading tasks');
+					break;
+				case 'defectsLoaded':
+					setDefectsLoading(false);
+					if (message.defects) {
+						setDefects(message.defects);
+						setDefectsError(null);
+						if (activeViewType === 'allDefects' && currentScreen !== 'defects') {
+							setCurrentScreen('defects');
+						}
+					} else {
+						setDefectsError('Failed to load defects');
+					}
+					break;
+				case 'defectsError':
+					setDefectsLoading(false);
+					setDefectsError(message.error || 'Error loading defects');
 					break;
 			}
 		};
@@ -2188,6 +2273,9 @@ jobs:
 									tasks,
 									tasksLoading,
 									tasksError,
+									defects,
+									defectsLoading,
+									defectsError,
 									activeUserStoryTab,
 									currentScreen,
 									onLoadIterations: loadIterations,
@@ -2196,6 +2284,7 @@ jobs:
 									onLoadUserStories: loadUserStories,
 									onClearUserStories: clearUserStories,
 									onLoadTasks: loadTasks,
+									onLoadDefects: loadAllDefects,
 									onBackToIterations: handleBackToIterations,
 									onBackToUserStories: handleBackToUserStories,
 									onActiveUserStoryTabChange: setActiveUserStoryTab

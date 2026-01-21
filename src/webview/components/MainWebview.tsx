@@ -398,8 +398,20 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			return false;
 		});
 
-		// Return the first active iteration (in case of overlapping)
-		return activeIterations.length > 0 ? activeIterations[0] : null;
+		if (activeIterations.length === 0) {
+			return null;
+		}
+
+		// If only one active iteration, return it
+		if (activeIterations.length === 1) {
+			return activeIterations[0];
+		}
+
+		// If multiple active iterations, prioritize those containing "Sprint" in the name (case insensitive)
+		const sprintIterations = activeIterations.filter(iteration => iteration.name.toLowerCase().includes('sprint'));
+
+		// Return the first sprint iteration if any exist, otherwise return the first active iteration
+		return sprintIterations.length > 0 ? sprintIterations[0] : activeIterations[0];
 	}, []);
 
 	useEffect(() => {
@@ -415,8 +427,8 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			command: 'getState'
 		});
 
-		// Automatically load iterations when webview initializes (only for calendar section)
-		if (activeSection === 'calendar') {
+		// Automatically load iterations when webview initializes (only for portfolio section)
+		if (activeSection === 'portfolio') {
 			// eslint-disable-next-line no-console
 			console.log('[Frontend] Calling loadIterations automatically...');
 			loadIterations();
@@ -1748,7 +1760,7 @@ jobs:
 						<>
 							{currentScreen === 'iterations' && (
 								<>
-									<ScreenHeader title="Rally Iterations" />
+									<ScreenHeader title="Sprints" />
 									<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={loadIterations} onIterationSelected={handleIterationSelected} selectedIteration={selectedIteration} />
 								</>
 							)}

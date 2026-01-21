@@ -35,7 +35,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 					letterSpacing: '0.5px'
 				}}
 			>
-				Sprint Details
+				Details
 			</h2>
 
 			<div

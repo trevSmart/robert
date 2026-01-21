@@ -140,19 +140,25 @@ const DescriptionGroup = styled(Group)`
 	}
 `;
 
-const StatusPill = styled.div`
+const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 32px;
-	padding: 0 12px;
+	min-height: 24px;
+	padding: 0 8px;
 	border-radius: 999px;
-	font-size: 12px;
+	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.2px;
-	background: color(srgb 0.2 0.6 0.35 / 0.22);
-	color: color(srgb 0.8 1 0.9 / 0.9);
-	border: 1px solid color(srgb 0.2 0.6 0.35 / 0.35);
+	background: ${props => props.isBlocked
+		? 'color(srgb 0.2 0.6 0.35 / 0.22)'
+		: 'color(srgb 0.8 0.2 0.2 / 0.22)'};
+	color: ${props => props.isBlocked
+		? 'color(srgb 0.3 0.95 0.6 / 1)'
+		: 'color(srgb 0.95 0.3 0.3 / 1)'};
+	border: 1px solid ${props => props.isBlocked
+		? 'color(srgb 0.2 0.6 0.35 / 0.35)'
+		: 'color(srgb 0.8 0.2 0.2 / 0.35)'};
 `;
 
 const StatPill = styled.div`
@@ -324,7 +330,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 
 				<div>
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
-					<StatusPill>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
+					<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
 				</div>
 
 				{/* Description */}

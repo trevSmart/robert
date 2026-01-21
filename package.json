@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.118",
+	"version": "0.0.143",
 	"type": "commonjs",
 	"icon": "resources/icons/ibm-logo-bee.png",
 	"publisher": "trevSmart",
@@ -180,7 +180,7 @@
 				{
 					"id": "robert",
 					"title": "IBM Robert",
-					"icon": "./resources/icons/ibm-logo-bee.svg"
+					"icon": "./resources/icons/ibm-logo-bee.png"
 				}
 			]
 		},
@@ -190,7 +190,7 @@
 					"id": "robert.mainView",
 					"name": "IBM Robert",
 					"type": "webview",
-					"icon": "./resources/icons/ibm-logo-bee.svg"
+					"icon": "./resources/icons/ibm-logo-bee.png"
 				}
 			]
 		},

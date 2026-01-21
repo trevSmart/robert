@@ -20,9 +20,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	// State persistence for webview
 	private _webviewState: Map<string, unknown> = new Map();
 
-	// Track current view state
-	private _isInSettingsView: boolean = false;
-
 	// Debug mode state
 	private _isDebugMode: boolean = false;
 
@@ -251,7 +248,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo('Showing main view in activity bar view', 'RobertWebviewProvider.showMainViewInCurrentView');
 				const webviewId = this._generateWebviewId('main');
 				this._currentView.webview.html = await this._getHtmlForWebview(this._currentView.webview, 'main', webviewId);
-				this._isInSettingsView = false;
 				return;
 			}
 
@@ -260,7 +256,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo('Showing main view in separate panel', 'RobertWebviewProvider.showMainViewInCurrentView');
 				const webviewId = this._generateWebviewId('main');
 				this._currentPanel.webview.html = await this._getHtmlForWebview(this._currentPanel.webview, 'main', webviewId);
-				this._isInSettingsView = false;
 				return;
 			}
 
@@ -441,61 +436,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								}
 							}
 							break;
-						case 'getSettings':
-							if (message.webviewId) {
-								try {
-									const settings = this._settingsManager.getSettings();
-									webview.postMessage({
-										command: 'settingsLoaded',
-										settings: settings
-									});
-									this._errorHandler.logInfo(`Settings loaded for webview: ${message.webviewId}`, 'WebviewMessageListener');
-								} catch (error) {
-									this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getSettings');
-									webview.postMessage({
-										command: 'settingsError',
-										errors: ['Failed to load settings']
-									});
-								}
-							}
-							break;
-						case 'saveSettings':
-							if (message.webviewId && message.settings) {
-								try {
-									await this._settingsManager.saveSettings(message.settings);
-									webview.postMessage({
-										command: 'settingsSaved',
-										success: true
-									});
-									this._errorHandler.logInfo(`Settings saved for webview: ${message.webviewId}`, 'WebviewMessageListener');
-								} catch (error) {
-									this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'saveSettings');
-									webview.postMessage({
-										command: 'settingsError',
-										errors: ['Failed to save settings']
-									});
-								}
-							}
-							break;
-						case 'resetSettings':
-							if (message.webviewId) {
-								try {
-									await this._settingsManager.resetSettings();
-									const defaultSettings = this._settingsManager.getSettings();
-									webview.postMessage({
-										command: 'settingsLoaded',
-										settings: defaultSettings
-									});
-									this._errorHandler.logInfo(`Settings reset for webview: ${message.webviewId}`, 'WebviewMessageListener');
-								} catch (error) {
-									this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'resetSettings');
-									webview.postMessage({
-										command: 'settingsError',
-										errors: ['Failed to reset settings']
-									});
-								}
-							}
-							break;
 						case 'openTutorialInEditor':
 							if (message.tutorial) {
 								try {
@@ -634,21 +574,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 										error: 'Failed to load user stories'
 									});
 								}
-							}
-							break;
-						case 'goBackToMain':
-							this._errorHandler.logInfo(`Go back to main view requested from ${message.context}`, 'WebviewMessageListener');
-							// Show main view in the current webview instead of closing it
-							if (webviewId) {
-								this._errorHandler.logInfo(`Showing main view in current webview: ${webviewId}`, 'WebviewMessageListener');
-								webview.html = await this._getHtmlForWebview(webview, 'main', webviewId);
-								this._isInSettingsView = false;
-							} else {
-								// Fallback: close current panel and show main panel
-								if (this._currentPanel) {
-									this._currentPanel.dispose();
-								}
-								this.showMainPanelIfHidden();
 							}
 							break;
 						case 'loadTasks':

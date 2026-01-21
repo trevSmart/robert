@@ -7,6 +7,7 @@ export interface AssigneeUserStories {
 	name: string;
 	userStories: Array<{
 		id: string;
+		formattedId: string;
 		name: string;
 		hours: number;
 	}>;
@@ -28,7 +29,7 @@ export function aggregateHoursByAssignee(userStories: Array<{ assignee: string; 
 }
 
 export function aggregateUserStoriesByAssignee(userStories: Array<{ objectId: string; formattedId: string; name: string; assignee: string; taskEstimateTotal: number }>): AssigneeUserStories[] {
-	const aggregated = new Map<string, Array<{ id: string; name: string; hours: number }>>();
+	const aggregated = new Map<string, Array<{ id: string; formattedId: string; name: string; hours: number }>>();
 
 	userStories.forEach(story => {
 		const assignee = story.assignee || 'Unassigned';
@@ -40,7 +41,8 @@ export function aggregateUserStoriesByAssignee(userStories: Array<{ objectId: st
 
 		aggregated.get(assignee)!.push({
 			id: story.objectId,
-			name: story.formattedId || story.name,
+			formattedId: story.formattedId,
+			name: story.name,
 			hours: hours
 		});
 	});

@@ -349,7 +349,8 @@ function formatUserStories(result: RallyApiResult): RallyUserStory[] {
 		testCasesCount: userStory.TestCases?.Count ?? userStory.testCases?.count ?? 0,
 		defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
 		discussionCount: userStory.Discussion?.Count ?? userStory.discussion?.count ?? 0,
-		appgar: userStory.c_Appgar ?? userStory.appgar
+		appgar: userStory.c_Appgar ?? userStory.appgar,
+		scheduleState: userStory.ScheduleState ?? userStory.scheduleState
 	}));
 }
 
@@ -399,7 +400,7 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 function buildUserStoryQueryOptions(query: RallyQuery, limit: number | null) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar']
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState']
 	};
 
 	if (limit) {

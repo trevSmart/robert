@@ -68,3 +68,6 @@ test-results/
 coverage/
 .vitest-cache/
 .nyc_output
+
+# VS Code test environment
+.vscode-test/

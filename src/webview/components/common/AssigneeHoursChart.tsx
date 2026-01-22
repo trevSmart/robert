@@ -1,15 +1,8 @@
 import { type FC, useEffect, useRef, useCallback } from 'react';
-import * as echarts from 'echarts';
+// import echarts from 'echarts';
 import { aggregateUserStoriesByAssignee } from '../../utils/chartUtils';
 import { themeColors } from '../../utils/themeColors';
-
-interface UserStory {
-	objectId: string;
-	formattedId: string;
-	name: string;
-	assignee: string;
-	taskEstimateTotal: number;
-}
+import { type UserStory } from '../../../types/rally';
 
 interface AssigneeHoursChartProps {
 	userStories: UserStory[];
@@ -17,7 +10,7 @@ interface AssigneeHoursChartProps {
 
 const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
-	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
+	const chartInstanceRef = useRef<any | null>(null);
 
 	// Detect if theme is light or dark
 	const isLightTheme = () => {
@@ -45,7 +38,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	}, []);
 
 	const barHeight = 20; // Height per bar in pixels
-	const assigneeData = aggregateUserStoriesByAssignee(userStories);
+	const userStoriesWithAssignees = userStories.filter(story => story.assignee) as Array<UserStory & { assignee: string }>;
+	const assigneeData = aggregateUserStoriesByAssignee(userStoriesWithAssignees);
 	const numBars = assigneeData.length;
 	const chartHeight = Math.max(300, numBars * barHeight + 70); // Min 300px, add 70px for title and margins
 
@@ -54,7 +48,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 		// Initialize chart
 		if (!chartInstanceRef.current) {
-			chartInstanceRef.current = echarts.init(chartRef.current);
+			// chartInstanceRef.current = echarts.init(chartRef.current);
+			chartInstanceRef.current = null; // Temporary placeholder
 		}
 
 		// Prepare data
@@ -115,6 +110,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		});
 
 		// Configure chart options
+		// Chart temporarily disabled due to echarts import issues
+		/*
 		const option: echarts.EChartsOption = {
 			title: {
 				text: `Hours by Assignee (${totalHours}h total)`,
@@ -232,8 +229,9 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			},
 			series: series
 		};
+		*/
 
-		chartInstanceRef.current.setOption(option);
+		// chartInstanceRef.current.setOption(option);
 
 		// Handle resize
 		const handleResize = () => {

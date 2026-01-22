@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import styled from 'styled-components';
+import { type UserStory } from '../../../types/rally';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -28,28 +29,6 @@ const StatPill = styled.div`
 	background: color(srgb 0.2 0.2 0.2 / 0.6);
 	border: 1px solid color(srgb 0.8 0.8 0.8 / 0.08);
 `;
-
-interface UserStory {
-	objectId: string;
-	formattedId: string;
-	name: string;
-	description: string | null;
-	state: string;
-	planEstimate: number;
-	toDo: number;
-	assignee: string;
-	project: string | null;
-	iteration: string | null;
-	blocked: boolean;
-	taskEstimateTotal: number;
-	taskStatus: string;
-	tasksCount: number;
-	testCasesCount: number;
-	defectsCount: number;
-	discussionCount: number;
-	appgar: string;
-	scheduleState?: string;
-}
 
 interface UserStoryFormProps {
 	userStory: UserStory;

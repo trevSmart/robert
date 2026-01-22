@@ -16,8 +16,8 @@ export const rallyData: RallyData = {
 	userStories: [],
 	tasks: [],
 	defects: [],
-	defaultProject: null,
-	currentUser: null
+	defaultProject: undefined,
+	currentUser: undefined
 };
 
 // In-memory state for the status popover (dummy content)

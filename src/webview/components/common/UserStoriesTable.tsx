@@ -1,5 +1,6 @@
 import type React from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
+import { type UserStory } from '../../../types/rally';
 
 interface Iteration {
 	objectId: string;
@@ -11,32 +12,10 @@ interface Iteration {
 	_ref: string;
 }
 
-interface UserStory {
-	objectId: string;
-	formattedId: string;
-	name: string;
-	description: string | null;
-	state: string;
-	planEstimate: number;
-	toDo: number;
-	owner: string;
-	project: string | null;
-	iteration: string | null;
-	blocked: boolean;
-	taskEstimateTotal: number;
-	taskStatus: string;
-	tasksCount: number;
-	testCasesCount: number;
-	defectsCount: number;
-	discussionCount: number;
-	appgar: string;
-	scheduleState: string;
-}
-
 interface UserStoriesTableProps {
 	userStories: UserStory[];
 	loading?: boolean;
-	error?: string;
+	error?: string | null;
 	onLoadUserStories?: () => void;
 	onClearUserStories?: () => void;
 	onUserStorySelected?: (userStory: UserStory) => void;
@@ -143,7 +122,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									style={{
 										padding: '10px 12px',
 										fontWeight: 'normal',
-										color: getScheduleStateColor(userStory.scheduleState)
+										color: getScheduleStateColor(userStory.scheduleState || 'new')
 									}}
 								>
 									{userStory.scheduleState || 'N/A'}
@@ -162,7 +141,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 interface IterationsTableProps {
 	iterations: Iteration[];
 	loading?: boolean;
-	error?: string;
+	error?: string | null;
 	onLoadIterations?: () => void;
 	onIterationSelected?: (iteration: Iteration) => void;
 	selectedIteration?: Iteration | null;

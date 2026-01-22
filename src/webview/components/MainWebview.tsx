@@ -1,4 +1,4 @@
-import { FC, ComponentType } from 'react';
+import React, { FC, ComponentType } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'vscrui/dist/codicon.css';
 import '@vscode/codicons/dist/codicon.css';
@@ -13,6 +13,7 @@ import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
 import { logDebug } from '../utils/vscodeApi';
+import { type UserStory, type Task, type Defect } from '../../types/rally';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (
@@ -374,7 +375,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 							<span>Defects</span>
 						</button>
 					</div>
-					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
 					{activeUserStoryTab === 'tests' && (
 						<div
 							style={{
@@ -404,7 +405,14 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						</div>
 					)}
 					{activeUserStoryTab === 'defects' && (
-						<DefectsTable defects={userStoryDefects} loading={userStoryDefectsLoading} error={_userStoryDefectsError || undefined} onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+						<DefectsTable
+							defects={userStoryDefects as Defect[]}
+							loading={userStoryDefectsLoading}
+							error={_userStoryDefectsError || undefined}
+							onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
+							onDefectSelected={_onDefectSelected}
+							selectedDefect={_selectedDefect as Defect | null}
+						/>
 					)}
 				</>
 			)}
@@ -525,7 +533,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 						<span>Defects</span>
 					</button>
 				</div>
-				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
 				{activeUserStoryTab === 'tests' && (
 					<div
 						style={{
@@ -555,7 +563,14 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 					</div>
 				)}
 				{activeUserStoryTab === 'defects' && (
-					<DefectsTable defects={userStoryDefects} loading={userStoryDefectsLoading} error={_userStoryDefectsError || undefined} onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+					<DefectsTable
+						defects={userStoryDefects as Defect[]}
+						loading={userStoryDefectsLoading}
+						error={_userStoryDefectsError || undefined}
+						onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
+						onDefectSelected={_onDefectSelected}
+						selectedDefect={_selectedDefect as Defect | null}
+					/>
 				)}
 			</>
 		)}
@@ -569,13 +584,13 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _de
 			{currentScreen === 'defects' && (
 				<>
 					<ScreenHeader title="All Defects" />
-					<DefectsTable defects={_defects} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+					<DefectsTable defects={_defects as Defect[]} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect as Defect | null} />
 				</>
 			)}
 			{currentScreen === 'defectDetail' && _selectedDefect && (
 				<>
 					<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
-					<DefectForm defect={_selectedDefect} />
+					<DefectForm defect={_selectedDefect as Defect} />
 				</>
 			)}
 		</>
@@ -724,27 +739,6 @@ interface Iteration {
 	state: string;
 	project: string | null;
 	_ref: string;
-}
-
-interface UserStory {
-	objectId: string;
-	formattedId: string;
-	name: string;
-	description: string | null;
-	state: string;
-	planEstimate: number;
-	toDo: number;
-	owner: string;
-	project: string | null;
-	iteration: string | null;
-	blocked: boolean;
-	taskEstimateTotal: number;
-	taskStatus: string;
-	tasksCount: number;
-	testCasesCount: number;
-	defectsCount: number;
-	discussionCount: number;
-	appgar: string;
 }
 
 const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }) => {
@@ -1720,7 +1714,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 												backdropFilter: 'blur(10px)'
 											}}
 										>
-											{banner.icon && typeof banner.icon === 'function' ? <banner.icon size="28px" /> : <banner.icon />}
+											{banner.icon && typeof banner.icon === 'function' ? React.createElement(banner.icon as ComponentType<{ size?: string }>, { size: '28px' }) : React.createElement(banner.icon as ComponentType, {})}
 										</div>
 									</div>
 								))}

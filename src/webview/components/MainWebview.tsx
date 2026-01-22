@@ -512,7 +512,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _de
 		{currentScreen === 'defects' && (
 			<>
 				<ScreenHeader title="All Defects" />
-				<DefectsTable defects={defects} loading={defectsLoading} error={defectsError || undefined} onLoadDefects={onLoadDefects} onDefectSelected={undefined} selectedDefect={null} />
+				<DefectsTable defects={_defects} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={undefined} selectedDefect={null} />
 			</>
 		)}
 	</>
@@ -978,8 +978,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					if (message.userStories) {
 						setUserStories(message.userStories);
 						setUserStoriesError(null);
-						// Si estem en la vista global i no tenim cap user story seleccionada, establim la pantalla correcta
-						if (activeViewType === 'allUserStories' && !selectedUserStory) {
+						// Assegura que la pantalla es correcta quan es carreguen totes les user stories
+						if (activeViewType === 'allUserStories') {
 							setCurrentScreen('allUserStories');
 						}
 					} else {
@@ -1024,7 +1024,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [sendMessage, findCurrentIteration, loadUserStories, activeSection, loadIterations]);
+	}, [sendMessage, findCurrentIteration, loadUserStories, activeSection, loadIterations, activeViewType, currentScreen, selectedUserStory]);
 
 	useEffect(() => {
 		if (!hasVsCodeApi) {

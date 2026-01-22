@@ -349,25 +349,24 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
 					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
-					<div>
-						<textarea
-							value={userStory.description || 'No description available'}
-							readOnly
-							rows={6}
-							style={{
-								width: '100%',
-								padding: '6px 8px',
-								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '3px',
-								fontSize: '13px',
-								fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-								lineHeight: '1.6',
-								resize: 'vertical'
-							}}
-						/>
-					</div>
+					<div
+						dangerouslySetInnerHTML={{
+							__html: userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+						}}
+						style={{
+							width: '100%',
+							padding: '12px',
+							backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+							color: 'var(--vscode-input-foreground)',
+							border: '1px solid var(--vscode-input-border)',
+							borderRadius: '3px',
+							fontSize: '13px',
+							fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+							lineHeight: '1.6',
+							minHeight: '120px',
+							overflow: 'auto'
+						}}
+					/>
 				</div>
 
 				{/* Additional Information */}

@@ -1,4 +1,4 @@
-import type React from 'react';
+import { FC } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
 
 interface Defect {
@@ -82,7 +82,7 @@ const getScheduleStateColor = (scheduleState: string) => {
 	}
 };
 
-const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect }) => {
+const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect }) => {
 	return (
 		<div
 			style={{

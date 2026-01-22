@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getCurrentUser, getUsers } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUsers } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 import { rallyData } from './extension';
@@ -615,6 +615,90 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									webview.postMessage({
 										command: 'tasksError',
 										error: 'Failed to load tasks',
+										userStoryId: message.userStoryId
+									});
+								}
+							}
+							break;
+						case 'loadDefects':
+							try {
+								this._errorHandler.logInfo('Loading defects from Rally API', 'WebviewMessageListener');
+								// eslint-disable-next-line no-console
+								console.log('[Robert] 🐛 Webview received loadDefects command');
+
+								const defectsResult = await getDefects();
+
+								if (defectsResult?.defects) {
+									webview.postMessage({
+										command: 'defectsLoaded',
+										defects: defectsResult.defects
+									});
+									this._errorHandler.logInfo(`Defects loaded successfully: ${defectsResult.count} defects`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'defectsError',
+										error: 'No defects found'
+									});
+									this._errorHandler.logInfo('No defects found', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadDefects');
+
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'defectsError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true
+									});
+								} else {
+									webview.postMessage({
+										command: 'defectsError',
+										error: 'Failed to load defects'
+									});
+								}
+							}
+							break;
+						case 'loadUserStoryDefects':
+							try {
+								this._errorHandler.logInfo('Loading defects for user story from Rally API', 'WebviewMessageListener');
+								// eslint-disable-next-line no-console
+								console.log('[Robert] 🐛 Webview received loadUserStoryDefects command for user story:', message.userStoryId);
+
+								const defectsResult = await getDefects({
+									WorkProduct: `/hierarchicalrequirement/${message.userStoryId}`
+								});
+
+								if (defectsResult?.defects) {
+									webview.postMessage({
+										command: 'userStoryDefectsLoaded',
+										defects: defectsResult.defects,
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo(`Defects loaded successfully for user story ${message.userStoryId}: ${defectsResult.count} defects`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'userStoryDefectsError',
+										error: 'No defects found',
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo('No defects found for this user story', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStoryDefects');
+
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'userStoryDefectsError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true,
+										userStoryId: message.userStoryId
+									});
+								} else {
+									webview.postMessage({
+										command: 'userStoryDefectsError',
+										error: 'Failed to load defects',
 										userStoryId: message.userStoryId
 									});
 								}

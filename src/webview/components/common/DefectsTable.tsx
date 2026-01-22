@@ -7,6 +7,7 @@ interface Defect {
 	name: string;
 	description: string | null;
 	state: string;
+	scheduledState?: string;
 	severity: string;
 	priority: string;
 	owner: string;
@@ -14,6 +15,13 @@ interface Defect {
 	iteration: string | null;
 	blocked: boolean;
 	discussionCount: number;
+	environment?: string;
+	foundInBuild?: string;
+	targetBuild?: string;
+	acceptedDate?: string;
+	closedDate?: string;
+	createdDate?: string;
+	lastModifiedDate?: string;
 }
 
 interface DefectsTableProps {
@@ -55,18 +63,20 @@ const getPriorityColor = (priority: string) => {
 	}
 };
 
-const getStateColor = (state: string) => {
-	switch (state?.toLowerCase()) {
-		case 'open':
-			return '#0d6efd'; // Blue
-		case 'fixed':
-			return '#198754'; // Green
+const getScheduleStateColor = (scheduleState: string) => {
+	switch (scheduleState?.toLowerCase()) {
+		case 'new':
+			return '#6c757d'; // Gris
+		case 'defined':
+			return '#fd7e14'; // Taronja
+		case 'in-progress':
+			return '#ffc107'; // Groc
+		case 'completed':
+			return '#0d6efd'; // Blau
+		case 'accepted':
+			return '#198754'; // Verd
 		case 'closed':
-			return '#495057'; // Dark Gray
-		case 'duplicate':
-			return '#6c757d'; // Gray
-		case 'deferred':
-			return '#fd7e14'; // Orange
+			return '#495057'; // Gris fosc
 		default:
 			return isLightTheme() ? 'rgba(0, 0, 0, 0.6)' : themeColors.descriptionForeground;
 	}
@@ -167,10 +177,10 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 									style={{
 										padding: '10px 12px',
 										fontWeight: 'normal',
-										color: getStateColor(defect.state)
+										color: getScheduleStateColor(defect.scheduledState)
 									}}
 								>
-									{defect.state || 'N/A'}
+									{defect.scheduledState || 'N/A'}
 								</td>
 								<td
 									style={{

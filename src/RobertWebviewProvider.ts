@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUsers } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 

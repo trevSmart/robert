@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
+import { logDebug } from '../../utils/vscodeApi';
 
 interface Defect {
 	objectId: string;
@@ -86,7 +87,7 @@ const getScheduleStateColor = (scheduleState: string) => {
 
 const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect }) => {
 	// eslint-disable-next-line no-console
-	console.log('[DefectsTable] onDefectSelected:', onDefectSelected, 'defects.length:', defects.length);
+	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, defects.length: ${defects.length}`, 'DefectsTable');
 	return (
 		<div
 			style={{
@@ -155,7 +156,7 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 								key={defect.objectId}
 								onClick={() => {
 									// eslint-disable-next-line no-console
-									console.log('[DefectsTable] Clicked on defect:', defect.formattedId, 'onDefectSelected:', onDefectSelected);
+									logDebug(`Clicked on defect: ${defect.formattedId}, onDefectSelected: ${JSON.stringify(onDefectSelected)}`, 'DefectsTable');
 									if (onDefectSelected) {
 										onDefectSelected(defect);
 									}

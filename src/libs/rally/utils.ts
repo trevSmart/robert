@@ -2,6 +2,9 @@
 import rally from 'ibm-rally-node';
 
 import { SettingsManager } from '../../SettingsManager';
+import { ErrorHandler } from '../../ErrorHandler';
+
+const errorHandler = ErrorHandler.getInstance();
 
 export const {
 	util: { query: queryUtils }
@@ -32,7 +35,7 @@ export const getRallyApi = () => {
  * @returns {Promise<{isValid: boolean, errors: string[]}>} - Resultat de la validació
  */
 export async function validateRallyConfiguration(): Promise<{ isValid: boolean; errors: string[] }> {
-	console.log('[Robert] 🔧 Starting Rally configuration validation...');
+	errorHandler.logDebug('Starting Rally configuration validation...', 'rallyUtils.validateRallyConfiguration');
 
 	const settingsManager = SettingsManager.getInstance();
 	const errors: string[] = [];
@@ -43,11 +46,11 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 	const rallyProjectName = settingsManager.getSetting('rallyProjectName');
 
 	// Log current Rally configuration for debugging
-	console.log('[Robert] 🔧 Rally Configuration Check:');
-	console.log(`[Robert]   Instance URL: ${rallyInstance || '(not set)'}`);
-	console.log(`[Robert]   API Key: ${rallyApiKey ? '***' + rallyApiKey.slice(-4) : '(not set)'}`);
-	console.log(`[Robert]   Project Name: ${rallyProjectName || '(not set)'}`);
-	console.log('[Robert] ---');
+	errorHandler.logDebug('Rally Configuration Check:', 'rallyUtils.validateRallyConfiguration');
+	errorHandler.logDebug(`  Instance URL: ${rallyInstance || '(not set)'}`, 'rallyUtils.validateRallyConfiguration');
+	errorHandler.logDebug(`  API Key: ${rallyApiKey ? '***' + rallyApiKey.slice(-4) : '(not set)'}`, 'rallyUtils.validateRallyConfiguration');
+	errorHandler.logDebug(`  Project Name: ${rallyProjectName || '(not set)'}`, 'rallyUtils.validateRallyConfiguration');
+	errorHandler.logDebug('---', 'rallyUtils.validateRallyConfiguration');
 
 	// Validem la instància de Rally
 	if (!rallyInstance || rallyInstance.trim() === '') {
@@ -72,20 +75,20 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 	}
 
 	// Intentem fer una crida de prova a l'API per verificar l'autenticació
-	console.log('[Robert] 🔧 Testing Rally API connection...');
+	errorHandler.logDebug('Testing Rally API connection...', 'rallyUtils.validateRallyConfiguration');
 	try {
 		const rallyApi = getRallyApi();
-		console.log('[Robert] 🔧 Making test query to Rally API...');
+		errorHandler.logDebug('Making test query to Rally API...', 'rallyUtils.validateRallyConfiguration');
 		const result = await rallyApi.query({
 			type: 'project',
 			fetch: ['ObjectID', 'Name'],
 			limit: 1
 		});
-		console.log(`[Robert] 🔧 Test query successful, found ${result.length || 0} projects`);
+		errorHandler.logDebug(`Test query successful, found ${result.length || 0} projects`, 'rallyUtils.validateRallyConfiguration');
 	} catch (error: unknown) {
-		console.log('[Robert] 🔧 Test query failed with error');
+		errorHandler.logDebug('Test query failed with error', 'rallyUtils.validateRallyConfiguration');
 		const errorMessage = error instanceof Error ? error.message : String(error);
-		console.log(`[Robert] 🔧 Error details: ${errorMessage}`);
+		errorHandler.logDebug(`Error details: ${errorMessage}`, 'rallyUtils.validateRallyConfiguration');
 		if (errorMessage?.includes('401')) {
 			errors.push('Invalid Rally API key or insufficient permissions');
 		} else if (errorMessage?.includes('404')) {
@@ -100,7 +103,7 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 		errors
 	};
 
-	console.log(`[Robert] 🔧 Validation result: isValid=${result.isValid}, errors=[${result.errors.join(', ')}]`);
+	errorHandler.logDebug(`Validation result: isValid=${result.isValid}, errors=[${result.errors.join(', ')}]`, 'rallyUtils.validateRallyConfiguration');
 
 	return result;
 }

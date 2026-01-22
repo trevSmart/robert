@@ -2,8 +2,10 @@ import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory, RallyIteration, RallyDefect } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
-import { SettingsManager } from '../../SettingsManager';
 import { CacheManager } from '../cache/CacheManager';
+
+// Error handler singleton instance
+const errorHandler = ErrorHandler.getInstance();
 
 // Process data in chunks to avoid blocking the event loop
 // With 3500+ user stories, we need small chunks (25) to yield frequently
@@ -14,16 +16,13 @@ const CHUNK_SIZE = 25; // Process 25 items at a time, yield after each chunk
  * Allows UI to remain responsive during heavy processing
  */
 function yieldToEventLoop(): Promise<void> {
-	return new Promise(resolve => setImmediate(resolve));
+	return new Promise<void>(resolve => setImmediate(() => resolve()));
 }
 
 // Cache managers with 5 minute TTL
 const userStoriesCacheManager = new CacheManager<RallyUserStory[]>(5 * 60 * 1000);
 const projectsCacheManager = new CacheManager<RallyProject[]>(5 * 60 * 1000);
 const iterationsCacheManager = new CacheManager<RallyIteration[]>(5 * 60 * 1000);
-const tasksCacheManager = new CacheManager<any[]>(5 * 60 * 1000);
-const defectsCacheManager = new CacheManager<RallyDefect[]>(5 * 60 * 1000);
-const usersCacheManager = new CacheManager<RallyUser[]>(5 * 60 * 1000);
 
 function escapeHtml(input: string): string {
 	return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -43,7 +42,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const cachedProjects = projectsCacheManager.get(cacheKey);
 	if (cachedProjects) {
 		// eslint-disable-next-line no-console
-		console.log('[Robert] ✅ Projects retrieved from TTL cache');
+		errorHandler.logDebug('Projects retrieved from TTL cache', 'rallyServices.getProjects');
 		return {
 			projects: cachedProjects,
 			source: 'ttl-cache',
@@ -140,8 +139,6 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 }
 
 export async function getCurrentUser() {
-	const errorHandler = ErrorHandler.getInstance();
-
 	// If we already have the current user from prefetch, return it
 	if (rallyData.currentUser) {
 		errorHandler.logInfo(`Returning cached current user: ${rallyData.currentUser.displayName || rallyData.currentUser.userName}`, 'getCurrentUser');
@@ -629,7 +626,7 @@ function handleDefaultProject(query: RallyQuery, queryOptions: RallyQueryOptions
 
 export async function getIterations(query: RallyQuery = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
-	console.log('[Robert] 📅 getIterations called with query:', query, 'limit:', limit);
+	errorHandler.logDebug(`getIterations called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getIterations');
 
 	// Generate cache key from query
 	const cacheKey = `iterations:${JSON.stringify(query)}`;
@@ -638,7 +635,7 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	const cachedIterations = iterationsCacheManager.get(cacheKey);
 	if (cachedIterations) {
 		// eslint-disable-next-line no-console
-		console.log('[Robert] ✅ Iterations retrieved from TTL cache');
+		errorHandler.logDebug('Iterations retrieved from TTL cache', 'rallyServices.getIterations');
 		return {
 			iterations: cachedIterations,
 			source: 'ttl-cache',
@@ -716,13 +713,13 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	// DEBUG: Show all available fields for the first iteration
 	if (resultData.Results && resultData.Results.length > 0) {
 		const firstIteration = resultData.Results[0];
-		console.log('[Robert] 🔍 All available fields for iteration:', JSON.stringify(firstIteration, null, 2));
+		errorHandler.logDebug(`All available fields for iteration: ${JSON.stringify(firstIteration, null, 2)}`, 'rallyServices.getIterations');
 
 		// Check for date-related fields
 		const dateFields = Object.keys(firstIteration).filter(key => key.toLowerCase().includes('date') || key.toLowerCase().includes('time') || key.toLowerCase().includes('created') || key.toLowerCase().includes('updated'));
-		console.log('[Robert] 📅 Date-related fields found:', dateFields);
+		errorHandler.logDebug(`Date-related fields found: ${JSON.stringify(dateFields)}`, 'rallyServices.getIterations');
 		dateFields.forEach(field => {
-			console.log(`[Robert]   ${field}: ${(firstIteration as any)[field]}`);
+			errorHandler.logDebug(`  ${field}: ${(firstIteration as any)[field]}`, 'rallyServices.getIterations');
 		});
 	}
 
@@ -756,7 +753,7 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 
 export async function getUserStories(query: RallyQuery = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
-	console.log('[Robert] 📋 getUserStories called with query:', query, 'limit:', limit);
+	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getUserStories');
 
 	// Generate cache key from query
 	const cacheKey = `userStories:${JSON.stringify(query)}`;
@@ -765,7 +762,7 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	const cachedUserStories = userStoriesCacheManager.get(cacheKey);
 	if (cachedUserStories) {
 		// eslint-disable-next-line no-console
-		console.log('[Robert] ✅ User stories retrieved from TTL cache');
+		errorHandler.logDebug('User stories retrieved from TTL cache', 'rallyServices.getUserStories');
 		return {
 			userStories: cachedUserStories,
 			source: 'ttl-cache',
@@ -821,7 +818,7 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 
 export async function getTasks(userStoryId: string, query: RallyQuery = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
-	console.log('[Robert] 📋 getTasks called for user story:', userStoryId, 'with query:', query, 'limit:', limit);
+	errorHandler.logDebug(`getTasks called for user story: ${userStoryId}, with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getTasks');
 
 	const rallyApi = getRallyApi();
 
@@ -919,7 +916,7 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 
 export async function getDefects(query: RallyQuery = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
-	console.log('[Robert] 🐛 getDefects called with query:', query, 'limit:', limit);
+	errorHandler.logDebug(`getDefects called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getDefects');
 
 	const rallyApi = getRallyApi();
 

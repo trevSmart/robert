@@ -41,7 +41,6 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	// Check TTL cache first
 	const cachedProjects = projectsCacheManager.get(cacheKey);
 	if (cachedProjects) {
-		// eslint-disable-next-line no-console
 		errorHandler.logDebug('Projects retrieved from TTL cache', 'rallyServices.getProjects');
 		return {
 			projects: cachedProjects,
@@ -630,7 +629,6 @@ function handleDefaultProject(query: RallyQueryParams, queryOptions: RallyQueryO
 }
 
 export async function getIterations(query: RallyQueryParams = {}, limit: number | null = null) {
-	// eslint-disable-next-line no-console
 	errorHandler.logDebug(`getIterations called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getIterations');
 
 	// Generate cache key from query
@@ -639,7 +637,6 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	// Check TTL cache first
 	const cachedIterations = iterationsCacheManager.get(cacheKey);
 	if (cachedIterations) {
-		// eslint-disable-next-line no-console
 		errorHandler.logDebug('Iterations retrieved from TTL cache', 'rallyServices.getIterations');
 		return {
 			iterations: cachedIterations,
@@ -758,7 +755,6 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 }
 
 export async function getUserStories(query: RallyQueryParams = {}, limit: number | null = null) {
-	// eslint-disable-next-line no-console
 	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getUserStories');
 
 	// Generate cache key from query
@@ -767,7 +763,6 @@ export async function getUserStories(query: RallyQueryParams = {}, limit: number
 	// Check TTL cache first
 	const cachedUserStories = userStoriesCacheManager.get(cacheKey);
 	if (cachedUserStories) {
-		// eslint-disable-next-line no-console
 		errorHandler.logDebug('User stories retrieved from TTL cache', 'rallyServices.getUserStories');
 		return {
 			userStories: cachedUserStories,
@@ -824,7 +819,6 @@ export async function getUserStories(query: RallyQueryParams = {}, limit: number
 }
 
 export async function getTasks(userStoryId: string, query: RallyQueryParams = {}, limit: number | null = null) {
-	// eslint-disable-next-line no-console
 	errorHandler.logDebug(`getTasks called for user story: ${userStoryId}, with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getTasks');
 
 	const rallyApi = getRallyApi();
@@ -923,7 +917,6 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 }
 
 export async function getDefects(query: RallyQueryParams = {}, limit: number | null = null) {
-	// eslint-disable-next-line no-console
 	errorHandler.logDebug(`getDefects called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getDefects');
 
 	const rallyApi = getRallyApi();

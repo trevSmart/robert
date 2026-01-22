@@ -1,5 +1,5 @@
 import { type FC, useEffect, useRef, useCallback } from 'react';
-// import echarts from 'echarts';
+import * as echarts from 'echarts';
 import { aggregateUserStoriesByAssignee } from '../../utils/chartUtils';
 import { themeColors } from '../../utils/themeColors';
 import { type UserStory } from '../../../types/rally';
@@ -10,7 +10,7 @@ interface AssigneeHoursChartProps {
 
 const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
-	const chartInstanceRef = useRef<any | null>(null);
+	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
 	// Detect if theme is light or dark
 	const isLightTheme = () => {
@@ -48,8 +48,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 		// Initialize chart
 		if (!chartInstanceRef.current) {
-			// chartInstanceRef.current = echarts.init(chartRef.current);
-			chartInstanceRef.current = null; // Temporary placeholder
+			chartInstanceRef.current = echarts.init(chartRef.current);
 		}
 
 		// Prepare data
@@ -110,8 +109,6 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		});
 
 		// Configure chart options
-		// Chart temporarily disabled due to echarts import issues
-		/*
 		const option: echarts.EChartsOption = {
 			title: {
 				text: `Hours by Assignee (${totalHours}h total)`,
@@ -229,9 +226,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			},
 			series: series
 		};
-		*/
 
-		// chartInstanceRef.current.setOption(option);
+		chartInstanceRef.current.setOption(option);
 
 		// Handle resize
 		const handleResize = () => {

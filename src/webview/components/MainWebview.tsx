@@ -1275,6 +1275,71 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		};
 	}, [hasVsCodeApi, sendMessage]);
 
+	// Handle mouse back button navigation
+	useEffect(() => {
+		// eslint-disable-next-line no-console
+		console.log('[MainWebview] Setting up mouse back button handler');
+
+		const handleMouseEvent = (event: globalThis.MouseEvent) => {
+			// eslint-disable-next-line no-console
+			console.log('[MainWebview] Mouse event detected:', {
+				button: event.button,
+				buttons: event.buttons,
+				type: event.type,
+				currentScreen,
+				hasSelectedUserStory: !!selectedUserStory,
+				hasSelectedIteration: !!selectedIteration,
+				hasSelectedDefect: !!selectedDefect
+			});
+
+			// Mouse back button is typically button 3 (some mice use button 4)
+			// Button values: 0 = left, 1 = middle, 2 = right, 3 = back, 4 = forward
+			if (event.button === 3) {
+				// eslint-disable-next-line no-console
+				console.log('[MainWebview] Mouse back button (button 3) detected!');
+				event.preventDefault();
+				event.stopPropagation();
+
+				// Navigate back based on current screen
+				if (currentScreen === 'userStoryDetail' && selectedUserStory) {
+					// eslint-disable-next-line no-console
+					console.log('[MainWebview] Navigating back to user stories list');
+					handleBackToUserStories();
+				} else if (currentScreen === 'userStories' && selectedIteration) {
+					// eslint-disable-next-line no-console
+					console.log('[MainWebview] Navigating back to iterations list');
+					handleBackToIterations();
+				} else if (currentScreen === 'defectDetail' && selectedDefect) {
+					// eslint-disable-next-line no-console
+					console.log('[MainWebview] Navigating back to defects list');
+					handleBackToDefects();
+				} else {
+					// eslint-disable-next-line no-console
+					console.log('[MainWebview] Back button pressed but no navigation action available for current screen:', currentScreen);
+				}
+			} else if (event.button === 4) {
+				// eslint-disable-next-line no-console
+				console.log('[MainWebview] Mouse forward button (button 4) detected - not handling');
+			}
+		};
+
+		// Add event listeners to catch mouse events - try multiple event types
+		// Some browsers/mice may use different events
+		document.addEventListener('mousedown', handleMouseEvent);
+		document.addEventListener('mouseup', handleMouseEvent);
+		document.addEventListener('auxclick', handleMouseEvent);
+		// eslint-disable-next-line no-console
+		console.log('[MainWebview] Mouse event listeners added to document (mousedown, mouseup, auxclick)');
+
+		return () => {
+			document.removeEventListener('mousedown', handleMouseEvent);
+			document.removeEventListener('mouseup', handleMouseEvent);
+			document.removeEventListener('auxclick', handleMouseEvent);
+			// eslint-disable-next-line no-console
+			console.log('[MainWebview] Mouse event listeners removed from document');
+		};
+	}, [currentScreen, selectedUserStory, selectedIteration, selectedDefect, handleBackToUserStories, handleBackToIterations, handleBackToDefects]);
+
 	const _clearIterations = () => {
 		setIterations([]);
 		setIterationsError(null);

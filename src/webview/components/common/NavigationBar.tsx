@@ -1,4 +1,5 @@
 import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { isLightTheme } from '../../utils/themeColors';
 
 type Section = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
 
@@ -81,37 +82,63 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	const containerRef = useRef<HTMLDivElement>(null);
 	const measureTabsRef = useRef<HTMLDivElement>(null);
 	const measureOverflowRef = useRef<HTMLButtonElement>(null);
+	const realOverflowButtonRef = useRef<HTMLButtonElement>(null);
 
 	const recomputeVisibleTabs = () => {
 		if (!containerRef.current || !measureTabsRef.current) return;
 
 		const availableWidth = containerRef.current.getBoundingClientRect().width;
 		const tabWidths = Array.from(measureTabsRef.current.children).map(child => (child as HTMLElement).getBoundingClientRect().width);
-		const overflowWidth = measureOverflowRef.current?.getBoundingClientRect().width ?? 0;
 
-		let usedWidth = 0;
-		let nextVisibleCount = tabs.length;
+		// Use real overflow button width if available (when rendered), otherwise use measured width
+		const realOverflowWidth = realOverflowButtonRef.current?.getBoundingClientRect().width;
+		const overflowWidth = realOverflowWidth ?? measureOverflowRef.current?.getBoundingClientRect().width ?? 0;
+
+		// First, check if all tabs fit without overflow
+		let totalTabsWidth = 0;
 		for (let i = 0; i < tabWidths.length; i += 1) {
-			usedWidth += tabWidths[i];
-			if (usedWidth > availableWidth) {
-				nextVisibleCount = i;
-				break;
-			}
+			totalTabsWidth += tabWidths[i];
 		}
 
-		if (nextVisibleCount < tabs.length) {
-			while (nextVisibleCount > 0 && usedWidth + overflowWidth > availableWidth) {
-				usedWidth -= tabWidths[nextVisibleCount - 1];
-				nextVisibleCount -= 1;
+		let nextVisibleCount = tabs.length;
+
+		// If all tabs don't fit, calculate how many tabs + overflow button fit
+		if (totalTabsWidth > availableWidth) {
+			// Start from the beginning and add tabs one by one until we can't fit more
+			// along with the overflow button
+			let usedWidth = overflowWidth;
+			nextVisibleCount = 0;
+
+			for (let i = 0; i < tabWidths.length; i += 1) {
+				const testWidth = usedWidth + tabWidths[i];
+				if (testWidth <= availableWidth) {
+					usedWidth = testWidth;
+					nextVisibleCount = i + 1;
+				} else {
+					break;
+				}
 			}
+
+			// Ensure at least one tab is visible
+			nextVisibleCount = Math.max(1, nextVisibleCount);
 		}
 
-		setVisibleCount(Math.max(1, nextVisibleCount));
+		setVisibleCount(nextVisibleCount);
 	};
 
 	useLayoutEffect(() => {
 		recomputeVisibleTabs();
 	}, [tabs.length]);
+
+	// Recalculate when the real overflow button is first rendered
+	useLayoutEffect(() => {
+		if (realOverflowButtonRef.current) {
+			// Use requestAnimationFrame to ensure the button is fully rendered
+			requestAnimationFrame(() => {
+				recomputeVisibleTabs();
+			});
+		}
+	}, [visibleCount]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -131,25 +158,53 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		return () => observer.disconnect();
 	}, []);
 
+	// Observe the real overflow button when it's rendered
+	useEffect(() => {
+		if (!realOverflowButtonRef.current) return;
+
+		const observer = new ResizeObserver(() => {
+			recomputeVisibleTabs();
+		});
+		observer.observe(realOverflowButtonRef.current);
+		return () => observer.disconnect();
+	}, [visibleCount]);
+
 	const visibleTabs = tabs.slice(0, visibleCount);
 	const overflowTabs = tabs.slice(visibleCount);
 	const isOverflowActive = overflowTabs.some(tab => tab.id === activeSection);
 
-	const getTabStyles = (isActive: boolean): CSSProperties => ({
-		padding: '12px 20px',
-		border: 'none',
-		backgroundColor: isActive ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-		color: isActive ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-		borderBottom: isActive ? `2px solid var(--vscode-progressBar-background)` : 'none',
-		cursor: 'pointer',
-		fontSize: '13px',
-		fontWeight: isActive ? '600' : '400',
-		transition: 'all 0.2s ease',
-		display: 'flex',
-		alignItems: 'center',
-		gap: '8px',
-		whiteSpace: 'nowrap'
-	});
+	const getTabStyles = (isActive: boolean): CSSProperties => {
+		const lightTheme = isLightTheme();
+		return {
+			padding: '12px 20px',
+			border: 'none',
+			backgroundColor: isActive
+				? lightTheme
+					? 'rgba(0, 123, 255, 0.1)' // Blau clar subtil per temes clars
+					: 'var(--vscode-tab-activeBackground)' // Color estàndard per temes foscos
+				: 'transparent',
+			color: isActive
+				? lightTheme
+					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars
+					: 'var(--vscode-tab-activeForeground)' // Color estàndard per temes foscos
+				: lightTheme
+					? '#333333'
+					: 'var(--vscode-tab-inactiveForeground)',
+			borderBottom: isActive
+				? lightTheme
+					? '2px solid #007acc' // Blau més fosc i visible per temes clars
+					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
+				: 'none',
+			cursor: isActive ? 'default' : 'pointer',
+			fontSize: '13px',
+			fontWeight: isActive ? '600' : '400',
+			transition: 'all 0.2s ease',
+			display: 'flex',
+			alignItems: 'center',
+			gap: '8px',
+			whiteSpace: 'nowrap'
+		};
+	};
 
 	return (
 		<div
@@ -171,7 +226,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				ref={containerRef}
 			>
 				{visibleTabs.map(({ id, label, Icon }) => (
-					<button key={id} type="button" onClick={() => onSectionChange(id)} style={getTabStyles(activeSection === id)}>
+					<button key={id} type="button" onClick={() => activeSection !== id && onSectionChange(id)} style={getTabStyles(activeSection === id)}>
 						<Icon />
 						<span>{label}</span>
 					</button>
@@ -179,6 +234,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				{overflowTabs.length > 0 && (
 					<div style={{ position: 'relative', display: 'flex' }}>
 						<button
+							ref={realOverflowButtonRef}
 							type="button"
 							aria-label="More tabs"
 							onClick={() => setOverflowOpen(open => !open)}
@@ -212,7 +268,9 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 										key={id}
 										type="button"
 										onClick={() => {
-											onSectionChange(id);
+											if (activeSection !== id) {
+												onSectionChange(id);
+											}
 											setOverflowOpen(false);
 										}}
 										style={{

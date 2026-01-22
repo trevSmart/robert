@@ -1,5 +1,6 @@
 import type React from 'react';
 import { Table, TableCell, TableRow } from 'vscrui';
+import { themeColors } from '../../utils/themeColors';
 
 interface Project {
 	name?: string;
@@ -23,7 +24,8 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 			style={{
 				margin: '20px 0',
 				padding: '20px',
-				backgroundColor: '#282828',
+				backgroundColor: themeColors.panelBackground,
+				border: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '6px'
 			}}
 		>
@@ -31,7 +33,7 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 				style={{
 					fontSize: '12px',
 					fontWeight: 400,
-					color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+					color: themeColors.descriptionForeground,
 					letterSpacing: '0.5px',
 					margin: '0 0 8px 0',
 					paddingLeft: '7px'
@@ -45,8 +47,8 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 					type="button"
 					onClick={onLoadProjects}
 					style={{
-						backgroundColor: 'var(--vscode-button-background)',
-						color: 'var(--vscode-button-foreground)',
+						backgroundColor: themeColors.buttonBackground,
+						color: themeColors.buttonForeground,
 						border: 'none',
 						padding: '6px 12px',
 						borderRadius: '5px',
@@ -60,8 +62,8 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 					type="button"
 					onClick={onClearProjects}
 					style={{
-						backgroundColor: 'var(--vscode-button-secondaryBackground)',
-						color: 'var(--vscode-button-secondaryForeground)',
+						backgroundColor: themeColors.buttonSecondaryBackground,
+						color: themeColors.buttonSecondaryForeground,
 						border: 'none',
 						padding: '6px 12px',
 						borderRadius: '5px',
@@ -76,8 +78,8 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 				<div style={{ textAlign: 'center', padding: '20px' }}>
 					<div
 						style={{
-							border: '2px solid var(--vscode-panel-border)',
-							borderTop: '2px solid var(--vscode-button-background)',
+							border: `2px solid ${themeColors.panelBorder}`,
+							borderTop: `2px solid ${themeColors.progressBarBackground}`,
 							borderRadius: '50%',
 							width: '20px',
 							height: '20px',
@@ -94,7 +96,7 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 					style={{
 						textAlign: 'center',
 						padding: '20px',
-						color: 'var(--vscode-errorForeground)'
+						color: themeColors.errorForeground
 					}}
 				>
 					<p>{error}</p>

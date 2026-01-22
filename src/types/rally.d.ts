@@ -1,166 +1,6 @@
-// Rally API types
-export interface RallyApiObject {
-	objectId: string;
-	name?: string;
-	description?: string;
-	state?: string;
-	creationDate?: string;
-	lastUpdateDate?: string;
-	owner?: {
-		refObjectName: string;
-		_refObjectName?: string;
-	};
-	parent?: {
-		refObjectName: string;
-		_refObjectName?: string;
-	};
-	children?: {
-		count: number;
-		Count?: number;
-	};
-	userName?: string;
-	displayName?: string;
-	emailAddress?: string;
-	firstName?: string;
-	lastName?: string;
-	disabled?: boolean;
-	_ref?: string;
-	formattedId?: string;
-	planEstimate?: number;
-	toDo?: number;
-	project?: {
-		refObjectName: string;
-		_refObjectName?: string;
-	};
-	iteration?: {
-		refObjectName: string;
-		_refObjectName?: string;
-	};
-	blocked?: boolean;
-	taskEstimateTotal?: number;
-	taskStatus?: string;
-	tasks?: {
-		count: number;
-		Count?: number;
-	};
-	testCases?: {
-		count: number;
-		Count?: number;
-	};
-	defects?: {
-		count: number;
-		Count?: number;
-	};
-	discussion?: {
-		count: number;
-		Count?: number;
-	};
-	appgar?: string;
-	c_Assignee?: {
-		_refObjectName: string;
-		refObjectName?: string;
-	};
-	ObjectID?: string;
-	Name?: string;
-	Description?: string;
-	State?: string;
-	CreationDate?: string;
-	LastUpdateDate?: string;
-	Owner?: {
-		_refObjectName: string;
-		refObjectName?: string;
-	};
-	Parent?: {
-		_refObjectName: string;
-		refObjectName?: string;
-	};
-	Children?: {
-		Count: number;
-		count?: number;
-	};
-	UserName?: string;
-	DisplayName?: string;
-	EmailAddress?: string;
-	FirstName?: string;
-	LastName?: string;
-	Disabled?: boolean;
-	FormattedID?: string;
-	PlanEstimate?: number;
-	ToDo?: number;
-	Project?: {
-		_refObjectName: string;
-		refObjectName?: string;
-	};
-	Iteration?: {
-		_refObjectName: string;
-		refObjectName?: string;
-	};
-	Blocked?: boolean;
-	TaskEstimateTotal?: number;
-	TaskStatus?: string;
-	Tasks?: {
-		Count: number;
-		count?: number;
-	};
-	TestCases?: {
-		Count: number;
-		count?: number;
-	};
-	Defects?: {
-		Count: number;
-		count?: number;
-	};
-	Discussion?: {
-		Count: number;
-		count?: number;
-	};
-	c_Appgar?: string;
-	c_Assignee?: {
-		_refObjectName: string;
-		refObjectName?: string;
-	};
-	StartDate?: string;
-	EndDate?: string;
-}
+// Shared types for Rally-related data structures
 
-export interface RallyApiResult {
-	Results: RallyApiObject[];
-}
-
-export interface RallyProject {
-	objectId: string;
-	name: string | undefined;
-	description: string | null | undefined;
-	state: string | undefined;
-	creationDate: string | undefined;
-	lastUpdateDate: string | undefined;
-	owner: string;
-	parent: string | null;
-	childrenCount: number;
-}
-
-export interface RallyUser {
-	objectId: string;
-	userName: string | undefined;
-	displayName: string | undefined;
-	emailAddress: string | undefined;
-	firstName: string | undefined;
-	lastName: string | undefined;
-	disabled: boolean | undefined;
-	_ref: string | undefined;
-}
-
-export interface RallyIteration {
-	objectId: string;
-	name: string;
-	startDate: string;
-	endDate: string;
-	state: string;
-	project: string | null;
-	_ref: string;
-}
-
-export interface RallyUserStory {
+export interface UserStory {
 	objectId: string;
 	formattedId: string;
 	name: string;
@@ -168,7 +8,8 @@ export interface RallyUserStory {
 	state: string;
 	planEstimate: number;
 	toDo: number;
-	assignee: string;
+	owner: string;
+	assignee?: string; // Optional - not all contexts have this
 	project: string | null;
 	iteration: string | null;
 	blocked: boolean;
@@ -179,47 +20,125 @@ export interface RallyUserStory {
 	defectsCount: number;
 	discussionCount: number;
 	appgar: string;
+	scheduleState?: string; // Optional - not always present
+	_ref?: string; // Optional - reference field
 }
 
-export interface RallyTask {
+export interface Task {
+	objectId: string;
+	formattedId: string;
+	name: string;
+	state: string;
+	estimate: number;
+	toDo: number;
+	blocked: boolean;
+	owner: string;
+	project: string | null;
+	iteration: string | null;
+	workProduct?: string | null;
+	workItem?: string | null;
+	description?: string | null;
+	timeSpent?: number;
+	_ref?: string;
+}
+
+export interface Defect {
 	objectId: string;
 	formattedId: string;
 	name: string;
 	description: string | null;
 	state: string;
+	severity: string;
+	priority: string;
 	owner: string;
-	estimate: number;
-	toDo: number;
-	timeSpent: number;
-	workItem: string | null;
+	project: string | null;
+	iteration: string | null;
+	scheduledState?: string;
+	blocked: boolean;
+	discussionCount: number;
+	_ref?: string;
+}
+
+export interface Iteration {
+	objectId: string;
+	name: string;
+	startDate: string;
+	endDate: string;
+	state: string;
+	project: string | null;
+	_ref?: string;
+}
+
+export interface Project {
+	objectId: string;
+	name: string;
+	state: string;
+	_ref?: string;
+}
+
+export interface User {
+	objectId: string;
+	name?: string;
+	email?: string;
+	disabled: boolean;
+	displayName?: string;
+	userName?: string;
+	emailAddress?: string;
+	firstName?: string;
+	lastName?: string;
+	_ref?: string;
+}
+
+// Rally API specific types
+export interface RallyApiObject {
+	_ref: string;
+	ObjectID: number;
+	_refObjectName: string;
+	ObjectUUID?: string;
+	VersionId?: string;
+	Subscription?: string;
+	Workspace?: string;
+	CreationDate?: string;
+	[ key: string ]: unknown;
+}
+
+export interface RallyApiResult {
+	QueryResult: {
+		Results: RallyApiObject[];
+		TotalResultCount: number;
+		StartIndex: number;
+		PageSize: number;
+	};
+	Results?: RallyApiObject[];
+}
+
+export interface RallyData {
+	projects: Project[];
+	users: User[];
+	userStories: UserStory[];
+	tasks: Task[];
+	defects: Defect[];
+	iterations: Iteration[];
+	currentUser?: User;
+	defaultProject?: Project;
 }
 
 export interface RallyQuery {
+	type: string;
+	fetch?: string[];
+	query?: string;
+	limit?: number;
+	order?: string;
 	[key: string]: unknown;
 }
 
-export interface RallyQueryOptions {
-	type: string;
-	fetch: string[];
+export interface RallyQueryParams {
+	type?: string;
+	fetch?: string[];
+	query?: string;
 	limit?: number;
-	query?: unknown;
-	order?: unknown;
-}
-
-// Rally module types
-export interface RallyApi {
-	query(queryOptions: RallyQueryOptions): Promise<RallyApiResult>;
-	create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
-	update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
-	del(options: { type: string; ref: string }): Promise<void>;
-}
-
-export interface RallyOptions {
-	apiKey: string;
-	server: string;
-	requestOptions?: {
-		headers?: Record<string, string>;
-	};
+	order?: string;
+	[key: string]: unknown;
 }
 
 export interface RallyQueryBuilder {
@@ -227,29 +146,39 @@ export interface RallyQueryBuilder {
 	and(query: RallyQueryBuilder): RallyQueryBuilder;
 }
 
-export interface RallyModule {
-	(options: RallyOptions): RallyApi;
-	createClient(options: RallyOptions): RallyApi;
-	util: {
-		query: RallyQueryBuilder;
-	};
+export interface RallyQueryOptions {
+	type: string;
+	fetch?: string[];
+	query?: unknown;
+	limit?: number;
+	order?: unknown;
+	where?: string;
 }
 
-export declare class RestApi implements RallyApi {
-	constructor(options: RallyOptions);
-	query(queryOptions: RallyQueryOptions): Promise<RallyApiResult>;
-	create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
-	update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
-	del(options: { type: string; ref: string }): Promise<void>;
+export interface RallyProject extends Project {
+	description?: string;
+	creationDate?: string;
+	lastUpdateDate?: string;
+	owner?: string;
+	parent?: string | null;
+	childrenCount?: number;
 }
 
-// Data structure for managing Rally data in the extension
-export interface RallyData {
-	projects: RallyProject[];
-	users: RallyUser[];
-	iterations: RallyIteration[];
-	userStories: RallyUserStory[];
-	tasks: RallyTask[];
-	defaultProject: RallyProject | null;
-	currentUser: RallyUser | null;
+export interface RallyUser extends User {
+	userName?: string;
+}
+
+export interface RallyUserStory extends UserStory {
+	owner: string;
+}
+
+export interface RallyIteration extends Iteration {}
+
+export interface RallyDefect extends Defect {
+}
+
+export interface RallyTask extends Task {
+	description?: string | null;
+	timeSpent?: number;
+	workItem?: string | null;
 }

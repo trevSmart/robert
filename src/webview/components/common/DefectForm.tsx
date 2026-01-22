@@ -1,6 +1,5 @@
 import { FC } from 'react';
 import styled from 'styled-components';
-import { type UserStory } from '../../../types/rally';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -17,26 +16,36 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.45)' : 'color(srgb 0.2 0.6 0.35 / 0.45)')};
 `;
 
-const StatPill = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	align-items: flex-start;
-	justify-content: center;
-	min-height: 56px;
-	padding: 10px 12px;
-	border-radius: 10px;
-	background: color(srgb 0.2 0.2 0.2 / 0.6);
-	border: 1px solid color(srgb 0.8 0.8 0.8 / 0.08);
-`;
-
-interface UserStoryFormProps {
-	userStory: UserStory;
+interface Defect {
+	objectId: string;
+	formattedId: string;
+	name: string;
+	description: string | null;
+	state: string;
+	scheduledState?: string;
+	severity: string;
+	priority: string;
+	owner: string;
+	project: string | null;
+	iteration: string | null;
+	blocked: boolean;
+	discussionCount: number;
+	environment?: string;
+	foundInBuild?: string;
+	targetBuild?: string;
+	acceptedDate?: string;
+	closedDate?: string;
+	createdDate?: string;
+	lastModifiedDate?: string;
 }
 
-const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
-	const getScheduleStateColor = (scheduleState: string) => {
-		switch (scheduleState?.toLowerCase()) {
+interface DefectFormProps {
+	defect: Defect;
+}
+
+const DefectForm: FC<DefectFormProps> = ({ defect }) => {
+	const getScheduledStateColor = (scheduledState: string) => {
+		switch (scheduledState?.toLowerCase()) {
 			case 'new':
 				return '#6c757d'; // Gris
 			case 'defined':
@@ -53,6 +62,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 				return 'var(--vscode-descriptionForeground)';
 		}
 	};
+
 	return (
 		<div
 			style={{
@@ -80,17 +90,17 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 						letterSpacing: '0.5px'
 					}}
 				>
-					{userStory.formattedId}
+					{defect.formattedId}
 				</h2>
-				{userStory.scheduleState && (
+				{defect.scheduledState && (
 					<div
 						style={{
 							fontSize: '14px',
 							fontWeight: '500',
-							color: getScheduleStateColor(userStory.scheduleState)
+							color: getScheduledStateColor(defect.scheduledState)
 						}}
 					>
-						{userStory.scheduleState}
+						{defect.scheduledState}
 					</div>
 				)}
 			</div>
@@ -99,7 +109,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 				<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Name</label>
 				<input
 					type="text"
-					value={userStory.name}
+					value={defect.name}
 					readOnly
 					style={{
 						width: '100%',
@@ -124,14 +134,14 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 			>
 				{/* Basic Information */}
 				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
+				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Status & Priority</h3>
 
 				<div style={{ display: 'flex', gap: '16px' }}>
 					<div style={{ flex: '1' }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Plan Estimate</label>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>State</label>
 						<input
-							type="number"
-							value={userStory.planEstimate || 0}
+							type="text"
+							value={defect.state || 'N/A'}
 							readOnly
 							style={{
 								width: '100%',
@@ -145,10 +155,10 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 						/>
 					</div>
 					<div style={{ flex: '1' }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>To Do</label>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Severity</label>
 						<input
-							type="number"
-							value={userStory.toDo}
+							type="text"
+							value={defect.severity || 'N/A'}
 							readOnly
 							style={{
 								width: '100%',
@@ -164,10 +174,28 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 				</div>
 
 				<div>
+					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Priority</label>
+					<input
+						type="text"
+						value={defect.priority || 'N/A'}
+						readOnly
+						style={{
+							width: '100%',
+							padding: '6px 8px',
+							backgroundColor: 'var(--vscode-input-background)',
+							color: 'var(--vscode-input-foreground)',
+							border: '1px solid var(--vscode-input-border)',
+							borderRadius: '3px',
+							fontSize: '13px'
+						}}
+					/>
+				</div>
+
+				<div>
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Assigned To</label>
 					<input
 						type="text"
-						value={userStory.assignee || 'N/A'}
+						value={defect.owner || 'N/A'}
 						readOnly
 						style={{
 							width: '100%',
@@ -183,7 +211,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 
 				<div>
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
-					<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
+					<StatusPill isBlocked={defect.blocked}>{defect.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
 				</div>
 
 				{/* Description */}
@@ -192,7 +220,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 
 					<div
 						dangerouslySetInnerHTML={{
-							__html: userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+							__html: defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
 						}}
 						style={{
 							width: '100%',
@@ -214,22 +242,22 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 				<h3 style={{ margin: '16px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
 				<div style={{ gridColumn: '1 / -1' }}>
 					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
-						<StatPill>
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Tasks</span>
-							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.tasksCount}</span>
-						</StatPill>
-						<StatPill>
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Test Cases</span>
-							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.testCasesCount}</span>
-						</StatPill>
-						<StatPill>
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Defects</span>
-							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.defectsCount}</span>
-						</StatPill>
-						<StatPill>
+						<div style={{ background: 'color(srgb 0.2 0.2 0.2 / 0.6)', border: '1px solid color(srgb 0.8 0.8 0.8 / 0.08)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', justifyContent: 'center', minHeight: '56px' }}>
+							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Environment</span>
+							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.environment || 'N/A'}</span>
+						</div>
+						<div style={{ background: 'color(srgb 0.2 0.2 0.2 / 0.6)', border: '1px solid color(srgb 0.8 0.8 0.8 / 0.08)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', justifyContent: 'center', minHeight: '56px' }}>
+							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Found In Build</span>
+							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.foundInBuild || 'N/A'}</span>
+						</div>
+						<div style={{ background: 'color(srgb 0.2 0.2 0.2 / 0.6)', border: '1px solid color(srgb 0.8 0.8 0.8 / 0.08)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', justifyContent: 'center', minHeight: '56px' }}>
+							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Target Build</span>
+							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.targetBuild || 'N/A'}</span>
+						</div>
+						<div style={{ background: 'color(srgb 0.2 0.2 0.2 / 0.6)', border: '1px solid color(srgb 0.8 0.8 0.8 / 0.08)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', justifyContent: 'center', minHeight: '56px' }}>
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Discussions</span>
-							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.discussionCount}</span>
-						</StatPill>
+							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.discussionCount}</span>
+						</div>
 					</div>
 				</div>
 			</div>
@@ -237,4 +265,4 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 	);
 };
 
-export default UserStoryForm;
+export default DefectForm;

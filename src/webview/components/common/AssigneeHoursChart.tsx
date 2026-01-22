@@ -227,7 +227,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			series: series
 		};
 
-		chartInstanceRef.current.setOption(option);
+		chartInstanceRef.current?.setOption(option);
 
 		// Handle resize
 		const handleResize = () => {

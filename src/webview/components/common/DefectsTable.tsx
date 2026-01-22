@@ -187,7 +187,7 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 									style={{
 										padding: '10px 12px',
 										fontWeight: 'normal',
-										color: getScheduleStateColor(defect.scheduledState)
+										color: getScheduleStateColor(defect.scheduledState || 'new')
 									}}
 								>
 									{defect.scheduledState || 'N/A'}

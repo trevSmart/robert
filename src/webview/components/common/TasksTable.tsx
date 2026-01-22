@@ -17,7 +17,7 @@ interface Task {
 interface TasksTableProps {
 	tasks: Task[];
 	loading?: boolean;
-	error?: string;
+	error?: string | null;
 	onLoadTasks?: () => void;
 }
 

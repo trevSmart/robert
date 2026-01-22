@@ -1,5 +1,5 @@
 import { rallyData } from '../../extension.js';
-import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory, RallyIteration, RallyDefect } from '../../types/rally';
+import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
 import { CacheManager } from '../cache/CacheManager';
@@ -102,7 +102,8 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results.length) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
 		// Cache empty results too
 		projectsCacheManager.set(cacheKey, []);
 		return {
@@ -113,7 +114,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	}
 
 	//Formatem la resposta per ser més llegible (de forma assincròna per no bloquejar)
-	const projects: RallyProject[] = await formatProjectsAsync(resultData.Results as RallyApiObject[]);
+	const projects: RallyProject[] = await formatProjectsAsync(results as RallyApiObject[]);
 
 	//Afegim els nous projectes a rallyData sense duplicats
 	for (const newProject of projects) {
@@ -172,20 +173,21 @@ export async function getCurrentUser() {
 
 		const resultData = userResult as RallyApiResult;
 
-		if (resultData.Results && resultData.Results.length > 0) {
-			const user = resultData.Results[0];
+		const results = resultData.Results || resultData.QueryResult?.Results || [];
+		if (results.length > 0) {
+			const user = results[0];
 			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
 
 			const userData = {
-				objectId: user.ObjectID ?? user.objectId,
+				objectId: String(user.ObjectID ?? user.objectId),
 				userName: user.UserName ?? user.userName,
 				displayName: user.DisplayName ?? user.displayName,
 				emailAddress: user.EmailAddress ?? user.emailAddress,
 				firstName: user.FirstName ?? user.firstName,
 				lastName: user.LastName ?? user.lastName,
-				disabled: user.Disabled ?? user.disabled,
+				disabled: Boolean(user.Disabled ?? user.disabled),
 				_ref: user._ref
-			};
+			} as User;
 
 			// Cache the user data
 			rallyData.currentUser = userData;
@@ -213,7 +215,7 @@ export async function getCurrentUser() {
 	}
 }
 
-export async function getUsers(query: RallyQuery = {}, limit: number | null = null) {
+export async function getUsers(query: RallyQueryParams = {}, limit: number | null = null) {
 	const rallyApi = getRallyApi();
 
 	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
@@ -267,7 +269,8 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results || resultData.Results.length === 0) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
 		return {
 			users: [],
 			source: 'api',
@@ -275,7 +278,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 		};
 	}
 
-	const users: RallyUser[] = await formatUsersAsync(resultData.Results as RallyApiObject[]);
+	const users: RallyUser[] = await formatUsersAsync(results as RallyApiObject[]);
 
 	//Afegim els nous usuaris a rallyData sense duplicats
 	if (!rallyData.users) {
@@ -302,7 +305,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 }
 
 // Helper function to reduce complexity
-function buildUserStoryQuery(query: RallyQuery) {
+function buildUserStoryQuery(query: RallyQueryParams) {
 	const rallyQueries = Object.keys(query).map(key => {
 		//Per al camp Name, utilitzem 'contains' per fer cerca parcial
 		if (key === 'Name') {
@@ -512,13 +515,15 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 	const formatted: RallyUserStory[] = [];
 
 	// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
-	for (let i = 0; i < result.Results.length; i++) {
-		const userStory: any = result.Results[i];
+	const results = result.Results || result.QueryResult?.Results || [];
+	for (let i = 0; i < results.length; i++) {
+		const userStory: any = results[i];
 
 		formatted.push({
 			objectId: userStory.ObjectID ?? userStory.objectId,
 			formattedId: userStory.FormattedID ?? userStory.formattedId,
 			name: userStory.Name ?? userStory.name,
+			owner: userStory.Owner ? (userStory.Owner._refObjectName ?? userStory.Owner.refObjectName) : userStory.owner ? (userStory.owner._refObjectName ?? userStory.owner.refObjectName) : 'Sense propietari',
 			description: sanitizeDescription(userStory.Description ?? userStory.description),
 			state: userStory.State ?? userStory.state,
 			planEstimate: userStory.PlanEstimate ?? userStory.planEstimate,
@@ -588,7 +593,7 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 }
 
 // Helper function to build query options
-function buildUserStoryQueryOptions(query: RallyQuery, limit: number | null) {
+function buildUserStoryQueryOptions(query: RallyQueryParams, limit: number | null) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
 		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState']
@@ -609,7 +614,7 @@ function buildUserStoryQueryOptions(query: RallyQuery, limit: number | null) {
 }
 
 // Helper function to handle default project logic
-function handleDefaultProject(query: RallyQuery, queryOptions: RallyQueryOptions) {
+function handleDefaultProject(query: RallyQueryParams, queryOptions: RallyQueryOptions) {
 	if (!query?.Project) {
 		if (rallyData.defaultProject?.objectId) {
 			const defaultProjectQuery = queryUtils.where('Project', '=', `/project/${rallyData.defaultProject.objectId}`);
@@ -624,7 +629,7 @@ function handleDefaultProject(query: RallyQuery, queryOptions: RallyQueryOptions
 	}
 }
 
-export async function getIterations(query: RallyQuery = {}, limit: number | null = null) {
+export async function getIterations(query: RallyQueryParams = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
 	errorHandler.logDebug(`getIterations called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getIterations');
 
@@ -700,7 +705,8 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results || resultData.Results.length === 0) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
 		// Cache empty results too
 		iterationsCacheManager.set(cacheKey, []);
 		return {
@@ -711,8 +717,8 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	}
 
 	// DEBUG: Show all available fields for the first iteration
-	if (resultData.Results && resultData.Results.length > 0) {
-		const firstIteration = resultData.Results[0];
+	if (results.length > 0) {
+		const firstIteration = results[0];
 		errorHandler.logDebug(`All available fields for iteration: ${JSON.stringify(firstIteration, null, 2)}`, 'rallyServices.getIterations');
 
 		// Check for date-related fields
@@ -724,7 +730,7 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	}
 
 	//Formatem la resposta (de forma assincròna per no bloquejar)
-	const iterations = await formatIterationsAsync(resultData.Results);
+	const iterations = await formatIterationsAsync(results);
 
 	//Afegim les noves iterations a rallyData sense duplicats
 	if (!rallyData.iterations) {
@@ -751,7 +757,7 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	};
 }
 
-export async function getUserStories(query: RallyQuery = {}, limit: number | null = null) {
+export async function getUserStories(query: RallyQueryParams = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
 	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getUserStories');
 
@@ -771,7 +777,7 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	}
 
 	// Fall back to in-memory cache for filtered results
-	const cacheResult = checkCacheForFilteredResults(query, rallyData.userStories);
+	const cacheResult = checkCacheForFilteredResults(query as RallyQuery, rallyData.userStories);
 	if (cacheResult) {
 		return {
 			userStories: cacheResult.results,
@@ -790,7 +796,8 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results.length) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
 		// Cache empty results too
 		userStoriesCacheManager.set(cacheKey, []);
 		return {
@@ -801,7 +808,7 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	}
 
 	//Formatem la resposta per ser més llegible (de forma asincròna amb chunks per no bloquejar)
-	const userStories = await formatUserStoriesAsync(resultData);
+	const userStories = await formatUserStoriesAsync({ ...resultData, Results: results });
 
 	//Afegim les noves user stories a rallyData sense duplicats
 	addToCache(userStories, rallyData.userStories, 'objectId');
@@ -816,7 +823,7 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	};
 }
 
-export async function getTasks(userStoryId: string, query: RallyQuery = {}, limit: number | null = null) {
+export async function getTasks(userStoryId: string, query: RallyQueryParams = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
 	errorHandler.logDebug(`getTasks called for user story: ${userStoryId}, with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getTasks');
 
@@ -879,7 +886,8 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results.length) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
 		return {
 			tasks: [],
 			source: 'api',
@@ -888,7 +896,7 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 	}
 
 	//Formatem la resposta per ser més llegible (de forma assincròna per no bloquejar)
-	const tasks = await formatTasksAsync(resultData.Results);
+	const tasks = await formatTasksAsync(results);
 
 	//Afegim les noves tasks a rallyData sense duplicats
 	if (!rallyData.tasks) {
@@ -914,7 +922,7 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 	};
 }
 
-export async function getDefects(query: RallyQuery = {}, limit: number | null = null) {
+export async function getDefects(query: RallyQueryParams = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
 	errorHandler.logDebug(`getDefects called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getDefects');
 
@@ -975,7 +983,8 @@ export async function getDefects(query: RallyQuery = {}, limit: number | null = 
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results || resultData.Results.length === 0) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
 		return {
 			defects: [],
 			source: 'api',
@@ -984,7 +993,7 @@ export async function getDefects(query: RallyQuery = {}, limit: number | null = 
 	}
 
 	//Formatem la resposta per ser més llegible (de forma assincròna per no bloquejar)
-	const defects: RallyDefect[] = await formatDefectsAsync(resultData.Results);
+	const defects: RallyDefect[] = await formatDefectsAsync(results);
 
 	//Afegim els nous defects a rallyData sense duplicats
 	if (!rallyData.defects) {

@@ -15,6 +15,7 @@ export const rallyData: RallyData = {
 	iterations: [],
 	userStories: [],
 	tasks: [],
+	defects: [],
 	defaultProject: null,
 	currentUser: null
 };
@@ -41,6 +42,12 @@ export function activate(context: vscode.ExtensionContext) {
 	outputManager.appendLine('[Robert] 🔧 Initializing ErrorHandler');
 	const errorHandler = ErrorHandler.getInstance();
 	outputManager.appendLine('[Robert] ✅ ErrorHandler initialized successfully');
+
+	// Auto-show output channel if debug mode is enabled
+	if (isDebugMode) {
+		outputManager.appendLine('[Robert] 🐛 Debug mode enabled - showing output channel');
+		outputManager.show();
+	}
 
 	// Extension is now active
 	outputManager.appendLine('[Robert] 📝 Registering helloWorld command');
@@ -90,16 +97,6 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(openMainViewCommand);
 
-	// Register command to open settings view
-	const openSettingsCommand = vscode.commands.registerCommand('robert.openSettings', async () => {
-		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: openSettings');
-			// Show settings in the current view instead of creating a new panel
-			await webviewProvider.showSettingsInCurrentView();
-		}, 'robert.openSettings command');
-	});
-	context.subscriptions.push(openSettingsCommand);
-
 	// Register command to open extension settings
 	const openExtensionSettingsCommand = vscode.commands.registerCommand('robert.openExtensionSettings', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
@@ -109,6 +106,16 @@ export function activate(context: vscode.ExtensionContext) {
 		}, 'robert.openExtensionSettings command');
 	});
 	context.subscriptions.push(openExtensionSettingsCommand);
+
+	// Register command to open settings panel
+	const openSettingsCommand = vscode.commands.registerCommand('robert.openSettings', async () => {
+		await errorHandler.executeWithErrorHandling(async () => {
+			outputManager.appendLine('[Robert] Command: openSettings');
+			// Open settings panel
+			await webviewProvider.createSettingsPanel();
+		}, 'robert.openSettings command');
+	});
+	context.subscriptions.push(openSettingsCommand);
 
 	// Register command to show panel only if it isn't already visible
 	const showIfHiddenCommand = vscode.commands.registerCommand('robert.showPanelIfHidden', async () => {
@@ -214,20 +221,6 @@ function createStatusBarItem(context: vscode.ExtensionContext, errorHandler: Err
 	// Initialize with default state
 	updateStatusBarItem(statusBarItem, 'idle', errorHandler);
 
-	// Update status bar every 5 seconds with different states
-	const intervalId = setInterval(() => {
-		errorHandler.executeWithErrorHandlingSync(() => {
-			const states = ['idle', 'active', 'busy', 'error'];
-			const randomState = states[Math.floor(Math.random() * states.length)];
-			updateStatusBarItem(statusBarItem, randomState, errorHandler);
-		}, 'Status bar update interval');
-	}, 5000);
-
-	// Clean up interval when extension deactivates
-	context.subscriptions.push({
-		dispose: () => clearInterval(intervalId)
-	});
-
 	return statusBarItem;
 }
 
@@ -281,13 +274,11 @@ function buildStatusTooltip(errorHandler: ErrorHandler): vscode.MarkdownString {
 		const allFilesLink = `command:robert.toggleAllFiles?${enc([])}`;
 		const nextEditLink = `command:robert.toggleNextEdit?${enc([])}`;
 		const snooze5Link = `command:robert.snooze?${enc([5])}`;
-		const settingsLink = `command:robert.openSettings?${enc([])}`;
 
 		const snoozed = robertPopoverState.snoozedUntil > Date.now();
 		const snoozeLabel = snoozed ? `Snoozed until ${new Date(robertPopoverState.snoozedUntil).toLocaleTimeString()}` : 'Snooze (5 min)';
 
 		md.appendMarkdown('**IBM Robert**  ');
-		md.appendMarkdown(`[$(gear)](${settingsLink} "Settings")\n\n`);
 		md.appendMarkdown(`[$${checked(robertPopoverState.allFiles)}](${allFilesLink}) ${pad('All files')}\n\n`);
 		md.appendMarkdown(`[$${checked(robertPopoverState.nextEditSuggestions)}](${nextEditLink}) ${pad('Next edit suggestions')}\n\n`);
 		md.appendMarkdown(`[Snooze](${snooze5Link} "Hide for 5 minutes") ${pad(snoozeLabel)}\n`);

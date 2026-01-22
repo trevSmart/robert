@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.109",
+	"version": "0.0.191",
 	"type": "commonjs",
 	"icon": "resources/icons/ibm-logo-bee.png",
 	"publisher": "trevSmart",
@@ -115,14 +115,13 @@
 				"category": "IBM Robert"
 			},
 			{
-				"command": "robert.openSettings",
-				"title": "Open Settings",
-				"icon": "$(gear)",
+				"command": "robert.openExtensionSettings",
+				"title": "Open Extension Settings",
 				"category": "IBM Robert"
 			},
 			{
-				"command": "robert.openExtensionSettings",
-				"title": "Open Extension Settings",
+				"command": "robert.openSettings",
+				"title": "Open Settings",
 				"category": "IBM Robert"
 			},
 			{
@@ -186,7 +185,7 @@
 				{
 					"id": "robert",
 					"title": "IBM Robert",
-					"icon": "./resources/icons/ibm-logo-bee.svg"
+					"icon": "./resources/icons/ibm-logo-bee.png"
 				}
 			]
 		},
@@ -196,7 +195,7 @@
 					"id": "robert.mainView",
 					"name": "IBM Robert",
 					"type": "webview",
-					"icon": "./resources/icons/ibm-logo-bee.svg"
+					"icon": "./resources/icons/ibm-logo-bee.png"
 				}
 			]
 		},
@@ -268,12 +267,11 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
-		"@types/echarts": "^4.9.22",
-		"@types/react": "^19.2.9",
 		"@types/react-dnd": "^2.0.36",
 		"@types/react-dom": "^18.2.25",
 		"@types/styled-components": "^5.1.36",
 		"@vitejs/plugin-react": "^5.1.2",
+		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",
 		"ibm-rally-node": "^0.0.15",
 		"react": "^18.2.0",

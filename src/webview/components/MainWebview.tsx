@@ -1,17 +1,21 @@
-import type React from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FC, ComponentType } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'vscrui/dist/codicon.css';
+import '@vscode/codicons/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
 import UserStoryForm from './common/UserStoryForm';
 import TasksTable from './common/TasksTable';
+import DefectsTable from './common/DefectsTable';
+import DefectForm from './common/DefectForm';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
+import { logDebug } from '../utils/vscodeApi';
 
 // Icon components (copied from NavigationBar for now)
-const TeamIcon = () => (
+const _TeamIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
 		<path
 			strokeLinecap="round"
@@ -21,13 +25,13 @@ const TeamIcon = () => (
 	</svg>
 );
 
-const SalesforceIcon = () => (
+const _SalesforceIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
 		<path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
 	</svg>
 );
 
-const AssetsIcon = () => (
+const _AssetsIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
 		<path
 			strokeLinecap="round"
@@ -37,7 +41,7 @@ const AssetsIcon = () => (
 	</svg>
 );
 
-const MetricsIcon = () => (
+const _MetricsIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
 		<path
 			strokeLinecap="round"
@@ -113,7 +117,7 @@ const ChartBarIcon = () => (
 	</svg>
 );
 
-const SwatchIcon = () => (
+const _SwatchIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
 		<path
 			strokeLinecap="round"
@@ -175,17 +179,541 @@ const WrenchScrewdriverIcon = () => (
 	</svg>
 );
 
-import { CenteredContainer, Container, ContentArea, GlobalStyle, Header, LogoContainer, LogoImage, Title } from './common/styled';
+import { CenteredContainer, Container, ContentArea, GlobalStyle } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
+import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
 type SectionType = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
-type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail';
+type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
+type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
+
+interface Tutorial {
+	title: string;
+	kicker: string;
+	bg: string;
+}
+
+interface PortfolioViewConfig {
+	id: PortfolioViewType;
+	label: string;
+	icon?: string;
+	description?: string;
+	component: ComponentType<PortfolioViewProps>;
+	dataLoader: () => Promise<void>;
+	stateCleaner: () => void;
+}
+
+interface PortfolioViewProps {
+	iterations: Iteration[];
+	iterationsLoading: boolean;
+	iterationsError: string | null;
+	selectedIteration: Iteration | null;
+	userStories: UserStory[];
+	userStoriesLoading: boolean;
+	userStoriesError: string | null;
+	selectedUserStory: UserStory | null;
+	tasks: RallyTask[];
+	tasksLoading: boolean;
+	tasksError: string | null;
+	userStoryDefects: RallyDefect[];
+	userStoryDefectsLoading: boolean;
+	_userStoryDefectsError: string | null;
+	_defects: RallyDefect[];
+	_defectsLoading: boolean;
+	_defectsError: string | null;
+	_selectedDefect: RallyDefect | null;
+	activeUserStoryTab: 'tasks' | 'tests' | 'defects';
+	currentScreen: ScreenType;
+	onLoadIterations: () => void;
+	onIterationSelected: (iteration: Iteration) => void;
+	onUserStorySelected: (userStory: UserStory) => void;
+	onLoadUserStories: (iteration?: Iteration) => void;
+	onClearUserStories: () => void;
+	onLoadTasks: (userStoryId: string) => void;
+	onLoadUserStoryDefects: (userStoryId: string) => void;
+	_onLoadDefects: () => void;
+	_onDefectSelected: (defect: RallyDefect) => void;
+	onBackToIterations: () => void;
+	onBackToUserStories: () => void;
+	_onBackToDefects: () => void;
+	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects') => void;
+}
+
+// Portfolio View Components
+const BySprintsView: FC<PortfolioViewProps> = ({
+	iterations,
+	iterationsLoading,
+	iterationsError,
+	selectedIteration,
+	userStories,
+	userStoriesLoading,
+	userStoriesError,
+	selectedUserStory,
+	tasks,
+	tasksLoading,
+	tasksError,
+	userStoryDefects,
+	userStoryDefectsLoading,
+	_userStoryDefectsError,
+	_defects,
+	_defectsLoading,
+	_defectsError,
+	_selectedDefect,
+	activeUserStoryTab,
+	currentScreen,
+	onLoadIterations,
+	onIterationSelected,
+	onUserStorySelected,
+	onLoadUserStories,
+	onClearUserStories,
+	onLoadTasks,
+	onLoadUserStoryDefects,
+	_onLoadDefects,
+	_onDefectSelected,
+	onBackToIterations,
+	onBackToUserStories,
+	_onBackToDefects,
+	onActiveUserStoryTabChange
+}) => {
+	// Auto-load defects when defects tab is selected
+	useEffect(() => {
+		if (selectedUserStory && activeUserStoryTab === 'defects' && (!userStoryDefects || !userStoryDefects.length) && !userStoryDefectsLoading) {
+			onLoadUserStoryDefects(selectedUserStory.objectId);
+		}
+	}, [selectedUserStory, activeUserStoryTab, userStoryDefects, userStoryDefectsLoading, onLoadUserStoryDefects]);
+
+	return (
+		<>
+			{currentScreen === 'iterations' && (
+				<>
+					<ScreenHeader title="Sprints" />
+					<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={onLoadIterations} onIterationSelected={onIterationSelected} selectedIteration={selectedIteration} />
+				</>
+			)}
+
+			{currentScreen === 'userStories' && selectedIteration && (
+				<>
+					<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
+					<SprintDetailsForm iteration={selectedIteration} />
+					<AssigneeHoursChart userStories={userStories} />
+					<UserStoriesTable userStories={userStories} loading={userStoriesLoading} error={userStoriesError} onLoadUserStories={() => onLoadUserStories(selectedIteration)} onClearUserStories={onClearUserStories} onUserStorySelected={onUserStorySelected} selectedUserStory={selectedUserStory} />
+				</>
+			)}
+
+			{currentScreen === 'userStoryDetail' && selectedUserStory && (
+				<>
+					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+					<UserStoryForm userStory={selectedUserStory} />
+					<div
+						style={{
+							marginTop: '8px',
+							marginBottom: '4px',
+							display: 'flex',
+							gap: '8px',
+							borderBottom: '1px solid var(--vscode-panel-border)'
+						}}
+					>
+						<button
+							type="button"
+							onClick={() => activeUserStoryTab !== 'tasks' && onActiveUserStoryTabChange('tasks')}
+							style={{
+								display: 'inline-flex',
+								alignItems: 'center',
+								gap: '6px',
+								padding: '6px 10px',
+								border: 'none',
+								borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+								backgroundColor: 'transparent',
+								color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+								cursor: activeUserStoryTab === 'tasks' ? 'default' : 'pointer',
+								fontSize: '12px',
+								fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
+							}}
+						>
+							<TasksTabIcon />
+							<span>Tasks</span>
+						</button>
+						<button
+							type="button"
+							onClick={() => activeUserStoryTab !== 'tests' && onActiveUserStoryTabChange('tests')}
+							style={{
+								display: 'inline-flex',
+								alignItems: 'center',
+								gap: '6px',
+								padding: '6px 10px',
+								border: 'none',
+								borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+								backgroundColor: 'transparent',
+								color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+								cursor: activeUserStoryTab === 'tests' ? 'default' : 'pointer',
+								fontSize: '12px',
+								fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
+							}}
+						>
+							<TestsTabIcon />
+							<span>Tests</span>
+						</button>
+						<button
+							type="button"
+							onClick={() => activeUserStoryTab !== 'defects' && onActiveUserStoryTabChange('defects')}
+							style={{
+								display: 'inline-flex',
+								alignItems: 'center',
+								gap: '6px',
+								padding: '6px 10px',
+								border: 'none',
+								borderBottom: activeUserStoryTab === 'defects' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+								backgroundColor: 'transparent',
+								color: activeUserStoryTab === 'defects' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+								cursor: activeUserStoryTab === 'defects' ? 'default' : 'pointer',
+								fontSize: '12px',
+								fontWeight: activeUserStoryTab === 'defects' ? 600 : 400
+							}}
+						>
+							<div className="codicon codicon-bug" style={{ fontSize: '14px' }}></div>
+							<span>Defects</span>
+						</button>
+					</div>
+					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+					{activeUserStoryTab === 'tests' && (
+						<div
+							style={{
+								margin: '20px 0',
+								padding: '20px',
+								backgroundColor: '#282828',
+								borderRadius: '6px'
+							}}
+						>
+							<div
+								style={{
+									fontSize: '13px',
+									color: 'var(--vscode-foreground)',
+									marginBottom: '6px'
+								}}
+							>
+								This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
+							</div>
+							<div
+								style={{
+									fontSize: '12px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Detailed test listing will be available in a future version of this view.
+							</div>
+						</div>
+					)}
+					{activeUserStoryTab === 'defects' && (
+						<DefectsTable defects={userStoryDefects} loading={userStoryDefectsLoading} error={_userStoryDefectsError || undefined} onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+					)}
+				</>
+			)}
+		</>
+	);
+};
+
+const AllUserStoriesView: FC<PortfolioViewProps> = ({
+	userStories,
+	userStoriesLoading,
+	userStoriesError,
+	selectedUserStory,
+	tasks,
+	tasksLoading,
+	tasksError,
+	userStoryDefects,
+	userStoryDefectsLoading,
+	_userStoryDefectsError,
+	_selectedDefect,
+	activeUserStoryTab,
+	currentScreen,
+	onLoadUserStories,
+	onClearUserStories,
+	onUserStorySelected,
+	onLoadTasks,
+	onLoadUserStoryDefects,
+	_onDefectSelected,
+	onBackToUserStories,
+	onActiveUserStoryTabChange
+}) => (
+	<>
+		{currentScreen === 'allUserStories' && !selectedUserStory && (
+			<>
+				<ScreenHeader title="All User Stories" />
+				<UserStoriesTable
+					userStories={userStories}
+					loading={userStoriesLoading}
+					error={userStoriesError}
+					onLoadUserStories={() => onLoadUserStories()} // Load all user stories
+					onClearUserStories={onClearUserStories}
+					onUserStorySelected={onUserStorySelected}
+					selectedUserStory={selectedUserStory}
+				/>
+			</>
+		)}
+
+		{currentScreen === 'userStoryDetail' && selectedUserStory && (
+			<>
+				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+				<UserStoryForm userStory={selectedUserStory} />
+				<div
+					style={{
+						marginTop: '8px',
+						marginBottom: '4px',
+						display: 'flex',
+						gap: '8px',
+						borderBottom: '1px solid var(--vscode-panel-border)'
+					}}
+				>
+					<button
+						type="button"
+						onClick={() => onActiveUserStoryTabChange('tasks')}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 10px',
+							border: 'none',
+							borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+							backgroundColor: 'transparent',
+							color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+							cursor: activeUserStoryTab === 'tasks' ? 'default' : 'pointer',
+							fontSize: '12px',
+							fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
+						}}
+					>
+						<TasksTabIcon />
+						<span>Tasks</span>
+					</button>
+					<button
+						type="button"
+						onClick={() => onActiveUserStoryTabChange('tests')}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 10px',
+							border: 'none',
+							borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+							backgroundColor: 'transparent',
+							color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+							cursor: activeUserStoryTab === 'tests' ? 'default' : 'pointer',
+							fontSize: '12px',
+							fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
+						}}
+					>
+						<TestsTabIcon />
+						<span>Tests</span>
+					</button>
+					<button
+						type="button"
+						onClick={() => onActiveUserStoryTabChange('defects')}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 10px',
+							border: 'none',
+							borderBottom: activeUserStoryTab === 'defects' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+							backgroundColor: 'transparent',
+							color: activeUserStoryTab === 'defects' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+							cursor: activeUserStoryTab === 'defects' ? 'default' : 'pointer',
+							fontSize: '12px',
+							fontWeight: activeUserStoryTab === 'defects' ? 600 : 400
+						}}
+					>
+						<div className="codicon codicon-bug" style={{ fontSize: '14px' }}></div>
+						<span>Defects</span>
+					</button>
+				</div>
+				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+				{activeUserStoryTab === 'tests' && (
+					<div
+						style={{
+							margin: '20px 0',
+							padding: '20px',
+							backgroundColor: '#282828',
+							borderRadius: '6px'
+						}}
+					>
+						<div
+							style={{
+								fontSize: '13px',
+								color: 'var(--vscode-foreground)',
+								marginBottom: '6px'
+							}}
+						>
+							This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
+						</div>
+						<div
+							style={{
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Detailed test listing will be available in a future version of this view.
+						</div>
+					</div>
+				)}
+				{activeUserStoryTab === 'defects' && (
+					<DefectsTable defects={userStoryDefects} loading={userStoryDefectsLoading} error={_userStoryDefectsError || undefined} onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+				)}
+			</>
+		)}
+	</>
+);
+
+const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects }) => {
+	logDebug(`_onDefectSelected: ${JSON.stringify(_onDefectSelected)}, currentScreen: ${currentScreen}`, 'AllDefectsView');
+	return (
+		<>
+			{currentScreen === 'defects' && (
+				<>
+					<ScreenHeader title="All Defects" />
+					<DefectsTable defects={_defects} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+				</>
+			)}
+			{currentScreen === 'defectDetail' && _selectedDefect && (
+				<>
+					<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
+					<DefectForm defect={_selectedDefect} />
+				</>
+			)}
+		</>
+	);
+};
+
+// Portfolio Views Configuration
+// Icon components for portfolio tabs
+const SprintsIcon = ({ size = '16px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M6.75 2.994v2.25m10.5-2.25v2.25m-14.252 13.5V7.491a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v11.251m-18 0a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25m-18 0v-7.5a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v7.5m-6.75-6h2.25m-9 2.25h4.5m.002-2.25h.005v.006H12v-.006Zm-.001 4.5h.006v.006h-.006v-.005Zm-2.25.001h.005v.006H9.75v-.006Zm-2.25 0h.005v.005h-.006v-.005Zm6.75-2.247h.005v.005h-.005v-.005Zm0 2.247h.006v.006h-.006v-.006Zm2.25-2.248h.006V15H16.5v-.005Z"
+		/>
+	</svg>
+);
+
+const UserStoriesIcon = ({ size = '16px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z"
+		/>
+	</svg>
+);
+
+const portfolioViews: PortfolioViewConfig[] = [
+	{
+		id: 'bySprints',
+		label: 'Sprints',
+		icon: 'sprints',
+		description: 'View user stories organized by sprints',
+		component: BySprintsView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	},
+	{
+		id: 'allUserStories',
+		label: 'User Stories',
+		icon: 'user-stories',
+		description: 'View all user stories in the project',
+		component: AllUserStoriesView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	},
+	{
+		id: 'allDefects',
+		label: 'Defects',
+		icon: 'bug',
+		description: 'View all defects in the project',
+		component: AllDefectsView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	}
+];
+
+// Portfolio View Selector Component (Tab-like appearance)
+const PortfolioViewSelector: FC<{
+	views: PortfolioViewConfig[];
+	activeView: PortfolioViewType;
+	onViewChange: (viewId: PortfolioViewType) => void;
+}> = ({ views, activeView, onViewChange }) => {
+	const renderIcon = (icon?: string) => {
+		switch (icon) {
+			case 'sprints':
+				return <SprintsIcon />;
+			case 'user-stories':
+				return <UserStoriesIcon />;
+			case 'bug':
+				return <div className="codicon codicon-bug" style={{ fontSize: '16px' }}></div>;
+			default:
+				return null;
+		}
+	};
+
+	return (
+		<div
+			style={{
+				marginBottom: '20px',
+				display: 'flex',
+				borderBottom: '1px solid var(--vscode-panel-border)',
+				backgroundColor: 'var(--vscode-tab-inactiveBackground)',
+				borderRadius: '6px 6px 0 0'
+			}}
+		>
+			{views.map((view, index) => (
+				<button
+					key={view.id}
+					onClick={() => activeView !== view.id && onViewChange(view.id)}
+					style={{
+						padding: '12px 20px',
+						border: 'none',
+						borderRight: index < views.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
+						borderBottom: activeView === view.id ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+						borderRadius: index === 0 ? '6px 0 0 0' : index === views.length - 1 ? '0 6px 0 0' : '0',
+						backgroundColor: activeView === view.id ? 'var(--vscode-tab-activeBackground)' : 'transparent',
+						color: activeView === view.id ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
+						cursor: activeView === view.id ? 'default' : 'pointer',
+						display: 'flex',
+						alignItems: 'center',
+						gap: '8px',
+						fontSize: '13px',
+						fontWeight: activeView === view.id ? 600 : 400,
+						transition: 'all 0.15s ease',
+						position: 'relative',
+						zIndex: activeView === view.id ? 1 : 0
+					}}
+					title={view.description}
+				>
+					{renderIcon(view.icon)}
+					<span>{view.label}</span>
+				</button>
+			))}
+		</div>
+	);
+};
+
+// Portfolio View Renderer Component
+const PortfolioViewRenderer: FC<{
+	activeViewType: PortfolioViewType;
+	viewProps: PortfolioViewProps;
+}> = ({ activeViewType, viewProps }) => {
+	const activeView = portfolioViews.find(view => view.id === activeViewType);
+	if (!activeView) {
+		return <div>View not found</div>;
+	}
+
+	const ActiveComponent = activeView.component;
+	return <ActiveComponent {...viewProps} />;
+};
 
 interface MainWebviewProps {
 	webviewId: string;
 	context: string;
 	timestamp: string;
-	rebusLogoUri: string;
+	_rebusLogoUri: string;
 }
 
 interface Iteration {
@@ -219,7 +747,7 @@ interface UserStory {
 	appgar: string;
 }
 
-const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogoUri }) => {
+const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
 
@@ -250,28 +778,46 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const [debugMode, setDebugMode] = useState<boolean>(false);
-	const [currentUser, setCurrentUser] = useState<any>(null);
-	const [selectedTutorial, setSelectedTutorial] = useState<any>(null);
-	const [showTutorial, setShowTutorial] = useState<boolean>(false);
+	const [currentUser, setCurrentUser] = useState<RallyUser | null>(null);
+	const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
+	const [_showTutorial, setShowTutorial] = useState<boolean>(false);
 
 	const [userStories, setUserStories] = useState<UserStory[]>([]);
 	const [userStoriesLoading, setUserStoriesLoading] = useState(false);
 	const [userStoriesError, setUserStoriesError] = useState<string | null>(null);
 	const [selectedUserStory, setSelectedUserStory] = useState<UserStory | null>(null);
 
-	const [tasks, setTasks] = useState<any[]>([]);
+	const [tasks, setTasks] = useState<RallyTask[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
 	const [tasksError, setTasksError] = useState<string | null>(null);
-	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests'>('tasks');
+	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests' | 'defects'>('tasks');
+
+	const [defects, setDefects] = useState<RallyDefect[]>([]);
+	const [defectsLoading, setDefectsLoading] = useState(false);
+	const [defectsError, setDefectsError] = useState<string | null>(null);
+	const [selectedDefect, setSelectedDefect] = useState<RallyDefect | null>(null);
+
+	const [userStoryDefects, setUserStoryDefects] = useState<RallyDefect[]>([]);
+	const [userStoryDefectsLoading, setUserStoryDefectsLoading] = useState(false);
+	const [userStoryDefectsError, setUserStoryDefectsError] = useState<string | null>(null);
 
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
+	const [activeViewType, setActiveViewType] = useState<PortfolioViewType>('bySprints');
 	const [calendarDate, setCalendarDate] = useState(new Date());
 
+	// Track if we've already loaded iterations for portfolio to avoid cascading renders
+	const hasLoadedPortfolioIterations = useRef(false);
+
+	// Track if we've already loaded iterations for calendar to avoid cascading renders
+	const hasLoadedCalendarIterations = useRef(false);
+
+	// Track which portfolio views have been loaded to avoid redundant fetches
+	const loadedViews = useRef<Set<PortfolioViewType>>(new Set());
+
 	const loadIterations = useCallback(() => {
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] Loading iterations...');
+		logDebug('Loading iterations...', 'Frontend');
 		setIterationsLoading(true);
 		setIterationsError(null);
 		sendMessage({
@@ -281,8 +827,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 	const loadUserStories = useCallback(
 		(iteration?: Iteration) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Loading user stories...', iteration ? `for iteration: ${iteration.name}` : 'for all');
+			logDebug(`Loading user stories... ${iteration ? `for iteration: ${iteration.name}` : 'for all'}`, 'Frontend');
 			setUserStoriesLoading(true);
 			setUserStoriesError(null);
 			sendMessage({
@@ -293,10 +838,105 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		[sendMessage]
 	);
 
+	const loadAllUserStories = useCallback(() => {
+		logDebug('Loading ALL user stories...', 'Frontend');
+		setUserStoriesLoading(true);
+		setUserStoriesError(null);
+		sendMessage({
+			command: 'loadUserStories'
+			// Sense filtre d'iteration = carrega totes les US del projecte
+		});
+	}, [sendMessage]);
+
+	const loadAllDefects = useCallback(() => {
+		logDebug('Loading ALL defects...', 'Frontend');
+		setDefectsLoading(true);
+		setDefectsError(null);
+		sendMessage({
+			command: 'loadDefects'
+		});
+	}, [sendMessage]);
+
+	const loadUserStoryDefects = useCallback(
+		(userStoryId: string) => {
+			logDebug(`Loading defects for user story: ${userStoryId}`, 'Frontend');
+			setUserStoryDefectsLoading(true);
+			setUserStoryDefectsError(null);
+			sendMessage({
+				command: 'loadUserStoryDefects',
+				userStoryId
+			});
+		},
+		[sendMessage]
+	);
+
+	const handleDefectSelected = useCallback((defect: RallyDefect) => {
+		logDebug(`Defect selected: ${defect.formattedId}`, 'Frontend');
+		setSelectedDefect(defect);
+		setCurrentScreen('defectDetail');
+	}, []);
+
+	const handleBackToDefects = useCallback(() => {
+		setSelectedDefect(null);
+		setCurrentScreen('defects');
+	}, []);
+
+	const switchViewType = useCallback(
+		(newViewType: PortfolioViewType) => {
+			logDebug(`Switching to view type: ${newViewType}`, 'Frontend');
+
+			// State cleaners for each view type (only clear when necessary)
+			const stateCleaners = {
+				bySprints: () => {
+					setSelectedIteration(null);
+					setCurrentScreen('iterations');
+				},
+				allUserStories: () => {
+					setSelectedIteration(null);
+					setCurrentScreen('allUserStories');
+				},
+				allDefects: () => {
+					setCurrentScreen('defects');
+					setSelectedDefect(null);
+				}
+			};
+
+			// Data loaders for each view type
+			const dataLoaders = {
+				bySprints: loadIterations,
+				allUserStories: loadAllUserStories,
+				allDefects: loadAllDefects
+			};
+
+			// Execute state cleaner of current view
+			const currentCleaner = stateCleaners[newViewType];
+			if (currentCleaner) {
+				currentCleaner();
+			}
+
+			// Change active view
+			setActiveViewType(newViewType);
+
+			// Only load data if this view hasn't been loaded yet in this session
+			// This prevents redundant fetches when switching between tabs
+			if (!loadedViews.current.has(newViewType)) {
+				logDebug(`First time loading view: ${newViewType} - fetching data`, 'Frontend');
+				loadedViews.current.add(newViewType);
+
+				const newLoader = dataLoaders[newViewType];
+				if (newLoader) {
+					newLoader();
+				}
+			} else {
+				logDebug(`View already loaded: ${newViewType} - skipping fetch`, 'Frontend');
+			}
+		},
+		[loadIterations, loadAllUserStories, loadAllDefects]
+	);
+
 	const handleIterationSelected = useCallback(
 		(iteration: Iteration) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Iteration selected:', iteration.name);
+			logDebug(`Iteration selected: ${iteration.name}`, 'Frontend');
 			setSelectedIteration(iteration);
 			loadUserStories(iteration);
 			setCurrentScreen('userStories');
@@ -314,8 +954,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 	const loadTasks = useCallback(
 		(userStoryId: string) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Loading tasks for user story:', userStoryId);
+			logDebug(`Loading tasks for user story: ${userStoryId}`, 'Frontend');
 			setTasksLoading(true);
 			setTasksError(null);
 			sendMessage({
@@ -328,8 +967,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 
 	const handleUserStorySelected = useCallback(
 		(userStory: UserStory) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] User story selected:', userStory.formattedId);
+			logDebug(`User story selected: ${userStory.formattedId}`, 'Frontend');
 			setSelectedUserStory(userStory);
 			setCurrentScreen('userStoryDetail');
 			setActiveUserStoryTab('tasks');
@@ -347,17 +985,22 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	}, []);
 
 	const handleBackToUserStories = useCallback(() => {
-		setCurrentScreen('userStories');
+		// Depenent de la vista activa, tornem a la pantalla correcta
+		if (activeViewType === 'allUserStories') {
+			setCurrentScreen('allUserStories');
+		} else {
+			setCurrentScreen('userStories');
+		}
 		setSelectedUserStory(null);
 		setTasks([]);
 		setTasksError(null);
 		setActiveUserStoryTab('tasks');
-	}, []);
+	}, [activeViewType]);
 
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
 			setActiveSection(section);
-			if (section === 'portfolio') {
+			if (section === 'portfolio' || section === 'calendar') {
 				// Load iterations only if we don't already have them and we're not already loading / in error
 				if (!iterations.length && !iterationsLoading && !iterationsError) {
 					loadIterations();
@@ -398,13 +1041,25 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			return false;
 		});
 
-		// Return the first active iteration (in case of overlapping)
-		return activeIterations.length > 0 ? activeIterations[0] : null;
+		if (activeIterations.length === 0) {
+			return null;
+		}
+
+		// If only one active iteration, return it
+		if (activeIterations.length === 1) {
+			return activeIterations[0];
+		}
+
+		// If multiple active iterations, prioritize those containing "Sprint" in the name (case insensitive)
+		const sprintIterations = activeIterations.filter(iteration => iteration.name.toLowerCase().includes('sprint'));
+
+		// Return the first sprint iteration if any exist, otherwise return the first active iteration
+		return sprintIterations.length > 0 ? sprintIterations[0] : activeIterations[0];
 	}, []);
 
+	// Initialize webview on mount
 	useEffect(() => {
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] MainWebview useEffect executing - initializing...');
+		logDebug('MainWebview initializing on mount', 'Frontend');
 
 		sendMessage({
 			command: 'webviewReady'
@@ -415,18 +1070,24 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 			command: 'getState'
 		});
 
-		// Automatically load iterations when webview initializes (only for calendar section)
-		if (activeSection === 'calendar') {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Calling loadIterations automatically...');
-			loadIterations();
-		}
+		// Load iterations for calendar section on initial mount
+		// Since activeSection defaults to 'calendar', we should load iterations immediately
+		setTimeout(() => {
+			if (!hasLoadedCalendarIterations.current) {
+				logDebug('Initial mount - loading iterations for calendar', 'Frontend');
+				hasLoadedCalendarIterations.current = true;
+				loadIterations();
+			}
+		}, 200); // Small delay to ensure webview is fully initialized
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Only run once on mount
 
-		// Listen for messages from extension
+	// Handle messages from extension
+	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data;
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Received message from extension:', message.command);
+
+			logDebug(`Received message from extension: ${message.command}`, 'Frontend');
 
 			switch (message.command) {
 				case 'showLogo':
@@ -443,14 +1104,12 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 						// Auto-select current iteration if available
 						const currentIteration = findCurrentIteration(message.iterations);
 						if (currentIteration) {
-							// eslint-disable-next-line no-console
-							console.log('[Frontend] Auto-selecting current iteration:', currentIteration.name);
+							logDebug(`Auto-selecting current iteration: ${currentIteration.name}`, 'Frontend');
 							setSelectedIteration(currentIteration);
 							loadUserStories(currentIteration);
 							setCurrentScreen('userStories');
 						} else {
-							// eslint-disable-next-line no-console
-							console.log('[Frontend] No active iteration found for today');
+							logDebug('No active iteration found for today', 'Frontend');
 						}
 					} else {
 						setIterationsError('Failed to load iterations');
@@ -465,6 +1124,10 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 					if (message.userStories) {
 						setUserStories(message.userStories);
 						setUserStoriesError(null);
+						// Assegura que la pantalla es correcta quan es carreguen totes les user stories
+						if (activeViewType === 'allUserStories') {
+							setCurrentScreen('allUserStories');
+						}
 					} else {
 						setUserStoriesError('Failed to load user stories');
 					}
@@ -486,13 +1149,82 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 					setTasksLoading(false);
 					setTasksError(message.error || 'Error loading tasks');
 					break;
+				case 'defectsLoaded':
+					setDefectsLoading(false);
+					if (message.defects) {
+						setDefects(message.defects);
+						setDefectsError(null);
+						if (activeViewType === 'allDefects' && currentScreen !== 'defects') {
+							setCurrentScreen('defects');
+						}
+					} else {
+						setDefectsError('Failed to load defects');
+					}
+					break;
+				case 'defectsError':
+					setDefectsLoading(false);
+					setDefectsError(message.error || 'Error loading defects');
+					break;
+				case 'userStoryDefectsLoaded':
+					setUserStoryDefectsLoading(false);
+					if (message.defects) {
+						setUserStoryDefects(message.defects);
+						setUserStoryDefectsError(null);
+					} else {
+						setUserStoryDefectsError('Failed to load defects');
+					}
+					break;
+				case 'userStoryDefectsError':
+					setUserStoryDefectsLoading(false);
+					setUserStoryDefectsError(message.error || 'Error loading defects');
+					break;
 			}
 		};
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [sendMessage, findCurrentIteration, loadUserStories, activeSection, loadIterations]);
+	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen]); // Only include dependencies needed by handleMessage
+
+	// Load iterations when navigating to calendar section
+	useEffect(() => {
+		// eslint-disable-next-line no-console
+		console.log('[Frontend] Calendar section effect triggered', {
+			activeSection,
+			hasLoaded: hasLoadedCalendarIterations.current,
+			iterationsCount: iterations.length,
+			iterationsLoading,
+			iterationsError
+		});
+
+		if (activeSection === 'calendar' && !hasLoadedCalendarIterations.current && !iterations.length && !iterationsLoading && !iterationsError) {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Entering calendar section - loading iterations');
+			hasLoadedCalendarIterations.current = true;
+			// Use setTimeout to make the call asynchronous and avoid linter warning about setState in effects
+			setTimeout(() => {
+				loadIterations();
+			}, 0);
+		} else if (activeSection !== 'calendar') {
+			// Reset flag when leaving calendar section
+			hasLoadedCalendarIterations.current = false;
+		}
+	}, [activeSection, iterations.length, iterationsLoading, iterationsError, loadIterations]);
+
+	// Load iterations when navigating to portfolio section
+	useEffect(() => {
+		if (activeSection === 'portfolio' && !hasLoadedPortfolioIterations.current) {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Entering portfolio section');
+			hasLoadedPortfolioIterations.current = true;
+			// Note: Don't auto-load here; let switchViewType handle data loading
+		} else if (activeSection !== 'portfolio') {
+			// Reset flags when leaving portfolio section
+			hasLoadedPortfolioIterations.current = false;
+			loadedViews.current.clear();
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Exiting portfolio section - cleared view cache');
+		}
+	}, [activeSection]);
 
 	useEffect(() => {
 		if (!hasVsCodeApi) {
@@ -527,11 +1259,70 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 		};
 	}, [hasVsCodeApi, sendMessage]);
 
-	const _openSettings = () => {
-		sendMessage({
-			command: 'openSettings'
-		});
-	};
+	// Handle mouse back button navigation
+	useEffect(() => {
+		// eslint-disable-next-line no-console
+		console.log('[MainWebview] Setting up mouse back button handler');
+
+		const handleMouseEvent = (event: globalThis.MouseEvent) => {
+			// eslint-disable-next-line no-console
+			console.log('[MainWebview] Mouse event detected:', {
+				button: event.button,
+				buttons: event.buttons,
+				type: event.type,
+				currentScreen,
+				hasSelectedUserStory: !!selectedUserStory,
+				hasSelectedIteration: !!selectedIteration,
+				hasSelectedDefect: !!selectedDefect
+			});
+
+			// Mouse back button is typically button 3 (some mice use button 4)
+			// Button values: 0 = left, 1 = middle, 2 = right, 3 = back, 4 = forward
+			if (event.button === 3) {
+				// eslint-disable-next-line no-console
+				console.log('[MainWebview] Mouse back button (button 3) detected!');
+				event.preventDefault();
+				event.stopPropagation();
+
+				// Navigate back based on current screen
+				if (currentScreen === 'userStoryDetail' && selectedUserStory) {
+					// eslint-disable-next-line no-console
+					console.log('[MainWebview] Navigating back to user stories list');
+					handleBackToUserStories();
+				} else if (currentScreen === 'userStories' && selectedIteration) {
+					// eslint-disable-next-line no-console
+					console.log('[MainWebview] Navigating back to iterations list');
+					handleBackToIterations();
+				} else if (currentScreen === 'defectDetail' && selectedDefect) {
+					// eslint-disable-next-line no-console
+					console.log('[MainWebview] Navigating back to defects list');
+					handleBackToDefects();
+				} else {
+					// eslint-disable-next-line no-console
+					console.log('[MainWebview] Back button pressed but no navigation action available for current screen:', currentScreen);
+				}
+			} else if (event.button === 4) {
+				// eslint-disable-next-line no-console
+				console.log('[MainWebview] Mouse forward button (button 4) detected - not handling');
+			}
+		};
+
+		// Add event listeners to catch mouse events - try multiple event types
+		// Some browsers/mice may use different events
+		document.addEventListener('mousedown', handleMouseEvent);
+		document.addEventListener('mouseup', handleMouseEvent);
+		document.addEventListener('auxclick', handleMouseEvent);
+		// eslint-disable-next-line no-console
+		console.log('[MainWebview] Mouse event listeners added to document (mousedown, mouseup, auxclick)');
+
+		return () => {
+			document.removeEventListener('mousedown', handleMouseEvent);
+			document.removeEventListener('mouseup', handleMouseEvent);
+			document.removeEventListener('auxclick', handleMouseEvent);
+			// eslint-disable-next-line no-console
+			console.log('[MainWebview] Mouse event listeners removed from document');
+		};
+	}, [currentScreen, selectedUserStory, selectedIteration, selectedDefect, handleBackToUserStories, handleBackToIterations, handleBackToDefects]);
 
 	const _clearIterations = () => {
 		setIterations([]);
@@ -1239,7 +2030,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 									{selectedTutorial.title === 'Salesforce CRM Fundamentals' && (
 										<div>
 											<h2>Understanding Salesforce CRM</h2>
-											<p>Salesforce CRM is the world's leading customer relationship management platform that helps businesses connect with customers, partners, and prospects.</p>
+											<p>Salesforce CRM is the world&apos;s leading customer relationship management platform that helps businesses connect with customers, partners, and prospects.</p>
 
 											<h3>Key Concepts</h3>
 											<ul>
@@ -1280,7 +2071,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 									{selectedTutorial.title === 'Lightning Web Components' && (
 										<div>
 											<h2>Building with Lightning Web Components</h2>
-											<p>LWC is Salesforce's modern programming model for building fast, reusable components on the Lightning Platform.</p>
+											<p>LWC is Salesforce&apos;s modern programming model for building fast, reusable components on the Lightning Platform.</p>
 
 											<h3>Why LWC?</h3>
 											<ul>
@@ -1752,115 +2543,45 @@ jobs:
 
 					{activeSection === 'portfolio' && (
 						<>
-							{currentScreen === 'iterations' && (
-								<>
-									<ScreenHeader title="Rally Iterations" />
-									<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={loadIterations} onIterationSelected={handleIterationSelected} selectedIteration={selectedIteration} />
-								</>
-							)}
-
-							{currentScreen === 'userStories' && selectedIteration && (
-								<>
-									<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={handleBackToIterations} />
-									<SprintDetailsForm iteration={selectedIteration} />
-									<AssigneeHoursChart userStories={userStories} />
-									<UserStoriesTable
-										userStories={userStories}
-										loading={userStoriesLoading}
-										error={userStoriesError}
-										onLoadUserStories={() => loadUserStories(selectedIteration)}
-										onClearUserStories={clearUserStories}
-										onUserStorySelected={handleUserStorySelected}
-										selectedUserStory={selectedUserStory}
-									/>
-								</>
-							)}
-
-							{currentScreen === 'userStoryDetail' && selectedUserStory && (
-								<>
-									<ScreenHeader title={`User Story Details - ${selectedUserStory.formattedId}`} showBackButton={true} onBack={handleBackToUserStories} />
-									<UserStoryForm userStory={selectedUserStory} />
-									<div
-										style={{
-											marginTop: '8px',
-											marginBottom: '4px',
-											display: 'flex',
-											gap: '8px',
-											borderBottom: '1px solid var(--vscode-panel-border)'
-										}}
-									>
-										<button
-											type="button"
-											onClick={() => setActiveUserStoryTab('tasks')}
-											style={{
-												display: 'inline-flex',
-												alignItems: 'center',
-												gap: '6px',
-												padding: '6px 10px',
-												border: 'none',
-												borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-												backgroundColor: 'transparent',
-												color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-												cursor: 'pointer',
-												fontSize: '12px',
-												fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
-											}}
-										>
-											<TasksTabIcon />
-											<span>Tasks</span>
-										</button>
-										<button
-											type="button"
-											onClick={() => setActiveUserStoryTab('tests')}
-											style={{
-												display: 'inline-flex',
-												alignItems: 'center',
-												gap: '6px',
-												padding: '6px 10px',
-												border: 'none',
-												borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-												backgroundColor: 'transparent',
-												color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-												cursor: 'pointer',
-												fontSize: '12px',
-												fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
-											}}
-										>
-											<TestsTabIcon />
-											<span>Tests</span>
-										</button>
-									</div>
-									{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && loadTasks(selectedUserStory.objectId)} />}
-									{activeUserStoryTab === 'tests' && (
-										<div
-											style={{
-												margin: '20px 0',
-												padding: '20px',
-												backgroundColor: '#282828',
-												borderRadius: '6px'
-											}}
-										>
-											<div
-												style={{
-													fontSize: '13px',
-													color: 'var(--vscode-foreground)',
-													marginBottom: '6px'
-												}}
-											>
-												This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
-											</div>
-											<div
-												style={{
-													fontSize: '12px',
-													color: 'var(--vscode-descriptionForeground)'
-												}}
-											>
-												Detailed test listing will be available in a future version of this view.
-											</div>
-										</div>
-									)}
-								</>
-							)}
+							<PortfolioViewSelector views={portfolioViews} activeView={activeViewType} onViewChange={switchViewType} />
+							<PortfolioViewRenderer
+								activeViewType={activeViewType}
+								viewProps={{
+									iterations,
+									iterationsLoading,
+									iterationsError,
+									selectedIteration,
+									userStories,
+									userStoriesLoading,
+									userStoriesError,
+									selectedUserStory,
+									tasks,
+									tasksLoading,
+									tasksError,
+									userStoryDefects,
+									userStoryDefectsLoading,
+									_userStoryDefectsError: userStoryDefectsError,
+									_defects: defects,
+									_defectsLoading: defectsLoading,
+									_defectsError: defectsError,
+									_selectedDefect: selectedDefect,
+									activeUserStoryTab,
+									currentScreen,
+									onLoadIterations: loadIterations,
+									onIterationSelected: handleIterationSelected,
+									onUserStorySelected: handleUserStorySelected,
+									onLoadUserStories: loadUserStories,
+									onClearUserStories: clearUserStories,
+									onLoadTasks: loadTasks,
+									onLoadUserStoryDefects: loadUserStoryDefects,
+									_onLoadDefects: loadAllDefects,
+									_onDefectSelected: handleDefectSelected,
+									onBackToIterations: handleBackToIterations,
+									onBackToUserStories: handleBackToUserStories,
+									_onBackToDefects: handleBackToDefects,
+									onActiveUserStoryTabChange: setActiveUserStoryTab
+								}}
+							/>
 						</>
 					)}
 				</ContentArea>

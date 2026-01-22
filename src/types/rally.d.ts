@@ -192,6 +192,23 @@ export interface RallyTask {
 	toDo: number;
 	timeSpent: number;
 	workItem: string | null;
+	rank: number;
+	Rank?: number;
+}
+
+export interface RallyDefect {
+	objectId: string;
+	formattedId: string;
+	name: string;
+	description: string | null;
+	state: string;
+	severity: string;
+	priority: string;
+	owner: string;
+	project: string | null;
+	iteration: string | null;
+	blocked: boolean;
+	discussionCount: number;
 }
 
 export interface RallyQuery {
@@ -250,6 +267,7 @@ export interface RallyData {
 	iterations: RallyIteration[];
 	userStories: RallyUserStory[];
 	tasks: RallyTask[];
+	defects: RallyDefect[];
 	defaultProject: RallyProject | null;
 	currentUser: RallyUser | null;
 }

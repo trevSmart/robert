@@ -312,7 +312,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 					>
 						<button
 							type="button"
-							onClick={() => onActiveUserStoryTabChange('tasks')}
+							onClick={() => activeUserStoryTab !== 'tasks' && onActiveUserStoryTabChange('tasks')}
 							style={{
 								display: 'inline-flex',
 								alignItems: 'center',
@@ -322,7 +322,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 								borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
 								backgroundColor: 'transparent',
 								color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-								cursor: 'pointer',
+								cursor: activeUserStoryTab === 'tasks' ? 'default' : 'pointer',
 								fontSize: '12px',
 								fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
 							}}
@@ -332,7 +332,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						</button>
 						<button
 							type="button"
-							onClick={() => onActiveUserStoryTabChange('tests')}
+							onClick={() => activeUserStoryTab !== 'tests' && onActiveUserStoryTabChange('tests')}
 							style={{
 								display: 'inline-flex',
 								alignItems: 'center',
@@ -342,7 +342,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 								borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
 								backgroundColor: 'transparent',
 								color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-								cursor: 'pointer',
+								cursor: activeUserStoryTab === 'tests' ? 'default' : 'pointer',
 								fontSize: '12px',
 								fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
 							}}
@@ -434,7 +434,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 				>
 					<button
 						type="button"
-						onClick={() => onActiveUserStoryTabChange('tasks')}
+						onClick={() => activeUserStoryTab !== 'tasks' && onActiveUserStoryTabChange('tasks')}
 						style={{
 							display: 'inline-flex',
 							alignItems: 'center',
@@ -444,7 +444,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 							borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
 							backgroundColor: 'transparent',
 							color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-							cursor: 'pointer',
+							cursor: activeUserStoryTab === 'tasks' ? 'default' : 'pointer',
 							fontSize: '12px',
 							fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
 						}}
@@ -454,7 +454,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 					</button>
 					<button
 						type="button"
-						onClick={() => onActiveUserStoryTabChange('tests')}
+						onClick={() => activeUserStoryTab !== 'tests' && onActiveUserStoryTabChange('tests')}
 						style={{
 							display: 'inline-flex',
 							alignItems: 'center',
@@ -464,7 +464,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 							borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
 							backgroundColor: 'transparent',
 							color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-							cursor: 'pointer',
+							cursor: activeUserStoryTab === 'tests' ? 'default' : 'pointer',
 							fontSize: '12px',
 							fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
 						}}
@@ -690,6 +690,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [defects, setDefects] = useState<RallyDefect[]>([]);
 	const [defectsLoading, setDefectsLoading] = useState(false);
 	const [defectsError, setDefectsError] = useState<string | null>(null);
+	const [selectedDefect, setSelectedDefect] = useState<RallyDefect | null>(null);
+
+	const [userStoryDefects, setUserStoryDefects] = useState<RallyDefect[]>([]);
+	const [userStoryDefectsLoading, setUserStoryDefectsLoading] = useState(false);
+	const [userStoryDefectsError, setUserStoryDefectsError] = useState<string | null>(null);
 
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
@@ -741,6 +746,28 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			command: 'loadDefects'
 		});
 	}, [sendMessage]);
+
+	const loadUserStoryDefects = useCallback(
+		(userStoryId: string) => {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Loading defects for user story:', userStoryId);
+			setUserStoryDefectsLoading(true);
+			setUserStoryDefectsError(null);
+			sendMessage({
+				command: 'loadUserStoryDefects',
+				userStoryId
+			});
+		},
+		[sendMessage]
+	);
+
+	const handleDefectSelected = useCallback((defect: RallyDefect) => {
+		setSelectedDefect(defect);
+	}, []);
+
+	const handleBackToDefects = useCallback(() => {
+		setSelectedDefect(null);
+	}, []);
 
 	const switchViewType = useCallback(
 		(newViewType: PortfolioViewType) => {
@@ -2293,9 +2320,13 @@ jobs:
 									tasks,
 									tasksLoading,
 									tasksError,
-									defects,
-									defectsLoading,
-									defectsError,
+									userStoryDefects,
+									userStoryDefectsLoading,
+									_userStoryDefectsError: userStoryDefectsError,
+									_defects: defects,
+									_defectsLoading: defectsLoading,
+									_defectsError: defectsError,
+									_selectedDefect: selectedDefect,
 									activeUserStoryTab,
 									currentScreen,
 									onLoadIterations: loadIterations,
@@ -2304,9 +2335,12 @@ jobs:
 									onLoadUserStories: loadUserStories,
 									onClearUserStories: clearUserStories,
 									onLoadTasks: loadTasks,
-									onLoadDefects: loadAllDefects,
+									onLoadUserStoryDefects: loadUserStoryDefects,
+									_onLoadDefects: loadAllDefects,
+									_onDefectSelected: handleDefectSelected,
 									onBackToIterations: handleBackToIterations,
 									onBackToUserStories: handleBackToUserStories,
+									_onBackToDefects: handleBackToDefects,
 									onActiveUserStoryTabChange: setActiveUserStoryTab
 								}}
 							/>

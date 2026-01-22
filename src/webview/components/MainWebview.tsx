@@ -674,7 +674,7 @@ const PortfolioViewSelector: FC<{
 				marginBottom: '20px',
 				display: 'flex',
 				borderBottom: '1px solid var(--vscode-panel-border)',
-				backgroundColor: 'var(--vscode-tab-inactiveBackground)',
+				backgroundColor: 'var(--vscode-editor-background)',
 				borderRadius: '6px 6px 0 0'
 			}}
 		>

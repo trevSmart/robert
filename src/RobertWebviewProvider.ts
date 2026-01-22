@@ -2,10 +2,9 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getCurrentUser, getUsers } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
-import { rallyData } from './extension';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -13,15 +12,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	private _disposables: vscode.Disposable[] = [];
 	private _currentPanel: vscode.WebviewPanel | undefined;
+	private _settingsPanel: vscode.WebviewPanel | undefined;
 	private _currentView?: vscode.WebviewView;
 	private _errorHandler: ErrorHandler;
 	private _settingsManager: SettingsManager;
 
 	// State persistence for webview
 	private _webviewState: Map<string, unknown> = new Map();
-
-	// Track current view state
-	private _isInSettingsView: boolean = false;
 
 	// Debug mode state
 	private _isDebugMode: boolean = false;
@@ -240,83 +237,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		}, 'showMainPanelIfHidden');
 	}
 
-	// Small, lightweight panel to show the logo and short info
-	public async createSettingsPanel(): Promise<vscode.WebviewPanel> {
-		return (
-			(await this._errorHandler.executeWithErrorHandling(async () => {
-				const settingsTitle = this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings';
-				const panel = vscode.window.createWebviewPanel('robert.settings', settingsTitle, vscode.ViewColumn.One, {
-					enableScripts: true,
-					localResourceRoots: [this._extensionUri]
-				});
-
-				this._errorHandler.logViewCreation('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
-
-				// Generate unique ID for this webview instance
-				const webviewId = this._generateWebviewId('settings');
-				const settingsHtml = await this._getHtmlForSettings(panel.webview, 'settings', webviewId);
-				panel.webview.html = settingsHtml;
-
-				// Handle messages from webview
-				this._setWebviewMessageListener(panel.webview, webviewId);
-
-				panel.onDidDispose(
-					() => {
-						this._errorHandler.logViewDestruction('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
-					},
-					undefined,
-					this._disposables
-				);
-
-				return panel;
-			}, 'createSettingsPanel')) ||
-			vscode.window.createWebviewPanel('robert.settings', this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings', vscode.ViewColumn.One, {
-				enableScripts: true,
-				localResourceRoots: [this._extensionUri]
-			})
-		);
-	}
-
-	/**
-	 * Show settings in the current webview instead of opening a new panel
-	 * This method is used when the settings button is clicked in the activity bar view
-	 * If already in settings view, it toggles back to main view
-	 */
-	public async showSettingsInCurrentView(): Promise<void> {
-		await this._errorHandler.executeWithErrorHandling(async () => {
-			// If already in settings view, toggle back to main view
-			if (this._isInSettingsView) {
-				this._errorHandler.logInfo('Toggling back to main view from settings', 'RobertWebviewProvider.showSettingsInCurrentView');
-				await this.showMainViewInCurrentView();
-				return;
-			}
-
-			// Check if we have a current view (activity bar)
-			if (this._currentView) {
-				this._errorHandler.logInfo('Showing settings in activity bar view', 'RobertWebviewProvider.showSettingsInCurrentView');
-				const webviewId = this._generateWebviewId('settings');
-				const settingsHtml = await this._getHtmlForSettings(this._currentView.webview, 'settings', webviewId);
-				this._currentView.webview.html = settingsHtml;
-				this._isInSettingsView = true;
-				return;
-			}
-
-			// Check if we have a current panel (separate window)
-			if (this._currentPanel) {
-				this._errorHandler.logInfo('Showing settings in separate panel', 'RobertWebviewProvider.showSettingsInCurrentView');
-				const webviewId = this._generateWebviewId('settings');
-				const settingsHtml = await this._getHtmlForSettings(this._currentPanel.webview, 'settings', webviewId);
-				this._currentPanel.webview.html = settingsHtml;
-				this._isInSettingsView = true;
-				return;
-			}
-
-			// Fallback: create a new settings panel if no current view exists
-			this._errorHandler.logInfo('No current view found, creating new settings panel', 'RobertWebviewProvider.showSettingsInCurrentView');
-			await this.createSettingsPanel();
-		}, 'showSettingsInCurrentView');
-	}
-
 	/**
 	 * Show main view in the current webview
 	 * This method is used to return to the main view from settings
@@ -328,7 +248,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo('Showing main view in activity bar view', 'RobertWebviewProvider.showMainViewInCurrentView');
 				const webviewId = this._generateWebviewId('main');
 				this._currentView.webview.html = await this._getHtmlForWebview(this._currentView.webview, 'main', webviewId);
-				this._isInSettingsView = false;
 				return;
 			}
 
@@ -337,7 +256,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo('Showing main view in separate panel', 'RobertWebviewProvider.showMainViewInCurrentView');
 				const webviewId = this._generateWebviewId('main');
 				this._currentPanel.webview.html = await this._getHtmlForWebview(this._currentPanel.webview, 'main', webviewId);
-				this._isInSettingsView = false;
 				return;
 			}
 
@@ -386,6 +304,48 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
+	public async createSettingsPanel(): Promise<vscode.WebviewPanel> {
+		return (
+			(await this._errorHandler.executeWithErrorHandling(async () => {
+				// If settings panel already exists and is visible, reveal it
+				if (this._settingsPanel) {
+					this._settingsPanel.reveal(vscode.ViewColumn.One);
+					return this._settingsPanel;
+				}
+
+				const settingsTitle = this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings';
+				const panel = vscode.window.createWebviewPanel('robert.settings', settingsTitle, vscode.ViewColumn.One, {
+					enableScripts: true,
+					localResourceRoots: [this._extensionUri]
+				});
+
+				this._settingsPanel = panel;
+				this._errorHandler.logViewCreation('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
+
+				const settingsHtml = await this._getHtmlForSettings(panel.webview);
+				panel.webview.html = settingsHtml;
+
+				// Handle messages from settings webview
+				this._setupSettingsWebviewMessageListener(panel);
+
+				panel.onDidDispose(
+					() => {
+						this._errorHandler.logViewDestruction('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
+						this._settingsPanel = undefined;
+					},
+					undefined,
+					this._disposables
+				);
+
+				return panel;
+			}, 'createSettingsPanel')) ||
+			vscode.window.createWebviewPanel('robert.settings', this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings', vscode.ViewColumn.One, {
+				enableScripts: true,
+				localResourceRoots: [this._extensionUri]
+			})
+		);
+	}
+
 	private async _getHtmlForLogo(webview: vscode.Webview): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
@@ -400,20 +360,45 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
-	private async _getHtmlForSettings(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
+	private async _getHtmlForSettings(webview: vscode.Webview): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
-				this._errorHandler.logInfo(`Settings webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForSettings');
+				this._errorHandler.logInfo('Settings webview content rendered from build HTML', 'RobertWebviewProvider._getHtmlForSettings');
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'settings.html', {
-					__WEBVIEW_ID__: webviewId || 'unknown',
-					__CONTEXT__: context,
-					__TIMESTAMP__: new Date().toISOString(),
-					__EXTENSION_URI__: this._extensionUri.toString(),
 					__INTER_FONT_URI__: interFontUri.toString()
 				});
 			}, 'getHtmlForSettings')) || '<html><body><p>Error loading settings</p></body></html>'
 		);
+	}
+
+	private _setupSettingsWebviewMessageListener(panel: vscode.WebviewPanel): void {
+		const messageListener = panel.webview.onDidReceiveMessage(
+			async (message: any) => {
+				await this._errorHandler.executeWithErrorHandling(async () => {
+					this._errorHandler.logInfo(`Received settings message: ${message.command}`, 'SettingsWebviewMessageListener');
+
+					switch (message.command) {
+						case 'saveSettings':
+							// Handle settings save logic here
+							this._errorHandler.logInfo('Settings save requested', 'SettingsWebviewMessageListener');
+							// TODO: Implement settings saving logic
+							break;
+						case 'loadSettings':
+							// Handle settings load logic here
+							this._errorHandler.logInfo('Settings load requested', 'SettingsWebviewMessageListener');
+							// TODO: Implement settings loading logic
+							break;
+						default:
+							this._errorHandler.logWarning(`Unknown settings message command: ${message.command}`, 'SettingsWebviewMessageListener');
+					}
+				}, 'settingsWebviewMessageListener');
+			},
+			undefined,
+			this._disposables
+		);
+
+		this._disposables.push(messageListener);
 	}
 
 	private async _getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
@@ -534,61 +519,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								}
 							}
 							break;
-						case 'getSettings':
-							if (message.webviewId) {
-								try {
-									const settings = this._settingsManager.getSettings();
-									webview.postMessage({
-										command: 'settingsLoaded',
-										settings: settings
-									});
-									this._errorHandler.logInfo(`Settings loaded for webview: ${message.webviewId}`, 'WebviewMessageListener');
-								} catch (error) {
-									this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getSettings');
-									webview.postMessage({
-										command: 'settingsError',
-										errors: ['Failed to load settings']
-									});
-								}
-							}
-							break;
-						case 'saveSettings':
-							if (message.webviewId && message.settings) {
-								try {
-									await this._settingsManager.saveSettings(message.settings);
-									webview.postMessage({
-										command: 'settingsSaved',
-										success: true
-									});
-									this._errorHandler.logInfo(`Settings saved for webview: ${message.webviewId}`, 'WebviewMessageListener');
-								} catch (error) {
-									this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'saveSettings');
-									webview.postMessage({
-										command: 'settingsError',
-										errors: ['Failed to save settings']
-									});
-								}
-							}
-							break;
-						case 'resetSettings':
-							if (message.webviewId) {
-								try {
-									await this._settingsManager.resetSettings();
-									const defaultSettings = this._settingsManager.getSettings();
-									webview.postMessage({
-										command: 'settingsLoaded',
-										settings: defaultSettings
-									});
-									this._errorHandler.logInfo(`Settings reset for webview: ${message.webviewId}`, 'WebviewMessageListener');
-								} catch (error) {
-									this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'resetSettings');
-									webview.postMessage({
-										command: 'settingsError',
-										errors: ['Failed to reset settings']
-									});
-								}
-							}
-							break;
 						case 'openTutorialInEditor':
 							if (message.tutorial) {
 								try {
@@ -646,7 +576,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading iterations from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
-								console.log('[Robert] 🔄 Webview received loadIterations command');
+								this._errorHandler.logDebug('Webview received loadIterations command', 'RobertWebviewProvider');
 
 								// Load iterations and current user in parallel
 								const [iterationsResult, userResult] = await Promise.all([getIterations(), getCurrentUser()]);
@@ -692,7 +622,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading user stories from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
-								console.log('[Robert] 🔄 Webview received loadUserStories command', message.iteration ? `for iteration: ${message.iteration}` : 'for all');
+								this._errorHandler.logDebug(`Webview received loadUserStories command ${message.iteration ? `for iteration: ${message.iteration}` : 'for all'}`, 'RobertWebviewProvider');
 
 								const query = message.iteration ? { Iteration: message.iteration } : {};
 								const userStoriesResult = await getUserStories(query);
@@ -729,26 +659,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								}
 							}
 							break;
-						case 'goBackToMain':
-							this._errorHandler.logInfo(`Go back to main view requested from ${message.context}`, 'WebviewMessageListener');
-							// Show main view in the current webview instead of closing it
-							if (webviewId) {
-								this._errorHandler.logInfo(`Showing main view in current webview: ${webviewId}`, 'WebviewMessageListener');
-								webview.html = await this._getHtmlForWebview(webview, 'main', webviewId);
-								this._isInSettingsView = false;
-							} else {
-								// Fallback: close current panel and show main panel
-								if (this._currentPanel) {
-									this._currentPanel.dispose();
-								}
-								this.showMainPanelIfHidden();
-							}
-							break;
 						case 'loadTasks':
 							try {
 								this._errorHandler.logInfo('Loading tasks from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
-								console.log('[Robert] 📋 Webview received loadTasks command for user story:', message.userStoryId);
+								this._errorHandler.logDebug(`Webview received loadTasks command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
 
 								const tasksResult = await getTasks(message.userStoryId);
 
@@ -786,6 +701,103 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 										userStoryId: message.userStoryId
 									});
 								}
+							}
+							break;
+						case 'loadDefects':
+							try {
+								this._errorHandler.logInfo('Loading defects from Rally API', 'WebviewMessageListener');
+								// eslint-disable-next-line no-console
+								this._errorHandler.logDebug('Webview received loadDefects command', 'RobertWebviewProvider');
+
+								const defectsResult = await getDefects();
+
+								if (defectsResult?.defects) {
+									webview.postMessage({
+										command: 'defectsLoaded',
+										defects: defectsResult.defects
+									});
+									this._errorHandler.logInfo(`Defects loaded successfully: ${defectsResult.count} defects`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'defectsError',
+										error: 'No defects found'
+									});
+									this._errorHandler.logInfo('No defects found', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadDefects');
+
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'defectsError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true
+									});
+								} else {
+									webview.postMessage({
+										command: 'defectsError',
+										error: 'Failed to load defects'
+									});
+								}
+							}
+							break;
+						case 'loadUserStoryDefects':
+							try {
+								this._errorHandler.logInfo('Loading defects for user story from Rally API', 'WebviewMessageListener');
+								// eslint-disable-next-line no-console
+								this._errorHandler.logDebug(`Webview received loadUserStoryDefects command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
+
+								const defectsResult = await getDefects({
+									WorkProduct: `/hierarchicalrequirement/${message.userStoryId}`
+								});
+
+								if (defectsResult?.defects) {
+									webview.postMessage({
+										command: 'userStoryDefectsLoaded',
+										defects: defectsResult.defects,
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo(`Defects loaded successfully for user story ${message.userStoryId}: ${defectsResult.count} defects`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'userStoryDefectsError',
+										error: 'No defects found',
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo('No defects found for this user story', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStoryDefects');
+
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'userStoryDefectsError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true,
+										userStoryId: message.userStoryId
+									});
+								} else {
+									webview.postMessage({
+										command: 'userStoryDefectsError',
+										error: 'Failed to load defects',
+										userStoryId: message.userStoryId
+									});
+								}
+							}
+							break;
+						case 'openSettings':
+							try {
+								this._errorHandler.logInfo('Opening settings panel', 'WebviewMessageListener');
+								await this.createSettingsPanel();
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openSettings');
+							}
+							break;
+						case 'logDebug':
+							if (message.message && message.context) {
+								this._errorHandler.logDebug(message.message as string, message.context as string);
 							}
 							break;
 						default:
@@ -826,7 +838,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 */
 	private async _openTutorialInEditor(tutorial: any): Promise<void> {
 		const tutorialContent = this._generateTutorialMarkdown(tutorial);
-		const fileName = `${tutorial.title.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
 
 		// Create a new untitled document with the tutorial content
 		const document = await vscode.workspace.openTextDocument({

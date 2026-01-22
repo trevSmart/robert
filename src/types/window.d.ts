@@ -17,6 +17,9 @@ declare global {
 		extensionUri?: string;
 		rebusLogoUri?: string;
 	}
+
+	// Web API globals
+	var ResizeObserver: typeof ResizeObserver;
 }
 
 export {};

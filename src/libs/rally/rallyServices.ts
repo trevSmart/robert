@@ -1,8 +1,28 @@
 import { rallyData } from '../../extension.js';
-import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyUser, RallyUserStory, RallyIteration } from '../../types/rally';
+import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
-import { SettingsManager } from '../../SettingsManager';
+import { CacheManager } from '../cache/CacheManager';
+
+// Error handler singleton instance
+const errorHandler = ErrorHandler.getInstance();
+
+// Process data in chunks to avoid blocking the event loop
+// With 3500+ user stories, we need small chunks (25) to yield frequently
+const CHUNK_SIZE = 25; // Process 25 items at a time, yield after each chunk
+
+/**
+ * Yields to the event loop to avoid blocking
+ * Allows UI to remain responsive during heavy processing
+ */
+function yieldToEventLoop(): Promise<void> {
+	return new Promise<void>(resolve => setImmediate(() => resolve()));
+}
+
+// Cache managers with 5 minute TTL
+const userStoriesCacheManager = new CacheManager<RallyUserStory[]>(5 * 60 * 1000);
+const projectsCacheManager = new CacheManager<RallyProject[]>(5 * 60 * 1000);
+const iterationsCacheManager = new CacheManager<RallyIteration[]>(5 * 60 * 1000);
 
 function escapeHtml(input: string): string {
 	return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
@@ -15,9 +35,22 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
-	const rallyApi = getRallyApi();
+	// Generate cache key from query
+	const cacheKey = `projects:${JSON.stringify(query)}`;
 
-	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
+	// Check TTL cache first
+	const cachedProjects = projectsCacheManager.get(cacheKey);
+	if (cachedProjects) {
+		// eslint-disable-next-line no-console
+		errorHandler.logDebug('Projects retrieved from TTL cache', 'rallyServices.getProjects');
+		return {
+			projects: cachedProjects,
+			source: 'ttl-cache',
+			count: cachedProjects.length
+		};
+	}
+
+	// Fall back to in-memory cache for filtered results
 	if (Object.keys(query).length && rallyData.projects.length) {
 		const filteredProjects = rallyData.projects.filter((project: RallyProject) =>
 			Object.keys(query).every(key => {
@@ -40,6 +73,8 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 
 	//Si no hi ha filtres (demandem tots els projectes) o no tenim dades suficients,
 	//hem d'anar a l'API per obtenir la llista completa
+
+	const rallyApi = getRallyApi();
 
 	const queryOptions: RallyQueryOptions = {
 		type: 'project',
@@ -67,7 +102,10 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results.length) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
+		// Cache empty results too
+		projectsCacheManager.set(cacheKey, []);
 		return {
 			projects: [],
 			source: 'api',
@@ -75,18 +113,8 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 		};
 	}
 
-	//Formatem la resposta per ser més llegible
-	const projects: RallyProject[] = resultData.Results.map((project: RallyApiObject) => ({
-		objectId: project.ObjectID ?? project.objectId,
-		name: project.Name ?? project.name,
-		description: typeof (project.Description ?? project.description) === 'string' ? escapeHtml(String(project.Description ?? project.description)) : (project.Description ?? project.description),
-		state: project.State ?? project.state,
-		creationDate: project.CreationDate ?? project.creationDate,
-		lastUpdateDate: project.LastUpdateDate ?? project.lastUpdateDate,
-		owner: project.Owner ? (project.Owner._refObjectName ?? project.Owner.refObjectName) : project.owner ? (project.owner._refObjectName ?? project.owner.refObjectName) : 'Sense propietari',
-		parent: project.Parent ? (project.Parent._refObjectName ?? project.Parent.refObjectName) : project.parent ? (project.parent._refObjectName ?? project.parent.refObjectName) : null,
-		childrenCount: project.Children?.Count ?? project.children?.count ?? 0
-	}));
+	//Formatem la resposta per ser més llegible (de forma assincròna per no bloquejar)
+	const projects: RallyProject[] = await formatProjectsAsync(results as RallyApiObject[]);
 
 	//Afegim els nous projectes a rallyData sense duplicats
 	for (const newProject of projects) {
@@ -101,6 +129,9 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 		}
 	}
 
+	// Store in TTL cache
+	projectsCacheManager.set(cacheKey, projects);
+
 	return {
 		projects: projects,
 		source: 'api',
@@ -109,8 +140,6 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 }
 
 export async function getCurrentUser() {
-	const errorHandler = ErrorHandler.getInstance();
-
 	// If we already have the current user from prefetch, return it
 	if (rallyData.currentUser) {
 		errorHandler.logInfo(`Returning cached current user: ${rallyData.currentUser.displayName || rallyData.currentUser.userName}`, 'getCurrentUser');
@@ -144,20 +173,21 @@ export async function getCurrentUser() {
 
 		const resultData = userResult as RallyApiResult;
 
-		if (resultData.Results && resultData.Results.length > 0) {
-			const user = resultData.Results[0];
+		const results = resultData.Results || resultData.QueryResult?.Results || [];
+		if (results.length > 0) {
+			const user = results[0];
 			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
 
 			const userData = {
-				objectId: user.ObjectID ?? user.objectId,
+				objectId: String(user.ObjectID ?? user.objectId),
 				userName: user.UserName ?? user.userName,
 				displayName: user.DisplayName ?? user.displayName,
 				emailAddress: user.EmailAddress ?? user.emailAddress,
 				firstName: user.FirstName ?? user.firstName,
 				lastName: user.LastName ?? user.lastName,
-				disabled: user.Disabled ?? user.disabled,
+				disabled: Boolean(user.Disabled ?? user.disabled),
 				_ref: user._ref
-			};
+			} as User;
 
 			// Cache the user data
 			rallyData.currentUser = userData;
@@ -185,7 +215,7 @@ export async function getCurrentUser() {
 	}
 }
 
-export async function getUsers(query: RallyQuery = {}, limit: number | null = null) {
+export async function getUsers(query: RallyQueryParams = {}, limit: number | null = null) {
 	const rallyApi = getRallyApi();
 
 	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
@@ -239,7 +269,8 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results || resultData.Results.length === 0) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
 		return {
 			users: [],
 			source: 'api',
@@ -247,16 +278,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 		};
 	}
 
-	const users: RallyUser[] = resultData.Results.map((user: RallyApiObject) => ({
-		objectId: user?.ObjectID ?? user?.objectId,
-		userName: user?.UserName ?? user?.userName,
-		displayName: user?.DisplayName ?? user?.displayName,
-		emailAddress: user?.EmailAddress ?? user?.emailAddress,
-		firstName: user?.FirstName ?? user?.firstName,
-		lastName: user?.LastName ?? user?.lastName,
-		disabled: user?.Disabled ?? user?.disabled,
-		_ref: user?._ref
-	}));
+	const users: RallyUser[] = await formatUsersAsync(results as RallyApiObject[]);
 
 	//Afegim els nous usuaris a rallyData sense duplicats
 	if (!rallyData.users) {
@@ -283,7 +305,7 @@ export async function getUsers(query: RallyQuery = {}, limit: number | null = nu
 }
 
 // Helper function to reduce complexity
-function buildUserStoryQuery(query: RallyQuery) {
+function buildUserStoryQuery(query: RallyQueryParams) {
 	const rallyQueries = Object.keys(query).map(key => {
 		//Per al camp Name, utilitzem 'contains' per fer cerca parcial
 		if (key === 'Name') {
@@ -328,29 +350,204 @@ function sanitizeDescription(description: unknown): string | null {
 	return sanitized;
 }
 
-// Helper function to format user stories
-function formatUserStories(result: RallyApiResult): RallyUserStory[] {
+/**
+ * Formateia Projects de forma assincròna en chunks
+ * Per a molts items, usa yield per mantenir UI responsiva
+ */
+async function formatProjectsAsync(results: any[]): Promise<RallyProject[]> {
+	const formatted: RallyProject[] = [];
+
+	for (let i = 0; i < results.length; i++) {
+		const project: any = results[i];
+
+		formatted.push({
+			objectId: project.ObjectID ?? project.objectId,
+			name: project.Name ?? project.name,
+			description: typeof (project.Description ?? project.description) === 'string' ? escapeHtml(String(project.Description ?? project.description)) : (project.Description ?? project.description),
+			state: project.State ?? project.state,
+			creationDate: project.CreationDate ?? project.creationDate,
+			lastUpdateDate: project.LastUpdateDate ?? project.lastUpdateDate,
+			owner: project.Owner ? (project.Owner._refObjectName ?? project.Owner.refObjectName) : project.owner ? (project.owner._refObjectName ?? project.owner.refObjectName) : 'Sense propietari',
+			parent: project.Parent ? (project.Parent._refObjectName ?? project.Parent.refObjectName) : project.parent ? (project.parent._refObjectName ?? project.parent.refObjectName) : null,
+			childrenCount: project.Children?.Count ?? project.children?.count ?? 0
+		});
+
+		// Yield to event loop every CHUNK_SIZE items
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted;
+}
+
+/**
+ * Formateia Users de forma assincròna en chunks
+ * Per a molts items, usa yield per mantenir UI responsiva
+ */
+async function formatUsersAsync(results: any[]): Promise<RallyUser[]> {
+	const formatted: RallyUser[] = [];
+
+	for (let i = 0; i < results.length; i++) {
+		const user: any = results[i];
+
+		formatted.push({
+			objectId: user.ObjectID ?? user.objectId,
+			userName: user.UserName ?? user.userName,
+			displayName: user.DisplayName ?? user.displayName,
+			emailAddress: user.EmailAddress ?? user.emailAddress,
+			firstName: user.FirstName ?? user.firstName,
+			lastName: user.LastName ?? user.lastName,
+			disabled: user.Disabled ?? user.disabled,
+			_ref: user._ref
+		});
+
+		// Yield to event loop every CHUNK_SIZE items
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted;
+}
+
+/**
+ * Formateia Iteracions de forma assincròna en chunks
+ * Per a molts items, usa yield per mantenir UI responsiva
+ */
+async function formatIterationsAsync(results: any[]): Promise<RallyIteration[]> {
+	const formatted: RallyIteration[] = [];
+
+	for (let i = 0; i < results.length; i++) {
+		const iteration: any = results[i];
+
+		formatted.push({
+			objectId: iteration.ObjectID ?? iteration.objectId,
+			name: iteration.Name ?? iteration.name,
+			startDate: iteration.StartDate ?? iteration.startDate,
+			endDate: iteration.EndDate ?? iteration.endDate,
+			state: iteration.State ?? iteration.state,
+			project: iteration.Project ? (iteration.Project._refObjectName ?? iteration.Project.refObjectName) : iteration.project ? (iteration.project._refObjectName ?? iteration.project.refObjectName) : null,
+			_ref: iteration._ref
+		});
+
+		// Yield to event loop every CHUNK_SIZE items
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted;
+}
+
+/**
+ * Formateia Tasks de forma assincròna en chunks
+ * Per a molts items, usa yield per mantenir UI responsiva
+ */
+async function formatTasksAsync(results: any[]): Promise<any[]> {
+	const formatted: any[] = [];
+
+	for (let i = 0; i < results.length; i++) {
+		const task: any = results[i];
+
+		formatted.push({
+			objectId: task.ObjectID ?? task.objectId,
+			formattedId: task.FormattedID ?? task.formattedId,
+			name: task.Name ?? task.name,
+			description: sanitizeDescription(task.Description ?? task.description),
+			state: task.State ?? task.state,
+			owner: task.Owner ? (task.Owner._refObjectName ?? task.Owner.refObjectName) : task.owner ? (task.owner._refObjectName ?? task.owner.refObjectName) : 'Sense propietari',
+			estimate: task.Estimate ?? task.estimate ?? 0,
+			toDo: task.ToDo ?? task.toDo ?? 0,
+			timeSpent: task.TimeSpent ?? task.timeSpent ?? 0,
+			workItem: task.WorkProduct ? (task.WorkProduct._refObjectName ?? task.WorkProduct.refObjectName) : task.workProduct ? (task.workProduct._refObjectName ?? task.workProduct.refObjectName) : null,
+			rank: task.Rank ?? task.rank ?? 0
+		});
+
+		// Yield to event loop every CHUNK_SIZE items
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted;
+}
+
+/**
+ * Formateia Defects de forma assincròna en chunks
+ * Per a molts items, usa yield per mantenir UI responsiva
+ */
+async function formatDefectsAsync(results: any[]): Promise<RallyDefect[]> {
+	const formatted: RallyDefect[] = [];
+
+	for (let i = 0; i < results.length; i++) {
+		const defect: any = results[i];
+
+		formatted.push({
+			objectId: defect.ObjectID ?? defect.objectId,
+			formattedId: defect.FormattedID ?? defect.formattedId,
+			name: defect.Name ?? defect.name,
+			description: sanitizeDescription(defect.Description ?? defect.description),
+			state: defect.State ?? defect.state,
+			severity: defect.Severity ?? defect.severity ?? 'Unset',
+			priority: defect.Priority ?? defect.priority ?? 'Unset',
+			owner: defect.Owner ? (defect.Owner._refObjectName ?? defect.Owner.refObjectName) : defect.owner ? (defect.owner._refObjectName ?? defect.owner.refObjectName) : 'Sense assignat',
+			project: defect.Project ? (defect.Project._refObjectName ?? defect.Project.refObjectName) : defect.project ? (defect.project._refObjectName ?? defect.project.refObjectName) : null,
+			iteration: defect.Iteration ? (defect.Iteration._refObjectName ?? defect.Iteration.refObjectName) : defect.iteration ? (defect.iteration._refObjectName ?? defect.iteration.refObjectName) : null,
+			blocked: defect.Blocked ?? defect.blocked ?? false,
+			discussionCount: defect.Discussion?.Count ?? defect.discussion?.count ?? 0
+		});
+
+		// Yield to event loop every CHUNK_SIZE items
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted;
+}
+
+/**
+ * Formateia User Stories de forma assincròna en chunks
+ * Per a 3500+ items, usa yield per mantenir UI responsiva
+ */
+async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUserStory[]> {
+	const formatted: RallyUserStory[] = [];
+
 	// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
-	return result.Results.map((userStory: any) => ({
-		objectId: userStory.ObjectID ?? userStory.objectId,
-		formattedId: userStory.FormattedID ?? userStory.formattedId,
-		name: userStory.Name ?? userStory.name,
-		description: sanitizeDescription(userStory.Description ?? userStory.description),
-		state: userStory.State ?? userStory.state,
-		planEstimate: userStory.PlanEstimate ?? userStory.planEstimate,
-		toDo: userStory.ToDo ?? userStory.toDo,
-		assignee: userStory.c_Assignee ? (userStory.c_Assignee._refObjectName ?? userStory.c_Assignee.refObjectName) : userStory.c_assignee ? (userStory.c_assignee._refObjectName ?? userStory.c_assignee.refObjectName) : 'Sense assignat',
-		project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
-		iteration: userStory.Iteration ? (userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName) : userStory.iteration ? (userStory.iteration._refObjectName ?? userStory.iteration.refObjectName) : null,
-		blocked: userStory.Blocked ?? userStory.blocked,
-		taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
-		taskStatus: userStory.TaskStatus ?? userStory.taskStatus,
-		tasksCount: userStory.Tasks?.Count ?? userStory.tasks?.count ?? 0,
-		testCasesCount: userStory.TestCases?.Count ?? userStory.testCases?.count ?? 0,
-		defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
-		discussionCount: userStory.Discussion?.Count ?? userStory.discussion?.count ?? 0,
-		appgar: userStory.c_Appgar ?? userStory.appgar
-	}));
+	const results = result.Results || result.QueryResult?.Results || [];
+	for (let i = 0; i < results.length; i++) {
+		const userStory: any = results[i];
+
+		formatted.push({
+			objectId: userStory.ObjectID ?? userStory.objectId,
+			formattedId: userStory.FormattedID ?? userStory.formattedId,
+			name: userStory.Name ?? userStory.name,
+			owner: userStory.Owner ? (userStory.Owner._refObjectName ?? userStory.Owner.refObjectName) : userStory.owner ? (userStory.owner._refObjectName ?? userStory.owner.refObjectName) : 'Sense propietari',
+			description: sanitizeDescription(userStory.Description ?? userStory.description),
+			state: userStory.State ?? userStory.state,
+			planEstimate: userStory.PlanEstimate ?? userStory.planEstimate,
+			toDo: userStory.ToDo ?? userStory.toDo,
+			assignee: userStory.c_Assignee ? (userStory.c_Assignee._refObjectName ?? userStory.c_Assignee.refObjectName) : userStory.c_assignee ? (userStory.c_assignee._refObjectName ?? userStory.c_assignee.refObjectName) : 'Sense assignat',
+			project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
+			iteration: userStory.Iteration ? (userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName) : userStory.iteration ? (userStory.iteration._refObjectName ?? userStory.iteration.refObjectName) : null,
+			blocked: userStory.Blocked ?? userStory.blocked,
+			taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
+			taskStatus: userStory.TaskStatus ?? userStory.taskStatus,
+			tasksCount: userStory.Tasks?.Count ?? userStory.tasks?.count ?? 0,
+			testCasesCount: userStory.TestCases?.Count ?? userStory.testCases?.count ?? 0,
+			defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
+			discussionCount: userStory.Discussion?.Count ?? userStory.discussion?.count ?? 0,
+			appgar: userStory.c_Appgar ?? userStory.appgar
+		});
+
+		// Yield to event loop every CHUNK_SIZE items to keep UI responsive
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted;
 }
 
 // Helper function to check cache for filtered results
@@ -396,10 +593,10 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 }
 
 // Helper function to build query options
-function buildUserStoryQueryOptions(query: RallyQuery, limit: number | null) {
+function buildUserStoryQueryOptions(query: RallyQueryParams, limit: number | null) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar']
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState']
 	};
 
 	if (limit) {
@@ -417,7 +614,7 @@ function buildUserStoryQueryOptions(query: RallyQuery, limit: number | null) {
 }
 
 // Helper function to handle default project logic
-function handleDefaultProject(query: RallyQuery, queryOptions: RallyQueryOptions) {
+function handleDefaultProject(query: RallyQueryParams, queryOptions: RallyQueryOptions) {
 	if (!query?.Project) {
 		if (rallyData.defaultProject?.objectId) {
 			const defaultProjectQuery = queryUtils.where('Project', '=', `/project/${rallyData.defaultProject.objectId}`);
@@ -432,13 +629,26 @@ function handleDefaultProject(query: RallyQuery, queryOptions: RallyQueryOptions
 	}
 }
 
-export async function getIterations(query: RallyQuery = {}, limit: number | null = null) {
+export async function getIterations(query: RallyQueryParams = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
-	console.log('[Robert] 📅 getIterations called with query:', query, 'limit:', limit);
+	errorHandler.logDebug(`getIterations called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getIterations');
 
-	const rallyApi = getRallyApi();
+	// Generate cache key from query
+	const cacheKey = `iterations:${JSON.stringify(query)}`;
 
-	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
+	// Check TTL cache first
+	const cachedIterations = iterationsCacheManager.get(cacheKey);
+	if (cachedIterations) {
+		// eslint-disable-next-line no-console
+		errorHandler.logDebug('Iterations retrieved from TTL cache', 'rallyServices.getIterations');
+		return {
+			iterations: cachedIterations,
+			source: 'ttl-cache',
+			count: cachedIterations.length
+		};
+	}
+
+	// Fall back to in-memory cache for filtered results
 	if (Object.keys(query).length && rallyData.iterations && rallyData.iterations.length) {
 		const filteredIterations = rallyData.iterations.filter((iteration: any) =>
 			Object.keys(query).every(key => {
@@ -457,6 +667,8 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 			};
 		}
 	}
+
+	const rallyApi = getRallyApi();
 
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
@@ -493,7 +705,10 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results || resultData.Results.length === 0) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
+		// Cache empty results too
+		iterationsCacheManager.set(cacheKey, []);
 		return {
 			iterations: [],
 			source: 'api',
@@ -502,28 +717,20 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	}
 
 	// DEBUG: Show all available fields for the first iteration
-	if (resultData.Results && resultData.Results.length > 0) {
-		const firstIteration = resultData.Results[0];
-		console.log('[Robert] 🔍 All available fields for iteration:', JSON.stringify(firstIteration, null, 2));
+	if (results.length > 0) {
+		const firstIteration = results[0];
+		errorHandler.logDebug(`All available fields for iteration: ${JSON.stringify(firstIteration, null, 2)}`, 'rallyServices.getIterations');
 
 		// Check for date-related fields
 		const dateFields = Object.keys(firstIteration).filter(key => key.toLowerCase().includes('date') || key.toLowerCase().includes('time') || key.toLowerCase().includes('created') || key.toLowerCase().includes('updated'));
-		console.log('[Robert] 📅 Date-related fields found:', dateFields);
+		errorHandler.logDebug(`Date-related fields found: ${JSON.stringify(dateFields)}`, 'rallyServices.getIterations');
 		dateFields.forEach(field => {
-			console.log(`[Robert]   ${field}: ${(firstIteration as any)[field]}`);
+			errorHandler.logDebug(`  ${field}: ${(firstIteration as any)[field]}`, 'rallyServices.getIterations');
 		});
 	}
 
-	//Formatem la resposta
-	const iterations = resultData.Results.map((iteration: any) => ({
-		objectId: iteration.ObjectID ?? iteration.objectId,
-		name: iteration.Name ?? iteration.name,
-		startDate: iteration.StartDate ?? iteration.startDate,
-		endDate: iteration.EndDate ?? iteration.endDate,
-		state: iteration.State ?? iteration.state,
-		project: iteration.Project ? (iteration.Project._refObjectName ?? iteration.Project.refObjectName) : iteration.project ? (iteration.project._refObjectName ?? iteration.project.refObjectName) : null,
-		_ref: iteration._ref
-	}));
+	//Formatem la resposta (de forma assincròna per no bloquejar)
+	const iterations = await formatIterationsAsync(results);
 
 	//Afegim les noves iterations a rallyData sense duplicats
 	if (!rallyData.iterations) {
@@ -540,6 +747,9 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 		}
 	}
 
+	// Store in TTL cache
+	iterationsCacheManager.set(cacheKey, iterations);
+
 	return {
 		iterations: iterations,
 		source: 'api',
@@ -547,14 +757,27 @@ export async function getIterations(query: RallyQuery = {}, limit: number | null
 	};
 }
 
-export async function getUserStories(query: RallyQuery = {}, limit: number | null = null) {
+export async function getUserStories(query: RallyQueryParams = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
-	console.log('[Robert] 📋 getUserStories called with query:', query, 'limit:', limit);
+	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getUserStories');
 
-	const rallyApi = getRallyApi();
+	// Generate cache key from query
+	const cacheKey = `userStories:${JSON.stringify(query)}`;
 
-	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
-	const cacheResult = checkCacheForFilteredResults(query, rallyData.userStories);
+	// Check TTL cache first
+	const cachedUserStories = userStoriesCacheManager.get(cacheKey);
+	if (cachedUserStories) {
+		// eslint-disable-next-line no-console
+		errorHandler.logDebug('User stories retrieved from TTL cache', 'rallyServices.getUserStories');
+		return {
+			userStories: cachedUserStories,
+			source: 'ttl-cache',
+			count: cachedUserStories.length
+		};
+	}
+
+	// Fall back to in-memory cache for filtered results
+	const cacheResult = checkCacheForFilteredResults(query as RallyQuery, rallyData.userStories);
 	if (cacheResult) {
 		return {
 			userStories: cacheResult.results,
@@ -566,13 +789,17 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	//Si no hi ha filtres (demandem totes les user stories) o no tenim dades suficients,
 	//hem d'anar a l'API per obtenir la llista completa
 
+	const rallyApi = getRallyApi();
 	const queryOptions = buildUserStoryQueryOptions(query, limit);
 	handleDefaultProject(query, queryOptions);
 
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results.length) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
+		// Cache empty results too
+		userStoriesCacheManager.set(cacheKey, []);
 		return {
 			userStories: [],
 			source: 'api',
@@ -580,11 +807,14 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 		};
 	}
 
-	//Formatem la resposta per ser més llegible
-	const userStories = formatUserStories(resultData);
+	//Formatem la resposta per ser més llegible (de forma asincròna amb chunks per no bloquejar)
+	const userStories = await formatUserStoriesAsync({ ...resultData, Results: results });
 
 	//Afegim les noves user stories a rallyData sense duplicats
 	addToCache(userStories, rallyData.userStories, 'objectId');
+
+	// Store in TTL cache
+	userStoriesCacheManager.set(cacheKey, userStories);
 
 	return {
 		userStories: userStories,
@@ -593,9 +823,9 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	};
 }
 
-export async function getTasks(userStoryId: string, query: RallyQuery = {}, limit: number | null = null) {
+export async function getTasks(userStoryId: string, query: RallyQueryParams = {}, limit: number | null = null) {
 	// eslint-disable-next-line no-console
-	console.log('[Robert] 📋 getTasks called for user story:', userStoryId, 'with query:', query, 'limit:', limit);
+	errorHandler.logDebug(`getTasks called for user story: ${userStoryId}, with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getTasks');
 
 	const rallyApi = getRallyApi();
 
@@ -628,7 +858,8 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'task',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID']
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID', 'Rank'],
+		order: 'Rank'
 	};
 
 	if (limit) {
@@ -655,7 +886,8 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 
-	if (!resultData.Results.length) {
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
 		return {
 			tasks: [],
 			source: 'api',
@@ -663,19 +895,8 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 		};
 	}
 
-	//Formatem la resposta per ser més llegible
-	const tasks = resultData.Results.map((task: any) => ({
-		objectId: task.ObjectID ?? task.objectId,
-		formattedId: task.FormattedID ?? task.formattedId,
-		name: task.Name ?? task.name,
-		description: sanitizeDescription(task.Description ?? task.description),
-		state: task.State ?? task.state,
-		owner: task.Owner ? (task.Owner._refObjectName ?? task.Owner.refObjectName) : task.owner ? (task.owner._refObjectName ?? task.owner.refObjectName) : 'Sense propietari',
-		estimate: task.Estimate ?? task.estimate,
-		toDo: task.ToDo ?? task.toDo,
-		timeSpent: task.TimeSpent ?? task.timeSpent,
-		workItem: task.WorkProduct ? (task.WorkProduct._refObjectName ?? task.WorkProduct.refObjectName) : task.workProduct ? (task.workProduct._refObjectName ?? task.workProduct.refObjectName) : null
-	}));
+	//Formatem la resposta per ser més llegible (de forma assincròna per no bloquejar)
+	const tasks = await formatTasksAsync(results);
 
 	//Afegim les noves tasks a rallyData sense duplicats
 	if (!rallyData.tasks) {
@@ -698,5 +919,102 @@ export async function getTasks(userStoryId: string, query: RallyQuery = {}, limi
 		tasks: tasks,
 		source: 'api',
 		count: tasks.length
+	};
+}
+
+export async function getDefects(query: RallyQueryParams = {}, limit: number | null = null) {
+	// eslint-disable-next-line no-console
+	errorHandler.logDebug(`getDefects called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getDefects');
+
+	const rallyApi = getRallyApi();
+
+	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
+	if (Object.keys(query).length && rallyData.defects && rallyData.defects.length) {
+		const filteredDefects = rallyData.defects.filter((defect: RallyDefect) =>
+			Object.keys(query).every(key => {
+				if (defect[key as keyof RallyDefect] === undefined) {
+					return false;
+				}
+				return defect[key as keyof RallyDefect] === query[key];
+			})
+		);
+
+		if (filteredDefects.length) {
+			return {
+				defects: filteredDefects,
+				source: 'cache',
+				count: filteredDefects.length
+			};
+		}
+	}
+
+	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
+	const queryOptions: RallyQueryOptions = {
+		type: 'defect',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID']
+	};
+
+	if (limit) {
+		queryOptions.limit = limit;
+	}
+
+	// Sempre filtrem per projecte
+	const projectId = await getProjectId();
+	queryOptions.query = queryUtils.where('Project', '=', `/project/${projectId}`);
+
+	if (Object.keys(query).length) {
+		const defectQueries = Object.keys(query).map(key => {
+			if (key === 'Name') {
+				return queryUtils.where(key, 'contains', query[key]);
+			}
+			return queryUtils.where(key, '=', query[key]);
+		});
+
+		if (defectQueries.length) {
+			if (queryOptions.query) {
+				// @ts-expect-error - Rally query builder has and method
+				queryOptions.query = queryOptions.query.and(defectQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)));
+			} else {
+				queryOptions.query = defectQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b));
+			}
+		}
+	}
+
+	const result = await rallyApi.query(queryOptions);
+	const resultData = result as RallyApiResult;
+
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) {
+		return {
+			defects: [],
+			source: 'api',
+			count: 0
+		};
+	}
+
+	//Formatem la resposta per ser més llegible (de forma assincròna per no bloquejar)
+	const defects: RallyDefect[] = await formatDefectsAsync(results);
+
+	//Afegim els nous defects a rallyData sense duplicats
+	if (!rallyData.defects) {
+		rallyData.defects = [];
+	}
+
+	for (const newDefect of defects) {
+		const existingDefectIndex = rallyData.defects.findIndex((existingDefect: RallyDefect) => existingDefect.objectId === newDefect.objectId);
+
+		if (existingDefectIndex === -1) {
+			//Defect nou, l'afegim
+			rallyData.defects.push(newDefect);
+		} else {
+			//Defect existent, l'actualitzem
+			rallyData.defects[existingDefectIndex] = newDefect;
+		}
+	}
+
+	return {
+		defects: defects,
+		source: 'api',
+		count: defects.length
 	};
 }

@@ -1,139 +1,20 @@
-import type React from 'react';
+import { FC } from 'react';
 import styled from 'styled-components';
+import { type UserStory } from '../../../types/rally';
 
-const Card = styled.div`
-	margin: 20px 0;
-	padding: 20px;
-	background-color: #282828;
-	border-radius: 8px;
-	border: 1px solid color(srgb 0.8 0.8 0.8 / 0.08);
-
-	@media (max-width: 720px) {
-		padding: 16px;
-	}
-`;
-
-const CardTitle = styled.div`
-	font-size: 12px;
-	font-weight: 400;
-	color: color(srgb 0.8 0.8 0.8 / 0.68);
-	letter-spacing: 0.5px;
-	margin: 0 0 16px 0;
-	padding-left: 7px;
-`;
-
-const FormGrid = styled.div`
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-	gap: 20px;
-	align-items: start;
-
-	@media (max-width: 720px) {
-		gap: 16px;
-	}
-`;
-
-const Group = styled.section`
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-`;
-
-const GroupTitle = styled.h3`
-	margin: 0 0 6px 0;
-	color: var(--vscode-foreground);
-	font-size: 14px;
-	font-weight: 600;
-`;
-
-const Field = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-`;
-
-const Label = styled.label`
-	font-size: 12px;
-	color: color(srgb 0.8 0.8 0.8 / 0.68);
-`;
-
-const BaseInput = styled.input`
-	width: 100%;
-	padding: 8px 10px;
-	background-color: var(--vscode-input-background);
-	color: var(--vscode-input-foreground);
-	border: 1px solid var(--vscode-input-border);
-	border-radius: 4px;
-	font-size: 13px;
-`;
-
-const BaseSelect = styled.select`
-	width: 100%;
-	padding: 8px 10px;
-	background-color: var(--vscode-input-background);
-	color: var(--vscode-input-foreground);
-	border: 1px solid var(--vscode-input-border);
-	border-radius: 4px;
-	font-size: 13px;
-`;
-
-const BaseTextarea = styled.textarea`
-	width: 100%;
-	padding: 8px 10px;
-	background-color: var(--vscode-input-background);
-	color: var(--vscode-input-foreground);
-	border: 1px solid var(--vscode-input-border);
-	border-radius: 4px;
-	font-size: 13px;
-	font-family:
-		'Inter',
-		var(--vscode-font-family),
-		-apple-system,
-		BlinkMacSystemFont,
-		'Segoe UI',
-		sans-serif;
-	line-height: 1.4;
-	resize: vertical;
-	min-height: 120px;
-`;
-
-const CheckboxRow = styled.div`
-	display: flex;
-	align-items: center;
-	gap: 8px;
-`;
-
-const CheckboxText = styled.span`
-	font-size: 13px;
-	color: var(--vscode-foreground);
-`;
-
-const MonospaceInput = styled(BaseInput)`
-	font-size: 12px;
-	font-family: monospace;
-`;
-
-const DescriptionGroup = styled(Group)`
-	grid-column: span 2;
-
-	@media (max-width: 720px) {
-		grid-column: span 1;
-	}
-`;
-
-const StatusPill = styled.div`
+const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 32px;
-	padding: 0 12px;
+	min-height: 24px;
+	padding: 0 8px;
 	border-radius: 999px;
-	font-size: 12px;
+	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.2px;
-	background: color(srgb 0.2 0.6 0.35 / 0.22);
-	color: color(srgb 0.8 1 0.9 / 0.9);
-	border: 1px solid color(srgb 0.2 0.6 0.35 / 0.35);
+	background: ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.25)' : 'color(srgb 0.2 0.6 0.35 / 0.25)')};
+	color: ${props => (props.isBlocked ? 'color(srgb 0.9 0.2 0.2 / 1)' : 'color(srgb 0.2 0.75 0.45 / 1)')};
+	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.45)' : 'color(srgb 0.2 0.6 0.35 / 0.45)')};
 `;
 
 const StatPill = styled.div`
@@ -149,38 +30,36 @@ const StatPill = styled.div`
 	border: 1px solid color(srgb 0.8 0.8 0.8 / 0.08);
 `;
 
-interface UserStory {
-	objectId: string;
-	formattedId: string;
-	name: string;
-	description: string | null;
-	state: string;
-	planEstimate: number;
-	toDo: number;
-	assignee: string;
-	project: string | null;
-	iteration: string | null;
-	blocked: boolean;
-	taskEstimateTotal: number;
-	taskStatus: string;
-	tasksCount: number;
-	testCasesCount: number;
-	defectsCount: number;
-	discussionCount: number;
-	appgar: string;
-}
-
 interface UserStoryFormProps {
 	userStory: UserStory;
 }
 
-const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
+const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
+	const getScheduleStateColor = (scheduleState: string) => {
+		switch (scheduleState?.toLowerCase()) {
+			case 'new':
+				return '#6c757d'; // Gris
+			case 'defined':
+				return '#fd7e14'; // Taronja
+			case 'in-progress':
+				return '#ffc107'; // Groc
+			case 'completed':
+				return '#0d6efd'; // Blau
+			case 'accepted':
+				return '#198754'; // Verd
+			case 'closed':
+				return '#495057'; // Gris fosc
+			default:
+				return 'var(--vscode-descriptionForeground)';
+		}
+	};
 	return (
 		<div
 			style={{
 				margin: '20px 0',
 				padding: '20px 40px 20px 20px',
-				backgroundColor: '#282828',
+				backgroundColor: 'var(--vscode-editor-background)',
+				border: '1px solid var(--vscode-panel-border)',
 				borderRadius: '6px'
 			}}
 		>
@@ -203,15 +82,15 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 				>
 					{userStory.formattedId}
 				</h2>
-				{userStory.taskStatus && userStory.taskStatus !== 'NONE' && (
+				{userStory.scheduleState && (
 					<div
 						style={{
 							fontSize: '14px',
 							fontWeight: '500',
-							color: userStory.taskStatus === 'DEFINED' ? 'color(srgb 0.4 0.9 0.6 / 0.9)' : userStory.taskStatus === 'BLOCKED' ? 'color(srgb 1 0.5 0.5 / 0.95)' : 'var(--vscode-descriptionForeground)'
+							color: getScheduleStateColor(userStory.scheduleState)
 						}}
 					>
-						{userStory.taskStatus}
+						{userStory.scheduleState}
 					</div>
 				)}
 			</div>
@@ -225,7 +104,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 					style={{
 						width: '100%',
 						padding: '6px 8px',
-						backgroundColor: 'var(--vscode-input-background)',
+						backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 						color: 'var(--vscode-input-foreground)',
 						border: '1px solid var(--vscode-input-border)',
 						borderRadius: '3px',
@@ -257,7 +136,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 							style={{
 								width: '100%',
 								padding: '6px 8px',
-								backgroundColor: 'var(--vscode-input-background)',
+								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 								color: 'var(--vscode-input-foreground)',
 								border: '1px solid var(--vscode-input-border)',
 								borderRadius: '3px',
@@ -274,7 +153,7 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 							style={{
 								width: '100%',
 								padding: '6px 8px',
-								backgroundColor: 'var(--vscode-input-background)',
+								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 								color: 'var(--vscode-input-foreground)',
 								border: '1px solid var(--vscode-input-border)',
 								borderRadius: '3px',
@@ -304,32 +183,31 @@ const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
 
 				<div>
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
-					<StatusPill>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
+					<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
 				</div>
 
 				{/* Description */}
 				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
 					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
-					<div>
-						<textarea
-							value={userStory.description || 'No description available'}
-							readOnly
-							rows={6}
-							style={{
-								width: '100%',
-								padding: '6px 8px',
-								backgroundColor: 'var(--vscode-input-background)',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '3px',
-								fontSize: '13px',
-								fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-								lineHeight: '1.6',
-								resize: 'vertical'
-							}}
-						/>
-					</div>
+					<div
+						dangerouslySetInnerHTML={{
+							__html: userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+						}}
+						style={{
+							width: '100%',
+							padding: '12px',
+							backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+							color: 'var(--vscode-input-foreground)',
+							border: '1px solid var(--vscode-input-border)',
+							borderRadius: '3px',
+							fontSize: '13px',
+							fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+							lineHeight: '1.6',
+							minHeight: '120px',
+							overflow: 'auto'
+						}}
+					/>
 				</div>
 
 				{/* Additional Information */}

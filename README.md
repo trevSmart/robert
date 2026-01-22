@@ -59,6 +59,11 @@ Robert is a VS Code extension that integrates with Rally (Agile project manageme
 - `npm run lint:fix` - Lint and auto-fix issues
 - `npm run format` - Format code with Prettier
 - `npm run package` - Create VSIX package
+- `npm test` - Run all tests (unit + integration)
+- `npm run test:unit` - Run unit tests with Vitest
+- `npm run test:unit:watch` - Run unit tests in watch mode
+- `npm run test:coverage` - Generate test coverage report
+- `npm run test:integration` - Run integration tests with VS Code
 
 ### Building from Scratch
 
@@ -75,6 +80,45 @@ npm install
 npm run compile
 npm run build:webview
 ```
+
+## 🧪 Testing
+
+Robert uses a comprehensive testing approach:
+
+- **Unit Tests**: Fast, isolated tests using [Vitest](https://vitest.dev/)
+- **Integration Tests**: Full extension tests using [@vscode/test-electron](https://github.com/microsoft/vscode-test)
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run only unit tests
+npm run test:unit
+
+# Run unit tests in watch mode (great for development)
+npm run test:unit:watch
+
+# Generate coverage report
+npm run test:coverage
+
+# Run integration tests (requires VS Code)
+npm run test:integration
+```
+
+### Test Coverage
+
+Current test coverage: **52%** and growing! 🎯
+
+### Writing Tests
+
+See [TEST_GUIDE.md](TEST_GUIDE.md) for detailed information on:
+- Writing unit tests
+- Writing integration tests
+- Debugging tests
+- Best practices
+- Examples
 
 ## 📋 Configuration
 

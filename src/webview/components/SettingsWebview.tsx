@@ -4,6 +4,7 @@ import { Button, Checkbox, Dropdown, TextField } from 'vscrui';
 import 'vscrui/dist/codicon.css';
 import { GlobalStyle } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
+import { themeColors } from '../utils/themeColors';
 
 interface SettingsProps {
 	webviewId: string;
@@ -124,9 +125,9 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 	return (
 		<div
 			style={{
-				fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-				color: 'var(--vscode-foreground)',
-				backgroundColor: 'var(--vscode-editor-background)',
+				fontFamily: `'Inter', ${themeColors.fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`,
+				color: themeColors.foreground,
+				backgroundColor: themeColors.background,
 				padding: '16px 32px',
 				margin: 0,
 				minHeight: '100vh'
@@ -138,7 +139,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 					<h1
 						style={{
 							margin: 0,
-							color: 'rgb(204, 204, 204)',
+							color: themeColors.textPrimary,
 							fontSize: '16px',
 							fontWeight: 600
 						}}
@@ -154,9 +155,9 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 							margin: '8px 0',
 							borderRadius: '4px',
 							fontSize: '13px',
-							backgroundColor: message.type === 'error' ? 'var(--vscode-inputValidation-errorBackground)' : 'var(--vscode-inputValidation-infoBackground)',
-							color: message.type === 'error' ? 'var(--vscode-inputValidation-errorBorder)' : 'var(--vscode-inputValidation-infoBorder)',
-							border: `1px solid ${message.type === 'error' ? 'var(--vscode-inputValidation-errorBorder)' : 'var(--vscode-inputValidation-infoBorder)'}`
+							backgroundColor: message.type === 'error' ? themeColors.errorBackground : themeColors.infoBackground,
+							color: message.type === 'error' ? themeColors.errorForeground : themeColors.infoForeground,
+							border: `1px solid ${message.type === 'error' ? themeColors.errorBorder : themeColors.infoBorder}`
 						}}
 					>
 						{message.text}
@@ -170,7 +171,8 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 							style={{
 								display: 'flex',
 								flexDirection: 'column',
-								backgroundColor: '#282828',
+								backgroundColor: themeColors.panelBackground,
+								border: `1px solid ${themeColors.panelBorder}`,
 								borderRadius: '6px'
 							}}
 						>
@@ -179,7 +181,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									<div
 										style={{
 											fontWeight: 400,
-											color: 'rgb(204, 204, 204)',
+											color: themeColors.textPrimary,
 											margin: '0 0 4px 0',
 											fontSize: '12px'
 										}}
@@ -188,7 +190,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 									<div
 										style={{
-											color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+											color: themeColors.descriptionForeground,
 											margin: 0,
 											fontSize: '12px',
 											lineHeight: 1.3,
@@ -202,14 +204,14 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									<Checkbox checked={settings.autoRefresh} onChange={checked => updateSetting('autoRefresh', checked)} />
 								</div>
 							</div>
-							<div style={{ backgroundColor: 'color(srgb 0.8 0.8 0.8 / 0.08)', height: '1px', margin: '0 12px' }} />
+							<div style={{ backgroundColor: themeColors.panelBorder, height: '1px', margin: '0 12px', opacity: 0.2 }} />
 
 							<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px' }}>
 								<div style={{ flex: 1, minWidth: 0 }}>
 									<div
 										style={{
 											fontWeight: 400,
-											color: 'rgb(204, 204, 204)',
+											color: themeColors.textPrimary,
 											margin: '0 0 4px 0',
 											fontSize: '12px'
 										}}
@@ -218,7 +220,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 									<div
 										style={{
-											color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+											color: themeColors.descriptionForeground,
 											margin: 0,
 											fontSize: '12px',
 											lineHeight: 1.3,
@@ -232,14 +234,14 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									<Checkbox checked={settings.debugMode} onChange={checked => updateSetting('debugMode', checked)} />
 								</div>
 							</div>
-							<div style={{ backgroundColor: 'color(srgb 0.8 0.8 0.8 / 0.08)', height: '1px', margin: '0 12px' }} />
+							<div style={{ backgroundColor: themeColors.panelBorder, height: '1px', margin: '0 12px', opacity: 0.2 }} />
 
 							<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px' }}>
 								<div style={{ flex: 1, minWidth: 0 }}>
 									<div
 										style={{
 											fontWeight: 400,
-											color: 'rgb(204, 204, 204)',
+											color: themeColors.textPrimary,
 											margin: '0 0 4px 0',
 											fontSize: '12px'
 										}}
@@ -248,7 +250,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 									<div
 										style={{
-											color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+											color: themeColors.descriptionForeground,
 											margin: 0,
 											fontSize: '12px',
 											lineHeight: 1.3,
@@ -271,7 +273,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 							style={{
 								fontSize: '12px',
 								fontWeight: 400,
-								color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+								color: themeColors.descriptionForeground,
 								letterSpacing: '0.5px',
 								margin: '0 0 8px 0',
 								paddingLeft: '7px'
@@ -283,7 +285,8 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 							style={{
 								display: 'flex',
 								flexDirection: 'column',
-								backgroundColor: '#282828',
+								backgroundColor: themeColors.panelBackground,
+								border: `1px solid ${themeColors.panelBorder}`,
 								borderRadius: '6px'
 							}}
 						>
@@ -292,7 +295,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									<div
 										style={{
 											fontWeight: 400,
-											color: 'rgb(204, 204, 204)',
+											color: themeColors.textPrimary,
 											margin: '0 0 4px 0',
 											fontSize: '12px'
 										}}
@@ -301,7 +304,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 									<div
 										style={{
-											color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+											color: themeColors.descriptionForeground,
 											margin: 0,
 											fontSize: '12px',
 											lineHeight: 1.3,
@@ -324,7 +327,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 							style={{
 								fontSize: '12px',
 								fontWeight: 400,
-								color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+								color: themeColors.descriptionForeground,
 								letterSpacing: '0.5px',
 								margin: '0 0 8px 0',
 								paddingLeft: '7px'
@@ -336,7 +339,8 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 							style={{
 								display: 'flex',
 								flexDirection: 'column',
-								backgroundColor: '#282828',
+								backgroundColor: themeColors.panelBackground,
+								border: `1px solid ${themeColors.panelBorder}`,
 								borderRadius: '6px'
 							}}
 						>
@@ -345,7 +349,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									<div
 										style={{
 											fontWeight: 400,
-											color: 'rgb(204, 204, 204)',
+											color: themeColors.textPrimary,
 											margin: '0 0 4px 0',
 											fontSize: '12px'
 										}}
@@ -354,7 +358,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 									<div
 										style={{
-											color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+											color: themeColors.descriptionForeground,
 											margin: 0,
 											fontSize: '12px',
 											lineHeight: 1.3,
@@ -368,14 +372,14 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									<TextField value={settings.apiUrl} onChange={value => updateSetting('apiUrl', value)} placeholder="https://api.example.com" />
 								</div>
 							</div>
-							<div style={{ backgroundColor: 'color(srgb 0.8 0.8 0.8 / 0.08)', height: '1px', margin: '0 12px' }} />
+							<div style={{ backgroundColor: themeColors.panelBorder, height: '1px', margin: '0 12px', opacity: 0.2 }} />
 
 							<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px' }}>
 								<div style={{ flex: 1, minWidth: 0 }}>
 									<div
 										style={{
 											fontWeight: 400,
-											color: 'rgb(204, 204, 204)',
+											color: themeColors.textPrimary,
 											margin: '0 0 4px 0',
 											fontSize: '12px'
 										}}
@@ -384,7 +388,7 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 									</div>
 									<div
 										style={{
-											color: 'color(srgb 0.8 0.8 0.8 / 0.68)',
+											color: themeColors.descriptionForeground,
 											margin: 0,
 											fontSize: '12px',
 											lineHeight: 1.3,
@@ -465,8 +469,8 @@ const SettingsWebview: React.FC<SettingsProps> = ({ webviewId, context, extensio
 				>
 					<div
 						style={{
-							border: '3px solid var(--vscode-panel-border)',
-							borderTop: '3px solid var(--vscode-button-background)',
+							border: `3px solid ${themeColors.panelBorder}`,
+							borderTop: `3px solid ${themeColors.progressBarBackground}`,
 							borderRadius: '50%',
 							width: '32px',
 							height: '32px',

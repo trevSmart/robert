@@ -1,3 +1,5 @@
+/// <reference path="../../types/window.d.ts" />
+
 type VsCodeApi = {
 	postMessage(message: Record<string, unknown>): void;
 	setState?(state: unknown): void;
@@ -19,10 +21,25 @@ export function getVsCodeApi(): VsCodeApi | null {
 			window.__vscodeApi = api;
 			return api;
 		} catch (error) {
-			// eslint-disable-next-line no-console
 			console.error('[Robert] Failed to acquire VS Code API', error);
 		}
 	}
 
 	return null;
+}
+
+/**
+ * Centralized debug logging function that only logs if debug mode is enabled
+ * Messages are sent to the extension backend for conditional logging
+ */
+export function logDebug(message: string, context: string = 'Frontend'): void {
+	const vscode = getVsCodeApi();
+	if (vscode) {
+		vscode.postMessage({
+			command: 'logDebug',
+			message,
+			context,
+			timestamp: new Date().toISOString()
+		});
+	}
 }

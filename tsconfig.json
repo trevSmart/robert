@@ -1,6 +1,6 @@
 {
 	"compilerOptions": {
-		"module": "commonjs",
+		"module": "nodenext",
 		"target": "ES2020",
 		"outDir": "out",
 		"lib": ["ES2020", "DOM", "DOM.Iterable"],
@@ -14,8 +14,8 @@
 		"jsxImportSource": "react",
 		"skipLibCheck": true,
 		"allowSyntheticDefaultImports": true,
-		"moduleResolution": "node"
+		"moduleResolution": "nodenext"
 	},
 	"include": ["src/**/*", "src/types/**/*", "test/**/*"],
-	"exclude": ["node_modules", ".vscode-test", "out", "src/webview"]
+	"exclude": ["node_modules", ".vscode-test", "out", "**/*.test.*"]
 }

@@ -82,37 +82,63 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	const containerRef = useRef<HTMLDivElement>(null);
 	const measureTabsRef = useRef<HTMLDivElement>(null);
 	const measureOverflowRef = useRef<HTMLButtonElement>(null);
+	const realOverflowButtonRef = useRef<HTMLButtonElement>(null);
 
 	const recomputeVisibleTabs = () => {
 		if (!containerRef.current || !measureTabsRef.current) return;
 
 		const availableWidth = containerRef.current.getBoundingClientRect().width;
 		const tabWidths = Array.from(measureTabsRef.current.children).map(child => (child as HTMLElement).getBoundingClientRect().width);
-		const overflowWidth = measureOverflowRef.current?.getBoundingClientRect().width ?? 0;
 
-		let usedWidth = 0;
-		let nextVisibleCount = tabs.length;
+		// Use real overflow button width if available (when rendered), otherwise use measured width
+		const realOverflowWidth = realOverflowButtonRef.current?.getBoundingClientRect().width;
+		const overflowWidth = realOverflowWidth ?? measureOverflowRef.current?.getBoundingClientRect().width ?? 0;
+
+		// First, check if all tabs fit without overflow
+		let totalTabsWidth = 0;
 		for (let i = 0; i < tabWidths.length; i += 1) {
-			usedWidth += tabWidths[i];
-			if (usedWidth > availableWidth) {
-				nextVisibleCount = i;
-				break;
-			}
+			totalTabsWidth += tabWidths[i];
 		}
 
-		if (nextVisibleCount < tabs.length) {
-			while (nextVisibleCount > 0 && usedWidth + overflowWidth > availableWidth) {
-				usedWidth -= tabWidths[nextVisibleCount - 1];
-				nextVisibleCount -= 1;
+		let nextVisibleCount = tabs.length;
+
+		// If all tabs don't fit, calculate how many tabs + overflow button fit
+		if (totalTabsWidth > availableWidth) {
+			// Start from the beginning and add tabs one by one until we can't fit more
+			// along with the overflow button
+			let usedWidth = overflowWidth;
+			nextVisibleCount = 0;
+
+			for (let i = 0; i < tabWidths.length; i += 1) {
+				const testWidth = usedWidth + tabWidths[i];
+				if (testWidth <= availableWidth) {
+					usedWidth = testWidth;
+					nextVisibleCount = i + 1;
+				} else {
+					break;
+				}
 			}
+
+			// Ensure at least one tab is visible
+			nextVisibleCount = Math.max(1, nextVisibleCount);
 		}
 
-		setVisibleCount(Math.max(1, nextVisibleCount));
+		setVisibleCount(nextVisibleCount);
 	};
 
 	useLayoutEffect(() => {
 		recomputeVisibleTabs();
 	}, [tabs.length]);
+
+	// Recalculate when the real overflow button is first rendered
+	useLayoutEffect(() => {
+		if (realOverflowButtonRef.current) {
+			// Use requestAnimationFrame to ensure the button is fully rendered
+			requestAnimationFrame(() => {
+				recomputeVisibleTabs();
+			});
+		}
+	}, [visibleCount]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -131,6 +157,17 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		}
 		return () => observer.disconnect();
 	}, []);
+
+	// Observe the real overflow button when it's rendered
+	useEffect(() => {
+		if (!realOverflowButtonRef.current) return;
+
+		const observer = new ResizeObserver(() => {
+			recomputeVisibleTabs();
+		});
+		observer.observe(realOverflowButtonRef.current);
+		return () => observer.disconnect();
+	}, [visibleCount]);
 
 	const visibleTabs = tabs.slice(0, visibleCount);
 	const overflowTabs = tabs.slice(visibleCount);
@@ -197,6 +234,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				{overflowTabs.length > 0 && (
 					<div style={{ position: 'relative', display: 'flex' }}>
 						<button
+							ref={realOverflowButtonRef}
 							type="button"
 							aria-label="More tabs"
 							onClick={() => setOverflowOpen(open => !open)}

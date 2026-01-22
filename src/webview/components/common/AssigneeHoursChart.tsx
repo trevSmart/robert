@@ -135,13 +135,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 				axisPointer: {
 					type: 'shadow'
 				},
-				position: ((
-					point: [number, number],
-					params: echarts.TooltipComponentFormatterCallbackParams,
-					dom: HTMLElement,
-					rect: unknown,
-					size: { viewSize: [number, number]; contentSize: [number, number] }
-				): [number, number] => {
+				position: ((point: [number, number], params: echarts.TooltipComponentFormatterCallbackParams, dom: HTMLElement, rect: unknown, size: { viewSize: [number, number]; contentSize: [number, number] }): [number, number] => {
 					// Position tooltip to the right of the cursor, with some padding
 					let x = point[0] + 10;
 					let y = point[1] - size.contentSize[1] / 2;
@@ -171,7 +165,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					let content = `<div style="font-size: 12px;"><strong style="font-size: 13px;">${assignee}</strong><br/><br/>`;
 					let total = 0;
 
-					params.forEach((param) => {
+					params.forEach(param => {
 						const value = typeof param.value === 'number' ? param.value : Array.isArray(param.value) ? (typeof param.value[0] === 'number' ? param.value[0] : 0) : 0;
 						if (value > 0) {
 							content += `${param.seriesName}: <strong>${value}h</strong><br/>`;

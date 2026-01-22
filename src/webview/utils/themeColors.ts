@@ -52,7 +52,7 @@ export const themeColors = {
 	// ============================================================================
 	tabActiveBackground: 'var(--vscode-tab-activeBackground)',
 	tabActiveForeground: 'var(--vscode-tab-activeForeground)',
-	tabInactiveBackground: 'var(--vscode-tab-inactiveBackground)',
+	// tabInactiveBackground: 'var(--vscode-tab-inactiveBackground)',
 	tabInactiveForeground: 'var(--vscode-tab-inactiveForeground)',
 	tabBorder: 'var(--vscode-tab-border)',
 	tabActiveBorder: 'var(--vscode-tab-activeBorder)',

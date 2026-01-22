@@ -575,7 +575,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'loadIterations':
 							try {
 								this._errorHandler.logInfo('Loading iterations from Rally API', 'WebviewMessageListener');
-								// eslint-disable-next-line no-console
+
 								this._errorHandler.logDebug('Webview received loadIterations command', 'RobertWebviewProvider');
 
 								// Load iterations and current user in parallel
@@ -621,7 +621,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'loadUserStories':
 							try {
 								this._errorHandler.logInfo('Loading user stories from Rally API', 'WebviewMessageListener');
-								// eslint-disable-next-line no-console
+
 								this._errorHandler.logDebug(`Webview received loadUserStories command ${message.iteration ? `for iteration: ${message.iteration}` : 'for all'}`, 'RobertWebviewProvider');
 
 								const query = message.iteration ? { Iteration: message.iteration } : {};
@@ -662,7 +662,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'loadTasks':
 							try {
 								this._errorHandler.logInfo('Loading tasks from Rally API', 'WebviewMessageListener');
-								// eslint-disable-next-line no-console
+
 								this._errorHandler.logDebug(`Webview received loadTasks command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
 
 								const tasksResult = await getTasks(message.userStoryId);
@@ -706,7 +706,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'loadDefects':
 							try {
 								this._errorHandler.logInfo('Loading defects from Rally API', 'WebviewMessageListener');
-								// eslint-disable-next-line no-console
+
 								this._errorHandler.logDebug('Webview received loadDefects command', 'RobertWebviewProvider');
 
 								const defectsResult = await getDefects();
@@ -745,7 +745,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'loadUserStoryDefects':
 							try {
 								this._errorHandler.logInfo('Loading defects for user story from Rally API', 'WebviewMessageListener');
-								// eslint-disable-next-line no-console
+
 								this._errorHandler.logDebug(`Webview received loadUserStoryDefects command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
 
 								const defectsResult = await getDefects({

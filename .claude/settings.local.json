@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(timeout 180 bash -c 'while pgrep -f \"\"npm run compile\"\" > /dev/null; do sleep 2; done; npm run compile 2>&1 | tail -30')"
+    ]
+  }
+}

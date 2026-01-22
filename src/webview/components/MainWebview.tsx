@@ -1,4 +1,4 @@
-import type React from 'react';
+import { FC, ComponentType } from 'react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import 'vscrui/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
@@ -12,7 +12,7 @@ import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
 
 // Icon components (copied from NavigationBar for now)
-const TeamIcon = () => (
+const _TeamIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
 		<path
 			strokeLinecap="round"
@@ -22,13 +22,13 @@ const TeamIcon = () => (
 	</svg>
 );
 
-const SalesforceIcon = () => (
+const _SalesforceIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
 		<path strokeLinecap="round" strokeLinejoin="round" d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
 	</svg>
 );
 
-const AssetsIcon = () => (
+const _AssetsIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
 		<path
 			strokeLinecap="round"
@@ -38,7 +38,7 @@ const AssetsIcon = () => (
 	</svg>
 );
 
-const MetricsIcon = () => (
+const _MetricsIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '48px', height: '48px', margin: '0 auto', display: 'block' }}>
 		<path
 			strokeLinecap="round"
@@ -114,7 +114,7 @@ const ChartBarIcon = () => (
 	</svg>
 );
 
-const SwatchIcon = () => (
+const _SwatchIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
 		<path
 			strokeLinecap="round"
@@ -176,19 +176,26 @@ const WrenchScrewdriverIcon = () => (
 	</svg>
 );
 
-import { CenteredContainer, Container, ContentArea, GlobalStyle, Header, LogoContainer, LogoImage, Title } from './common/styled';
+import { CenteredContainer, Container, ContentArea, GlobalStyle } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
+import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
 type SectionType = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects';
 type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
+
+interface Tutorial {
+	title: string;
+	kicker: string;
+	bg: string;
+}
 
 interface PortfolioViewConfig {
 	id: PortfolioViewType;
 	label: string;
 	icon?: string;
 	description?: string;
-	component: React.ComponentType<PortfolioViewProps>;
+	component: ComponentType<PortfolioViewProps>;
 	dataLoader: () => Promise<void>;
 	stateCleaner: () => void;
 }
@@ -202,12 +209,16 @@ interface PortfolioViewProps {
 	userStoriesLoading: boolean;
 	userStoriesError: string | null;
 	selectedUserStory: UserStory | null;
-	tasks: any[];
+	tasks: RallyTask[];
 	tasksLoading: boolean;
 	tasksError: string | null;
-	defects: any[];
-	defectsLoading: boolean;
-	defectsError: string | null;
+	userStoryDefects: RallyDefect[];
+	userStoryDefectsLoading: boolean;
+	_userStoryDefectsError: string | null;
+	_defects: RallyDefect[];
+	_defectsLoading: boolean;
+	_defectsError: string | null;
+	_selectedDefect: RallyDefect | null;
 	activeUserStoryTab: 'tasks' | 'tests';
 	currentScreen: ScreenType;
 	onLoadIterations: () => void;
@@ -216,14 +227,17 @@ interface PortfolioViewProps {
 	onLoadUserStories: (iteration?: Iteration) => void;
 	onClearUserStories: () => void;
 	onLoadTasks: (userStoryId: string) => void;
-	onLoadDefects: () => void;
+	onLoadUserStoryDefects: (userStoryId: string) => void;
+	_onLoadDefects: () => void;
+	_onDefectSelected: (defect: RallyDefect) => void;
 	onBackToIterations: () => void;
 	onBackToUserStories: () => void;
+	_onBackToDefects: () => void;
 	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests') => void;
 }
 
 // Portfolio View Components
-const BySprintsView: React.FC<PortfolioViewProps> = ({
+const BySprintsView: FC<PortfolioViewProps> = ({
 	iterations,
 	iterationsLoading,
 	iterationsError,
@@ -235,6 +249,13 @@ const BySprintsView: React.FC<PortfolioViewProps> = ({
 	tasks,
 	tasksLoading,
 	tasksError,
+	userStoryDefects,
+	userStoryDefectsLoading,
+	_userStoryDefectsError,
+	_defects,
+	_defectsLoading,
+	_defectsError,
+	_selectedDefect,
 	activeUserStoryTab,
 	currentScreen,
 	onLoadIterations,
@@ -243,116 +264,129 @@ const BySprintsView: React.FC<PortfolioViewProps> = ({
 	onLoadUserStories,
 	onClearUserStories,
 	onLoadTasks,
+	onLoadUserStoryDefects,
+	_onLoadDefects,
+	_onDefectSelected,
 	onBackToIterations,
 	onBackToUserStories,
+	_onBackToDefects,
 	onActiveUserStoryTabChange
-}) => (
-	<>
-		{currentScreen === 'iterations' && (
-			<>
-				<ScreenHeader title="Sprints" />
-				<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={onLoadIterations} onIterationSelected={onIterationSelected} selectedIteration={selectedIteration} />
-			</>
-		)}
+}) => {
+	// Auto-load defects when defects tab is selected
+	useEffect(() => {
+		if (selectedUserStory && activeUserStoryTab === 'defects' && (!userStoryDefects || !userStoryDefects.length) && !userStoryDefectsLoading) {
+			onLoadUserStoryDefects(selectedUserStory.objectId);
+		}
+	}, [selectedUserStory, activeUserStoryTab, userStoryDefects, userStoryDefectsLoading, onLoadUserStoryDefects]);
 
-		{currentScreen === 'userStories' && selectedIteration && (
-			<>
-				<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
-				<SprintDetailsForm iteration={selectedIteration} />
-				<AssigneeHoursChart userStories={userStories} />
-				<UserStoriesTable userStories={userStories} loading={userStoriesLoading} error={userStoriesError} onLoadUserStories={() => onLoadUserStories(selectedIteration)} onClearUserStories={onClearUserStories} onUserStorySelected={onUserStorySelected} selectedUserStory={selectedUserStory} />
-			</>
-		)}
+	return (
+		<>
+			{currentScreen === 'iterations' && (
+				<>
+					<ScreenHeader title="Sprints" />
+					<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={onLoadIterations} onIterationSelected={onIterationSelected} selectedIteration={selectedIteration} />
+				</>
+			)}
 
-		{currentScreen === 'userStoryDetail' && selectedUserStory && (
-			<>
-				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
-				<UserStoryForm userStory={selectedUserStory} />
-				<div
-					style={{
-						marginTop: '8px',
-						marginBottom: '4px',
-						display: 'flex',
-						gap: '8px',
-						borderBottom: '1px solid var(--vscode-panel-border)'
-					}}
-				>
-					<button
-						type="button"
-						onClick={() => onActiveUserStoryTabChange('tasks')}
-						style={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: '6px',
-							padding: '6px 10px',
-							border: 'none',
-							borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-							backgroundColor: 'transparent',
-							color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-							cursor: 'pointer',
-							fontSize: '12px',
-							fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
-						}}
-					>
-						<TasksTabIcon />
-						<span>Tasks</span>
-					</button>
-					<button
-						type="button"
-						onClick={() => onActiveUserStoryTabChange('tests')}
-						style={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: '6px',
-							padding: '6px 10px',
-							border: 'none',
-							borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-							backgroundColor: 'transparent',
-							color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-							cursor: 'pointer',
-							fontSize: '12px',
-							fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
-						}}
-					>
-						<TestsTabIcon />
-						<span>Tests</span>
-					</button>
-				</div>
-				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
-				{activeUserStoryTab === 'tests' && (
+			{currentScreen === 'userStories' && selectedIteration && (
+				<>
+					<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
+					<SprintDetailsForm iteration={selectedIteration} />
+					<AssigneeHoursChart userStories={userStories} />
+					<UserStoriesTable userStories={userStories} loading={userStoriesLoading} error={userStoriesError} onLoadUserStories={() => onLoadUserStories(selectedIteration)} onClearUserStories={onClearUserStories} onUserStorySelected={onUserStorySelected} selectedUserStory={selectedUserStory} />
+				</>
+			)}
+
+			{currentScreen === 'userStoryDetail' && selectedUserStory && (
+				<>
+					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+					<UserStoryForm userStory={selectedUserStory} />
 					<div
 						style={{
-							margin: '20px 0',
-							padding: '20px',
-							backgroundColor: '#282828',
-							borderRadius: '6px'
+							marginTop: '8px',
+							marginBottom: '4px',
+							display: 'flex',
+							gap: '8px',
+							borderBottom: '1px solid var(--vscode-panel-border)'
 						}}
 					>
-						<div
+						<button
+							type="button"
+							onClick={() => onActiveUserStoryTabChange('tasks')}
 							style={{
-								fontSize: '13px',
-								color: 'var(--vscode-foreground)',
-								marginBottom: '6px'
-							}}
-						>
-							This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
-						</div>
-						<div
-							style={{
+								display: 'inline-flex',
+								alignItems: 'center',
+								gap: '6px',
+								padding: '6px 10px',
+								border: 'none',
+								borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+								backgroundColor: 'transparent',
+								color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+								cursor: 'pointer',
 								fontSize: '12px',
-								color: 'var(--vscode-descriptionForeground)'
+								fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
 							}}
 						>
-							Detailed test listing will be available in a future version of this view.
-						</div>
+							<TasksTabIcon />
+							<span>Tasks</span>
+						</button>
+						<button
+							type="button"
+							onClick={() => onActiveUserStoryTabChange('tests')}
+							style={{
+								display: 'inline-flex',
+								alignItems: 'center',
+								gap: '6px',
+								padding: '6px 10px',
+								border: 'none',
+								borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+								backgroundColor: 'transparent',
+								color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+								cursor: 'pointer',
+								fontSize: '12px',
+								fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
+							}}
+						>
+							<TestsTabIcon />
+							<span>Tests</span>
+						</button>
 					</div>
-				)}
-			</>
-		)}
-	</>
-);
+					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+					{activeUserStoryTab === 'tests' && (
+						<div
+							style={{
+								margin: '20px 0',
+								padding: '20px',
+								backgroundColor: '#282828',
+								borderRadius: '6px'
+							}}
+						>
+							<div
+								style={{
+									fontSize: '13px',
+									color: 'var(--vscode-foreground)',
+									marginBottom: '6px'
+								}}
+							>
+								This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
+							</div>
+							<div
+								style={{
+									fontSize: '12px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Detailed test listing will be available in a future version of this view.
+							</div>
+						</div>
+					)}
+				</>
+			)}
+		</>
+	);
+};
 
-const AllUserStoriesView: React.FC<PortfolioViewProps> = ({
+const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	userStories,
 	userStoriesLoading,
 	userStoriesError,
@@ -473,25 +507,12 @@ const AllUserStoriesView: React.FC<PortfolioViewProps> = ({
 	</>
 );
 
-const AllDefectsView: React.FC<PortfolioViewProps> = ({
-	defects,
-	defectsLoading,
-	defectsError,
-	currentScreen,
-	onLoadDefects
-}) => (
+const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, currentScreen, _onLoadDefects }) => (
 	<>
 		{currentScreen === 'defects' && (
 			<>
 				<ScreenHeader title="All Defects" />
-				<DefectsTable
-					defects={defects}
-					loading={defectsLoading}
-					error={defectsError || undefined}
-					onLoadDefects={onLoadDefects}
-					onDefectSelected={undefined}
-					selectedDefect={null}
-				/>
+				<DefectsTable defects={defects} loading={defectsLoading} error={defectsError || undefined} onLoadDefects={onLoadDefects} onDefectSelected={undefined} selectedDefect={null} />
 			</>
 		)}
 	</>
@@ -526,7 +547,7 @@ const portfolioViews: PortfolioViewConfig[] = [
 ];
 
 // Portfolio View Selector Component (Tab-like appearance)
-const PortfolioViewSelector: React.FC<{
+const PortfolioViewSelector: FC<{
 	views: PortfolioViewConfig[];
 	activeView: PortfolioViewType;
 	onViewChange: (viewId: PortfolioViewType) => void;
@@ -554,7 +575,6 @@ const PortfolioViewSelector: React.FC<{
 					color: activeView === view.id ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
 					cursor: 'pointer',
 					display: 'flex',
-					alignItems: 'center',
 					gap: '6px',
 					fontSize: '13px',
 					fontWeight: activeView === view.id ? 600 : 400,
@@ -571,7 +591,7 @@ const PortfolioViewSelector: React.FC<{
 );
 
 // Portfolio View Renderer Component
-const PortfolioViewRenderer: React.FC<{
+const PortfolioViewRenderer: FC<{
 	activeViewType: PortfolioViewType;
 	viewProps: PortfolioViewProps;
 }> = ({ activeViewType, viewProps }) => {
@@ -588,7 +608,7 @@ interface MainWebviewProps {
 	webviewId: string;
 	context: string;
 	timestamp: string;
-	rebusLogoUri: string;
+	_rebusLogoUri: string;
 }
 
 interface Iteration {
@@ -622,7 +642,7 @@ interface UserStory {
 	appgar: string;
 }
 
-const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogoUri }) => {
+const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
 
@@ -653,21 +673,21 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const [debugMode, setDebugMode] = useState<boolean>(false);
-	const [currentUser, setCurrentUser] = useState<any>(null);
-	const [selectedTutorial, setSelectedTutorial] = useState<any>(null);
-	const [showTutorial, setShowTutorial] = useState<boolean>(false);
+	const [currentUser, setCurrentUser] = useState<RallyUser | null>(null);
+	const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
+	const [_showTutorial, setShowTutorial] = useState<boolean>(false);
 
 	const [userStories, setUserStories] = useState<UserStory[]>([]);
 	const [userStoriesLoading, setUserStoriesLoading] = useState(false);
 	const [userStoriesError, setUserStoriesError] = useState<string | null>(null);
 	const [selectedUserStory, setSelectedUserStory] = useState<UserStory | null>(null);
 
-	const [tasks, setTasks] = useState<any[]>([]);
+	const [tasks, setTasks] = useState<RallyTask[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
 	const [tasksError, setTasksError] = useState<string | null>(null);
 	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests'>('tasks');
 
-	const [defects, setDefects] = useState<any[]>([]);
+	const [defects, setDefects] = useState<RallyDefect[]>([]);
 	const [defectsLoading, setDefectsLoading] = useState(false);
 	const [defectsError, setDefectsError] = useState<string | null>(null);
 
@@ -1745,7 +1765,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 									{selectedTutorial.title === 'Salesforce CRM Fundamentals' && (
 										<div>
 											<h2>Understanding Salesforce CRM</h2>
-											<p>Salesforce CRM is the world's leading customer relationship management platform that helps businesses connect with customers, partners, and prospects.</p>
+											<p>Salesforce CRM is the world&apos;s leading customer relationship management platform that helps businesses connect with customers, partners, and prospects.</p>
 
 											<h3>Key Concepts</h3>
 											<ul>
@@ -1786,7 +1806,7 @@ const MainWebview: React.FC<MainWebviewProps> = ({ webviewId, context, rebusLogo
 									{selectedTutorial.title === 'Lightning Web Components' && (
 										<div>
 											<h2>Building with Lightning Web Components</h2>
-											<p>LWC is Salesforce's modern programming model for building fast, reusable components on the Lightning Platform.</p>
+											<p>LWC is Salesforce&apos;s modern programming model for building fast, reusable components on the Lightning Platform.</p>
 
 											<h3>Why LWC?</h3>
 											<ul>

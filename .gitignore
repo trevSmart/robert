@@ -65,3 +65,6 @@ Thumbs.db
 
 # Test output
 test-results/
+coverage/
+.vitest-cache/
+.nyc_output

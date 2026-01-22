@@ -132,6 +132,4 @@ describe('ErrorHandler', () => {
 			expect(result).toBe(fallback);
 		});
 	});
-
-
 });

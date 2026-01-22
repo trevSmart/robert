@@ -122,9 +122,7 @@ describe('SettingsManager', () => {
 
 			const result = settingsManager.validateSettings(invalidSettings);
 			expect(result.isValid).toBe(false);
-			expect(result.errors).toContain(
-				'Refresh interval must be between 5 and 3600 seconds'
-			);
+			expect(result.errors).toContain('Refresh interval must be between 5 and 3600 seconds');
 		});
 
 		it('should detect invalid maxResults', () => {
@@ -134,9 +132,7 @@ describe('SettingsManager', () => {
 
 			const result = settingsManager.validateSettings(invalidSettings);
 			expect(result.isValid).toBe(false);
-			expect(result.errors).toContain(
-				'Max results must be between 10 and 1000'
-			);
+			expect(result.errors).toContain('Max results must be between 10 and 1000');
 		});
 
 		it('should detect invalid timeout', () => {
@@ -146,9 +142,7 @@ describe('SettingsManager', () => {
 
 			const result = settingsManager.validateSettings(invalidSettings);
 			expect(result.isValid).toBe(false);
-			expect(result.errors).toContain(
-				'Timeout must be between 1000 and 60000 milliseconds'
-			);
+			expect(result.errors).toContain('Timeout must be between 1000 and 60000 milliseconds');
 		});
 
 		it('should return multiple errors for multiple invalid fields', () => {

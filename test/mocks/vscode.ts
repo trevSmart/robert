@@ -3,6 +3,8 @@
  * This allows testing extension code without requiring a full VS Code environment
  */
 
+import { vi } from 'vitest';
+
 export const Uri = {
 	file: (path: string) => ({ fsPath: path, scheme: 'file', path }),
 	parse: (uri: string) => ({ fsPath: uri, scheme: 'file', path: uri })

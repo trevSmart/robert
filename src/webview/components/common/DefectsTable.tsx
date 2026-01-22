@@ -51,6 +51,8 @@ const getSeverityColor = (severity: string) => {
 const getPriorityColor = (priority: string) => {
 	switch (priority?.toLowerCase()) {
 		case 'urgent':
+		case 'high attention':
+		case 'resolve immediately':
 			return '#dc3545'; // Red
 		case 'high':
 			return '#fd7e14'; // Orange
@@ -83,6 +85,8 @@ const getScheduleStateColor = (scheduleState: string) => {
 };
 
 const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect }) => {
+	// eslint-disable-next-line no-console
+	console.log('[DefectsTable] onDefectSelected:', onDefectSelected, 'defects.length:', defects.length);
 	return (
 		<div
 			style={{
@@ -143,14 +147,19 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '12%' }}>State</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '12%' }}>Severity</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '12%' }}>Priority</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '12%' }}>Owner</th>
 						</tr>
 					</thead>
 					<tbody>
 						{defects.map(defect => (
 							<tr
 								key={defect.objectId}
-								onClick={() => onDefectSelected?.(defect)}
+								onClick={() => {
+									// eslint-disable-next-line no-console
+									console.log('[DefectsTable] Clicked on defect:', defect.formattedId, 'onDefectSelected:', onDefectSelected);
+									if (onDefectSelected) {
+										onDefectSelected(defect);
+									}
+								}}
 								style={{
 									cursor: onDefectSelected ? 'pointer' : 'default',
 									backgroundColor: selectedDefect?.objectId === defect.objectId ? themeColors.listActiveSelectionBackground : undefined,
@@ -200,7 +209,6 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 								>
 									{defect.priority || 'N/A'}
 								</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{defect.owner}</td>
 							</tr>
 						))}
 					</tbody>

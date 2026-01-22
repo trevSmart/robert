@@ -1,6 +1,7 @@
 import { FC, ComponentType } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'vscrui/dist/codicon.css';
+import '@vscode/codicons/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
 import UserStoryForm from './common/UserStoryForm';
 import TasksTable from './common/TasksTable';
@@ -368,7 +369,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 								fontWeight: activeUserStoryTab === 'defects' ? 600 : 400
 							}}
 						>
-							<span className="codicon codicon-bug" style={{ fontSize: '14px' }}></span>
+							<div className="codicon codicon-bug" style={{ fontSize: '14px' }}></div>
 							<span>Defects</span>
 						</button>
 					</div>
@@ -519,7 +520,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 							fontWeight: activeUserStoryTab === 'defects' ? 600 : 400
 						}}
 					>
-						<span className="codicon codicon-bug" style={{ fontSize: '14px' }}></span>
+						<div className="codicon codicon-bug" style={{ fontSize: '14px' }}></div>
 						<span>Defects</span>
 					</button>
 				</div>
@@ -560,22 +561,26 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	</>
 );
 
-const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects }) => (
-	<>
-		{currentScreen === 'defects' && (
-			<>
-				<ScreenHeader title="All Defects" />
-				<DefectsTable defects={_defects} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
-			</>
-		)}
-		{currentScreen === 'defectDetail' && _selectedDefect && (
-			<>
-				<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
-				<DefectForm defect={_selectedDefect} />
-			</>
-		)}
-	</>
-);
+const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects }) => {
+	// eslint-disable-next-line no-console
+	console.log('[AllDefectsView] _onDefectSelected:', _onDefectSelected, 'currentScreen:', currentScreen);
+	return (
+		<>
+			{currentScreen === 'defects' && (
+				<>
+					<ScreenHeader title="All Defects" />
+					<DefectsTable defects={_defects} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+				</>
+			)}
+			{currentScreen === 'defectDetail' && _selectedDefect && (
+				<>
+					<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
+					<DefectForm defect={_selectedDefect} />
+				</>
+			)}
+		</>
+	);
+};
 
 // Portfolio Views Configuration
 // Icon components for portfolio tabs
@@ -642,7 +647,7 @@ const PortfolioViewSelector: FC<{
 			case 'user-stories':
 				return <UserStoriesIcon />;
 			case 'bug':
-				return <span className="codicon codicon-bug" style={{ fontSize: '16px' }}></span>;
+				return <div className="codicon codicon-bug" style={{ fontSize: '16px' }}></div>;
 			default:
 				return null;
 		}
@@ -804,6 +809,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Track if we've already loaded iterations for portfolio to avoid cascading renders
 	const hasLoadedPortfolioIterations = useRef(false);
+
+	// Track if we've already loaded iterations for calendar to avoid cascading renders
+	const hasLoadedCalendarIterations = useRef(false);
 
 	// Track which portfolio views have been loaded to avoid redundant fetches
 	const loadedViews = useRef<Set<PortfolioViewType>>(new Set());
@@ -1004,7 +1012,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
 			setActiveSection(section);
-			if (section === 'portfolio') {
+			if (section === 'portfolio' || section === 'calendar') {
 				// Load iterations only if we don't already have them and we're not already loading / in error
 				if (!iterations.length && !iterationsLoading && !iterationsError) {
 					loadIterations();
@@ -1075,8 +1083,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			command: 'getState'
 		});
 
-		// Don't auto-load iterations here; wait for user interaction or state changes
-	}, [sendMessage]); // Only run once on mount
+		// Load iterations for calendar section on initial mount
+		// Since activeSection defaults to 'calendar', we should load iterations immediately
+		setTimeout(() => {
+			if (!hasLoadedCalendarIterations.current) {
+				// eslint-disable-next-line no-console
+				console.log('[Frontend] Initial mount - loading iterations for calendar');
+				hasLoadedCalendarIterations.current = true;
+				loadIterations();
+			}
+		}, 200); // Small delay to ensure webview is fully initialized
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []); // Only run once on mount
 
 	// Handle messages from extension
 	useEffect(() => {
@@ -1182,6 +1200,31 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
 	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen]); // Only include dependencies needed by handleMessage
+
+	// Load iterations when navigating to calendar section
+	useEffect(() => {
+		// eslint-disable-next-line no-console
+		console.log('[Frontend] Calendar section effect triggered', {
+			activeSection,
+			hasLoaded: hasLoadedCalendarIterations.current,
+			iterationsCount: iterations.length,
+			iterationsLoading,
+			iterationsError
+		});
+
+		if (activeSection === 'calendar' && !hasLoadedCalendarIterations.current && !iterations.length && !iterationsLoading && !iterationsError) {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Entering calendar section - loading iterations');
+			hasLoadedCalendarIterations.current = true;
+			// Use setTimeout to make the call asynchronous and avoid linter warning about setState in effects
+			setTimeout(() => {
+				loadIterations();
+			}, 0);
+		} else if (activeSection !== 'calendar') {
+			// Reset flag when leaving calendar section
+			hasLoadedCalendarIterations.current = false;
+		}
+	}, [activeSection, iterations.length, iterationsLoading, iterationsError, loadIterations]);
 
 	// Load iterations when navigating to portfolio section
 	useEffect(() => {

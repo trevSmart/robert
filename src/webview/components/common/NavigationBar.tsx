@@ -126,10 +126,9 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		setVisibleCount(nextVisibleCount);
 	}, [tabs.length]);
 
-	// eslint-disable-next-line react-hooks/set-state-in-effect
 	useLayoutEffect(() => {
 		recomputeVisibleTabs();
-	}, [tabs.length, recomputeVisibleTabs]);
+	}, [tabs.length]);
 
 	// Recalculate when the real overflow button is first rendered
 	useLayoutEffect(() => {

@@ -12,7 +12,7 @@ describe('OutputChannelManager', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// Reset singleton instance
-		(OutputChannelManager as any).instance = undefined;
+		OutputChannelManager.resetInstance();
 		outputManager = OutputChannelManager.getInstance();
 	});
 

@@ -12,7 +12,7 @@ describe('ErrorHandler', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// Reset singleton instance
-		(ErrorHandler as any).instance = undefined;
+		ErrorHandler.resetInstance();
 		errorHandler = ErrorHandler.getInstance();
 	});
 

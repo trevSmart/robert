@@ -5,6 +5,7 @@ import { ErrorHandler } from './ErrorHandler';
 import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
+import type { WebviewMessage, Tutorial } from './types/webview';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -374,7 +375,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	private _setupSettingsWebviewMessageListener(panel: vscode.WebviewPanel): void {
 		const messageListener = panel.webview.onDidReceiveMessage(
-			async (message: any) => {
+			async (message: WebviewMessage) => {
 				await this._errorHandler.executeWithErrorHandling(async () => {
 					this._errorHandler.logInfo(`Received settings message: ${message.command}`, 'SettingsWebviewMessageListener');
 
@@ -836,7 +837,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	/**
 	 * Open a tutorial in a new editor window
 	 */
-	private async _openTutorialInEditor(tutorial: any): Promise<void> {
+	private async _openTutorialInEditor(tutorial: Tutorial): Promise<void> {
 		const tutorialContent = this._generateTutorialMarkdown(tutorial);
 
 		// Create a new untitled document with the tutorial content
@@ -858,7 +859,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	/**
 	 * Generate markdown content for a tutorial
 	 */
-	private _generateTutorialMarkdown(tutorial: any): string {
+	private _generateTutorialMarkdown(tutorial: Tutorial): string {
 		let markdown = `# ${tutorial.title}\n\n`;
 		markdown += `> Master ${tutorial.title.toLowerCase()} with hands-on examples and best practices.\n\n`;
 

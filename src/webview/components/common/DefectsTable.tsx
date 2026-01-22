@@ -85,7 +85,7 @@ const getScheduleStateColor = (scheduleState: string) => {
 	}
 };
 
-const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect }) => {
+const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects: _onLoadDefects, onDefectSelected, selectedDefect }) => {
 	// eslint-disable-next-line no-console
 	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, defects.length: ${defects.length}`, 'DefectsTable');
 	return (

@@ -149,7 +149,7 @@ interface IterationsTableProps {
 
 export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, loading = false, error, onIterationSelected, selectedIteration }) => {
 	// Function to check if iteration corresponds to current day
-	const isCurrentDayIteration = (iteration: any) => {
+	const isCurrentDayIteration = (iteration: Iteration) => {
 		if (!iteration.startDate || !iteration.endDate) return false;
 
 		const today = new Date();
@@ -165,7 +165,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 	};
 
 	// Function to check if iteration hasn't started yet
-	const isFutureIteration = (iteration: any) => {
+	const isFutureIteration = (iteration: Iteration) => {
 		if (!iteration.startDate) return false;
 
 		const today = new Date();

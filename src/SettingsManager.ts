@@ -32,6 +32,13 @@ export class SettingsManager {
 	}
 
 	/**
+	 * Reset the singleton instance (for testing purposes)
+	 */
+	public static resetInstance(): void {
+		SettingsManager.instance = undefined as unknown as SettingsManager;
+	}
+
+	/**
 	 * Get all settings with their current values
 	 */
 	public getSettings(): RobertSettings {

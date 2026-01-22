@@ -13,7 +13,7 @@ import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Task, type Defect } from '../../types/rally';
+import { type UserStory, type Defect } from '../../types/rally';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (
@@ -375,7 +375,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 							<span>Defects</span>
 						</button>
 					</div>
-					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
 					{activeUserStoryTab === 'tests' && (
 						<div
 							style={{
@@ -533,7 +533,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 						<span>Defects</span>
 					</button>
 				</div>
-				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
 				{activeUserStoryTab === 'tests' && (
 					<div
 						style={{

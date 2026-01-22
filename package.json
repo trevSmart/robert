@@ -246,9 +246,17 @@
 		"install:cursor": "node scripts/installCursor.cjs",
 		"install:vscode-insiders": "node scripts/installVSCodeInsiders.cjs",
 		"publish": "vsce publish",
-		"publish:pre-release": "vsce publish --pre-release"
+		"publish:pre-release": "vsce publish --pre-release",
+		"test": "npm run test:unit && npm run test:integration",
+		"test:unit": "vitest run --config vitest.config.unit.ts",
+		"test:unit:watch": "vitest watch --config vitest.config.unit.ts",
+		"test:unit:ui": "vitest --ui --config vitest.config.unit.ts",
+		"test:integration": "npm run compile && node ./out/test/runTest.js",
+		"test:coverage": "vitest run --coverage --config vitest.config.unit.ts",
+		"test:all": "npm run test:unit && npm run test:integration"
 	},
 	"devDependencies": {
+		"@types/mocha": "^10.0.10",
 		"@types/node": "^25.0.3",
 		"@types/react": "^18.2.75",
 		"@types/react-dom": "^18.2.25",
@@ -257,15 +265,20 @@
 		"@typescript-eslint/eslint-plugin": "^8.50.1",
 		"@typescript-eslint/parser": "^8.50.1",
 		"@vitejs/plugin-react": "^5.1.2",
+		"@vitest/ui": "^4.0.17",
+		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.7.1",
+		"c8": "^10.1.3",
 		"eslint": "^9.39.2",
 		"eslint-config-prettier": "^9.1.2",
 		"eslint-plugin-import": "^2.32.0",
 		"eslint-plugin-prettier": "^5.5.4",
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^7.0.1",
+		"glob": "^13.0.0",
 		"prettier": "^3.7.4",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.17"
 	},
 	"dependencies": {
 		"@types/echarts": "^4.9.22",

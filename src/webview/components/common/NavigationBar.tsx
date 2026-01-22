@@ -158,7 +158,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 					? '2px solid #007acc' // Blau més fosc i visible per temes clars
 					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
 				: 'none',
-			cursor: 'pointer',
+			cursor: isActive ? 'default' : 'pointer',
 			fontSize: '13px',
 			fontWeight: isActive ? '600' : '400',
 			transition: 'all 0.2s ease',
@@ -189,7 +189,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				ref={containerRef}
 			>
 				{visibleTabs.map(({ id, label, Icon }) => (
-					<button key={id} type="button" onClick={() => onSectionChange(id)} style={getTabStyles(activeSection === id)}>
+					<button key={id} type="button" onClick={() => activeSection !== id && onSectionChange(id)} style={getTabStyles(activeSection === id)}>
 						<Icon />
 						<span>{label}</span>
 					</button>
@@ -230,7 +230,9 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 										key={id}
 										type="button"
 										onClick={() => {
-											onSectionChange(id);
+											if (activeSection !== id) {
+												onSectionChange(id);
+											}
 											setOverflowOpen(false);
 										}}
 										style={{

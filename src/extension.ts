@@ -101,6 +101,16 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(openExtensionSettingsCommand);
 
+	// Register command to open settings panel
+	const openSettingsCommand = vscode.commands.registerCommand('robert.openSettings', async () => {
+		await errorHandler.executeWithErrorHandling(async () => {
+			outputManager.appendLine('[Robert] Command: openSettings');
+			// Open settings panel
+			await webviewProvider.createSettingsPanel();
+		}, 'robert.openSettings command');
+	});
+	context.subscriptions.push(openSettingsCommand);
+
 	// Register command to show panel only if it isn't already visible
 	const showIfHiddenCommand = vscode.commands.registerCommand('robert.showPanelIfHidden', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {

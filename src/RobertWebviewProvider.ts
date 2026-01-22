@@ -13,6 +13,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	private _disposables: vscode.Disposable[] = [];
 	private _currentPanel: vscode.WebviewPanel | undefined;
+	private _settingsPanel: vscode.WebviewPanel | undefined;
 	private _currentView?: vscode.WebviewView;
 	private _errorHandler: ErrorHandler;
 	private _settingsManager: SettingsManager;
@@ -304,6 +305,48 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
+	public async createSettingsPanel(): Promise<vscode.WebviewPanel> {
+		return (
+			(await this._errorHandler.executeWithErrorHandling(async () => {
+				// If settings panel already exists and is visible, reveal it
+				if (this._settingsPanel) {
+					this._settingsPanel.reveal(vscode.ViewColumn.One);
+					return this._settingsPanel;
+				}
+
+				const settingsTitle = this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings';
+				const panel = vscode.window.createWebviewPanel('robert.settings', settingsTitle, vscode.ViewColumn.One, {
+					enableScripts: true,
+					localResourceRoots: [this._extensionUri]
+				});
+
+				this._settingsPanel = panel;
+				this._errorHandler.logViewCreation('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
+
+				const settingsHtml = await this._getHtmlForSettings(panel.webview);
+				panel.webview.html = settingsHtml;
+
+				// Handle messages from settings webview
+				this._setupSettingsWebviewMessageListener(panel);
+
+				panel.onDidDispose(
+					() => {
+						this._errorHandler.logViewDestruction('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
+						this._settingsPanel = undefined;
+					},
+					undefined,
+					this._disposables
+				);
+
+				return panel;
+			}, 'createSettingsPanel')) ||
+			vscode.window.createWebviewPanel('robert.settings', this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings', vscode.ViewColumn.One, {
+				enableScripts: true,
+				localResourceRoots: [this._extensionUri]
+			})
+		);
+	}
+
 	private async _getHtmlForLogo(webview: vscode.Webview): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
@@ -316,6 +359,47 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				});
 			}, 'getHtmlForLogo')) || '<html><body><p>Error loading logo</p></body></html>'
 		);
+	}
+
+	private async _getHtmlForSettings(webview: vscode.Webview): Promise<string> {
+		return (
+			(await this._errorHandler.executeWithErrorHandling(async () => {
+				this._errorHandler.logInfo('Settings webview content rendered from build HTML', 'RobertWebviewProvider._getHtmlForSettings');
+				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
+				return this._getHtmlFromBuild(webview, 'settings.html', {
+					__INTER_FONT_URI__: interFontUri.toString()
+				});
+			}, 'getHtmlForSettings')) || '<html><body><p>Error loading settings</p></body></html>'
+		);
+	}
+
+	private _setupSettingsWebviewMessageListener(panel: vscode.WebviewPanel): void {
+		const messageListener = panel.webview.onDidReceiveMessage(
+			async (message: any) => {
+				await this._errorHandler.executeWithErrorHandling(async () => {
+					this._errorHandler.logInfo(`Received settings message: ${message.command}`, 'SettingsWebviewMessageListener');
+
+					switch (message.command) {
+						case 'saveSettings':
+							// Handle settings save logic here
+							this._errorHandler.logInfo('Settings save requested', 'SettingsWebviewMessageListener');
+							// TODO: Implement settings saving logic
+							break;
+						case 'loadSettings':
+							// Handle settings load logic here
+							this._errorHandler.logInfo('Settings load requested', 'SettingsWebviewMessageListener');
+							// TODO: Implement settings loading logic
+							break;
+						default:
+							this._errorHandler.logWarning(`Unknown settings message command: ${message.command}`, 'SettingsWebviewMessageListener');
+					}
+				}, 'settingsWebviewMessageListener');
+			},
+			undefined,
+			this._disposables
+		);
+
+		this._disposables.push(messageListener);
 	}
 
 	private async _getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
@@ -702,6 +786,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 										userStoryId: message.userStoryId
 									});
 								}
+							}
+							break;
+						case 'openSettings':
+							try {
+								this._errorHandler.logInfo('Opening settings panel', 'WebviewMessageListener');
+								await this.createSettingsPanel();
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openSettings');
 							}
 							break;
 						default:

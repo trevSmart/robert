@@ -12,6 +12,7 @@ import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
+import { logDebug } from '../utils/vscodeApi';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (
@@ -562,8 +563,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 );
 
 const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects }) => {
-	// eslint-disable-next-line no-console
-	console.log('[AllDefectsView] _onDefectSelected:', _onDefectSelected, 'currentScreen:', currentScreen);
+	logDebug(`_onDefectSelected: ${JSON.stringify(_onDefectSelected)}, currentScreen: ${currentScreen}`, 'AllDefectsView');
 	return (
 		<>
 			{currentScreen === 'defects' && (
@@ -817,8 +817,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const loadedViews = useRef<Set<PortfolioViewType>>(new Set());
 
 	const loadIterations = useCallback(() => {
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] Loading iterations...');
+		logDebug('Loading iterations...', 'Frontend');
 		setIterationsLoading(true);
 		setIterationsError(null);
 		sendMessage({
@@ -828,8 +827,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const loadUserStories = useCallback(
 		(iteration?: Iteration) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Loading user stories...', iteration ? `for iteration: ${iteration.name}` : 'for all');
+			logDebug(`Loading user stories... ${iteration ? `for iteration: ${iteration.name}` : 'for all'}`, 'Frontend');
 			setUserStoriesLoading(true);
 			setUserStoriesError(null);
 			sendMessage({
@@ -841,8 +839,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	);
 
 	const loadAllUserStories = useCallback(() => {
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] Loading ALL user stories...');
+		logDebug('Loading ALL user stories...', 'Frontend');
 		setUserStoriesLoading(true);
 		setUserStoriesError(null);
 		sendMessage({
@@ -852,8 +849,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	}, [sendMessage]);
 
 	const loadAllDefects = useCallback(() => {
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] Loading ALL defects...');
+		logDebug('Loading ALL defects...', 'Frontend');
 		setDefectsLoading(true);
 		setDefectsError(null);
 		sendMessage({
@@ -863,8 +859,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const loadUserStoryDefects = useCallback(
 		(userStoryId: string) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Loading defects for user story:', userStoryId);
+			logDebug(`Loading defects for user story: ${userStoryId}`, 'Frontend');
 			setUserStoryDefectsLoading(true);
 			setUserStoryDefectsError(null);
 			sendMessage({
@@ -876,8 +871,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	);
 
 	const handleDefectSelected = useCallback((defect: RallyDefect) => {
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] Defect selected:', defect.formattedId);
+		logDebug(`Defect selected: ${defect.formattedId}`, 'Frontend');
 		setSelectedDefect(defect);
 		setCurrentScreen('defectDetail');
 	}, []);
@@ -889,8 +883,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const switchViewType = useCallback(
 		(newViewType: PortfolioViewType) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Switching to view type:', newViewType);
+			logDebug(`Switching to view type: ${newViewType}`, 'Frontend');
 
 			// State cleaners for each view type (only clear when necessary)
 			const stateCleaners = {
@@ -927,8 +920,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			// Only load data if this view hasn't been loaded yet in this session
 			// This prevents redundant fetches when switching between tabs
 			if (!loadedViews.current.has(newViewType)) {
-				// eslint-disable-next-line no-console
-				console.log('[Frontend] First time loading view:', newViewType, '- fetching data');
+				logDebug(`First time loading view: ${newViewType} - fetching data`, 'Frontend');
 				loadedViews.current.add(newViewType);
 
 				const newLoader = dataLoaders[newViewType];
@@ -936,8 +928,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					newLoader();
 				}
 			} else {
-				// eslint-disable-next-line no-console
-				console.log('[Frontend] View already loaded:', newViewType, '- skipping fetch');
+				logDebug(`View already loaded: ${newViewType} - skipping fetch`, 'Frontend');
 			}
 		},
 		[loadIterations, loadAllUserStories, loadAllDefects]
@@ -945,8 +936,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const handleIterationSelected = useCallback(
 		(iteration: Iteration) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Iteration selected:', iteration.name);
+			logDebug(`Iteration selected: ${iteration.name}`, 'Frontend');
 			setSelectedIteration(iteration);
 			loadUserStories(iteration);
 			setCurrentScreen('userStories');
@@ -964,8 +954,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const loadTasks = useCallback(
 		(userStoryId: string) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Loading tasks for user story:', userStoryId);
+			logDebug(`Loading tasks for user story: ${userStoryId}`, 'Frontend');
 			setTasksLoading(true);
 			setTasksError(null);
 			sendMessage({
@@ -978,8 +967,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const handleUserStorySelected = useCallback(
 		(userStory: UserStory) => {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] User story selected:', userStory.formattedId);
+			logDebug(`User story selected: ${userStory.formattedId}`, 'Frontend');
 			setSelectedUserStory(userStory);
 			setCurrentScreen('userStoryDetail');
 			setActiveUserStoryTab('tasks');
@@ -1071,8 +1059,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Initialize webview on mount
 	useEffect(() => {
-		// eslint-disable-next-line no-console
-		console.log('[Frontend] MainWebview initializing on mount');
+		logDebug('MainWebview initializing on mount', 'Frontend');
 
 		sendMessage({
 			command: 'webviewReady'
@@ -1087,8 +1074,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		// Since activeSection defaults to 'calendar', we should load iterations immediately
 		setTimeout(() => {
 			if (!hasLoadedCalendarIterations.current) {
-				// eslint-disable-next-line no-console
-				console.log('[Frontend] Initial mount - loading iterations for calendar');
+				logDebug('Initial mount - loading iterations for calendar', 'Frontend');
 				hasLoadedCalendarIterations.current = true;
 				loadIterations();
 			}
@@ -1100,8 +1086,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data;
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Received message from extension:', message.command);
+
+			logDebug(`Received message from extension: ${message.command}`, 'Frontend');
 
 			switch (message.command) {
 				case 'showLogo':
@@ -1118,14 +1104,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						// Auto-select current iteration if available
 						const currentIteration = findCurrentIteration(message.iterations);
 						if (currentIteration) {
-							// eslint-disable-next-line no-console
-							console.log('[Frontend] Auto-selecting current iteration:', currentIteration.name);
+							logDebug(`Auto-selecting current iteration: ${currentIteration.name}`, 'Frontend');
 							setSelectedIteration(currentIteration);
 							loadUserStories(currentIteration);
 							setCurrentScreen('userStories');
 						} else {
-							// eslint-disable-next-line no-console
-							console.log('[Frontend] No active iteration found for today');
+							logDebug('No active iteration found for today', 'Frontend');
 						}
 					} else {
 						setIterationsError('Failed to load iterations');

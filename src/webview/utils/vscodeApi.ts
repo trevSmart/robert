@@ -1,3 +1,5 @@
+/// <reference path="../../types/window.d.ts" />
+
 type VsCodeApi = {
 	postMessage(message: Record<string, unknown>): void;
 	setState?(state: unknown): void;
@@ -24,4 +26,20 @@ export function getVsCodeApi(): VsCodeApi | null {
 	}
 
 	return null;
+}
+
+/**
+ * Centralized debug logging function that only logs if debug mode is enabled
+ * Messages are sent to the extension backend for conditional logging
+ */
+export function logDebug(message: string, context: string = 'Frontend'): void {
+	const vscode = getVsCodeApi();
+	if (vscode) {
+		vscode.postMessage({
+			command: 'logDebug',
+			message,
+			context,
+			timestamp: new Date().toISOString()
+		});
+	}
 }

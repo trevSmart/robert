@@ -43,7 +43,7 @@ interface UserStoriesTableProps {
 	selectedUserStory?: UserStory | null;
 }
 
-const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loading = false, error, onLoadUserStories, onClearUserStories, onUserStorySelected, selectedUserStory }) => {
+const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loading = false, error, onUserStorySelected, selectedUserStory }) => {
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
 			case 'new':
@@ -168,7 +168,7 @@ interface IterationsTableProps {
 	selectedIteration?: Iteration | null;
 }
 
-export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, loading = false, error, onLoadIterations, onIterationSelected, selectedIteration }) => {
+export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, loading = false, error, onIterationSelected, selectedIteration }) => {
 	// Function to check if iteration corresponds to current day
 	const isCurrentDayIteration = (iteration: any) => {
 		if (!iteration.startDate || !iteration.endDate) return false;

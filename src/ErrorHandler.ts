@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { OutputChannelManager } from './utils/OutputChannelManager';
+import { SettingsManager } from './SettingsManager';
 
 export class ErrorHandler {
 	private static instance: ErrorHandler;
@@ -79,6 +80,25 @@ export class ErrorHandler {
 		const timestamp = new Date().toISOString();
 
 		this.outputManager.appendLine(`[Robert] ℹ️ INFO in ${context}:`);
+		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
+		this.outputManager.appendLine(`[Robert] Message: ${message}`);
+		this.outputManager.appendLine(`[Robert] ---`);
+	}
+
+	/**
+	 * Log debug messages to the output channel only if debug mode is enabled
+	 */
+	public logDebug(message: string, context: string = 'Unknown'): void {
+		const settingsManager = SettingsManager.getInstance();
+		const debugMode = settingsManager.getSetting('debugMode');
+
+		if (!debugMode) {
+			return; // Don't log anything if debug mode is disabled
+		}
+
+		const timestamp = new Date().toISOString();
+
+		this.outputManager.appendLine(`[Robert] 🐛 DEBUG in ${context}:`);
 		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
 		this.outputManager.appendLine(`[Robert] Message: ${message}`);
 		this.outputManager.appendLine(`[Robert] ---`);

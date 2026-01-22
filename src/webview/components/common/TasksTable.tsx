@@ -21,7 +21,7 @@ interface TasksTableProps {
 	onLoadTasks?: () => void;
 }
 
-const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, onLoadTasks }) => {
+const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error }) => {
 	return (
 		<div
 			style={{

@@ -5,7 +5,6 @@ import { ErrorHandler } from './ErrorHandler';
 import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUsers } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
-import { rallyData } from './extension';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -577,7 +576,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading iterations from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
-								console.log('[Robert] 🔄 Webview received loadIterations command');
+								this._errorHandler.logDebug('Webview received loadIterations command', 'RobertWebviewProvider');
 
 								// Load iterations and current user in parallel
 								const [iterationsResult, userResult] = await Promise.all([getIterations(), getCurrentUser()]);
@@ -623,7 +622,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading user stories from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
-								console.log('[Robert] 🔄 Webview received loadUserStories command', message.iteration ? `for iteration: ${message.iteration}` : 'for all');
+								this._errorHandler.logDebug(`Webview received loadUserStories command ${message.iteration ? `for iteration: ${message.iteration}` : 'for all'}`, 'RobertWebviewProvider');
 
 								const query = message.iteration ? { Iteration: message.iteration } : {};
 								const userStoriesResult = await getUserStories(query);
@@ -664,7 +663,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading tasks from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
-								console.log('[Robert] 📋 Webview received loadTasks command for user story:', message.userStoryId);
+								this._errorHandler.logDebug(`Webview received loadTasks command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
 
 								const tasksResult = await getTasks(message.userStoryId);
 
@@ -708,7 +707,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading defects from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
-								console.log('[Robert] 🐛 Webview received loadDefects command');
+								this._errorHandler.logDebug('Webview received loadDefects command', 'RobertWebviewProvider');
 
 								const defectsResult = await getDefects();
 
@@ -747,7 +746,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading defects for user story from Rally API', 'WebviewMessageListener');
 								// eslint-disable-next-line no-console
-								console.log('[Robert] 🐛 Webview received loadUserStoryDefects command for user story:', message.userStoryId);
+								this._errorHandler.logDebug(`Webview received loadUserStoryDefects command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
 
 								const defectsResult = await getDefects({
 									WorkProduct: `/hierarchicalrequirement/${message.userStoryId}`
@@ -796,6 +795,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openSettings');
 							}
 							break;
+						case 'logDebug':
+							if (message.message && message.context) {
+								this._errorHandler.logDebug(message.message as string, message.context as string);
+							}
+							break;
 						default:
 							this._errorHandler.logWarning(`Unknown message command: ${message.command}`, 'WebviewMessageListener');
 							break;
@@ -834,7 +838,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 */
 	private async _openTutorialInEditor(tutorial: any): Promise<void> {
 		const tutorialContent = this._generateTutorialMarkdown(tutorial);
-		const fileName = `${tutorial.title.replace(/[^a-zA-Z0-9]/g, '_')}.md`;
 
 		// Create a new untitled document with the tutorial content
 		const document = await vscode.workspace.openTextDocument({

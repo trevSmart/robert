@@ -267,7 +267,6 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
-		"@types/echarts": "^4.9.22",
 		"@types/react-dnd": "^2.0.36",
 		"@types/react-dom": "^18.2.25",
 		"@types/styled-components": "^5.1.36",

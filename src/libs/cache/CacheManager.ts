@@ -2,6 +2,10 @@
  * CacheManager - Manages cached data with TTL (Time To Live) and automatic invalidation
  */
 
+import { OutputChannelManager } from '../../utils/OutputChannelManager';
+
+const outputManager = OutputChannelManager.getInstance();
+
 export interface CacheEntry<T> {
 	data: T;
 	timestamp: number;
@@ -181,8 +185,6 @@ export class CacheManager<T> {
 
 		if (evicted > 0) {
 			this.stats.evictions += evicted;
-			// eslint-disable-next-line no-console
-			console.log(`[Robert] 🧹 Cache cleanup: ${evicted} expired entries removed`);
 		}
 	}
 

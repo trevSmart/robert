@@ -43,6 +43,12 @@ export function activate(context: vscode.ExtensionContext) {
 	const errorHandler = ErrorHandler.getInstance();
 	outputManager.appendLine('[Robert] ✅ ErrorHandler initialized successfully');
 
+	// Auto-show output channel if debug mode is enabled
+	if (isDebugMode) {
+		outputManager.appendLine('[Robert] 🐛 Debug mode enabled - showing output channel');
+		outputManager.show();
+	}
+
 	// Extension is now active
 	outputManager.appendLine('[Robert] 📝 Registering helloWorld command');
 	const disposable = vscode.commands.registerCommand('robert.helloWorld', () => {

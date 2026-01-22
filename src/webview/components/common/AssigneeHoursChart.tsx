@@ -1,7 +1,6 @@
-import type React from 'react';
-import { useEffect, useRef } from 'react';
+import { type FC, useEffect, useRef, useCallback } from 'react';
 import * as echarts from 'echarts';
-import { aggregateUserStoriesByAssignee, AssigneeUserStories } from '../../utils/chartUtils';
+import { aggregateUserStoriesByAssignee } from '../../utils/chartUtils';
 import { themeColors } from '../../utils/themeColors';
 
 interface UserStory {
@@ -16,7 +15,7 @@ interface AssigneeHoursChartProps {
 	userStories: UserStory[];
 }
 
-const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) => {
+const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
 	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
@@ -37,13 +36,13 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 	};
 
 	// Get color palette with theme adjustments
-	const getColorPalette = (): string[] => {
+	const getColorPalette = useCallback((): string[] => {
 		const baseColors = ['#B5D6F0', '#C8E6C9', '#FFE9A3', '#FFCCCC', '#B3E5FC', '#FFD9B3', '#E1BEE7', '#F8BBD0', '#D1C4E9', '#F0F4C3', '#C8F7DC', '#A5D6A7', '#EF9A9A', '#FFCC80', '#CE93D8', '#90CAF9', '#80DEEA', '#FFAB91', '#F48FB1', '#FFF9C4', '#B39DDB', '#C5E1A5', '#FFCCBC', '#BCAAA4'];
 		if (isLightTheme()) {
 			return baseColors;
 		}
 		return baseColors.map(color => darkenColor(color, 30));
-	};
+	}, []);
 
 	const barHeight = 20; // Height per bar in pixels
 	const assigneeData = aggregateUserStoriesByAssignee(userStories);
@@ -116,7 +115,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		});
 
 		// Configure chart options
-		const option: any = {
+		const option: echarts.EChartsOption = {
 			title: {
 				text: `Hours by Assignee (${totalHours}h total)`,
 				subtext: 'Horizontal Bar Chart',
@@ -136,7 +135,13 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 				axisPointer: {
 					type: 'shadow'
 				},
-				position: function (point: any, params: any, dom: any, rect: any, size: any) {
+				position: ((
+					point: [number, number],
+					params: echarts.TooltipComponentFormatterCallbackParams,
+					dom: HTMLElement,
+					rect: unknown,
+					size: { viewSize: [number, number]; contentSize: [number, number] }
+				): [number, number] => {
 					// Position tooltip to the right of the cursor, with some padding
 					let x = point[0] + 10;
 					let y = point[1] - size.contentSize[1] / 2;
@@ -157,16 +162,20 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 					}
 
 					return [x, y];
-				},
-				formatter: function (params: any) {
+				}) as echarts.TooltipComponentOption['position'],
+				formatter: function (params: echarts.TooltipComponentFormatterCallbackParams) {
+					if (!Array.isArray(params) || params.length === 0) {
+						return '';
+					}
 					const assignee = params[0].name;
 					let content = `<div style="font-size: 12px;"><strong style="font-size: 13px;">${assignee}</strong><br/><br/>`;
 					let total = 0;
 
-					params.forEach((param: any) => {
-						if (param.value > 0) {
-							content += `${param.seriesName}: <strong>${param.value}h</strong><br/>`;
-							total += param.value;
+					params.forEach((param) => {
+						const value = typeof param.value === 'number' ? param.value : Array.isArray(param.value) ? (typeof param.value[0] === 'number' ? param.value[0] : 0) : 0;
+						if (value > 0) {
+							content += `${param.seriesName}: <strong>${value}h</strong><br/>`;
+							total += value;
 						}
 					});
 
@@ -241,7 +250,7 @@ const AssigneeHoursChart: React.FC<AssigneeHoursChartProps> = ({ userStories }) 
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
-	}, [userStories, assigneeData]);
+	}, [userStories, assigneeData, getColorPalette]);
 
 	// Cleanup on unmount
 	useEffect(() => {

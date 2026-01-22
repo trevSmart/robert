@@ -1,144 +1,5 @@
-import type React from 'react';
+import { FC } from 'react';
 import styled from 'styled-components';
-import { themeColors, getInputBorderColor } from '../../utils/themeColors';
-
-const Card = styled.div`
-	margin: 20px 0;
-	padding: 20px;
-	background-color: ${themeColors.panelBackground};
-	border-radius: 8px;
-	border: 1px solid ${themeColors.panelBorder};
-
-	@media (max-width: 720px) {
-		padding: 16px;
-	}
-`;
-
-const CardTitle = styled.div`
-	font-size: 12px;
-	font-weight: 400;
-	color: ${themeColors.descriptionForeground};
-	letter-spacing: 0.5px;
-	margin: 0 0 16px 0;
-	padding-left: 7px;
-`;
-
-const FormGrid = styled.div`
-	display: grid;
-	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-	gap: 20px;
-	align-items: start;
-
-	@media (max-width: 720px) {
-		gap: 16px;
-	}
-`;
-
-const Group = styled.section`
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-`;
-
-const GroupTitle = styled.h3`
-	margin: 0 0 6px 0;
-	color: ${themeColors.foreground};
-	font-size: 14px;
-	font-weight: 600;
-`;
-
-const Field = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-`;
-
-const Label = styled.label`
-	font-size: 12px;
-	color: ${themeColors.descriptionForeground};
-`;
-
-const BaseInput = styled.input`
-	width: 100%;
-	padding: 8px 10px;
-	background-color: ${themeColors.inputBackground};
-	color: ${themeColors.inputForeground};
-	border: 1px solid ${getInputBorderColor()};
-	border-radius: 4px;
-	font-size: 13px;
-
-	&:focus {
-		outline: none;
-		border-color: ${themeColors.progressBarBackground};
-		box-shadow: 0 0 0 2px rgba(73, 168, 255, 0.1);
-	}
-`;
-
-const BaseSelect = styled.select`
-	width: 100%;
-	padding: 8px 10px;
-	background-color: ${themeColors.inputBackground};
-	color: ${themeColors.inputForeground};
-	border: 1px solid ${getInputBorderColor()};
-	border-radius: 4px;
-	font-size: 13px;
-
-	&:focus {
-		outline: none;
-		border-color: ${themeColors.progressBarBackground};
-		box-shadow: 0 0 0 2px rgba(73, 168, 255, 0.1);
-	}
-`;
-
-const BaseTextarea = styled.textarea`
-	width: 100%;
-	padding: 8px 10px;
-	background-color: ${themeColors.inputBackground};
-	color: ${themeColors.inputForeground};
-	border: 1px solid ${getInputBorderColor()};
-	border-radius: 4px;
-	font-size: 13px;
-	font-family:
-		'Inter',
-		${themeColors.fontFamily},
-		-apple-system,
-		BlinkMacSystemFont,
-		'Segoe UI',
-		sans-serif;
-	line-height: 1.4;
-	resize: vertical;
-	min-height: 120px;
-
-	&:focus {
-		outline: none;
-		border-color: ${themeColors.progressBarBackground};
-		box-shadow: 0 0 0 2px rgba(73, 168, 255, 0.1);
-	}
-`;
-
-const CheckboxRow = styled.div`
-	display: flex;
-	align-items: center;
-	gap: 8px;
-`;
-
-const CheckboxText = styled.span`
-	font-size: 13px;
-	color: var(--vscode-foreground);
-`;
-
-const MonospaceInput = styled(BaseInput)`
-	font-size: 12px;
-	font-family: monospace;
-`;
-
-const DescriptionGroup = styled(Group)`
-	grid-column: span 2;
-
-	@media (max-width: 720px) {
-		grid-column: span 1;
-	}
-`;
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -187,13 +48,14 @@ interface UserStory {
 	defectsCount: number;
 	discussionCount: number;
 	appgar: string;
+	scheduleState?: string;
 }
 
 interface UserStoryFormProps {
 	userStory: UserStory;
 }
 
-const UserStoryForm: React.FC<UserStoryFormProps> = ({ userStory }) => {
+const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
 			case 'new':

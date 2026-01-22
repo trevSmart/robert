@@ -1,4 +1,4 @@
-import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { isLightTheme } from '../../utils/themeColors';
 
 type Section = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
@@ -84,7 +84,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	const measureOverflowRef = useRef<HTMLButtonElement>(null);
 	const realOverflowButtonRef = useRef<HTMLButtonElement>(null);
 
-	const recomputeVisibleTabs = () => {
+	const recomputeVisibleTabs = useCallback(() => {
 		if (!containerRef.current || !measureTabsRef.current) return;
 
 		const availableWidth = containerRef.current.getBoundingClientRect().width;
@@ -124,11 +124,11 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		}
 
 		setVisibleCount(nextVisibleCount);
-	};
+	}, [tabs.length]);
 
 	useLayoutEffect(() => {
 		recomputeVisibleTabs();
-	}, [tabs.length]);
+	}, [tabs.length, recomputeVisibleTabs]);
 
 	// Recalculate when the real overflow button is first rendered
 	useLayoutEffect(() => {
@@ -138,7 +138,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				recomputeVisibleTabs();
 			});
 		}
-	}, [visibleCount]);
+	}, [visibleCount, recomputeVisibleTabs]);
 
 	useEffect(() => {
 		const handleResize = () => {
@@ -146,7 +146,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		};
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
-	}, []);
+	}, [recomputeVisibleTabs]);
 
 	useEffect(() => {
 		const observer = new ResizeObserver(() => {
@@ -156,7 +156,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 			observer.observe(containerRef.current);
 		}
 		return () => observer.disconnect();
-	}, []);
+	}, [recomputeVisibleTabs]);
 
 	// Observe the real overflow button when it's rendered
 	useEffect(() => {
@@ -167,7 +167,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		});
 		observer.observe(realOverflowButtonRef.current);
 		return () => observer.disconnect();
-	}, [visibleCount]);
+	}, [visibleCount, recomputeVisibleTabs]);
 
 	const visibleTabs = tabs.slice(0, visibleCount);
 	const overflowTabs = tabs.slice(visibleCount);

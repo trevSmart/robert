@@ -1,5 +1,3 @@
-/// <reference path="../../types/window.d.ts" />
-
 type VsCodeApi = {
 	postMessage(message: Record<string, unknown>): void;
 	setState?(state: unknown): void;

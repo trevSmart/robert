@@ -86,7 +86,6 @@ const getScheduleStateColor = (scheduleState: string) => {
 };
 
 const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect }) => {
-	// eslint-disable-next-line no-console
 	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, defects.length: ${defects.length}`, 'DefectsTable');
 	return (
 		<div
@@ -155,7 +154,6 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 							<tr
 								key={defect.objectId}
 								onClick={() => {
-									// eslint-disable-next-line no-console
 									logDebug(`Clicked on defect: ${defect.formattedId}, onDefectSelected: ${JSON.stringify(onDefectSelected)}`, 'DefectsTable');
 									if (onDefectSelected) {
 										onDefectSelected(defect);

@@ -61,7 +61,6 @@ export class WorkerPool {
 		});
 
 		worker.on('error', error => {
-			// eslint-disable-next-line no-console
 			console.error('[Robert] Worker error:', error);
 			this.busyWorkers.delete(worker);
 

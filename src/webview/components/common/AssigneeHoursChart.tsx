@@ -10,7 +10,7 @@ interface AssigneeHoursChartProps {
 
 const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
-	const chartInstanceRef = useRef<any | null>(null);
+	const chartInstanceRef = useRef<null>(null);
 
 	// Detect if theme is light or dark
 	const isLightTheme = () => {
@@ -53,8 +53,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		}
 
 		// Prepare data
-		const totalHours = assigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
-		const lightTheme = isLightTheme();
+		const _totalHours = assigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
+		const _lightTheme = isLightTheme();
 
 		// Create series data for stacked bars
 		// First, collect all unique user stories across assignees
@@ -74,7 +74,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		});
 
 		// Create series for each user story
-		const series = Array.from(allUserStories).map(storyId => {
+		const _series = Array.from(allUserStories).map(storyId => {
 			const storyDetails = storyDetailsMap.get(storyId);
 			const storyData = assigneeData.map(assignee => {
 				const story = assignee.userStories.find(s => s.id === storyId);

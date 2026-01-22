@@ -12,7 +12,7 @@ describe('SettingsManager', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		// Reset singleton instance
-		(SettingsManager as any).instance = undefined;
+		SettingsManager.resetInstance();
 		settingsManager = SettingsManager.getInstance();
 	});
 
@@ -65,13 +65,13 @@ describe('SettingsManager', () => {
 		it('should save settings to VS Code configuration', async () => {
 			const mockUpdate = vi.fn().mockResolvedValue(undefined);
 			const mockConfig = {
-				get: vi.fn((key: string, defaultValue: any) => defaultValue),
+				get: vi.fn(<T>(key: string, defaultValue: T) => defaultValue),
 				update: mockUpdate,
 				has: vi.fn(() => true),
 				inspect: vi.fn()
 			};
 
-			vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(mockConfig as any);
+			vi.mocked(vscode.workspace.getConfiguration).mockReturnValue(mockConfig as vscode.WorkspaceConfiguration);
 
 			await settingsManager.saveSettings({
 				apiEndpoint: 'https://custom.api.com',

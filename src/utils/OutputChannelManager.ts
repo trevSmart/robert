@@ -23,6 +23,13 @@ export class OutputChannelManager {
 	}
 
 	/**
+	 * Reset the singleton instance (for testing purposes)
+	 */
+	public static resetInstance(): void {
+		OutputChannelManager.instance = undefined as unknown as OutputChannelManager;
+	}
+
+	/**
 	 * Get the output channel instance
 	 */
 	public getOutputChannel(): vscode.OutputChannel {

@@ -19,6 +19,13 @@ export class ErrorHandler {
 	}
 
 	/**
+	 * Reset the singleton instance (for testing purposes)
+	 */
+	public static resetInstance(): void {
+		ErrorHandler.instance = undefined as unknown as ErrorHandler;
+	}
+
+	/**
 	 * Setup global error handling for uncaught errors
 	 * NOTE: Global listeners removed to avoid capturing errors from other extensions
 	 */

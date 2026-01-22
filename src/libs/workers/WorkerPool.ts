@@ -8,12 +8,19 @@ import path from 'path';
 
 export interface ProcessingTask {
 	type: 'formatUserStories' | 'formatIterations' | 'formatTasks' | 'formatDefects';
-	payload: any;
+	payload: unknown[];
+}
+
+interface WorkerResult {
+	success: boolean;
+	data?: unknown[];
+	error?: string;
+	processed: number;
 }
 
 interface PendingTask {
 	task: ProcessingTask;
-	resolve: (value: any) => void;
+	resolve: (value: unknown[]) => void;
 	reject: (error: Error) => void;
 }
 
@@ -39,7 +46,7 @@ export class WorkerPool {
 	private createWorker(): void {
 		const worker = new Worker(this.workerScript);
 
-		worker.on('message', (result: any) => {
+		worker.on('message', (result: WorkerResult) => {
 			this.busyWorkers.delete(worker);
 
 			if (result.success) {
@@ -82,7 +89,7 @@ export class WorkerPool {
 		this.workers.push(worker);
 	}
 
-	private processTask(task: ProcessingTask, resolve: (value: any) => void, reject: (error: Error) => void): void {
+	private processTask(task: ProcessingTask, resolve: (value: unknown[]) => void, reject: (error: Error) => void): void {
 		// Buscar un worker disponible
 		const availableWorker = this.workers.find(w => !this.busyWorkers.has(w));
 
@@ -101,28 +108,28 @@ export class WorkerPool {
 		});
 	}
 
-	async formatUserStories(data: any[]): Promise<any[]> {
+	async formatUserStories(data: unknown[]): Promise<unknown[]> {
 		return this.process({
 			type: 'formatUserStories',
 			payload: data
 		});
 	}
 
-	async formatIterations(data: any[]): Promise<any[]> {
+	async formatIterations(data: unknown[]): Promise<unknown[]> {
 		return this.process({
 			type: 'formatIterations',
 			payload: data
 		});
 	}
 
-	async formatTasks(data: any[]): Promise<any[]> {
+	async formatTasks(data: unknown[]): Promise<unknown[]> {
 		return this.process({
 			type: 'formatTasks',
 			payload: data
 		});
 	}
 
-	async formatDefects(data: any[]): Promise<any[]> {
+	async formatDefects(data: unknown[]): Promise<unknown[]> {
 		return this.process({
 			type: 'formatDefects',
 			payload: data

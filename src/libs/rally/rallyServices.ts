@@ -1,5 +1,5 @@
 import { rallyData } from '../../extension.js';
-import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
+import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, RallyTask, User } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
 import { CacheManager } from '../cache/CacheManager';
@@ -354,11 +354,11 @@ function sanitizeDescription(description: unknown): string | null {
  * Formateia Projects de forma assincròna en chunks
  * Per a molts items, usa yield per mantenir UI responsiva
  */
-async function formatProjectsAsync(results: any[]): Promise<RallyProject[]> {
+async function formatProjectsAsync(results: unknown[]): Promise<RallyProject[]> {
 	const formatted: RallyProject[] = [];
 
 	for (let i = 0; i < results.length; i++) {
-		const project: any = results[i];
+		const project = results[i] as Record<string, unknown>;
 
 		formatted.push({
 			objectId: project.ObjectID ?? project.objectId,
@@ -367,9 +367,9 @@ async function formatProjectsAsync(results: any[]): Promise<RallyProject[]> {
 			state: project.State ?? project.state,
 			creationDate: project.CreationDate ?? project.creationDate,
 			lastUpdateDate: project.LastUpdateDate ?? project.lastUpdateDate,
-			owner: project.Owner ? (project.Owner._refObjectName ?? project.Owner.refObjectName) : project.owner ? (project.owner._refObjectName ?? project.owner.refObjectName) : 'Sense propietari',
-			parent: project.Parent ? (project.Parent._refObjectName ?? project.Parent.refObjectName) : project.parent ? (project.parent._refObjectName ?? project.parent.refObjectName) : null,
-			childrenCount: project.Children?.Count ?? project.children?.count ?? 0
+			owner: project.Owner ? ((project.Owner as Record<string, unknown>)._refObjectName ?? (project.Owner as Record<string, unknown>).refObjectName) : project.owner ? ((project.owner as Record<string, unknown>)._refObjectName ?? (project.owner as Record<string, unknown>).refObjectName) : 'Sense propietari',
+			parent: project.Parent ? ((project.Parent as Record<string, unknown>)._refObjectName ?? (project.Parent as Record<string, unknown>).refObjectName) : project.parent ? ((project.parent as Record<string, unknown>)._refObjectName ?? (project.parent as Record<string, unknown>).refObjectName) : null,
+			childrenCount: (project.Children as Record<string, unknown>)?.Count ?? (project.children as Record<string, unknown>)?.count ?? 0
 		});
 
 		// Yield to event loop every CHUNK_SIZE items
@@ -385,11 +385,11 @@ async function formatProjectsAsync(results: any[]): Promise<RallyProject[]> {
  * Formateia Users de forma assincròna en chunks
  * Per a molts items, usa yield per mantenir UI responsiva
  */
-async function formatUsersAsync(results: any[]): Promise<RallyUser[]> {
+async function formatUsersAsync(results: unknown[]): Promise<RallyUser[]> {
 	const formatted: RallyUser[] = [];
 
 	for (let i = 0; i < results.length; i++) {
-		const user: any = results[i];
+		const user = results[i] as Record<string, unknown>;
 
 		formatted.push({
 			objectId: user.ObjectID ?? user.objectId,
@@ -415,11 +415,11 @@ async function formatUsersAsync(results: any[]): Promise<RallyUser[]> {
  * Formateia Iteracions de forma assincròna en chunks
  * Per a molts items, usa yield per mantenir UI responsiva
  */
-async function formatIterationsAsync(results: any[]): Promise<RallyIteration[]> {
+async function formatIterationsAsync(results: unknown[]): Promise<RallyIteration[]> {
 	const formatted: RallyIteration[] = [];
 
 	for (let i = 0; i < results.length; i++) {
-		const iteration: any = results[i];
+		const iteration = results[i] as Record<string, unknown>;
 
 		formatted.push({
 			objectId: iteration.ObjectID ?? iteration.objectId,
@@ -427,7 +427,7 @@ async function formatIterationsAsync(results: any[]): Promise<RallyIteration[]> 
 			startDate: iteration.StartDate ?? iteration.startDate,
 			endDate: iteration.EndDate ?? iteration.endDate,
 			state: iteration.State ?? iteration.state,
-			project: iteration.Project ? (iteration.Project._refObjectName ?? iteration.Project.refObjectName) : iteration.project ? (iteration.project._refObjectName ?? iteration.project.refObjectName) : null,
+			project: iteration.Project ? ((iteration.Project as Record<string, unknown>)._refObjectName ?? (iteration.Project as Record<string, unknown>).refObjectName) : iteration.project ? ((iteration.project as Record<string, unknown>)._refObjectName ?? (iteration.project as Record<string, unknown>).refObjectName) : null,
 			_ref: iteration._ref
 		});
 
@@ -444,11 +444,11 @@ async function formatIterationsAsync(results: any[]): Promise<RallyIteration[]> 
  * Formateia Tasks de forma assincròna en chunks
  * Per a molts items, usa yield per mantenir UI responsiva
  */
-async function formatTasksAsync(results: any[]): Promise<any[]> {
-	const formatted: any[] = [];
+async function formatTasksAsync(results: unknown[]): Promise<RallyTask[]> {
+	const formatted: RallyTask[] = [];
 
 	for (let i = 0; i < results.length; i++) {
-		const task: any = results[i];
+		const task = results[i] as Record<string, unknown>;
 
 		formatted.push({
 			objectId: task.ObjectID ?? task.objectId,
@@ -456,11 +456,11 @@ async function formatTasksAsync(results: any[]): Promise<any[]> {
 			name: task.Name ?? task.name,
 			description: sanitizeDescription(task.Description ?? task.description),
 			state: task.State ?? task.state,
-			owner: task.Owner ? (task.Owner._refObjectName ?? task.Owner.refObjectName) : task.owner ? (task.owner._refObjectName ?? task.owner.refObjectName) : 'Sense propietari',
+			owner: task.Owner ? ((task.Owner as Record<string, unknown>)._refObjectName ?? (task.Owner as Record<string, unknown>).refObjectName) : task.owner ? ((task.owner as Record<string, unknown>)._refObjectName ?? (task.owner as Record<string, unknown>).refObjectName) : 'Sense propietari',
 			estimate: task.Estimate ?? task.estimate ?? 0,
 			toDo: task.ToDo ?? task.toDo ?? 0,
 			timeSpent: task.TimeSpent ?? task.timeSpent ?? 0,
-			workItem: task.WorkProduct ? (task.WorkProduct._refObjectName ?? task.WorkProduct.refObjectName) : task.workProduct ? (task.workProduct._refObjectName ?? task.workProduct.refObjectName) : null,
+			workItem: task.WorkProduct ? ((task.WorkProduct as Record<string, unknown>)._refObjectName ?? (task.WorkProduct as Record<string, unknown>).refObjectName) : task.workProduct ? ((task.workProduct as Record<string, unknown>)._refObjectName ?? (task.workProduct as Record<string, unknown>).refObjectName) : null,
 			rank: task.Rank ?? task.rank ?? 0
 		});
 
@@ -477,11 +477,11 @@ async function formatTasksAsync(results: any[]): Promise<any[]> {
  * Formateia Defects de forma assincròna en chunks
  * Per a molts items, usa yield per mantenir UI responsiva
  */
-async function formatDefectsAsync(results: any[]): Promise<RallyDefect[]> {
+async function formatDefectsAsync(results: unknown[]): Promise<RallyDefect[]> {
 	const formatted: RallyDefect[] = [];
 
 	for (let i = 0; i < results.length; i++) {
-		const defect: any = results[i];
+		const defect = results[i] as Record<string, unknown>;
 
 		formatted.push({
 			objectId: defect.ObjectID ?? defect.objectId,
@@ -491,11 +491,11 @@ async function formatDefectsAsync(results: any[]): Promise<RallyDefect[]> {
 			state: defect.State ?? defect.state,
 			severity: defect.Severity ?? defect.severity ?? 'Unset',
 			priority: defect.Priority ?? defect.priority ?? 'Unset',
-			owner: defect.Owner ? (defect.Owner._refObjectName ?? defect.Owner.refObjectName) : defect.owner ? (defect.owner._refObjectName ?? defect.owner.refObjectName) : 'Sense assignat',
-			project: defect.Project ? (defect.Project._refObjectName ?? defect.Project.refObjectName) : defect.project ? (defect.project._refObjectName ?? defect.project.refObjectName) : null,
-			iteration: defect.Iteration ? (defect.Iteration._refObjectName ?? defect.Iteration.refObjectName) : defect.iteration ? (defect.iteration._refObjectName ?? defect.iteration.refObjectName) : null,
+			owner: defect.Owner ? ((defect.Owner as Record<string, unknown>)._refObjectName ?? (defect.Owner as Record<string, unknown>).refObjectName) : defect.owner ? ((defect.owner as Record<string, unknown>)._refObjectName ?? (defect.owner as Record<string, unknown>).refObjectName) : 'Sense assignat',
+			project: defect.Project ? ((defect.Project as Record<string, unknown>)._refObjectName ?? (defect.Project as Record<string, unknown>).refObjectName) : defect.project ? ((defect.project as Record<string, unknown>)._refObjectName ?? (defect.project as Record<string, unknown>).refObjectName) : null,
+			iteration: defect.Iteration ? ((defect.Iteration as Record<string, unknown>)._refObjectName ?? (defect.Iteration as Record<string, unknown>).refObjectName) : defect.iteration ? ((defect.iteration as Record<string, unknown>)._refObjectName ?? (defect.iteration as Record<string, unknown>).refObjectName) : null,
 			blocked: defect.Blocked ?? defect.blocked ?? false,
-			discussionCount: defect.Discussion?.Count ?? defect.discussion?.count ?? 0
+			discussionCount: (defect.Discussion as Record<string, unknown>)?.Count ?? (defect.discussion as Record<string, unknown>)?.count ?? 0
 		});
 
 		// Yield to event loop every CHUNK_SIZE items
@@ -514,30 +514,29 @@ async function formatDefectsAsync(results: any[]): Promise<RallyDefect[]> {
 async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUserStory[]> {
 	const formatted: RallyUserStory[] = [];
 
-	// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
-	const results = result.Results || result.QueryResult?.Results || [];
+	const results: unknown[] = (result as Record<string, unknown>).Results || ((result as Record<string, unknown>).QueryResult as Record<string, unknown>)?.Results || [];
 	for (let i = 0; i < results.length; i++) {
-		const userStory: any = results[i];
+		const userStory = results[i] as Record<string, unknown>;
 
 		formatted.push({
 			objectId: userStory.ObjectID ?? userStory.objectId,
 			formattedId: userStory.FormattedID ?? userStory.formattedId,
 			name: userStory.Name ?? userStory.name,
-			owner: userStory.Owner ? (userStory.Owner._refObjectName ?? userStory.Owner.refObjectName) : userStory.owner ? (userStory.owner._refObjectName ?? userStory.owner.refObjectName) : 'Sense propietari',
+			owner: userStory.Owner ? ((userStory.Owner as Record<string, unknown>)._refObjectName ?? (userStory.Owner as Record<string, unknown>).refObjectName) : userStory.owner ? ((userStory.owner as Record<string, unknown>)._refObjectName ?? (userStory.owner as Record<string, unknown>).refObjectName) : 'Sense propietari',
 			description: sanitizeDescription(userStory.Description ?? userStory.description),
 			state: userStory.State ?? userStory.state,
 			planEstimate: userStory.PlanEstimate ?? userStory.planEstimate,
 			toDo: userStory.ToDo ?? userStory.toDo,
-			assignee: userStory.c_Assignee ? (userStory.c_Assignee._refObjectName ?? userStory.c_Assignee.refObjectName) : userStory.c_assignee ? (userStory.c_assignee._refObjectName ?? userStory.c_assignee.refObjectName) : 'Sense assignat',
-			project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
-			iteration: userStory.Iteration ? (userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName) : userStory.iteration ? (userStory.iteration._refObjectName ?? userStory.iteration.refObjectName) : null,
+			assignee: userStory.c_Assignee ? ((userStory.c_Assignee as Record<string, unknown>)._refObjectName ?? (userStory.c_Assignee as Record<string, unknown>).refObjectName) : userStory.c_assignee ? ((userStory.c_assignee as Record<string, unknown>)._refObjectName ?? (userStory.c_assignee as Record<string, unknown>).refObjectName) : 'Sense assignat',
+			project: userStory.Project ? ((userStory.Project as Record<string, unknown>)._refObjectName ?? (userStory.Project as Record<string, unknown>).refObjectName) : userStory.project ? ((userStory.project as Record<string, unknown>)._refObjectName ?? (userStory.project as Record<string, unknown>).refObjectName) : null,
+			iteration: userStory.Iteration ? ((userStory.Iteration as Record<string, unknown>)._refObjectName ?? (userStory.Iteration as Record<string, unknown>).refObjectName) : userStory.iteration ? ((userStory.iteration as Record<string, unknown>)._refObjectName ?? (userStory.iteration as Record<string, unknown>).refObjectName) : null,
 			blocked: userStory.Blocked ?? userStory.blocked,
 			taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
 			taskStatus: userStory.TaskStatus ?? userStory.taskStatus,
-			tasksCount: userStory.Tasks?.Count ?? userStory.tasks?.count ?? 0,
-			testCasesCount: userStory.TestCases?.Count ?? userStory.testCases?.count ?? 0,
-			defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
-			discussionCount: userStory.Discussion?.Count ?? userStory.discussion?.count ?? 0,
+			tasksCount: (userStory.Tasks as Record<string, unknown>)?.Count ?? (userStory.tasks as Record<string, unknown>)?.count ?? 0,
+			testCasesCount: (userStory.TestCases as Record<string, unknown>)?.Count ?? (userStory.testCases as Record<string, unknown>)?.count ?? 0,
+			defectsCount: (userStory.Defects as Record<string, unknown>)?.Count ?? (userStory.defects as Record<string, unknown>)?.count ?? 0,
+			discussionCount: (userStory.Discussion as Record<string, unknown>)?.Count ?? (userStory.discussion as Record<string, unknown>)?.count ?? 0,
 			appgar: userStory.c_Appgar ?? userStory.appgar
 		});
 
@@ -650,12 +649,13 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 
 	// Fall back to in-memory cache for filtered results
 	if (Object.keys(query).length && rallyData.iterations && rallyData.iterations.length) {
-		const filteredIterations = rallyData.iterations.filter((iteration: any) =>
+		const filteredIterations = rallyData.iterations.filter((iteration: RallyIteration) =>
 			Object.keys(query).every(key => {
-				if (iteration[key as keyof any] === undefined) {
+				const value = (iteration as Record<string, unknown>)[key];
+				if (value === undefined) {
 					return false;
 				}
-				return iteration[key as keyof any] === query[key];
+				return value === query[key];
 			})
 		);
 
@@ -738,7 +738,7 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	}
 
 	for (const newIteration of iterations) {
-		const existingIterationIndex = rallyData.iterations.findIndex((existingIteration: any) => existingIteration.objectId === newIteration.objectId);
+		const existingIterationIndex = rallyData.iterations.findIndex((existingIteration: RallyIteration) => existingIteration.objectId === newIteration.objectId);
 
 		if (existingIterationIndex === -1) {
 			rallyData.iterations.push(newIteration);
@@ -837,12 +837,13 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 
 	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
 	if (Object.keys(query).length && rallyData.tasks && rallyData.tasks.length) {
-		const filteredTasks = rallyData.tasks.filter((task: any) =>
+		const filteredTasks = rallyData.tasks.filter((task) =>
 			Object.keys(query).every(key => {
-				if (task[key as keyof any] === undefined) {
+				const value = (task as Record<string, unknown>)[key];
+				if (value === undefined) {
 					return false;
 				}
-				return task[key as keyof any] === query[key];
+				return value === query[key];
 			})
 		);
 
@@ -904,7 +905,7 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 	}
 
 	for (const newTask of tasks) {
-		const existingTaskIndex = rallyData.tasks.findIndex((existingTask: any) => existingTask.objectId === newTask.objectId);
+		const existingTaskIndex = rallyData.tasks.findIndex((existingTask) => existingTask.objectId === newTask.objectId);
 
 		if (existingTaskIndex === -1) {
 			//Task nova, l'afegim

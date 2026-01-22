@@ -1,10 +1,11 @@
 import { FC, ComponentType } from 'react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'vscrui/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
 import UserStoryForm from './common/UserStoryForm';
 import TasksTable from './common/TasksTable';
 import DefectsTable from './common/DefectsTable';
+import DefectForm from './common/DefectForm';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
@@ -181,7 +182,7 @@ import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
 type SectionType = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
-type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects';
+type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
 
 interface Tutorial {
@@ -219,7 +220,7 @@ interface PortfolioViewProps {
 	_defectsLoading: boolean;
 	_defectsError: string | null;
 	_selectedDefect: RallyDefect | null;
-	activeUserStoryTab: 'tasks' | 'tests';
+	activeUserStoryTab: 'tasks' | 'tests' | 'defects';
 	currentScreen: ScreenType;
 	onLoadIterations: () => void;
 	onIterationSelected: (iteration: Iteration) => void;
@@ -233,7 +234,7 @@ interface PortfolioViewProps {
 	onBackToIterations: () => void;
 	onBackToUserStories: () => void;
 	_onBackToDefects: () => void;
-	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests') => void;
+	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects') => void;
 }
 
 // Portfolio View Components
@@ -350,6 +351,26 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 							<TestsTabIcon />
 							<span>Tests</span>
 						</button>
+						<button
+							type="button"
+							onClick={() => activeUserStoryTab !== 'defects' && onActiveUserStoryTabChange('defects')}
+							style={{
+								display: 'inline-flex',
+								alignItems: 'center',
+								gap: '6px',
+								padding: '6px 10px',
+								border: 'none',
+								borderBottom: activeUserStoryTab === 'defects' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+								backgroundColor: 'transparent',
+								color: activeUserStoryTab === 'defects' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+								cursor: activeUserStoryTab === 'defects' ? 'default' : 'pointer',
+								fontSize: '12px',
+								fontWeight: activeUserStoryTab === 'defects' ? 600 : 400
+							}}
+						>
+							<span className="codicon codicon-bug" style={{ fontSize: '14px' }}></span>
+							<span>Defects</span>
+						</button>
 					</div>
 					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
 					{activeUserStoryTab === 'tests' && (
@@ -380,6 +401,9 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 							</div>
 						</div>
 					)}
+					{activeUserStoryTab === 'defects' && (
+						<DefectsTable defects={userStoryDefects} loading={userStoryDefectsLoading} error={_userStoryDefectsError || undefined} onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+					)}
 				</>
 			)}
 		</>
@@ -394,12 +418,18 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	tasks,
 	tasksLoading,
 	tasksError,
+	userStoryDefects,
+	userStoryDefectsLoading,
+	_userStoryDefectsError,
+	_selectedDefect,
 	activeUserStoryTab,
 	currentScreen,
 	onLoadUserStories,
 	onClearUserStories,
 	onUserStorySelected,
 	onLoadTasks,
+	onLoadUserStoryDefects,
+	_onDefectSelected,
 	onBackToUserStories,
 	onActiveUserStoryTabChange
 }) => (
@@ -434,7 +464,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 				>
 					<button
 						type="button"
-						onClick={() => activeUserStoryTab !== 'tasks' && onActiveUserStoryTabChange('tasks')}
+						onClick={() => onActiveUserStoryTabChange('tasks')}
 						style={{
 							display: 'inline-flex',
 							alignItems: 'center',
@@ -454,7 +484,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 					</button>
 					<button
 						type="button"
-						onClick={() => activeUserStoryTab !== 'tests' && onActiveUserStoryTabChange('tests')}
+						onClick={() => onActiveUserStoryTabChange('tests')}
 						style={{
 							display: 'inline-flex',
 							alignItems: 'center',
@@ -471,6 +501,26 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 					>
 						<TestsTabIcon />
 						<span>Tests</span>
+					</button>
+					<button
+						type="button"
+						onClick={() => onActiveUserStoryTabChange('defects')}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 10px',
+							border: 'none',
+							borderBottom: activeUserStoryTab === 'defects' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+							backgroundColor: 'transparent',
+							color: activeUserStoryTab === 'defects' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
+							cursor: activeUserStoryTab === 'defects' ? 'default' : 'pointer',
+							fontSize: '12px',
+							fontWeight: activeUserStoryTab === 'defects' ? 600 : 400
+						}}
+					>
+						<span className="codicon codicon-bug" style={{ fontSize: '14px' }}></span>
+						<span>Defects</span>
 					</button>
 				</div>
 				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
@@ -502,27 +552,58 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 						</div>
 					</div>
 				)}
+				{activeUserStoryTab === 'defects' && (
+					<DefectsTable defects={userStoryDefects} loading={userStoryDefectsLoading} error={_userStoryDefectsError || undefined} onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+				)}
 			</>
 		)}
 	</>
 );
 
-const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, currentScreen, _onLoadDefects }) => (
+const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects }) => (
 	<>
 		{currentScreen === 'defects' && (
 			<>
 				<ScreenHeader title="All Defects" />
-				<DefectsTable defects={_defects} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={undefined} selectedDefect={null} />
+				<DefectsTable defects={_defects} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect} />
+			</>
+		)}
+		{currentScreen === 'defectDetail' && _selectedDefect && (
+			<>
+				<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
+				<DefectForm defect={_selectedDefect} />
 			</>
 		)}
 	</>
 );
 
 // Portfolio Views Configuration
+// Icon components for portfolio tabs
+const SprintsIcon = ({ size = '16px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M6.75 2.994v2.25m10.5-2.25v2.25m-14.252 13.5V7.491a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v11.251m-18 0a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25m-18 0v-7.5a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v7.5m-6.75-6h2.25m-9 2.25h4.5m.002-2.25h.005v.006H12v-.006Zm-.001 4.5h.006v.006h-.006v-.005Zm-2.25.001h.005v.006H9.75v-.006Zm-2.25 0h.005v.005h-.006v-.005Zm6.75-2.247h.005v.005h-.005v-.005Zm0 2.247h.006v.006h-.006v-.006Zm2.25-2.248h.006V15H16.5v-.005Z"
+		/>
+	</svg>
+);
+
+const UserStoriesIcon = ({ size = '16px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z"
+		/>
+	</svg>
+);
+
 const portfolioViews: PortfolioViewConfig[] = [
 	{
 		id: 'bySprints',
 		label: 'Sprints',
+		icon: 'sprints',
 		description: 'View user stories organized by sprints',
 		component: BySprintsView,
 		dataLoader: () => Promise.resolve(), // Will be set dynamically
@@ -531,6 +612,7 @@ const portfolioViews: PortfolioViewConfig[] = [
 	{
 		id: 'allUserStories',
 		label: 'User Stories',
+		icon: 'user-stories',
 		description: 'View all user stories in the project',
 		component: AllUserStoriesView,
 		dataLoader: () => Promise.resolve(), // Will be set dynamically
@@ -539,6 +621,7 @@ const portfolioViews: PortfolioViewConfig[] = [
 	{
 		id: 'allDefects',
 		label: 'Defects',
+		icon: 'bug',
 		description: 'View all defects in the project',
 		component: AllDefectsView,
 		dataLoader: () => Promise.resolve(), // Will be set dynamically
@@ -551,44 +634,61 @@ const PortfolioViewSelector: FC<{
 	views: PortfolioViewConfig[];
 	activeView: PortfolioViewType;
 	onViewChange: (viewId: PortfolioViewType) => void;
-}> = ({ views, activeView, onViewChange }) => (
-	<div
-		style={{
-			marginBottom: '20px',
-			display: 'flex',
-			borderBottom: '1px solid var(--vscode-panel-border)',
-			backgroundColor: 'var(--vscode-tab-inactiveBackground)',
-			borderRadius: '6px 6px 0 0'
-		}}
-	>
-		{views.map((view, index) => (
-			<button
-				key={view.id}
-				onClick={() => onViewChange(view.id)}
-				style={{
-					padding: '12px 20px',
-					border: 'none',
-					borderRight: index < views.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
-					borderBottom: activeView === view.id ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-					borderRadius: index === 0 ? '6px 0 0 0' : index === views.length - 1 ? '0 6px 0 0' : '0',
-					backgroundColor: activeView === view.id ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-					color: activeView === view.id ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-					cursor: 'pointer',
-					display: 'flex',
-					gap: '6px',
-					fontSize: '13px',
-					fontWeight: activeView === view.id ? 600 : 400,
-					transition: 'all 0.15s ease',
-					position: 'relative',
-					zIndex: activeView === view.id ? 1 : 0
-				}}
-				title={view.description}
-			>
-				<span>{view.label}</span>
-			</button>
-		))}
-	</div>
-);
+}> = ({ views, activeView, onViewChange }) => {
+	const renderIcon = (icon?: string) => {
+		switch (icon) {
+			case 'sprints':
+				return <SprintsIcon />;
+			case 'user-stories':
+				return <UserStoriesIcon />;
+			case 'bug':
+				return <span className="codicon codicon-bug" style={{ fontSize: '16px' }}></span>;
+			default:
+				return null;
+		}
+	};
+
+	return (
+		<div
+			style={{
+				marginBottom: '20px',
+				display: 'flex',
+				borderBottom: '1px solid var(--vscode-panel-border)',
+				backgroundColor: 'var(--vscode-tab-inactiveBackground)',
+				borderRadius: '6px 6px 0 0'
+			}}
+		>
+			{views.map((view, index) => (
+				<button
+					key={view.id}
+					onClick={() => activeView !== view.id && onViewChange(view.id)}
+					style={{
+						padding: '12px 20px',
+						border: 'none',
+						borderRight: index < views.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
+						borderBottom: activeView === view.id ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
+						borderRadius: index === 0 ? '6px 0 0 0' : index === views.length - 1 ? '0 6px 0 0' : '0',
+						backgroundColor: activeView === view.id ? 'var(--vscode-tab-activeBackground)' : 'transparent',
+						color: activeView === view.id ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
+						cursor: activeView === view.id ? 'default' : 'pointer',
+						display: 'flex',
+						alignItems: 'center',
+						gap: '8px',
+						fontSize: '13px',
+						fontWeight: activeView === view.id ? 600 : 400,
+						transition: 'all 0.15s ease',
+						position: 'relative',
+						zIndex: activeView === view.id ? 1 : 0
+					}}
+					title={view.description}
+				>
+					{renderIcon(view.icon)}
+					<span>{view.label}</span>
+				</button>
+			))}
+		</div>
+	);
+};
 
 // Portfolio View Renderer Component
 const PortfolioViewRenderer: FC<{
@@ -685,7 +785,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [tasks, setTasks] = useState<RallyTask[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
 	const [tasksError, setTasksError] = useState<string | null>(null);
-	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests'>('tasks');
+	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests' | 'defects'>('tasks');
 
 	const [defects, setDefects] = useState<RallyDefect[]>([]);
 	const [defectsLoading, setDefectsLoading] = useState(false);
@@ -701,6 +801,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
 	const [activeViewType, setActiveViewType] = useState<PortfolioViewType>('bySprints');
 	const [calendarDate, setCalendarDate] = useState(new Date());
+
+	// Track if we've already loaded iterations for portfolio to avoid cascading renders
+	const hasLoadedPortfolioIterations = useRef(false);
+
+	// Track which portfolio views have been loaded to avoid redundant fetches
+	const loadedViews = useRef<Set<PortfolioViewType>>(new Set());
 
 	const loadIterations = useCallback(() => {
 		// eslint-disable-next-line no-console
@@ -762,11 +868,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	);
 
 	const handleDefectSelected = useCallback((defect: RallyDefect) => {
+		// eslint-disable-next-line no-console
+		console.log('[Frontend] Defect selected:', defect.formattedId);
 		setSelectedDefect(defect);
+		setCurrentScreen('defectDetail');
 	}, []);
 
 	const handleBackToDefects = useCallback(() => {
 		setSelectedDefect(null);
+		setCurrentScreen('defects');
 	}, []);
 
 	const switchViewType = useCallback(
@@ -774,11 +884,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			// eslint-disable-next-line no-console
 			console.log('[Frontend] Switching to view type:', newViewType);
 
-			// State cleaners for each view type
+			// State cleaners for each view type (only clear when necessary)
 			const stateCleaners = {
 				bySprints: () => {
 					setSelectedIteration(null);
-					setUserStories([]);
 					setCurrentScreen('iterations');
 				},
 				allUserStories: () => {
@@ -786,8 +895,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setCurrentScreen('allUserStories');
 				},
 				allDefects: () => {
-					setDefects([]);
 					setCurrentScreen('defects');
+					setSelectedDefect(null);
 				}
 			};
 
@@ -799,7 +908,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			};
 
 			// Execute state cleaner of current view
-			const currentCleaner = stateCleaners[activeViewType];
+			const currentCleaner = stateCleaners[newViewType];
 			if (currentCleaner) {
 				currentCleaner();
 			}
@@ -807,13 +916,23 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			// Change active view
 			setActiveViewType(newViewType);
 
-			// Execute data loader of new view
-			const newLoader = dataLoaders[newViewType];
-			if (newLoader) {
-				newLoader();
+			// Only load data if this view hasn't been loaded yet in this session
+			// This prevents redundant fetches when switching between tabs
+			if (!loadedViews.current.has(newViewType)) {
+				// eslint-disable-next-line no-console
+				console.log('[Frontend] First time loading view:', newViewType, '- fetching data');
+				loadedViews.current.add(newViewType);
+
+				const newLoader = dataLoaders[newViewType];
+				if (newLoader) {
+					newLoader();
+				}
+			} else {
+				// eslint-disable-next-line no-console
+				console.log('[Frontend] View already loaded:', newViewType, '- skipping fetch');
 			}
 		},
-		[activeViewType, loadIterations, loadAllUserStories, loadAllDefects]
+		[loadIterations, loadAllUserStories, loadAllDefects]
 	);
 
 	const handleIterationSelected = useCallback(
@@ -942,9 +1061,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		return sprintIterations.length > 0 ? sprintIterations[0] : activeIterations[0];
 	}, []);
 
+	// Initialize webview on mount
 	useEffect(() => {
 		// eslint-disable-next-line no-console
-		console.log('[Frontend] MainWebview useEffect executing - initializing...');
+		console.log('[Frontend] MainWebview initializing on mount');
 
 		sendMessage({
 			command: 'webviewReady'
@@ -955,14 +1075,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			command: 'getState'
 		});
 
-		// Automatically load iterations when webview initializes (only for portfolio section)
-		if (activeSection === 'portfolio') {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Calling loadIterations automatically...');
-			loadIterations();
-		}
+		// Don't auto-load iterations here; wait for user interaction or state changes
+	}, [sendMessage]); // Only run once on mount
 
-		// Listen for messages from extension
+	// Handle messages from extension
+	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data;
 			// eslint-disable-next-line no-console
@@ -1046,12 +1163,41 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setDefectsLoading(false);
 					setDefectsError(message.error || 'Error loading defects');
 					break;
+				case 'userStoryDefectsLoaded':
+					setUserStoryDefectsLoading(false);
+					if (message.defects) {
+						setUserStoryDefects(message.defects);
+						setUserStoryDefectsError(null);
+					} else {
+						setUserStoryDefectsError('Failed to load defects');
+					}
+					break;
+				case 'userStoryDefectsError':
+					setUserStoryDefectsLoading(false);
+					setUserStoryDefectsError(message.error || 'Error loading defects');
+					break;
 			}
 		};
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [sendMessage, findCurrentIteration, loadUserStories, activeSection, loadIterations, activeViewType, currentScreen, selectedUserStory]);
+	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen]); // Only include dependencies needed by handleMessage
+
+	// Load iterations when navigating to portfolio section
+	useEffect(() => {
+		if (activeSection === 'portfolio' && !hasLoadedPortfolioIterations.current) {
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Entering portfolio section');
+			hasLoadedPortfolioIterations.current = true;
+			// Note: Don't auto-load here; let switchViewType handle data loading
+		} else if (activeSection !== 'portfolio') {
+			// Reset flags when leaving portfolio section
+			hasLoadedPortfolioIterations.current = false;
+			loadedViews.current.clear();
+			// eslint-disable-next-line no-console
+			console.log('[Frontend] Exiting portfolio section - cleared view cache');
+		}
+	}, [activeSection]);
 
 	useEffect(() => {
 		if (!hasVsCodeApi) {

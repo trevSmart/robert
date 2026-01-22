@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.182",
+	"version": "0.0.187",
 	"type": "commonjs",
 	"icon": "resources/icons/ibm-logo-bee.png",
 	"publisher": "trevSmart",
@@ -120,6 +120,11 @@
 				"category": "IBM Robert"
 			},
 			{
+				"command": "robert.openSettings",
+				"title": "Open Settings",
+				"category": "IBM Robert"
+			},
+			{
 				"command": "robert.showOutput",
 				"title": "Show Robert Output",
 				"category": "IBM Robert"
@@ -167,6 +172,11 @@
 			{
 				"command": "robert.debug.disable",
 				"title": "Debug: Disable Debug Mode",
+				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.debug.toggle",
+				"title": "Debug: Toggle Debug Mode",
 				"category": "IBM Robert"
 			}
 		],

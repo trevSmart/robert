@@ -248,7 +248,7 @@ jobs:
         run: xvfb-run -a npm run test:integration
       
       - name: Upload coverage
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@b9fd7d16f6d7d1b5d2bec1a2887e65ceed900238 # v4
         with:
           files: ./coverage/coverage-final.json
           token: ${{ secrets.CODECOV_TOKEN }}

@@ -165,7 +165,7 @@ export class SettingsManager {
 	/**
 	 * Get default settings
 	 */
-	private getDefaultSettings(): RobertSettings {
+	public getDefaultSettings(): RobertSettings {
 		return {
 			apiEndpoint: 'https://rally.example.com',
 			refreshInterval: 30,

@@ -2,10 +2,6 @@
  * CacheManager - Manages cached data with TTL (Time To Live) and automatic invalidation
  */
 
-import { OutputChannelManager } from '../../utils/OutputChannelManager';
-
-const outputManager = OutputChannelManager.getInstance();
-
 export interface CacheEntry<T> {
 	data: T;
 	timestamp: number;

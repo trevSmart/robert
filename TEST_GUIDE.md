@@ -248,9 +248,10 @@ jobs:
         run: xvfb-run -a npm run test:integration
       
       - name: Upload coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           files: ./coverage/coverage-final.json
+          token: ${{ secrets.CODECOV_TOKEN }}
 ```
 
 ## Best Practices

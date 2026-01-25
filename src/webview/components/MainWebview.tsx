@@ -818,7 +818,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoriesLoading, setUserStoriesLoading] = useState(false);
 	const [userStoriesError, setUserStoriesError] = useState<string | null>(null);
 	const [selectedUserStory, setSelectedUserStory] = useState<UserStory | null>(null);
-	const [userStoriesOffset, setUserStoriesOffset] = useState(0);
+	const [, setUserStoriesOffset] = useState(0);
 	const [userStoriesHasMore, setUserStoriesHasMore] = useState(false);
 	const [userStoriesLoadingMore, setUserStoriesLoadingMore] = useState(false);
 

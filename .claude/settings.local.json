@@ -7,5 +7,6 @@
       "Bash(grep:*)",
       "Bash(eslint:*)"
     ]
-  }
+  },
+  "outputStyle": "Explanatory"
 }

@@ -24,6 +24,23 @@ const userStoriesCacheManager = new CacheManager<RallyUserStory[]>(5 * 60 * 1000
 const projectsCacheManager = new CacheManager<RallyProject[]>(5 * 60 * 1000);
 const iterationsCacheManager = new CacheManager<RallyIteration[]>(5 * 60 * 1000);
 
+// Constants for pagination
+const PAGE_SIZE = 100;
+
+/**
+ * Sort function to order items by FormattedID in descending order
+ */
+function sortByFormattedIdDescending<T extends { formattedId: string }>(items: T[]): T[] {
+	return items.sort((a, b) => {
+		// Extract numeric part from FormattedID (e.g., "US1226070" -> 1226070)
+		const aMatch = a.formattedId?.match(/\d+/);
+		const bMatch = b.formattedId?.match(/\d+/);
+		const aNum = aMatch ? parseInt(aMatch[0], 10) : 0;
+		const bNum = bMatch ? parseInt(bMatch[0], 10) : 0;
+		return bNum - aNum; // Descending order
+	});
+}
+
 function escapeHtml(input: string): string {
 	return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
@@ -592,14 +609,19 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 }
 
 // Helper function to build query options
-function buildUserStoryQueryOptions(query: RallyQueryParams, limit: number | null) {
+function buildUserStoryQueryOptions(query: RallyQueryParams, limit: number | null, offset: number = 0) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState']
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState'],
+		order: 'FormattedID desc' // Order by FormattedID descending to get proper pagination
 	};
 
-	if (limit) {
-		queryOptions.limit = limit;
+	// Always limit to PAGE_SIZE (100) for pagination
+	queryOptions.limit = PAGE_SIZE;
+
+	// Set start index for pagination (Rally uses 1-based indexing, so add 1)
+	if (offset > 0) {
+		queryOptions.start = offset + 1;
 	}
 
 	if (Object.keys(query).length) {
@@ -754,38 +776,33 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	};
 }
 
-export async function getUserStories(query: RallyQueryParams = {}, limit: number | null = null) {
-	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getUserStories');
+export async function getUserStories(query: RallyQueryParams = {}, limit: number | null = null, offset: number = 0) {
+	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, limit: ${limit}, offset: ${offset}`, 'rallyServices.getUserStories');
 
-	// Generate cache key from query
-	const cacheKey = `userStories:${JSON.stringify(query)}`;
-
-	// Check TTL cache first
-	const cachedUserStories = userStoriesCacheManager.get(cacheKey);
-	if (cachedUserStories) {
-		errorHandler.logDebug('User stories retrieved from TTL cache', 'rallyServices.getUserStories');
-		return {
-			userStories: cachedUserStories,
-			source: 'ttl-cache',
-			count: cachedUserStories.length
-		};
+	// For filtered queries (e.g., by iteration), use cache if available
+	const hasFilters = Object.keys(query).length > 0;
+	if (hasFilters) {
+		// Fall back to in-memory cache for filtered results
+		const cacheResult = checkCacheForFilteredResults(query as RallyQuery, rallyData.userStories);
+		if (cacheResult) {
+			const sorted = sortByFormattedIdDescending(cacheResult.results);
+			const paginated = sorted.slice(offset, offset + PAGE_SIZE);
+			const hasMore = offset + PAGE_SIZE < sorted.length;
+			return {
+				userStories: paginated,
+				source: cacheResult.source,
+				count: paginated.length,
+				totalCount: sorted.length,
+				hasMore: hasMore,
+				offset: offset
+			};
+		}
 	}
 
-	// Fall back to in-memory cache for filtered results
-	const cacheResult = checkCacheForFilteredResults(query as RallyQuery, rallyData.userStories);
-	if (cacheResult) {
-		return {
-			userStories: cacheResult.results,
-			source: cacheResult.source,
-			count: cacheResult.count
-		};
-	}
-
-	//Si no hi ha filtres (demandem totes les user stories) o no tenim dades suficients,
-	//hem d'anar a l'API per obtenir la llista completa
-
+	// For non-filtered queries (all user stories), always fetch from Rally for proper pagination
+	// This ensures each "Load more" fetches the next page from Rally
 	const rallyApi = getRallyApi();
-	const queryOptions = buildUserStoryQueryOptions(query, limit);
+	const queryOptions = buildUserStoryQueryOptions(query, limit, offset);
 	handleDefaultProject(query, queryOptions);
 
 	const result = await rallyApi.query(queryOptions);
@@ -793,28 +810,34 @@ export async function getUserStories(query: RallyQueryParams = {}, limit: number
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) {
-		// Cache empty results too
-		userStoriesCacheManager.set(cacheKey, []);
 		return {
 			userStories: [],
 			source: 'api',
-			count: 0
+			count: 0,
+			totalCount: 0,
+			hasMore: false,
+			offset: offset
 		};
 	}
 
-	//Formatem la resposta per ser més llegible (de forma asincròna amb chunks per no bloquejar)
+	// Format the response
 	const userStories = await formatUserStoriesAsync({ ...resultData, Results: results });
 
-	//Afegim les noves user stories a rallyData sense duplicats
+	// Add new user stories to rallyData progressively without duplicates
 	addToCache(userStories, rallyData.userStories, 'objectId');
 
-	// Store in TTL cache
-	userStoriesCacheManager.set(cacheKey, userStories);
+	// Results are already ordered by Rally (FormattedID desc), no need to sort locally
+	// Determine if there are more results
+	// Rally API typically returns pageSize items, and if we got exactly PAGE_SIZE items, there might be more
+	const hasMore = results.length === PAGE_SIZE;
 
 	return {
 		userStories: userStories,
 		source: 'api',
-		count: userStories.length
+		count: userStories.length,
+		totalCount: 0, // We don't know the total until we've fetched all pages
+		hasMore: hasMore,
+		offset: offset
 	};
 }
 
@@ -916,13 +939,17 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 	};
 }
 
-export async function getDefects(query: RallyQueryParams = {}, limit: number | null = null) {
-	errorHandler.logDebug(`getDefects called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getDefects');
+export async function getDefects(query: RallyQueryParams = {}, limit: number | null = null, offset: number = 0) {
+	errorHandler.logDebug(`getDefects called with query: ${JSON.stringify(query)}, limit: ${limit}, offset: ${offset}`, 'rallyServices.getDefects');
 
 	const rallyApi = getRallyApi();
 
+	// Check if this is a filtered query (e.g., defects for a specific user story)
+	// If filtered, skip pagination
+	const isFiltered = Object.keys(query).length > 0;
+
 	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
-	if (Object.keys(query).length && rallyData.defects && rallyData.defects.length) {
+	if (isFiltered && rallyData.defects && rallyData.defects.length) {
 		const filteredDefects = rallyData.defects.filter((defect: RallyDefect) =>
 			Object.keys(query).every(key => {
 				if (defect[key as keyof RallyDefect] === undefined) {
@@ -936,22 +963,46 @@ export async function getDefects(query: RallyQueryParams = {}, limit: number | n
 			return {
 				defects: filteredDefects,
 				source: 'cache',
-				count: filteredDefects.length
+				count: filteredDefects.length,
+				hasMore: false // No pagination for filtered results
 			};
 		}
+	}
+
+	// If offset > 0 and we have no filters, check if we already have cached results in rallyData
+	// This prevents redundant API calls when user clicks "Load more"
+	if (offset > 0 && !isFiltered && rallyData.defects && rallyData.defects.length > 0) {
+		errorHandler.logDebug(`Using existing cached defects for pagination (offset: ${offset})`, 'rallyServices.getDefects');
+		const sorted = sortByFormattedIdDescending(rallyData.defects);
+		const paginated = sorted.slice(offset, offset + PAGE_SIZE);
+		const hasMore = offset + PAGE_SIZE < sorted.length;
+		return {
+			defects: paginated,
+			source: 'cache',
+			count: paginated.length,
+			totalCount: sorted.length,
+			hasMore: hasMore,
+			offset: offset
+		};
 	}
 
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'defect',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID']
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID'],
+		order: 'FormattedID desc' // Order by FormattedID descending for pagination
 	};
 
-	if (limit) {
-		queryOptions.limit = limit;
+	// For non-filtered queries (all defects), limit to PAGE_SIZE for pagination
+	// For filtered queries (e.g., defects of a user story), fetch all matching results
+	if (!isFiltered) {
+		queryOptions.limit = PAGE_SIZE;
+		if (offset > 0) {
+			queryOptions.start = offset + 1;
+		}
 	}
 
-	// Sempre filtrem per projecte
+	// Sempre filtrem per projecte (unless it's a filtered query for specific user story)
 	const projectId = await getProjectId();
 	queryOptions.query = queryUtils.where('Project', '=', `/project/${projectId}`);
 
@@ -981,7 +1032,8 @@ export async function getDefects(query: RallyQueryParams = {}, limit: number | n
 		return {
 			defects: [],
 			source: 'api',
-			count: 0
+			count: 0,
+			hasMore: false
 		};
 	}
 
@@ -1005,9 +1057,27 @@ export async function getDefects(query: RallyQueryParams = {}, limit: number | n
 		}
 	}
 
+	// If filtered query (e.g., defects of a user story), return all without pagination
+	if (isFiltered) {
+		return {
+			defects: defects,
+			source: 'api',
+			count: defects.length,
+			hasMore: false
+		};
+	}
+
+	// Results are already ordered by Rally (FormattedID desc), no need to sort locally for non-filtered queries
+	// Determine if there are more results
+	// Rally API typically returns pageSize items, and if we got exactly PAGE_SIZE items, there might be more
+	const hasMore = results.length === PAGE_SIZE;
+
 	return {
 		defects: defects,
 		source: 'api',
-		count: defects.length
+		count: defects.length,
+		totalCount: 0, // We don't know the total until we've fetched all pages
+		hasMore: hasMore,
+		offset: offset
 	};
 }

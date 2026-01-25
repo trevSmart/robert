@@ -16,7 +16,6 @@ export const rallyData: RallyData = {
 	userStories: [],
 	tasks: [],
 	defects: [],
-	defaultProject: undefined,
 	currentUser: undefined
 };
 
@@ -48,17 +47,6 @@ export function activate(context: vscode.ExtensionContext) {
 		outputManager.appendLine('[Robert] 🐛 Debug mode enabled - showing output channel');
 		outputManager.show();
 	}
-
-	// Extension is now active
-	outputManager.appendLine('[Robert] 📝 Registering helloWorld command');
-	const disposable = vscode.commands.registerCommand('robert.helloWorld', () => {
-		errorHandler.executeWithErrorHandlingSync(() => {
-			vscode.window.showInformationMessage('Hello World from Robert!');
-		}, 'robert.helloWorld command');
-	});
-
-	context.subscriptions.push(disposable);
-	outputManager.appendLine('[Robert] ✅ helloWorld command registered successfully');
 
 	// Register the webview provider for activity bar
 	outputManager.appendLine('[Robert] 📋 Registering webview provider for activity bar');
@@ -97,34 +85,24 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(openMainViewCommand);
 
-	// Register command to open extension settings
-	const openExtensionSettingsCommand = vscode.commands.registerCommand('robert.openExtensionSettings', async () => {
+	// Register command to reload extension
+	const reloadCommand = vscode.commands.registerCommand('robert.reload', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: openExtensionSettings');
-			// Open VS Code settings for this extension
-			await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:robert');
-		}, 'robert.openExtensionSettings command');
+			outputManager.appendLine('[Robert] Command: reload');
+			// Reload the entire extension
+			await vscode.commands.executeCommand('workbench.action.reloadWindow');
+		}, 'robert.reload command');
 	});
-	context.subscriptions.push(openExtensionSettingsCommand);
+	context.subscriptions.push(reloadCommand);
 
-	// Register command to open settings panel
-	const openSettingsCommand = vscode.commands.registerCommand('robert.openSettings', async () => {
+	// Register command to open in editor
+	const openInEditorCommand = vscode.commands.registerCommand('robert.openInEditor', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: openSettings');
-			// Open settings panel
-			await webviewProvider.createSettingsPanel();
-		}, 'robert.openSettings command');
+			outputManager.appendLine('[Robert] Command: openInEditor');
+			await webviewProvider.createWebviewPanel();
+		}, 'robert.openInEditor command');
 	});
-	context.subscriptions.push(openSettingsCommand);
-
-	// Register command to show panel only if it isn't already visible
-	const showIfHiddenCommand = vscode.commands.registerCommand('robert.showPanelIfHidden', async () => {
-		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: showPanelIfHidden');
-			webviewProvider.showMainPanelIfHidden();
-		}, 'robert.showPanelIfHidden command');
-	});
-	context.subscriptions.push(showIfHiddenCommand);
+	context.subscriptions.push(openInEditorCommand);
 
 	// Register command used by the status bar to open a small, lightweight popover
 	const openStatusPanelCommand = vscode.commands.registerCommand('robert.openStatusPanel', async () => {
@@ -138,48 +116,6 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Command to reveal the Output channel
 	context.subscriptions.push(vscode.commands.registerCommand('robert.showOutput', () => outputManager.show()));
-
-	// Register debug commands (always available)
-	context.subscriptions.push(
-		vscode.commands.registerCommand('robert.debug.enable', async () => {
-			try {
-				outputManager.appendLine('[Robert] Debug: Enabling debug mode');
-				await vscode.workspace.getConfiguration('robert').update('debugMode', true, vscode.ConfigurationTarget.Global);
-				outputManager.appendLine('[Robert] Debug: Debug mode enabled successfully');
-				vscode.window.showInformationMessage('Debug mode enabled! Restart the extension to apply changes.');
-			} catch (error) {
-				outputManager.appendLine(`[Robert] Debug: Error enabling debug mode: ${error}`);
-				vscode.window.showErrorMessage('Failed to enable debug mode. Check the output for details.');
-			}
-		}),
-		vscode.commands.registerCommand('robert.debug.disable', async () => {
-			try {
-				outputManager.appendLine('[Robert] Debug: Disabling debug mode');
-				await vscode.workspace.getConfiguration('robert').update('debugMode', false, vscode.ConfigurationTarget.Global);
-				outputManager.appendLine('[Robert] Debug: Debug mode disabled successfully');
-				vscode.window.showInformationMessage('Debug mode disabled! Restart the extension to apply changes.');
-			} catch (error) {
-				outputManager.appendLine(`[Robert] Debug: Error disabling debug mode: ${error}`);
-				vscode.window.showErrorMessage('Failed to disable debug mode. Check the output for details.');
-			}
-		}),
-		vscode.commands.registerCommand('robert.debug.toggle', async () => {
-			try {
-				const currentDebugMode = vscode.workspace.getConfiguration('robert').get('debugMode', false);
-				const newDebugMode = !currentDebugMode;
-
-				outputManager.appendLine(`[Robert] Debug: Toggling debug mode from ${currentDebugMode} to ${newDebugMode}`);
-				await vscode.workspace.getConfiguration('robert').update('debugMode', newDebugMode, vscode.ConfigurationTarget.Global);
-				outputManager.appendLine(`[Robert] Debug: Debug mode ${newDebugMode ? 'enabled' : 'disabled'} successfully`);
-
-				const message = newDebugMode ? 'Debug mode enabled!' : 'Debug mode disabled!';
-				vscode.window.showInformationMessage(`${message} Restart the extension to apply changes.`);
-			} catch (error) {
-				outputManager.appendLine(`[Robert] Debug: Error toggling debug mode: ${error}`);
-				vscode.window.showErrorMessage('Failed to toggle debug mode. Check the output for details.');
-			}
-		})
-	);
 
 	// Create and setup status bar item
 	const statusBarItem = createStatusBarItem(context, errorHandler);
@@ -252,8 +188,8 @@ function updateStatusBarItem(item: vscode.StatusBarItem, state: string, errorHan
 		// Build interactive tooltip similar to a small anchored popover
 		item.tooltip = buildStatusTooltip(errorHandler);
 
-		// Clicking the status bar: show the panel if it's not already visible (focus otherwise)
-		item.command = 'robert.showPanelIfHidden';
+		// Clicking the status bar: show the panel
+		item.command = 'robert.openMainView';
 		item.show();
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'updateStatusBarItem');
@@ -324,14 +260,6 @@ function enableDebugFeatures(context: vscode.ExtensionContext, outputManager: Ou
 
 	// Enable verbose logging
 	outputManager.appendLine('[Robert] Debug mode: Verbose logging enabled');
-
-	// Register additional debug commands
-	context.subscriptions.push(
-		vscode.commands.registerCommand('robert.debug.info', () => {
-			outputManager.appendLine('[Robert] Debug Info Command Executed');
-			vscode.window.showInformationMessage('Debug mode is active! Check the Robert output channel for details.');
-		})
-	);
 
 	// Pass debug mode information to webview provider
 	webviewProvider.setDebugMode(true);

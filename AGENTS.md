@@ -241,8 +241,8 @@ Totes les accions es registren al canal "Robert" amb format estructurat:
 - **logoWebview.html**: Template logo
 
 ### Recursos
-- **ibm-logo-bee.svg**: Logo IBM per activity bar
-- **ibm-logo-modern.webp**: Logo IBM per webviews
+- **robert-logo-simple.png**: Logo IBM per activity bar
+- **robert-logo.png**: Logo IBM per webviews
 - **ibm-logo.webp**: Logo IBM general
 
 ## 🔒 Seguretat i Configuració

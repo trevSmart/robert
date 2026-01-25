@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,13 +13,16 @@
             padding: 20px;
             margin: 0;
         }
+
         .container {
             max-width: 800px;
             margin: 0 auto;
         }
+
         .header {
             text-align: center;
         }
+
         .button {
             background-color: var(--vscode-button-background);
             color: var(--vscode-button-foreground);
@@ -28,22 +32,27 @@
             cursor: pointer;
             margin: 5px;
         }
+
         .button:hover {
             background-color: var(--vscode-button-hoverBackground);
         }
+
         .content {
             background-color: var(--vscode-editor-background);
             padding: 20px;
             min-height: 300px;
         }
+
         .loading {
             display: none;
             text-align: center;
             padding: 20px;
         }
+
         .loading.show {
             display: block;
         }
+
         .spinner {
             border: 2px solid var(--vscode-panel-border);
             border-top: 2px solid var(--vscode-button-background);
@@ -53,16 +62,24 @@
             animation: spin 1s linear infinite;
             margin: 0 auto 10px;
         }
+
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
+
         .progress-container {
             margin: 20px 0;
             padding: 20px;
             background-color: #282828;
             border-radius: 6px;
         }
+
         .progress-bar-container {
             width: 100%;
             height: 20px;
@@ -73,6 +90,7 @@
             margin: 10px 0;
             position: relative;
         }
+
         .progress-bar {
             height: 100%;
             background: linear-gradient(to right, #4CAF50, #FF5722);
@@ -80,6 +98,7 @@
             transition: width 0.3s ease, background 0.3s ease;
             border-radius: 10px;
         }
+
         .progress-text {
             position: absolute;
             top: 50%;
@@ -91,18 +110,21 @@
             text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
             z-index: 1;
         }
+
         .progress-controls {
             display: flex;
             gap: 10px;
             justify-content: center;
             margin-top: 15px;
         }
+
         .demo-section {
             margin: 20px 0;
             padding: 20px;
             background-color: #282828;
             border-radius: 6px;
         }
+
         .section-title {
             font-size: 12px;
             font-weight: 400;
@@ -111,12 +133,14 @@
             margin: 0 0 8px 0;
             padding-left: 7px;
         }
+
         .demo-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-top: 15px;
         }
+
         .demo-item {
             padding: 15px;
             background-color: var(--vscode-input-background);
@@ -124,10 +148,12 @@
             border-radius: 5px;
             text-align: center;
         }
+
         .demo-item h4 {
             margin: 0 0 10px 0;
             color: var(--vscode-foreground);
         }
+
         .demo-item p {
             margin: 0 0 15px 0;
             font-size: 12px;
@@ -135,6 +161,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <div class="header">
@@ -377,14 +404,6 @@
             document.getElementById('projectsError').style.display = 'none';
         }
 
-        function _openSettings() {
-            vscode.postMessage({
-                command: 'openSettings',
-                context: '{{context}}',
-                timestamp: new Date().toISOString()
-            });
-        }
-
         function showProjectsLoading() {
             document.getElementById('projectsTable').style.display = 'none';
             document.getElementById('projectsLoading').style.display = 'block';
@@ -479,9 +498,7 @@
                             <div style="color: var(--vscode-errorForeground); padding: 16px; text-align: center;">
                                 <h3>Configuration Required</h3>
                                 <p id="projectsErrorMessage"></p>
-                                <button onclick="openSettings()" style="margin-top: 8px; padding: 8px 16px; background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; border-radius: 4px; cursor: pointer;">
-                                    Open Settings
-                                </button>
+
                             </div>
                         `;
                         const errorMessageEl = document.getElementById('projectsErrorMessage');
@@ -502,4 +519,5 @@
         });
     </script>
 </body>
+
 </html>

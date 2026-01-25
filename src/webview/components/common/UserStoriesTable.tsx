@@ -20,9 +20,12 @@ interface UserStoriesTableProps {
 	onClearUserStories?: () => void;
 	onUserStorySelected?: (userStory: UserStory) => void;
 	selectedUserStory?: UserStory | null;
+	hasMore?: boolean;
+	onLoadMore?: () => void;
+	loadingMore?: boolean;
 }
 
-const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loading = false, error, onUserStorySelected, selectedUserStory }) => {
+const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loading = false, error, onUserStorySelected, selectedUserStory, hasMore = false, onLoadMore, loadingMore = false }) => {
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
 			case 'new':
@@ -133,6 +136,28 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 						))}
 					</tbody>
 				</table>
+			)}
+
+			{!loading && !error && userStories.length > 0 && hasMore && (
+				<div style={{ textAlign: 'center', padding: '15px', borderTop: `1px solid ${themeColors.panelBorder}` }}>
+					<button
+						onClick={onLoadMore}
+						disabled={loadingMore}
+						style={{
+							padding: '8px 16px',
+							backgroundColor: themeColors.buttonBackground,
+							color: themeColors.buttonForeground,
+							border: 'none',
+							borderRadius: '4px',
+							cursor: loadingMore ? 'not-allowed' : 'pointer',
+							fontWeight: 'normal',
+							opacity: loadingMore ? 0.6 : 1,
+							transition: 'opacity 0.15s ease'
+						}}
+					>
+						{loadingMore ? 'Loading...' : 'Load more'}
+					</button>
+				</div>
 			)}
 		</div>
 	);

@@ -120,7 +120,6 @@ export interface RallyData {
 	defects: Defect[];
 	iterations: Iteration[];
 	currentUser?: User;
-	defaultProject?: Project;
 }
 
 export interface RallyQuery {
@@ -153,6 +152,7 @@ export interface RallyQueryOptions {
 	limit?: number;
 	order?: unknown;
 	where?: string;
+	start?: number;
 }
 
 export interface RallyProject extends Project {

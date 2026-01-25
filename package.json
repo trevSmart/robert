@@ -2,16 +2,16 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.201",
+	"version": "0.0.227",
 	"type": "commonjs",
-	"icon": "resources/icons/ibm-logo-bee.png",
+	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/trevSmart/robert.git"
 	},
 	"engines": {
-		"vscode": "^1.74.0"
+		"vscode": "^1.85.0"
 	},
 	"categories": [
 		"Other"
@@ -100,28 +100,8 @@
 		},
 		"commands": [
 			{
-				"command": "robert.helloWorld",
-				"title": "Hello World",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.openView",
-				"title": "Open IBM Robert View",
-				"category": "IBM Robert"
-			},
-			{
 				"command": "robert.openMainView",
 				"title": "Open Main View",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.openExtensionSettings",
-				"title": "Open Extension Settings",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.openSettings",
-				"title": "Open Settings",
 				"category": "IBM Robert"
 			},
 			{
@@ -130,54 +110,16 @@
 				"category": "IBM Robert"
 			},
 			{
-				"command": "robert.showPanelIfHidden",
-				"title": "Show Robert Panel (if hidden)",
-				"category": "IBM Robert"
+				"command": "robert.reload",
+				"title": "Reload",
+				"category": "IBM Robert",
+				"icon": "$(refresh)"
 			},
 			{
-				"command": "robert.example.async",
-				"title": "Example: Async Error Handling",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.sync",
-				"title": "Example: Sync Error Handling",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.manual",
-				"title": "Example: Manual Error Handling",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.logging",
-				"title": "Example: Logging Demo",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.fallback",
-				"title": "Example: Fallback Values",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.info",
-				"title": "Debug: Show Debug Information",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.enable",
-				"title": "Debug: Enable Debug Mode",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.disable",
-				"title": "Debug: Disable Debug Mode",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.toggle",
-				"title": "Debug: Toggle Debug Mode",
-				"category": "IBM Robert"
+				"command": "robert.openInEditor",
+				"title": "Open in Editor",
+				"category": "IBM Robert",
+				"icon": "$(screen-full)"
 			}
 		],
 		"viewsContainers": {
@@ -185,7 +127,7 @@
 				{
 					"id": "robert",
 					"title": "IBM Robert",
-					"icon": "./resources/icons/ibm-logo-bee.png"
+					"icon": "./resources/icons/robert-logo-simple.png"
 				}
 			]
 		},
@@ -195,7 +137,7 @@
 					"id": "robert.mainView",
 					"name": "IBM Robert",
 					"type": "webview",
-					"icon": "./resources/icons/ibm-logo-bee.png"
+					"icon": "./resources/icons/robert-logo-simple.png"
 				}
 			]
 		},
@@ -214,16 +156,14 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "robert.debug.toggle",
+					"command": "robert.reload",
 					"when": "view == robert.mainView",
-					"group": "navigation",
-					"icon": "$(debug)"
+					"group": "navigation"
 				},
 				{
-					"command": "robert.openSettings",
+					"command": "robert.openInEditor",
 					"when": "view == robert.mainView",
-					"group": "navigation",
-					"icon": "$(settings-gear)"
+					"group": "navigation"
 				}
 			]
 		}
@@ -235,7 +175,7 @@
 		"build:webview": "vite build",
 		"watch:webview": "vite build --watch",
 		"lint": "eslint src/**/*.{ts,tsx} --ext .ts,.tsx",
-		"lint:fix": "eslint src/**/*.{ts,tsx} --ext .ts,.tsx --fix",
+		"lint:fix": "node scripts/lint-fix.cjs",
 		"format": "prettier --write \"src/**/*.{ts,tsx,json,js,md}\"",
 		"format:check": "prettier --check \"src/**/*.{ts,tsx,json,js,md}\"",
 		"version:patch": "npm version patch --no-git-tag-version",
@@ -251,8 +191,7 @@
 		"@types/node": "^25.0.3",
 		"@types/react": "^18.2.75",
 		"@types/react-dom": "^18.2.25",
-		"@types/styled-components": "^5.1.36",
-		"@types/vscode": "1.74.0",
+		"@types/vscode": "^1.85.0",
 		"@typescript-eslint/eslint-plugin": "^8.50.1",
 		"@typescript-eslint/parser": "^8.50.1",
 		"@vitejs/plugin-react": "^5.1.2",
@@ -269,7 +208,6 @@
 	"dependencies": {
 		"@types/react-dnd": "^2.0.36",
 		"@types/react-dom": "^18.2.25",
-		"@types/styled-components": "^5.1.36",
 		"@vitejs/plugin-react": "^5.1.2",
 		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",

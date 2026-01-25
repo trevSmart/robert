@@ -1,14 +1,29 @@
-const js = require("@eslint/js");
 const typescript = require("@typescript-eslint/eslint-plugin");
 const typescriptParser = require("@typescript-eslint/parser");
 const react = require("eslint-plugin-react");
 const reactHooks = require("eslint-plugin-react-hooks");
-const prettier = require("eslint-plugin-prettier");
 
 module.exports = [
-  js.configs.recommended,
   {
-    files: ["src/**/*.{ts,tsx}"],
+    ignores: [
+      "out/",
+      "dist/",
+      "node_modules/",
+      "*.config.js",
+      "eslint.config.js",
+      ".vscode-test/",
+      ".git/",
+      ".github/",
+      ".cursor/",
+      ".claude/",
+      ".sfdx/",
+      ".vscode/",
+      "resources/",
+      "tmp/",
+    ],
+  },
+  {
+    files: ["**/*.{ts,tsx,js,jsx}"],
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {
@@ -29,13 +44,23 @@ module.exports = [
         setImmediate: "readonly",
         __dirname: "readonly",
         NodeJS: "readonly",
+        window: "readonly",
+        document: "readonly",
+        MessageEvent: "readonly",
+        ErrorEvent: "readonly",
+        PromiseRejectionEvent: "readonly",
+        ResizeObserver: "readonly",
+        HTMLElement: "readonly",
+        HTMLDivElement: "readonly",
+        HTMLButtonElement: "readonly",
+        requestAnimationFrame: "readonly",
+        React: "readonly",
       },
     },
     plugins: {
       "@typescript-eslint": typescript,
       react,
       "react-hooks": reactHooks,
-      prettier,
     },
     rules: {
       ...typescript.configs.recommended.rules,
@@ -51,41 +76,11 @@ module.exports = [
       "react/react-in-jsx-scope": "off",
       "react/jsx-uses-react": "off",
       "react/jsx-uses-vars": "error",
-      "prettier/prettier": "error",
     },
     settings: {
       react: {
         version: "detect",
       },
     },
-  },
-  {
-    files: ["src/webview/**/*.{ts,tsx}"],
-    languageOptions: {
-      globals: {
-        window: "readonly",
-        document: "readonly",
-        MessageEvent: "readonly",
-        ErrorEvent: "readonly",
-        PromiseRejectionEvent: "readonly",
-        setTimeout: "readonly",
-        clearTimeout: "readonly",
-        ResizeObserver: "readonly",
-        HTMLElement: "readonly",
-        HTMLDivElement: "readonly",
-        HTMLButtonElement: "readonly",
-        requestAnimationFrame: "readonly",
-        React: "readonly",
-      },
-    },
-  },
-  {
-    ignores: [
-      "out/",
-      "dist/",
-      "node_modules/",
-      "*.js",
-      "*.d.ts",
-    ],
   },
 ];

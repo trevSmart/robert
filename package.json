@@ -178,6 +178,11 @@
 				"command": "robert.debug.toggle",
 				"title": "Debug: Toggle Debug Mode",
 				"category": "IBM Robert"
+			},
+			{
+				"command": "robert.openInEditor",
+				"title": "Open in Editor",
+				"category": "IBM Robert"
 			}
 		],
 		"viewsContainers": {
@@ -214,16 +219,10 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "robert.debug.toggle",
+					"command": "robert.openInEditor",
 					"when": "view == robert.mainView",
 					"group": "navigation",
-					"icon": "$(debug)"
-				},
-				{
-					"command": "robert.openSettings",
-					"when": "view == robert.mainView",
-					"group": "navigation",
-					"icon": "$(settings-gear)"
+					"icon": "$(open-external)"
 				}
 			]
 		}

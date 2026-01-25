@@ -14,7 +14,6 @@ import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Task, type Defect } from '../../types/rally';
-import { themeColors } from '../utils/themeColors';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (

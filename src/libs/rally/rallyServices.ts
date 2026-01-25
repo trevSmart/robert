@@ -31,7 +31,7 @@ const PAGE_SIZE = 100;
  * Sort function to order items by FormattedID in descending order
  */
 function sortByFormattedIdDescending<T extends { formattedId: string }>(items: T[]): T[] {
-	return items.sort((a, b) => {
+	return [...items].sort((a, b) => {
 		// Extract numeric part from FormattedID (e.g., "US1226070" -> 1226070)
 		const aMatch = a.formattedId?.match(/\d+/);
 		const bMatch = b.formattedId?.match(/\d+/);

@@ -8,6 +8,7 @@ declare module 'ibm-rally-node' {
 		fetch?: string[];
 		query?: unknown;
 		limit?: number;
+		start?: number;
 		order?: unknown;
 		where?: string;
 	}

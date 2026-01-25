@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.207",
+	"version": "0.0.218",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -180,9 +180,16 @@
 				"category": "IBM Robert"
 			},
 			{
+				"command": "robert.reload",
+				"title": "Reload",
+				"category": "IBM Robert",
+				"icon": "$(refresh)"
+			},
+			{
 				"command": "robert.openInEditor",
 				"title": "Open in Editor",
-				"category": "IBM Robert"
+				"category": "IBM Robert",
+				"icon": "$(screen-full)"
 			}
 		],
 		"viewsContainers": {
@@ -219,10 +226,14 @@
 		"menus": {
 			"view/title": [
 				{
+					"command": "robert.reload",
+					"when": "view == robert.mainView",
+					"group": "navigation"
+				},
+				{
 					"command": "robert.openInEditor",
 					"when": "view == robert.mainView",
-					"group": "navigation",
-					"icon": "$(open-external)"
+					"group": "navigation"
 				}
 			]
 		}

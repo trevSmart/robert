@@ -32,6 +32,9 @@ interface DefectsTableProps {
 	onLoadDefects?: () => void;
 	onDefectSelected?: (defect: Defect) => void;
 	selectedDefect?: Defect | null;
+	hasMore?: boolean;
+	onLoadMore?: () => void;
+	loadingMore?: boolean;
 }
 
 const getSeverityColor = (severity: string) => {
@@ -85,7 +88,7 @@ const getScheduleStateColor = (scheduleState: string) => {
 	}
 };
 
-const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect }) => {
+const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect, hasMore = false, onLoadMore, loadingMore = false }) => {
 	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, defects.length: ${defects.length}`, 'DefectsTable');
 	return (
 		<div
@@ -212,6 +215,28 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 						))}
 					</tbody>
 				</table>
+			)}
+
+			{!loading && !error && defects.length > 0 && hasMore && (
+				<div style={{ textAlign: 'center', padding: '15px', borderTop: `1px solid ${themeColors.panelBorder}` }}>
+					<button
+						onClick={onLoadMore}
+						disabled={loadingMore}
+						style={{
+							padding: '8px 16px',
+							backgroundColor: themeColors.buttonBackground,
+							color: themeColors.buttonForeground,
+							border: 'none',
+							borderRadius: '4px',
+							cursor: loadingMore ? 'not-allowed' : 'pointer',
+							fontWeight: 'normal',
+							opacity: loadingMore ? 0.6 : 1,
+							transition: 'opacity 0.15s ease'
+						}}
+					>
+						{loadingMore ? 'Loading...' : 'Load more'}
+					</button>
+				</div>
 			)}
 		</div>
 	);

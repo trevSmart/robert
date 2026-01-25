@@ -106,6 +106,16 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(showIfHiddenCommand);
 
+	// Register command to reload extension
+	const reloadCommand = vscode.commands.registerCommand('robert.reload', async () => {
+		await errorHandler.executeWithErrorHandling(async () => {
+			outputManager.appendLine('[Robert] Command: reload');
+			// Reload the entire extension
+			await vscode.commands.executeCommand('workbench.action.reloadWindow');
+		}, 'robert.reload command');
+	});
+	context.subscriptions.push(reloadCommand);
+
 	// Register command to open in editor
 	const openInEditorCommand = vscode.commands.registerCommand('robert.openInEditor', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {

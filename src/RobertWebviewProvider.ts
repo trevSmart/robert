@@ -493,14 +493,18 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._errorHandler.logDebug(`Webview received loadUserStories command ${message.iteration ? `for iteration: ${message.iteration}` : 'for all'}`, 'RobertWebviewProvider');
 
 								const query = message.iteration ? { Iteration: message.iteration } : {};
-								const userStoriesResult = await getUserStories(query);
+								const offset = message.offset || 0;
+								const userStoriesResult = await getUserStories(query, null, offset);
 
 								if (userStoriesResult?.userStories) {
 									webview.postMessage({
 										command: 'userStoriesLoaded',
-										userStories: userStoriesResult.userStories
+										userStories: userStoriesResult.userStories,
+										hasMore: userStoriesResult.hasMore,
+										offset: userStoriesResult.offset,
+										totalCount: userStoriesResult.totalCount
 									});
-									this._errorHandler.logInfo(`User stories loaded successfully: ${userStoriesResult.count} user stories`, 'WebviewMessageListener');
+									this._errorHandler.logInfo(`User stories loaded successfully: ${userStoriesResult.count} user stories (offset: ${offset}, hasMore: ${userStoriesResult.hasMore})`, 'WebviewMessageListener');
 								} else {
 									webview.postMessage({
 										command: 'userStoriesError',
@@ -575,16 +579,20 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading defects from Rally API', 'WebviewMessageListener');
 
-								this._errorHandler.logDebug('Webview received loadDefects command', 'RobertWebviewProvider');
+								this._errorHandler.logDebug(`Webview received loadDefects command, offset: ${message.offset || 0}`, 'RobertWebviewProvider');
 
-								const defectsResult = await getDefects();
+								const offset = message.offset || 0;
+								const defectsResult = await getDefects({}, null, offset);
 
 								if (defectsResult?.defects) {
 									webview.postMessage({
 										command: 'defectsLoaded',
-										defects: defectsResult.defects
+										defects: defectsResult.defects,
+										hasMore: defectsResult.hasMore,
+										offset: defectsResult.offset,
+										totalCount: defectsResult.totalCount
 									});
-									this._errorHandler.logInfo(`Defects loaded successfully: ${defectsResult.count} defects`, 'WebviewMessageListener');
+									this._errorHandler.logInfo(`Defects loaded successfully: ${defectsResult.count} defects (offset: ${offset}, hasMore: ${defectsResult.hasMore})`, 'WebviewMessageListener');
 								} else {
 									webview.postMessage({
 										command: 'defectsError',

@@ -213,6 +213,9 @@ interface PortfolioViewProps {
 	userStoriesLoading: boolean;
 	userStoriesError: string | null;
 	selectedUserStory: UserStory | null;
+	userStoriesHasMore?: boolean;
+	userStoriesLoadingMore?: boolean;
+	loadMoreUserStories?: () => void;
 	tasks: RallyTask[];
 	tasksLoading: boolean;
 	tasksError: string | null;
@@ -222,6 +225,9 @@ interface PortfolioViewProps {
 	_defects: RallyDefect[];
 	_defectsLoading: boolean;
 	_defectsError: string | null;
+	_defectsHasMore?: boolean;
+	_defectsLoadingMore?: boolean;
+	_onLoadMoreDefects?: () => void;
 	_selectedDefect: RallyDefect | null;
 	activeUserStoryTab: 'tasks' | 'tests' | 'defects';
 	currentScreen: ScreenType;
@@ -441,7 +447,10 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	onLoadUserStoryDefects,
 	_onDefectSelected,
 	onBackToUserStories,
-	onActiveUserStoryTabChange
+	onActiveUserStoryTabChange,
+	userStoriesHasMore = false,
+	loadMoreUserStories,
+	userStoriesLoadingMore = false
 }) => (
 	<>
 		{currentScreen === 'allUserStories' && !selectedUserStory && (
@@ -455,6 +464,9 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 					onClearUserStories={onClearUserStories}
 					onUserStorySelected={onUserStorySelected}
 					selectedUserStory={selectedUserStory}
+					hasMore={userStoriesHasMore}
+					onLoadMore={loadMoreUserStories}
+					loadingMore={userStoriesLoadingMore}
 				/>
 			</>
 		)}
@@ -577,14 +589,24 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	</>
 );
 
-const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects }) => {
+const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects, _defectsHasMore = false, _defectsLoadingMore = false, _onLoadMoreDefects }) => {
 	logDebug(`_onDefectSelected: ${JSON.stringify(_onDefectSelected)}, currentScreen: ${currentScreen}`, 'AllDefectsView');
 	return (
 		<>
 			{currentScreen === 'defects' && (
 				<>
 					<ScreenHeader title="All Defects" />
-					<DefectsTable defects={_defects as Defect[]} loading={_defectsLoading} error={_defectsError || undefined} onLoadDefects={_onLoadDefects} onDefectSelected={_onDefectSelected} selectedDefect={_selectedDefect as Defect | null} />
+					<DefectsTable
+						defects={_defects as Defect[]}
+						loading={_defectsLoading}
+						error={_defectsError || undefined}
+						onLoadDefects={_onLoadDefects}
+						onDefectSelected={_onDefectSelected}
+						selectedDefect={_selectedDefect as Defect | null}
+						hasMore={_defectsHasMore}
+						onLoadMore={_onLoadMoreDefects}
+						loadingMore={_defectsLoadingMore}
+					/>
 				</>
 			)}
 			{currentScreen === 'defectDetail' && _selectedDefect && (
@@ -780,6 +802,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoriesLoading, setUserStoriesLoading] = useState(false);
 	const [userStoriesError, setUserStoriesError] = useState<string | null>(null);
 	const [selectedUserStory, setSelectedUserStory] = useState<UserStory | null>(null);
+	const [userStoriesOffset, setUserStoriesOffset] = useState(0);
+	const [userStoriesHasMore, setUserStoriesHasMore] = useState(false);
+	const [userStoriesLoadingMore, setUserStoriesLoadingMore] = useState(false);
 
 	const [tasks, setTasks] = useState<RallyTask[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
@@ -790,6 +815,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [defectsLoading, setDefectsLoading] = useState(false);
 	const [defectsError, setDefectsError] = useState<string | null>(null);
 	const [selectedDefect, setSelectedDefect] = useState<RallyDefect | null>(null);
+	const [defectsOffset, setDefectsOffset] = useState(0);
+	const [defectsHasMore, setDefectsHasMore] = useState(false);
+	const [defectsLoadingMore, setDefectsLoadingMore] = useState(false);
 
 	const [userStoryDefects, setUserStoryDefects] = useState<RallyDefect[]>([]);
 	const [userStoryDefectsLoading, setUserStoryDefectsLoading] = useState(false);
@@ -836,8 +864,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		logDebug('Loading ALL user stories...', 'Frontend');
 		setUserStoriesLoading(true);
 		setUserStoriesError(null);
+		setUserStoriesOffset(0);
+		setUserStories([]);
 		sendMessage({
-			command: 'loadUserStories'
+			command: 'loadUserStories',
+			offset: 0
 			// Sense filtre d'iteration = carrega totes les US del projecte
 		});
 	}, [sendMessage]);
@@ -846,10 +877,33 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		logDebug('Loading ALL defects...', 'Frontend');
 		setDefectsLoading(true);
 		setDefectsError(null);
+		setDefectsOffset(0);
+		setDefects([]);
 		sendMessage({
-			command: 'loadDefects'
+			command: 'loadDefects',
+			offset: 0
 		});
 	}, [sendMessage]);
+
+	const loadMoreUserStories = useCallback(() => {
+		logDebug('Loading more user stories...', 'Frontend');
+		setUserStoriesLoadingMore(true);
+		const nextOffset = userStoriesOffset + 100;
+		sendMessage({
+			command: 'loadUserStories',
+			offset: nextOffset
+		});
+	}, [sendMessage, userStoriesOffset]);
+
+	const loadMoreDefects = useCallback(() => {
+		logDebug('Loading more defects...', 'Frontend');
+		setDefectsLoadingMore(true);
+		const nextOffset = defectsOffset + 100;
+		sendMessage({
+			command: 'loadDefects',
+			offset: nextOffset
+		});
+	}, [sendMessage, defectsOffset]);
 
 	const loadUserStoryDefects = useCallback(
 		(userStoryId: string) => {
@@ -1115,8 +1169,17 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					break;
 				case 'userStoriesLoaded':
 					setUserStoriesLoading(false);
+					setUserStoriesLoadingMore(false);
 					if (message.userStories) {
-						setUserStories(message.userStories);
+						// If it's the first page (offset 0), replace. Otherwise, append.
+						if (message.offset === 0) {
+							setUserStories(message.userStories);
+						} else {
+							setUserStories(prev => [...prev, ...message.userStories]);
+						}
+						setUserStoriesHasMore(message.hasMore || false);
+						// Update offset to the NEXT offset to request
+						setUserStoriesOffset((message.offset || 0) + (message.userStories?.length || 0));
 						setUserStoriesError(null);
 						// Assegura que la pantalla es correcta quan es carreguen totes les user stories
 						if (activeViewType === 'allUserStories') {
@@ -1145,8 +1208,17 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					break;
 				case 'defectsLoaded':
 					setDefectsLoading(false);
+					setDefectsLoadingMore(false);
 					if (message.defects) {
-						setDefects(message.defects);
+						// If it's the first page (offset 0), replace. Otherwise, append.
+						if (message.offset === 0) {
+							setDefects(message.defects);
+						} else {
+							setDefects(prev => [...prev, ...message.defects]);
+						}
+						setDefectsHasMore(message.hasMore || false);
+						// Update offset to the NEXT offset to request
+						setDefectsOffset((message.offset || 0) + (message.defects?.length || 0));
 						setDefectsError(null);
 						if (activeViewType === 'allDefects' && currentScreen !== 'defects') {
 							setCurrentScreen('defects');
@@ -2549,6 +2621,9 @@ jobs:
 									userStoriesLoading,
 									userStoriesError,
 									selectedUserStory,
+									userStoriesHasMore,
+									userStoriesLoadingMore,
+									loadMoreUserStories,
 									tasks,
 									tasksLoading,
 									tasksError,
@@ -2558,6 +2633,9 @@ jobs:
 									_defects: defects,
 									_defectsLoading: defectsLoading,
 									_defectsError: defectsError,
+									_defectsHasMore: defectsHasMore,
+									_defectsLoadingMore: defectsLoadingMore,
+									_onLoadMoreDefects: loadMoreDefects,
 									_selectedDefect: selectedDefect,
 									activeUserStoryTab,
 									currentScreen,

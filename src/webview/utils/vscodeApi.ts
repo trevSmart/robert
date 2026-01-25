@@ -1,4 +1,4 @@
-/// <reference path="../../types/window.d.ts" />
+import type {} from '../../types/window.js';
 
 type VsCodeApi = {
 	postMessage(message: Record<string, unknown>): void;

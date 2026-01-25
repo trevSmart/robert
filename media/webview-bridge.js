@@ -10,7 +10,7 @@
 				if (typeof window !== 'undefined') {
 					window.__vscodeApi = vscode;
 				}
-			} catch (_) {
+			} catch {
 				vscode = null;
 			}
 		}
@@ -32,7 +32,7 @@
 						lineno: e && e.lineno,
 						colno: e && e.colno
 					});
-				} catch (_) {}
+				} catch {}
 			},
 			true
 		);
@@ -48,7 +48,7 @@
 				});
 			} catch (_) {}
 		});
-	} catch (_) {
+	} catch {
 		// noop
 	}
 })();

@@ -1420,7 +1420,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			<CenteredContainer>
 				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} />
 
-				<ContentArea>
+				<ContentArea noPaddingTop={activeSection === 'portfolio'}>
 					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} onIterationClick={handleIterationClickFromCalendar} />}
 
 					{activeSection === 'team' && (

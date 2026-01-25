@@ -16,7 +16,6 @@ export const rallyData: RallyData = {
 	userStories: [],
 	tasks: [],
 	defects: [],
-	defaultProject: undefined,
 	currentUser: undefined
 };
 

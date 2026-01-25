@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import * as React from 'react';
+import { useState } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
 
 interface Iteration {
@@ -11,21 +12,27 @@ interface Iteration {
 	_ref: string;
 }
 
+interface DayInfo {
+	date: Date;
+	day: number;
+	iterations: Iteration[];
+}
+
 interface CalendarProps {
 	currentDate?: Date;
 	iterations?: Iteration[];
 	onMonthChange?: (date: Date) => void;
 	debugMode?: boolean;
-	currentUser?: any;
+	currentUser?: unknown;
 	onIterationClick?: (iteration: Iteration) => void;
 }
 
 const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false, currentUser, onIterationClick }) => {
 	const today = new Date();
-	const isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
+	const _isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
-	const [hoveredDay, setHoveredDay] = useState<any>(null);
+	const [hoveredDay, setHoveredDay] = useState<DayInfo | null>(null);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 
 	// Function to get day name
@@ -35,7 +42,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	};
 
 	// Function to calculate days difference and create tooltip
-	const getDayTooltip = (dayInfo: any) => {
+	const getDayTooltip = (dayInfo: DayInfo) => {
 		const targetDate = new Date(dayInfo.date.getFullYear(), dayInfo.date.getMonth(), dayInfo.date.getDate());
 		const diffTime = targetDate.getTime() - todayStart.getTime();
 		const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
@@ -444,7 +451,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
 								>
 									{/* Show up to 2 iteration lines with assigned colors */}
-									{dayInfo.iterations.slice(0, 2).map((iteration, index) => {
+									{dayInfo.iterations.slice(0, 2).map((iteration, _index: number) => {
 										const iterationStartDate = iteration.startDate ? new Date(iteration.startDate) : null;
 										const iterationEndDate = iteration.endDate ? new Date(iteration.endDate) : null;
 

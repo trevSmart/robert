@@ -75,9 +75,9 @@ export const SettingsTitle = styled.h1`
 `;
 
 // Content areas
-export const ContentArea = styled.div`
+export const ContentArea = styled.div<{ noPaddingTop?: boolean }>`
 	background-color: ${themeColors.background};
-	padding: 10px;
+	padding: ${props => (props.noPaddingTop ? '0 10px 10px 10px' : '10px')};
 	min-height: 300px;
 `;
 

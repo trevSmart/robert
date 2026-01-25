@@ -634,22 +634,6 @@ function buildUserStoryQueryOptions(query: RallyQueryParams, limit: number | nul
 	return queryOptions;
 }
 
-// Helper function to handle default project logic
-function handleDefaultProject(query: RallyQueryParams, queryOptions: RallyQueryOptions) {
-	if (!query?.Project) {
-		if (rallyData.defaultProject?.objectId) {
-			const defaultProjectQuery = queryUtils.where('Project', '=', `/project/${rallyData.defaultProject.objectId}`);
-
-			if (queryOptions.query) {
-				// biome-ignore lint/suspicious/noExplicitAny: Rally query builder method
-				(queryOptions.query as any).and(defaultProjectQuery);
-			} else {
-				queryOptions.query = defaultProjectQuery;
-			}
-		}
-	}
-}
-
 export async function getIterations(query: RallyQueryParams = {}, limit: number | null = null) {
 	errorHandler.logDebug(`getIterations called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getIterations');
 
@@ -803,7 +787,19 @@ export async function getUserStories(query: RallyQueryParams = {}, limit: number
 	// This ensures each "Load more" fetches the next page from Rally
 	const rallyApi = getRallyApi();
 	const queryOptions = buildUserStoryQueryOptions(query, limit, offset);
-	handleDefaultProject(query, queryOptions);
+
+	// Always filter by project (unless Project is already specified in the query)
+	if (!query?.Project) {
+		const projectId = await getProjectId();
+		const projectQuery = queryUtils.where('Project', '=', `/project/${projectId}`);
+
+		if (queryOptions.query) {
+			// @ts-expect-error - Rally query builder has and method
+			queryOptions.query = queryOptions.query.and(projectQuery);
+		} else {
+			queryOptions.query = projectQuery;
+		}
+	}
 
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
@@ -883,8 +879,9 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 		queryOptions.limit = limit;
 	}
 
-	// Query per trobar tasks d'aquesta user story
-	const rallyQueries = [queryUtils.where('WorkProduct', '=', `/hierarchicalrequirement/${userStoryId}`)];
+	// Always filter by project for better query performance
+	const projectId = await getProjectId();
+	const rallyQueries = [queryUtils.where('WorkProduct', '=', `/hierarchicalrequirement/${userStoryId}`), queryUtils.where('Project', '=', `/project/${projectId}`)];
 
 	if (Object.keys(query).length) {
 		const additionalQueries = Object.keys(query).map(key => {

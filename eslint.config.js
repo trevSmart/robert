@@ -9,7 +9,6 @@ module.exports = [
       "out/",
       "dist/",
       "node_modules/",
-      "**/*.d.ts",
       "*.config.js",
       "eslint.config.js",
       ".vscode-test/",

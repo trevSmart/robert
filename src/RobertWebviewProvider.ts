@@ -499,7 +499,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 								const query = message.iteration ? { Iteration: message.iteration } : {};
 								const offset = message.offset || 0;
-								const userStoriesResult = await getUserStories(query, null, offset);
+								const userStoriesResult = await getUserStories(query, offset);
 
 								if (userStoriesResult?.userStories) {
 									webview.postMessage({
@@ -588,7 +588,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._errorHandler.logDebug(`Webview received loadDefects command, offset: ${message.offset || 0}`, 'RobertWebviewProvider');
 
 								const offset = message.offset || 0;
-								const defectsResult = await getDefects({}, null, offset);
+								const defectsResult = await getDefects({}, offset);
 
 								if (defectsResult?.defects) {
 									webview.postMessage({

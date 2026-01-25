@@ -609,7 +609,7 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 }
 
 // Helper function to build query options
-function buildUserStoryQueryOptions(query: RallyQueryParams, limit: number | null, offset: number = 0) {
+function buildUserStoryQueryOptions(query: RallyQueryParams, offset: number = 0) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
 		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState'],
@@ -760,8 +760,8 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	};
 }
 
-export async function getUserStories(query: RallyQueryParams = {}, limit: number | null = null, offset: number = 0) {
-	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, limit: ${limit}, offset: ${offset}`, 'rallyServices.getUserStories');
+export async function getUserStories(query: RallyQueryParams = {}, offset: number = 0) {
+	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, offset: ${offset}`, 'rallyServices.getUserStories');
 
 	// For filtered queries (e.g., by iteration), use cache if available
 	const hasFilters = Object.keys(query).length > 0;
@@ -809,7 +809,7 @@ export async function getUserStories(query: RallyQueryParams = {}, limit: number
 	// For non-filtered queries (all user stories), always fetch from Rally for proper pagination
 	// This ensures each "Load more" fetches the next page from Rally
 	const rallyApi = getRallyApi();
-	const queryOptions = buildUserStoryQueryOptions(query, limit, offset);
+	const queryOptions = buildUserStoryQueryOptions(query, offset);
 
 	// Always filter by project (unless Project is already specified in the query)
 	if (!query?.Project) {
@@ -959,8 +959,8 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 	};
 }
 
-export async function getDefects(query: RallyQueryParams = {}, limit: number | null = null, offset: number = 0) {
-	errorHandler.logDebug(`getDefects called with query: ${JSON.stringify(query)}, limit: ${limit}, offset: ${offset}`, 'rallyServices.getDefects');
+export async function getDefects(query: RallyQueryParams = {}, offset: number = 0) {
+	errorHandler.logDebug(`getDefects called with query: ${JSON.stringify(query)}, offset: ${offset}`, 'rallyServices.getDefects');
 
 	const rallyApi = getRallyApi();
 

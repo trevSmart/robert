@@ -115,16 +115,6 @@
 				"category": "IBM Robert"
 			},
 			{
-				"command": "robert.openExtensionSettings",
-				"title": "Open Extension Settings",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.openSettings",
-				"title": "Open Settings",
-				"category": "IBM Robert"
-			},
-			{
 				"command": "robert.showOutput",
 				"title": "Show Robert Output",
 				"category": "IBM Robert"

@@ -259,7 +259,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				this._errorHandler.logInfo('Logo webview content rendered from build HTML', 'RobertWebviewProvider._getHtmlForLogo');
-				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
+				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo.png'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'logo.html', {
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
@@ -276,7 +276,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo(`Main webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForWebview');
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
 
-				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
+				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo.png'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',

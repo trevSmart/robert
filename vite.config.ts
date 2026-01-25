@@ -14,7 +14,6 @@ export default defineConfig({
 		rollupOptions: {
 			input: {
 				main: resolve(__dirname, 'src/webview/main.html'),
-				settings: resolve(__dirname, 'src/webview/settings.html'),
 				logo: resolve(__dirname, 'src/webview/logo.html')
 			},
 			output: {

@@ -1218,8 +1218,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setIterationsError(message.error || 'Error loading iterations');
 					break;
 				case 'userStoriesLoaded':
-					// Determine context: are we in Sprint Detail or Portfolio view?
-					const isSprintContext = currentScreen === 'userStories' && selectedIteration !== null;
+					// Determine context using iteration field from backend
+					const isSprintContext = message.iteration !== null && message.iteration !== undefined;
 
 					if (isSprintContext) {
 						// Sprint Detail context - update sprint state

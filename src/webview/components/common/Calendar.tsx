@@ -29,7 +29,6 @@ interface CalendarProps {
 
 const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false, currentUser, onIterationClick }) => {
 	const today = new Date();
-	const _isCurrentMonth = currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 	const [hoveredDay, setHoveredDay] = useState<DayInfo | null>(null);
@@ -451,7 +450,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
 								>
 									{/* Show up to 2 iteration lines with assigned colors */}
-									{dayInfo.iterations.slice(0, 2).map((iteration, _index: number) => {
+									{dayInfo.iterations.slice(0, 2).map((iteration, _index) => {
 										const iterationStartDate = iteration.startDate ? new Date(iteration.startDate) : null;
 										const iterationEndDate = iteration.endDate ? new Date(iteration.endDate) : null;
 

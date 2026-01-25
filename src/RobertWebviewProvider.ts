@@ -6,13 +6,17 @@ import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCu
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 
+interface Tutorial {
+	title: string;
+	[key: string]: unknown;
+}
+
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
 	public static readonly editorType = 'robert.editor';
 
 	private _disposables: vscode.Disposable[] = [];
 	private _currentPanel: vscode.WebviewPanel | undefined;
-	private _settingsPanel: vscode.WebviewPanel | undefined;
 	private _currentView?: vscode.WebviewView;
 	private _errorHandler: ErrorHandler;
 	private _settingsManager: SettingsManager;
@@ -36,6 +40,16 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	public setDebugMode(isDebug: boolean): void {
 		this._isDebugMode = isDebug;
 		this._errorHandler.logInfo(`Debug mode set to: ${isDebug}`, 'RobertWebviewProvider.setDebugMode');
+	}
+
+	/**
+	 * Implement CustomTextEditorProvider interface (required but not used)
+	 */
+	public async resolveCustomTextEditor(document: vscode.TextDocument, _webviewPanel: vscode.WebviewPanel, _token: vscode.CancellationToken): Promise<void> {
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			this._errorHandler.logInfo(`Resolving custom text editor for: ${document.uri.fsPath}`, 'RobertWebviewProvider.resolveCustomTextEditor');
+			// This is a placeholder implementation; not currently used
+		}, 'resolveCustomTextEditor');
 	}
 
 	/**
@@ -85,116 +99,58 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			this._currentView = webviewView;
 			this._errorHandler.logViewCreation('Activity Bar View', 'RobertWebviewProvider.resolveWebviewView');
 
-			// Log abans de renderitzar
-			this._errorHandler.logInfo('Rendering main webview content for activity bar', 'RobertWebviewProvider.resolveWebviewView');
-
 			// Generate unique ID for this webview instance
 			const webviewId = this._generateWebviewId('activity-bar');
 			webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId);
 
 			// Handle messages from webview
 			this._setWebviewMessageListener(webviewView.webview, webviewId);
-
-			// Handle view destruction
-			webviewView.onDidDispose(
-				() => {
-					this._errorHandler.logViewDestruction('Activity Bar View', 'RobertWebviewProvider.resolveWebviewView');
-					this._currentView = undefined;
-				},
-				undefined,
-				this._disposables
-			);
-		}, 'resolveWebviewView');
+		}, 'RobertWebviewProvider.resolveWebviewView');
 	}
 
-	public postMessageToView(message: { command: string; [key: string]: unknown }) {
-		this._errorHandler.executeWithErrorHandlingSync(() => {
-			if (this._currentView) {
-				this._currentView.webview.postMessage(message);
-			}
-		}, 'postMessageToView');
-	}
-
-	// CustomTextEditor implementation (for editor tab)
-	public async resolveCustomTextEditor(_document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel, _token: vscode.CancellationToken): Promise<void> {
-		await this._errorHandler.executeWithErrorHandling(async () => {
-			webviewPanel.webview.options = {
-				enableScripts: true,
-				localResourceRoots: [this._extensionUri]
-			};
-
-			// Log abans de renderitzar
-			this._errorHandler.logInfo('Rendering main webview content for editor tab', 'RobertWebviewProvider.resolveCustomTextEditor');
-
-			// Generate unique ID for this webview instance
-			const webviewId = this._generateWebviewId('editor-tab');
-			webviewPanel.webview.html = await this._getHtmlForWebview(webviewPanel.webview, 'editor-tab', webviewId);
-			this._errorHandler.logViewCreation('Custom Text Editor', 'RobertWebviewProvider.resolveCustomTextEditor');
-
-			// Handle messages from webview
-			this._setWebviewMessageListener(webviewPanel.webview, webviewId);
-
-			// Handle panel destruction
-			webviewPanel.onDidDispose(
-				() => {
-					this._errorHandler.logViewDestruction('Custom Text Editor', 'RobertWebviewProvider.resolveCustomTextEditor');
-				},
-				undefined,
-				this._disposables
-			);
-		}, 'resolveCustomTextEditor');
-	}
-
-	// WebviewPanel implementation (for separate window)
 	public async createWebviewPanel(): Promise<vscode.WebviewPanel> {
-		const result = await this._errorHandler.executeWithErrorHandling(async () => {
-			// If panel already exists and is visible, reveal it
-			if (this._currentPanel) {
-				this._currentPanel.reveal(vscode.ViewColumn.One);
-				return this._currentPanel;
-			}
+		return (
+			(await this._errorHandler.executeWithErrorHandling(async () => {
+				// If panel already exists and is visible, reveal it
+				if (this._currentPanel) {
+					this._currentPanel.reveal(vscode.ViewColumn.One);
+					return this._currentPanel;
+				}
 
-			// Create new panel
-			const title = this._isDebugMode ? 'Robert — DEBUG' : 'Robert';
-			const panel = vscode.window.createWebviewPanel('robert', title, vscode.ViewColumn.One, {
+				const panelTitle = this._isDebugMode ? 'Robert — DEBUG' : 'Robert';
+				const panel = vscode.window.createWebviewPanel('robert.mainPanel', panelTitle, vscode.ViewColumn.One, {
+					enableScripts: true,
+					localResourceRoots: [this._extensionUri]
+				});
+
+				this._currentPanel = panel;
+				this._errorHandler.logViewCreation('Webview Panel', 'RobertWebviewProvider.createWebviewPanel');
+
+				// Generate unique ID for this webview instance
+				const webviewId = this._generateWebviewId('separate-window');
+				panel.webview.html = await this._getHtmlForWebview(panel.webview, 'separate-window', webviewId);
+
+				// Handle messages from webview
+				this._setWebviewMessageListener(panel.webview, webviewId);
+
+				// Handle panel close
+				panel.onDidDispose(
+					() => {
+						this._errorHandler.logViewDestruction('Webview Panel', 'RobertWebviewProvider.createWebviewPanel');
+						// Clear reference when panel is closed
+						this._currentPanel = undefined;
+					},
+					undefined,
+					this._disposables
+				);
+
+				return panel;
+			}, 'createWebviewPanel')) ||
+			vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — DEBUG' : 'Robert', vscode.ViewColumn.One, {
 				enableScripts: true,
 				localResourceRoots: [this._extensionUri]
-			});
-
-			// Store reference to current panel
-			this._currentPanel = panel;
-			this._errorHandler.logViewCreation('Webview Panel', 'RobertWebviewProvider.createWebviewPanel');
-
-			// Generate unique ID for this webview instance
-			const webviewId = this._generateWebviewId('separate-window');
-			panel.webview.html = await this._getHtmlForWebview(panel.webview, 'separate-window', webviewId);
-
-			// Handle messages from webview
-			this._setWebviewMessageListener(panel.webview, webviewId);
-
-			// Handle panel close
-			panel.onDidDispose(
-				() => {
-					this._errorHandler.logViewDestruction('Webview Panel', 'RobertWebviewProvider.createWebviewPanel');
-					// Clear reference when panel is closed
-					this._currentPanel = undefined;
-				},
-				undefined,
-				this._disposables
-			);
-
-			return panel;
-		}, 'createWebviewPanel');
-
-		// If result is undefined due to error, create a fallback panel
-		if (!result) {
-			return vscode.window.createWebviewPanel('robert', this._isDebugMode ? 'Robert — DEBUG' : 'Robert', vscode.ViewColumn.One, {
-				enableScripts: true,
-				localResourceRoots: [this._extensionUri]
-			});
-		}
-
-		return result;
+			})
+		);
 	}
 
 	/**
@@ -304,53 +260,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
-	public async createSettingsPanel(): Promise<vscode.WebviewPanel> {
-		return (
-			(await this._errorHandler.executeWithErrorHandling(async () => {
-				// If settings panel already exists and is visible, reveal it
-				if (this._settingsPanel) {
-					this._settingsPanel.reveal(vscode.ViewColumn.One);
-					return this._settingsPanel;
-				}
-
-				const settingsTitle = this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings';
-				const panel = vscode.window.createWebviewPanel('robert.settings', settingsTitle, vscode.ViewColumn.One, {
-					enableScripts: true,
-					localResourceRoots: [this._extensionUri]
-				});
-
-				this._settingsPanel = panel;
-				this._errorHandler.logViewCreation('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
-
-				const settingsHtml = await this._getHtmlForSettings(panel.webview);
-				panel.webview.html = settingsHtml;
-
-				// Handle messages from settings webview
-				this._setupSettingsWebviewMessageListener(panel);
-
-				panel.onDidDispose(
-					() => {
-						this._errorHandler.logViewDestruction('Settings Panel', 'RobertWebviewProvider.createSettingsPanel');
-						this._settingsPanel = undefined;
-					},
-					undefined,
-					this._disposables
-				);
-
-				return panel;
-			}, 'createSettingsPanel')) ||
-			vscode.window.createWebviewPanel('robert.settings', this._isDebugMode ? 'Robert — Settings — DEBUG' : 'Robert — Settings', vscode.ViewColumn.One, {
-				enableScripts: true,
-				localResourceRoots: [this._extensionUri]
-			})
-		);
-	}
-
 	private async _getHtmlForLogo(webview: vscode.Webview): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				this._errorHandler.logInfo('Logo webview content rendered from build HTML', 'RobertWebviewProvider._getHtmlForLogo');
-				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
+				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo.png'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'logo.html', {
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
@@ -360,47 +274,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
-	private async _getHtmlForSettings(webview: vscode.Webview): Promise<string> {
-		return (
-			(await this._errorHandler.executeWithErrorHandling(async () => {
-				this._errorHandler.logInfo('Settings webview content rendered from build HTML', 'RobertWebviewProvider._getHtmlForSettings');
-				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
-				return this._getHtmlFromBuild(webview, 'settings.html', {
-					__INTER_FONT_URI__: interFontUri.toString()
-				});
-			}, 'getHtmlForSettings')) || '<html><body><p>Error loading settings</p></body></html>'
-		);
-	}
-
-	private _setupSettingsWebviewMessageListener(panel: vscode.WebviewPanel): void {
-		const messageListener = panel.webview.onDidReceiveMessage(
-			async (message: any) => {
-				await this._errorHandler.executeWithErrorHandling(async () => {
-					this._errorHandler.logInfo(`Received settings message: ${message.command}`, 'SettingsWebviewMessageListener');
-
-					switch (message.command) {
-						case 'saveSettings':
-							// Handle settings save logic here
-							this._errorHandler.logInfo('Settings save requested', 'SettingsWebviewMessageListener');
-							// TODO: Implement settings saving logic
-							break;
-						case 'loadSettings':
-							// Handle settings load logic here
-							this._errorHandler.logInfo('Settings load requested', 'SettingsWebviewMessageListener');
-							// TODO: Implement settings loading logic
-							break;
-						default:
-							this._errorHandler.logWarning(`Unknown settings message command: ${message.command}`, 'SettingsWebviewMessageListener');
-					}
-				}, 'settingsWebviewMessageListener');
-			},
-			undefined,
-			this._disposables
-		);
-
-		this._disposables.push(messageListener);
-	}
-
 	private async _getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
@@ -408,7 +281,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo(`Main webview content rendered for context: ${context}`, 'RobertWebviewProvider._getHtmlForWebview');
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
 
-				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'ibm-logo-bee.png'));
+				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo.png'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',
@@ -625,14 +498,19 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._errorHandler.logDebug(`Webview received loadUserStories command ${message.iteration ? `for iteration: ${message.iteration}` : 'for all'}`, 'RobertWebviewProvider');
 
 								const query = message.iteration ? { Iteration: message.iteration } : {};
-								const userStoriesResult = await getUserStories(query);
+								const offset = message.offset || 0;
+								const userStoriesResult = await getUserStories(query, offset);
 
 								if (userStoriesResult?.userStories) {
 									webview.postMessage({
 										command: 'userStoriesLoaded',
-										userStories: userStoriesResult.userStories
+										userStories: userStoriesResult.userStories,
+										hasMore: userStoriesResult.hasMore,
+										offset: userStoriesResult.offset,
+										totalCount: userStoriesResult.totalCount,
+										iteration: message.iteration || null // Pass back iteration context
 									});
-									this._errorHandler.logInfo(`User stories loaded successfully: ${userStoriesResult.count} user stories`, 'WebviewMessageListener');
+									this._errorHandler.logInfo(`User stories loaded successfully: ${userStoriesResult.count} user stories (offset: ${offset}, hasMore: ${userStoriesResult.hasMore})`, 'WebviewMessageListener');
 								} else {
 									webview.postMessage({
 										command: 'userStoriesError',
@@ -707,16 +585,20 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading defects from Rally API', 'WebviewMessageListener');
 
-								this._errorHandler.logDebug('Webview received loadDefects command', 'RobertWebviewProvider');
+								this._errorHandler.logDebug(`Webview received loadDefects command, offset: ${message.offset || 0}`, 'RobertWebviewProvider');
 
-								const defectsResult = await getDefects();
+								const offset = message.offset || 0;
+								const defectsResult = await getDefects({}, offset);
 
 								if (defectsResult?.defects) {
 									webview.postMessage({
 										command: 'defectsLoaded',
-										defects: defectsResult.defects
+										defects: defectsResult.defects,
+										hasMore: defectsResult.hasMore,
+										offset: defectsResult.offset,
+										totalCount: defectsResult.totalCount
 									});
-									this._errorHandler.logInfo(`Defects loaded successfully: ${defectsResult.count} defects`, 'WebviewMessageListener');
+									this._errorHandler.logInfo(`Defects loaded successfully: ${defectsResult.count} defects (offset: ${offset}, hasMore: ${defectsResult.hasMore})`, 'WebviewMessageListener');
 								} else {
 									webview.postMessage({
 										command: 'defectsError',
@@ -787,14 +669,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								}
 							}
 							break;
-						case 'openSettings':
-							try {
-								this._errorHandler.logInfo('Opening settings panel', 'WebviewMessageListener');
-								await this.createSettingsPanel();
-							} catch (error) {
-								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openSettings');
-							}
-							break;
 						case 'logDebug':
 							if (message.message && message.context) {
 								this._errorHandler.logDebug(message.message as string, message.context as string);
@@ -836,7 +710,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	/**
 	 * Open a tutorial in a new editor window
 	 */
-	private async _openTutorialInEditor(tutorial: any): Promise<void> {
+	private async _openTutorialInEditor(tutorial: Tutorial): Promise<void> {
 		const tutorialContent = this._generateTutorialMarkdown(tutorial);
 
 		// Create a new untitled document with the tutorial content
@@ -858,7 +732,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	/**
 	 * Generate markdown content for a tutorial
 	 */
-	private _generateTutorialMarkdown(tutorial: any): string {
+	private _generateTutorialMarkdown(tutorial: Tutorial): string {
 		let markdown = `# ${tutorial.title}\n\n`;
 		markdown += `> Master ${tutorial.title.toLowerCase()} with hands-on examples and best practices.\n\n`;
 

@@ -14,6 +14,7 @@ import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Task, type Defect } from '../../types/rally';
+import { themeColors } from '../utils/themeColors';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (
@@ -818,7 +819,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoriesLoading, setUserStoriesLoading] = useState(false);
 	const [userStoriesError, setUserStoriesError] = useState<string | null>(null);
 	const [selectedUserStory, setSelectedUserStory] = useState<UserStory | null>(null);
-	const [, setUserStoriesOffset] = useState(0);
+	const [userStoriesOffset, setUserStoriesOffset] = useState(0);
 	const [userStoriesHasMore, setUserStoriesHasMore] = useState(false);
 	const [userStoriesLoadingMore, setUserStoriesLoadingMore] = useState(false);
 
@@ -1218,8 +1219,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setIterationsError(message.error || 'Error loading iterations');
 					break;
 				case 'userStoriesLoaded':
-					// Determine context using iteration field from backend
-					const isSprintContext = message.iteration !== null && message.iteration !== undefined;
+					// Determine context: are we in Sprint Detail or Portfolio view?
+					const isSprintContext = currentScreen === 'userStories' && selectedIteration !== null;
 
 					if (isSprintContext) {
 						// Sprint Detail context - update sprint state

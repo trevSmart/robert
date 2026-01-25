@@ -191,7 +191,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					color: themeColors.foreground
 				},
 				axisLabel: {
-					color: themeColors.foreground,
+					color: '#999999',
 					formatter: '{value}h'
 				},
 				axisLine: {
@@ -212,7 +212,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					color: themeColors.foreground
 				},
 				axisLabel: {
-					color: lightTheme ? '#333333' : themeColors.foreground,
+					color: '#999999',
 					interval: 0
 				},
 				axisLine: {

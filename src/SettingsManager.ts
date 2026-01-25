@@ -4,13 +4,10 @@ import { ErrorHandler } from './ErrorHandler';
 export interface RobertSettings {
 	apiEndpoint: string;
 	refreshInterval: number;
-	theme: string;
 	autoRefresh: boolean;
-	notifications: boolean;
 	debugMode: boolean;
 	advancedFeatures: boolean;
 	maxResults: number;
-	timeout: number;
 	rallyInstance: string;
 	rallyApiKey: string;
 	rallyProjectName: string;
@@ -42,13 +39,10 @@ export class SettingsManager {
 				const settings: RobertSettings = {
 					apiEndpoint: config.get<string>('apiEndpoint', 'https://rally.example.com'),
 					refreshInterval: config.get<number>('refreshInterval', 30),
-					theme: config.get<string>('theme', 'auto'),
 					autoRefresh: config.get<boolean>('autoRefresh', true),
-					notifications: config.get<boolean>('notifications', true),
 					debugMode: config.get<boolean>('debugMode', false),
 					advancedFeatures: config.get<boolean>('advancedFeatures', false),
 					maxResults: config.get<number>('maxResults', 100),
-					timeout: config.get<number>('timeout', 5000),
 					rallyInstance: config.get<string>('rallyInstance', 'https://rally1.rallydev.com'),
 					rallyApiKey: config.get<string>('rallyApiKey', ''),
 					rallyProjectName: config.get<string>('rallyProjectName', '')
@@ -74,14 +68,8 @@ export class SettingsManager {
 			if (settings.refreshInterval !== undefined) {
 				await config.update('refreshInterval', settings.refreshInterval, vscode.ConfigurationTarget.Global);
 			}
-			if (settings.theme !== undefined) {
-				await config.update('theme', settings.theme, vscode.ConfigurationTarget.Global);
-			}
 			if (settings.autoRefresh !== undefined) {
 				await config.update('autoRefresh', settings.autoRefresh, vscode.ConfigurationTarget.Global);
-			}
-			if (settings.notifications !== undefined) {
-				await config.update('notifications', settings.notifications, vscode.ConfigurationTarget.Global);
 			}
 			if (settings.debugMode !== undefined) {
 				await config.update('debugMode', settings.debugMode, vscode.ConfigurationTarget.Global);
@@ -91,9 +79,6 @@ export class SettingsManager {
 			}
 			if (settings.maxResults !== undefined) {
 				await config.update('maxResults', settings.maxResults, vscode.ConfigurationTarget.Global);
-			}
-			if (settings.timeout !== undefined) {
-				await config.update('timeout', settings.timeout, vscode.ConfigurationTarget.Global);
 			}
 			if (settings.rallyInstance !== undefined) {
 				await config.update('rallyInstance', settings.rallyInstance, vscode.ConfigurationTarget.Global);
@@ -120,13 +105,10 @@ export class SettingsManager {
 			// Reset each setting to its default value
 			await config.update('apiEndpoint', defaultSettings.apiEndpoint, vscode.ConfigurationTarget.Global);
 			await config.update('refreshInterval', defaultSettings.refreshInterval, vscode.ConfigurationTarget.Global);
-			await config.update('theme', defaultSettings.theme, vscode.ConfigurationTarget.Global);
 			await config.update('autoRefresh', defaultSettings.autoRefresh, vscode.ConfigurationTarget.Global);
-			await config.update('notifications', defaultSettings.notifications, vscode.ConfigurationTarget.Global);
 			await config.update('debugMode', defaultSettings.debugMode, vscode.ConfigurationTarget.Global);
 			await config.update('advancedFeatures', defaultSettings.advancedFeatures, vscode.ConfigurationTarget.Global);
 			await config.update('maxResults', defaultSettings.maxResults, vscode.ConfigurationTarget.Global);
-			await config.update('timeout', defaultSettings.timeout, vscode.ConfigurationTarget.Global);
 			await config.update('rallyInstance', defaultSettings.rallyInstance, vscode.ConfigurationTarget.Global);
 			await config.update('rallyApiKey', defaultSettings.rallyApiKey, vscode.ConfigurationTarget.Global);
 			await config.update('rallyProjectName', defaultSettings.rallyProjectName, vscode.ConfigurationTarget.Global);
@@ -169,13 +151,10 @@ export class SettingsManager {
 		return {
 			apiEndpoint: 'https://rally.example.com',
 			refreshInterval: 30,
-			theme: 'auto',
 			autoRefresh: true,
-			notifications: true,
 			debugMode: false,
 			advancedFeatures: false,
 			maxResults: 100,
-			timeout: 5000,
 			rallyInstance: 'https://rally1.rallydev.com',
 			rallyApiKey: '',
 			rallyProjectName: ''
@@ -196,13 +175,7 @@ export class SettingsManager {
 			errors.push('Max results must be between 10 and 1000');
 		}
 
-		if (settings.timeout !== undefined && (settings.timeout < 1000 || settings.timeout > 60_000)) {
-			errors.push('Timeout must be between 1000 and 60000 milliseconds');
-		}
-
-		if (settings.theme !== undefined && !['auto', 'light', 'dark', 'high-contrast'].includes(settings.theme)) {
-			errors.push('Theme must be one of: auto, light, dark, high-contrast');
-		}
+		// ...existing code...
 
 		if (settings.rallyInstance !== undefined && !settings.rallyInstance.startsWith('https://')) {
 			errors.push('Rally instance must be a valid HTTPS URL');

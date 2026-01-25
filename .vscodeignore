@@ -16,6 +16,7 @@ tmp/
 
 # Dependencies (keep runtime packages bundled)
 package-lock.json
+.sfdx/
 
 # Documentation
 README.md

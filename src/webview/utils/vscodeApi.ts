@@ -1,4 +1,4 @@
-import type {} from '../../types/window.js';
+import type {} from '../../types/window';
 
 type VsCodeApi = {
 	postMessage(message: Record<string, unknown>): void;

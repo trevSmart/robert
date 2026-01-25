@@ -100,16 +100,6 @@
 		},
 		"commands": [
 			{
-				"command": "robert.helloWorld",
-				"title": "Hello World",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.openView",
-				"title": "Open IBM Robert View",
-				"category": "IBM Robert"
-			},
-			{
 				"command": "robert.openMainView",
 				"title": "Open Main View",
 				"category": "IBM Robert"
@@ -117,56 +107,6 @@
 			{
 				"command": "robert.showOutput",
 				"title": "Show Robert Output",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.showPanelIfHidden",
-				"title": "Show Robert Panel (if hidden)",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.async",
-				"title": "Example: Async Error Handling",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.sync",
-				"title": "Example: Sync Error Handling",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.manual",
-				"title": "Example: Manual Error Handling",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.logging",
-				"title": "Example: Logging Demo",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.example.fallback",
-				"title": "Example: Fallback Values",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.info",
-				"title": "Debug: Show Debug Information",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.enable",
-				"title": "Debug: Enable Debug Mode",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.disable",
-				"title": "Debug: Disable Debug Mode",
-				"category": "IBM Robert"
-			},
-			{
-				"command": "robert.debug.toggle",
-				"title": "Debug: Toggle Debug Mode",
 				"category": "IBM Robert"
 			},
 			{

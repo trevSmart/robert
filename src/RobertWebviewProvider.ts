@@ -507,7 +507,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 										userStories: userStoriesResult.userStories,
 										hasMore: userStoriesResult.hasMore,
 										offset: userStoriesResult.offset,
-										totalCount: userStoriesResult.totalCount
+										totalCount: userStoriesResult.totalCount,
+										iteration: message.iteration || null // Pass back iteration context
 									});
 									this._errorHandler.logInfo(`User stories loaded successfully: ${userStoriesResult.count} user stories (offset: ${offset}, hasMore: ${userStoriesResult.hasMore})`, 'WebviewMessageListener');
 								} else {

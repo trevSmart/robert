@@ -783,6 +783,29 @@ export async function getUserStories(query: RallyQueryParams = {}, limit: number
 		}
 	}
 
+	// For non-filtered queries (all user stories), only use cache if it's complete
+	// Check if cache has enough data for this offset
+	if (!hasFilters && offset > 0 && rallyData.userStories && rallyData.userStories.length > 0) {
+		const sorted = sortByFormattedIdDescending(rallyData.userStories);
+		// Only use cache if it has data at the requested offset
+		if (sorted.length > offset) {
+			errorHandler.logDebug(`Using existing cached user stories for pagination (offset: ${offset})`, 'rallyServices.getUserStories');
+			const paginated = sorted.slice(offset, offset + PAGE_SIZE);
+			const hasMore = offset + PAGE_SIZE < sorted.length;
+			// Only return from cache if we have data or if we've reached the end
+			if (paginated.length > 0 || !hasMore) {
+				return {
+					userStories: paginated,
+					source: 'cache',
+					count: paginated.length,
+					totalCount: sorted.length,
+					hasMore: hasMore,
+					offset: offset
+				};
+			}
+		}
+	}
+
 	// For non-filtered queries (all user stories), always fetch from Rally for proper pagination
 	// This ensures each "Load more" fetches the next page from Rally
 	const rallyApi = getRallyApi();
@@ -966,21 +989,27 @@ export async function getDefects(query: RallyQueryParams = {}, limit: number | n
 		}
 	}
 
-	// If offset > 0 and we have no filters, check if we already have cached results in rallyData
-	// This prevents redundant API calls when user clicks "Load more"
+	// If offset > 0 and we have no filters, check if cache has enough data
+	// Only use cache if it contains data at the requested offset
 	if (offset > 0 && !isFiltered && rallyData.defects && rallyData.defects.length > 0) {
-		errorHandler.logDebug(`Using existing cached defects for pagination (offset: ${offset})`, 'rallyServices.getDefects');
 		const sorted = sortByFormattedIdDescending(rallyData.defects);
-		const paginated = sorted.slice(offset, offset + PAGE_SIZE);
-		const hasMore = offset + PAGE_SIZE < sorted.length;
-		return {
-			defects: paginated,
-			source: 'cache',
-			count: paginated.length,
-			totalCount: sorted.length,
-			hasMore: hasMore,
-			offset: offset
-		};
+		// Only use cache if it has data at the requested offset
+		if (sorted.length > offset) {
+			errorHandler.logDebug(`Using existing cached defects for pagination (offset: ${offset})`, 'rallyServices.getDefects');
+			const paginated = sorted.slice(offset, offset + PAGE_SIZE);
+			const hasMore = offset + PAGE_SIZE < sorted.length;
+			// Only return from cache if we have data or if we've reached the end
+			if (paginated.length > 0 || !hasMore) {
+				return {
+					defects: paginated,
+					source: 'cache',
+					count: paginated.length,
+					totalCount: sorted.length,
+					hasMore: hasMore,
+					offset: offset
+				};
+			}
+		}
 	}
 
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API

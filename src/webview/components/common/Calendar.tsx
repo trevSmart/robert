@@ -450,7 +450,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
 								>
 									{/* Show up to 2 iteration lines with assigned colors */}
-									{dayInfo.iterations.slice(0, 2).map((iteration, _index) => {
+									{dayInfo.iterations.slice(0, 2).map(iteration => {
 										const iterationStartDate = iteration.startDate ? new Date(iteration.startDate) : null;
 										const iterationEndDate = iteration.endDate ? new Date(iteration.endDate) : null;
 

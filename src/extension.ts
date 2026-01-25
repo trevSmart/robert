@@ -106,6 +106,15 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(showIfHiddenCommand);
 
+	// Register command to open in editor
+	const openInEditorCommand = vscode.commands.registerCommand('robert.openInEditor', async () => {
+		await errorHandler.executeWithErrorHandling(async () => {
+			outputManager.appendLine('[Robert] Command: openInEditor');
+			await webviewProvider.createWebviewPanel();
+		}, 'robert.openInEditor command');
+	});
+	context.subscriptions.push(openInEditorCommand);
+
 	// Register command used by the status bar to open a small, lightweight popover
 	const openStatusPanelCommand = vscode.commands.registerCommand('robert.openStatusPanel', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {

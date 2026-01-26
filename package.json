@@ -212,7 +212,7 @@
 		"@vitejs/plugin-react": "^5.1.2",
 		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",
-		"ibm-rally-node": "^0.0.15",
+		"ibm-rally-node": "^0.0.16",
 		"react": "^18.2.0",
 		"react-dnd": "^16.0.1",
 		"react-dnd-html5-backend": "^16.0.1",

@@ -1674,8 +1674,17 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 										<option value="current">{findCurrentIteration(iterations)?.name || 'Current Sprint'} (current)</option>
 										{iterations
 											.filter(it => {
+												// Exclude current iteration to avoid duplicates
+												const currentIteration = findCurrentIteration(iterations);
+												if (currentIteration && it.objectId === currentIteration.objectId) {
+													return false;
+												}
+												// Only include past iterations (end date before today)
 												const endDate = new Date(it.endDate);
-												return endDate <= new Date();
+												const today = new Date();
+												today.setHours(0, 0, 0, 0);
+												endDate.setHours(0, 0, 0, 0);
+												return endDate < today;
 											})
 											.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
 											.slice(0, 12)

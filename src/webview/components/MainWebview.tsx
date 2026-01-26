@@ -1066,16 +1066,19 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				}
 			}
 			if (section === 'metrics') {
-				// Load iterations and defects for metrics when navigating to metrics section
+				// Load iterations, user stories, and defects for metrics when navigating to metrics section
 				if (!iterations.length && !iterationsLoading && !iterationsError) {
 					loadIterations();
+				}
+				if (!portfolioUserStories.length && !portfolioUserStoriesLoading) {
+					loadAllUserStories();
 				}
 				if (!defects.length && !defectsLoading && !defectsError) {
 					loadAllDefects();
 				}
 			}
 		},
-		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects]
+		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories]
 	);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {

@@ -1813,7 +1813,7 @@ export async function getUserSprintProgress(userName: string, iterationId?: stri
 		// Filter by assignee
 		const userStories = allUserStories.filter(story => story.assignee === userName);
 
-		errorHandler.logInfo(`Found ${userStories.length} user stories assigned to ${userName} in current iteration`, 'rallyServices.getUserSprintProgress');
+		errorHandler.logInfo(`Found ${userStories.length} user stories assigned to ${userName} in ${targetIteration.name}`, 'rallyServices.getUserSprintProgress');
 
 		if (userStories.length === 0) {
 			return {

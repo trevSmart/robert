@@ -1066,13 +1066,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				}
 			}
 			if (section === 'metrics') {
-				// Load iterations for metrics when navigating to metrics section
+				// Load iterations and defects for metrics when navigating to metrics section
 				if (!iterations.length && !iterationsLoading && !iterationsError) {
 					loadIterations();
 				}
+				if (!defects.length && !defectsLoading && !defectsError) {
+					loadAllDefects();
+				}
 			}
 		},
-		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError]
+		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects]
 	);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {

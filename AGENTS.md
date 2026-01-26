@@ -138,7 +138,7 @@ Robert/
 - **@vitejs/plugin-react**: Plugin React per Vite
 
 ### Development Dependencies
-- **@biomejs/biome**: Linter i formatter
+- **@ESLint**: Linter i formatter
 - **@vscode/vsce**: Packaging tool per extensions
 - **vscrui**: UI components per VS Code
 
@@ -225,7 +225,7 @@ Totes les accions es registren al canal "Robert" amb format estructurat:
 ### Build Process
 1. **TypeScript Compilation**: `tsc -p ./`
 2. **Webview Build**: `vite build` (React components)
-3. **Linting**: `biome check --write .`
+3. **Linting**: `eslint --fix .`
 4. **Packaging**: `vsce package --out dist/`
 
 ## 🎨 Interfície d'Usuari
@@ -276,13 +276,6 @@ Totes les accions es registren al canal "Robert" amb format estructurat:
 - **README.md**: Informació bàsica del projecte
 - **SETTINGS.md**: Guia detallada de configuració
 - **LICENSE.md**: Llicència del projecte
-
-### Configuració VS Code
-- **.vscode/settings.json**: Configuració workspace
-- **.vscode/tasks.json**: Tasques de build
-- **tsconfig.json**: Configuració TypeScript
-- **vite.config.ts**: Configuració Vite
-- **biome.json**: Configuració linter
 
 ## 🎯 Puntu Clau per Agents IA
 

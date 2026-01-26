@@ -766,10 +766,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									const selectedIterationId = message.iterationId as string | undefined;
 
 									// Use optimized batch progress fetching
-									const progressMap = await getAllTeamMembersProgress(
-										teamMembersResult.teamMembers,
-										selectedIterationId
-									);
+									const progressMap = await getAllTeamMembersProgress(teamMembersResult.teamMembers, selectedIterationId);
 
 									// Transform map to array format for webview
 									const teamMembersWithProgress = teamMembersResult.teamMembers.map(memberName => ({

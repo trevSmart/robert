@@ -2,7 +2,7 @@ import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
-import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, clearAllCaches as clearAllCachesService } from './CacheService';
+import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, clearAllCaches as clearAllCachesService } from './CacheService';
 
 // Error handler singleton instance
 const errorHandler = ErrorHandler.getInstance();
@@ -40,6 +40,19 @@ function sortByFormattedIdDescending<T extends { formattedId: string }>(items: T
 
 function escapeHtml(input: string): string {
 	return input.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/**
+ * Normalizes a name for comparison purposes
+ * Removes extra spaces, trims, and ensures consistent formatting
+ * This helps match team member names even if there are minor formatting differences
+ */
+function normalizeName(name: string): string {
+	if (!name) {
+		return '';
+	}
+	// Trim and normalize whitespace (multiple spaces to single space)
+	return name.trim().replace(/\s+/g, ' ');
 }
 
 export async function getProjects(query: Record<string, unknown> = {}, limit: number | null = null) {
@@ -529,7 +542,6 @@ async function formatDefectsAsync(results: any[]): Promise<RallyDefect[]> {
 async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUserStory[]> {
 	const formatted: RallyUserStory[] = [];
 
-	// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 	const results = result.Results || result.QueryResult?.Results || [];
 	for (let i = 0; i < results.length; i++) {
 		const userStory: any = results[i];
@@ -1173,7 +1185,6 @@ export async function getUserStoryTests(userStoryId: string) {
 			};
 		}
 
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		const userStory: any = results[0];
 
 		errorHandler.logDebug(`User story TestCases field: ${JSON.stringify(userStory.TestCases)}`, 'rallyServices.getUserStoryTests');
@@ -1188,7 +1199,6 @@ export async function getUserStoryTests(userStoryId: string) {
 		}
 
 		// Check if TestCases is just a count object
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		if (userStory.TestCases && typeof userStory.TestCases === 'object' && !Array.isArray(userStory.TestCases) && userStory.TestCases.Count !== undefined && !userStory.TestCases.Results) {
 			errorHandler.logDebug(`TestCases is a count object (${userStory.TestCases.Count}), need to query separately`, 'rallyServices.getUserStoryTests');
 			// If it's just a count, we need to query test cases directly by WorkProduct
@@ -1220,7 +1230,6 @@ export async function getUserStoryTests(userStoryId: string) {
 			};
 		}
 
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		const testCaseRefs: any[] = (userStory.TestCases as any)?.Results || userStory.TestCases || [];
 
 		if (!Array.isArray(testCaseRefs) || testCaseRefs.length === 0) {
@@ -1335,7 +1344,6 @@ export async function getUserStoryDefects(userStoryId: string) {
 			};
 		}
 
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		const userStory: any = results[0];
 
 		errorHandler.logDebug(`User story Defects field: ${JSON.stringify(userStory.Defects)}`, 'rallyServices.getUserStoryDefects');
@@ -1350,7 +1358,6 @@ export async function getUserStoryDefects(userStoryId: string) {
 		}
 
 		// Check if Defects is just a count object
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		if (userStory.Defects && typeof userStory.Defects === 'object' && !Array.isArray(userStory.Defects) && userStory.Defects.Count !== undefined && !userStory.Defects.Results) {
 			errorHandler.logDebug(`Defects is a count object (${userStory.Defects.Count}), need to query separately`, 'rallyServices.getUserStoryDefects');
 			// If it's just a count, we need to query defects directly by Requirement
@@ -1382,7 +1389,6 @@ export async function getUserStoryDefects(userStoryId: string) {
 			};
 		}
 
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		const defectRefs: any[] = (userStory.Defects as any)?.Results || userStory.Defects || [];
 
 		if (!Array.isArray(defectRefs) || defectRefs.length === 0) {
@@ -1536,13 +1542,11 @@ export async function getUserStoryDiscussions(userStoryId: string) {
 			};
 		}
 
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		const userStory: any = results[0];
 
 		errorHandler.logDebug(`User story Discussion field: ${JSON.stringify(userStory.Discussion)}`, 'rallyServices.getUserStoryDiscussions');
 
 		// Check if Discussion is just a count object or if we need to query separately
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		if (!userStory.Discussion || (userStory.Discussion && typeof userStory.Discussion === 'object' && !Array.isArray(userStory.Discussion) && userStory.Discussion.Count !== undefined && !userStory.Discussion.Results)) {
 			errorHandler.logDebug(`Discussion is a count object or missing, querying ConversationPost directly`, 'rallyServices.getUserStoryDiscussions');
 			// If it's just a count or missing, we need to query conversation posts directly by Artifact
@@ -1574,7 +1578,6 @@ export async function getUserStoryDiscussions(userStoryId: string) {
 			};
 		}
 
-		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 		const discussionRefs: any[] = (userStory.Discussion as any)?.Results || userStory.Discussion || [];
 
 		if (!Array.isArray(discussionRefs) || discussionRefs.length === 0) {
@@ -1662,9 +1665,24 @@ export async function getUserStoryDiscussions(userStoryId: string) {
  * Get unique team members from the last N iterations
  * Returns a list of unique assignees from user stories in recent sprints
  */
-export async function getRecentTeamMembers(numberOfIterations: number = 6) {
+export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 	try {
 		errorHandler.logInfo(`Getting team members from last ${numberOfIterations} iterations`, 'rallyServices.getRecentTeamMembers');
+
+		// Check cache first
+		const projectId = await getProjectId();
+		const cacheKey = `team-members:${projectId}:last${numberOfIterations}`;
+		const teamMembersCache = getTeamMembersCacheManager();
+		const cachedTeamMembers = teamMembersCache.get(cacheKey);
+
+		if (cachedTeamMembers) {
+			errorHandler.logInfo(`Returning ${cachedTeamMembers.length} team members from cache`, 'rallyServices.getRecentTeamMembers');
+			return {
+				teamMembers: cachedTeamMembers,
+				source: 'cache',
+				count: cachedTeamMembers.length
+			};
+		}
 
 		// Get all iterations for the project
 		const iterationsResult = await getIterations();
@@ -1739,6 +1757,9 @@ export async function getRecentTeamMembers(numberOfIterations: number = 6) {
 
 		errorHandler.logInfo(`Found ${teamMembers.length} unique team members: ${teamMembers.join(', ') || 'none'}`, 'rallyServices.getRecentTeamMembers');
 
+		// Cache the results
+		teamMembersCache.set(cacheKey, teamMembers);
+
 		return {
 			teamMembers: teamMembers,
 			source: 'api',
@@ -1781,8 +1802,8 @@ export async function getUserSprintProgress(userName: string, iterationId?: stri
 		let targetIteration;
 
 		if (iterationId && iterationId !== 'current') {
-			// Find specific iteration by objectId
-			targetIteration = iterations.find(iteration => iteration.objectId === iterationId);
+			// Find specific iteration by objectId (convert both to strings for comparison)
+			targetIteration = iterations.find(iteration => String(iteration.objectId) === String(iterationId));
 		} else {
 			// Find current iteration (today is between startDate and endDate)
 			const today = new Date();
@@ -1879,18 +1900,135 @@ export async function getUserSprintProgress(userName: string, iterationId?: stri
 }
 
 /**
+ * Fetch all tasks for multiple user stories in ONE efficient batch query
+ * Instead of making N individual queries, we make one query with OR conditions
+ *
+ * @param userStoryIds Array of user story object IDs
+ * @returns Map of story ID to array of tasks
+ */
+async function getBatchTasks(userStoryIds: string[]): Promise<
+	Map<
+		string,
+		Array<{
+			objectId: string;
+			formattedId: string;
+			name: string;
+			description: string | null;
+			state: string;
+			owner: string;
+			estimate: number;
+			toDo: number;
+			timeSpent: number;
+			workItem: string | null;
+			rank: number;
+		}>
+	>
+> {
+	const tasksByStory = new Map<string, any[]>();
+
+	if (userStoryIds.length === 0) {
+		return tasksByStory;
+	}
+
+	try {
+		const rallyApi = getRallyApi();
+		const projectId = await getProjectId();
+
+		// Build a query with OR conditions for all user story IDs
+		// WorkProduct = /hierarchicalrequirement/ID1 OR WorkProduct = /hierarchicalrequirement/ID2 OR ...
+		const workProductQueries = userStoryIds.map(storyId => queryUtils.where('WorkProduct.ObjectID', '=', storyId));
+
+		const queryOptions: RallyQueryOptions = {
+			type: 'task',
+			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID', 'Rank'],
+			query: queryUtils.where('Project', '=', `/project/${projectId}`),
+			order: 'Rank'
+		};
+
+		// Combine all WorkProduct queries with OR
+		if (workProductQueries.length === 1) {
+			// @ts-expect-error - Rally query builder has and method
+			queryOptions.query = queryOptions.query.and(workProductQueries[0]);
+		} else if (workProductQueries.length > 1) {
+			const workProductQuery = workProductQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) =>
+				// @ts-expect-error - Rally query builder has or method
+				a.or(b)
+			);
+			// @ts-expect-error - Rally query builder has and method
+			queryOptions.query = queryOptions.query.and(workProductQuery);
+		}
+
+		errorHandler.logInfo(`Fetching tasks for ${userStoryIds.length} stories in ONE batch query`, 'rallyServices.getBatchTasks');
+
+		const result = await rallyApi.query(queryOptions);
+		const resultData = result as RallyApiResult;
+		const results = resultData.Results || resultData.QueryResult?.Results || [];
+
+		if (results.length === 0) {
+			errorHandler.logInfo('No tasks found in batch query', 'rallyServices.getBatchTasks');
+			return tasksByStory;
+		}
+
+		// Format tasks
+		const formattedTasks = await formatTasksAsync(results);
+
+		// Group tasks by their WorkProduct (user story)
+		for (const task of formattedTasks) {
+			// Extract story ID from workItem (which is the FormattedID like "US1234567")
+			// We need to match it back to the objectId
+			// Find the corresponding story objectId by looking up in the provided list
+			// Since we don't have easy reverse lookup, we'll need to extract from the task data
+
+			// The task contains the workItem as FormattedID, but we need objectId
+			// We'll iterate through original results to get the WorkProduct._ref
+			// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+			// biome-ignore lint/suspicious/noExplicitAny: Need to access WorkProduct properties dynamically
+			const originalTask = results.find((r: any) => (r.ObjectID ?? r.objectId) === task.objectId) as any;
+
+			if (originalTask && originalTask.WorkProduct) {
+				// Extract ObjectID from WorkProduct
+				const workProductId = originalTask.WorkProduct.ObjectID ?? originalTask.WorkProduct.objectId;
+				if (workProductId) {
+					if (!tasksByStory.has(workProductId)) {
+						tasksByStory.set(workProductId, []);
+					}
+					tasksByStory.get(workProductId)!.push(task);
+				}
+			}
+		}
+
+		errorHandler.logInfo(`Batch query returned ${formattedTasks.length} tasks for ${tasksByStory.size} stories`, 'rallyServices.getBatchTasks');
+
+		// Cache all tasks
+		if (!rallyData.tasks) {
+			rallyData.tasks = [];
+		}
+		for (const task of formattedTasks) {
+			const existingTaskIndex = rallyData.tasks.findIndex((existingTask: any) => existingTask.objectId === task.objectId);
+			if (existingTaskIndex === -1) {
+				rallyData.tasks.push(task);
+			} else {
+				rallyData.tasks[existingTaskIndex] = task;
+			}
+		}
+
+		return tasksByStory;
+	} catch (error) {
+		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.getBatchTasks');
+		return tasksByStory;
+	}
+}
+
+/**
  * Get progress for all team members in a sprint efficiently
  * Optimized to fetch all data in minimal queries and process in memory
- * 
+ *
  * @param teamMembers Array of team member names
  * @param iterationId Optional iteration ID (uses current if not provided)
  * @returns Map of member name to progress data
  */
-export async function getAllTeamMembersProgress(
-	teamMembers: string[],
-	iterationId?: string
-): Promise<Map<string, { completedHours: number; totalHours: number; percentage: number; source: string }>> {
-	const progressMap = new Map<string, { completedHours: number; totalHours: number; percentage: number; source: string }>();
+export async function getAllTeamMembersProgress(teamMembers: string[], iterationId?: string): Promise<Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>> {
+	const progressMap = new Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>();
 
 	try {
 		errorHandler.logInfo(`Getting progress for ${teamMembers.length} team members in sprint`, 'rallyServices.getAllTeamMembersProgress');
@@ -1903,29 +2041,70 @@ export async function getAllTeamMembersProgress(
 			errorHandler.logInfo('No iterations found', 'rallyServices.getAllTeamMembersProgress');
 			// Return empty progress for all members
 			for (const member of teamMembers) {
-				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iterations' });
+				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iterations', userStoriesCount: 0 });
 			}
 			return progressMap;
 		}
 
 		// Step 2: Find target iteration
+		// Use the same logic as findCurrentIteration in MainWebview.tsx
 		let targetIteration;
 		if (iterationId && iterationId !== 'current') {
-			targetIteration = iterations.find(iteration => iteration.objectId === iterationId);
+			// Convert both to strings for comparison (Rally API may return number or string)
+			targetIteration = iterations.find(iteration => String(iteration.objectId) === String(iterationId));
+			errorHandler.logInfo(`Looking for iteration with ID: ${iterationId}, found: ${targetIteration?.name || 'NOT FOUND'}`, 'rallyServices.getAllTeamMembersProgress');
 		} else {
+			// Use the same logic as findCurrentIteration in MainWebview.tsx
 			const today = new Date();
-			targetIteration = iterations.find(iteration => {
-				const startDate = new Date(iteration.startDate);
-				const endDate = new Date(iteration.endDate);
-				return today >= startDate && today <= endDate;
+			today.setHours(0, 0, 0, 0); // Reset time to compare dates only
+
+			// Find iterations where today is between start and end dates
+			const activeIterations = iterations.filter(iteration => {
+				const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
+				const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
+
+				if (startDate) startDate.setHours(0, 0, 0, 0);
+				if (endDate) endDate.setHours(0, 0, 0, 0);
+
+				// If both dates are set, check if today is within range
+				if (startDate && endDate) {
+					return today >= startDate && today <= endDate;
+				}
+
+				// If only start date is set, check if today is after or equal to start
+				if (startDate && !endDate) {
+					return today >= startDate;
+				}
+
+				// If only end date is set, check if today is before or equal to end
+				if (!startDate && endDate) {
+					return today <= endDate;
+				}
+
+				// If no dates are set, consider it inactive
+				return false;
 			});
+
+			if (activeIterations.length === 0) {
+				targetIteration = undefined;
+			} else if (activeIterations.length === 1) {
+				// If only one active iteration, return it
+				targetIteration = activeIterations[0];
+			} else {
+				// If multiple active iterations, prioritize those containing "Sprint" in the name (case insensitive)
+				const sprintIterations = activeIterations.filter(iteration => iteration.name.toLowerCase().includes('sprint'));
+
+				// Return the first sprint iteration if any exist, otherwise return the first active iteration
+				targetIteration = sprintIterations.length > 0 ? sprintIterations[0] : activeIterations[0];
+			}
+
 		}
 
 		if (!targetIteration) {
 			errorHandler.logInfo('No target iteration found', 'rallyServices.getAllTeamMembersProgress');
 			// Return empty progress for all members
 			for (const member of teamMembers) {
-				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iteration' });
+				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iteration', userStoriesCount: 0 });
 			}
 			return progressMap;
 		}
@@ -1939,54 +2118,59 @@ export async function getAllTeamMembersProgress(
 
 		errorHandler.logInfo(`Found ${allUserStories.length} total user stories in iteration`, 'rallyServices.getAllTeamMembersProgress');
 
-		// Step 4: Group user stories by assignee
+		// Step 4: Group user stories by assignee (using normalized names for matching)
+		// Create a map with normalized assignee names as keys, but keep original assignee names for reference
 		const storiesByUser = new Map<string, typeof allUserStories>();
+		const assigneeNameMap = new Map<string, string>(); // Maps normalized name to original name
+
+
 		for (const story of allUserStories) {
-			if (story.assignee) {
-				if (!storiesByUser.has(story.assignee)) {
-					storiesByUser.set(story.assignee, []);
+			// Only group stories that have an assignee (c_Assignee), not just Owner
+			// The assignee field comes from c_Assignee, which is the AssignedTo field in Rally
+			if (story.assignee && story.assignee !== 'Unassigned') {
+				const normalizedAssignee = normalizeName(story.assignee);
+
+				// Store mapping from normalized to original name (use first occurrence)
+				if (!assigneeNameMap.has(normalizedAssignee)) {
+					assigneeNameMap.set(normalizedAssignee, story.assignee);
 				}
-				storiesByUser.get(story.assignee)!.push(story);
+
+				if (!storiesByUser.has(normalizedAssignee)) {
+					storiesByUser.set(normalizedAssignee, []);
+				}
+				storiesByUser.get(normalizedAssignee)!.push(story);
 			}
 		}
+
 
 		// Step 5: Get all incomplete story IDs for batch task fetching
 		const incompleteStoryIds: string[] = [];
 		for (const story of allUserStories) {
 			const isCompleted = story.scheduleState === 'Completed' || story.scheduleState === 'Accepted';
-			if (!isCompleted && story.assignee && teamMembers.includes(story.assignee)) {
-				incompleteStoryIds.push(story.objectId);
+			if (!isCompleted && story.assignee && story.assignee !== 'Unassigned') {
+				// Check if any team member matches this assignee (using normalized comparison)
+				const normalizedAssignee = normalizeName(story.assignee);
+				const matchesTeamMember = teamMembers.some(member => normalizeName(member) === normalizedAssignee);
+
+				if (matchesTeamMember) {
+					incompleteStoryIds.push(story.objectId);
+				}
 			}
 		}
 
 		errorHandler.logInfo(`Found ${incompleteStoryIds.length} incomplete stories needing task data`, 'rallyServices.getAllTeamMembersProgress');
 
-		// Step 6: Fetch all tasks for incomplete stories in ONE optimized query
-		// Group tasks by user story
-		const tasksByStory = new Map<string, any[]>();
-		
-		if (incompleteStoryIds.length > 0) {
-			// Rally API: fetch tasks where WorkProduct is in the list of story IDs
-			// We'll batch this into smaller chunks to avoid query length limits
-			const BATCH_SIZE = 50;
-			for (let i = 0; i < incompleteStoryIds.length; i += BATCH_SIZE) {
-				const batch = incompleteStoryIds.slice(i, i + BATCH_SIZE);
-				for (const storyId of batch) {
-					const tasksResult = await getTasks(storyId);
-					if (tasksResult.tasks && tasksResult.tasks.length > 0) {
-						tasksByStory.set(storyId, tasksResult.tasks);
-					}
-				}
-			}
-			errorHandler.logInfo(`Fetched tasks for ${tasksByStory.size} stories`, 'rallyServices.getAllTeamMembersProgress');
-		}
+		// Step 6: Fetch ALL tasks for incomplete stories in ONE batch query
+		const tasksByStory = await getBatchTasks(incompleteStoryIds);
+		errorHandler.logInfo(`Retrieved tasks for ${tasksByStory.size} stories via batch query`, 'rallyServices.getAllTeamMembersProgress');
 
 		// Step 7: Calculate progress for each team member in memory
 		for (const memberName of teamMembers) {
-			const userStories = storiesByUser.get(memberName) || [];
-			
+			const normalizedMemberName = normalizeName(memberName);
+			const userStories = storiesByUser.get(normalizedMemberName) || [];
+
 			if (userStories.length === 0) {
-				progressMap.set(memberName, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-stories' });
+				progressMap.set(memberName, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-stories', userStoriesCount: 0 });
 				continue;
 			}
 
@@ -2007,31 +2191,31 @@ export async function getAllTeamMembersProgress(
 					const tasks = tasksByStory.get(story.objectId) || [];
 					for (const task of tasks) {
 						if (task.state === 'Completed') {
-							completedHours += task.estimate || 0;
+							const taskHours = task.estimate || 0;
+							completedHours += taskHours;
 						}
 					}
 				}
 			}
 
 			const percentage = totalHours > 0 ? Math.round((completedHours / totalHours) * 100) : 0;
+
 			progressMap.set(memberName, {
 				completedHours,
 				totalHours,
 				percentage,
-				source: 'api'
+				source: 'api',
+				userStoriesCount: userStories.length
 			});
-
-			errorHandler.logDebug(`${memberName}: ${completedHours}/${totalHours}h (${percentage}%)`, 'rallyServices.getAllTeamMembersProgress');
 		}
 
 		errorHandler.logInfo(`Successfully calculated progress for ${progressMap.size} team members`, 'rallyServices.getAllTeamMembersProgress');
 		return progressMap;
-
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.getAllTeamMembersProgress');
 		// Return empty progress for all members on error
 		for (const member of teamMembers) {
-			progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'error' });
+			progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'error', userStoriesCount: 0 });
 		}
 		return progressMap;
 	}
@@ -2046,6 +2230,7 @@ export function clearAllRallyCaches(): void {
 		getUserStoriesCacheManager().clear();
 		getProjectsCacheManager().clear();
 		getIterationsCacheManager().clear();
+		getTeamMembersCacheManager().clear();
 		errorHandler.logInfo('All Rally caches cleared', 'rallyServices.clearAllRallyCaches');
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.clearAllRallyCaches');

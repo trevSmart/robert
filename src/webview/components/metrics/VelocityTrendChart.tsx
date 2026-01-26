@@ -40,7 +40,7 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 		const option: echarts.EChartsOption = {
 			title: {
 				text: 'Velocity Trend',
-				subtext: 'Last 12 Months',
+				subtext: 'Last 12 Sprints',
 				left: 'center',
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc',

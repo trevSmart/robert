@@ -32,7 +32,6 @@ export const Container = styled.div`
 `;
 
 export const CenteredContainer = styled.div`
-	max-width: 800px;
 	margin: 0 auto;
 `;
 

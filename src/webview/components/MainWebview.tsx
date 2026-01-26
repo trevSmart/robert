@@ -1727,7 +1727,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 																.slice(0, 2);
 
 															const percentage = member.progress.percentage;
-															const progressColor = percentage >= 75 ? '#4caf50' : percentage >= 50 ? '#ff9800' : percentage >= 25 ? '#ffc107' : '#f44336';
+															const progressColor =
+																percentage >= 75
+																	? 'var(--vscode-charts-green, #4caf50)'
+																	: percentage >= 50
+																	? 'var(--vscode-charts-orange, #ff9800)'
+																	: percentage >= 25
+																	? 'var(--vscode-charts-yellow, #ffc107)'
+																	: 'var(--vscode-charts-red, #f44336)';
 
 															return (
 																<div
@@ -1754,7 +1761,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 																	}}
 																>
 																	{/* Avatar with Progress Ring */}
-																	<div style={{ position: 'relative' }} title={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`}>
+																	<div
+																		role="progressbar"
+																		aria-valuenow={percentage}
+																		aria-valuemin={0}
+																		aria-valuemax={100}
+																		aria-label={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`}
+																		style={{ position: 'relative' }}
+																	>
 																		<svg
 																			width="64"
 																			height="64"

@@ -1105,7 +1105,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		if (activeSection === 'team' && teamMembers.length > 0) {
 			loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
 		}
-	}, [selectedTeamIteration, activeSection, loadTeamMembers]);
+	}, [selectedTeamIteration, activeSection, loadTeamMembers, teamMembers]);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {
 		const today = new Date();

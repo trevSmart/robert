@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import styled from 'styled-components';
+import { isLightTheme } from '../../utils/themeColors';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -22,7 +23,7 @@ interface Defect {
 	name: string;
 	description: string | null;
 	state: string;
-	scheduledState?: string;
+	scheduleState?: string;
 	severity: string;
 	priority: string;
 	owner: string;
@@ -44,8 +45,25 @@ interface DefectFormProps {
 }
 
 const DefectForm: FC<DefectFormProps> = ({ defect }) => {
-	const getScheduledStateColor = (scheduledState: string) => {
-		switch (scheduledState?.toLowerCase()) {
+	const lightTheme = isLightTheme();
+
+	const getInfoCardStyles = () => {
+		return {
+			background: lightTheme ? 'rgba(0, 0, 0, 0.04)' : 'color(srgb 0.2 0.2 0.2 / 0.6)',
+			border: lightTheme ? '1px solid rgba(0, 0, 0, 0.12)' : '1px solid color(srgb 0.8 0.8 0.8 / 0.08)',
+			borderRadius: '10px',
+			padding: '10px 12px',
+			display: 'flex',
+			flexDirection: 'column' as const,
+			gap: '4px',
+			alignItems: 'flex-start',
+			justifyContent: 'center',
+			minHeight: '56px'
+		};
+	};
+
+	const getScheduleStateColor = (scheduleState: string) => {
+		switch (scheduleState?.toLowerCase()) {
 			case 'new':
 				return '#6c757d'; // Gris
 			case 'defined':
@@ -92,15 +110,15 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 				>
 					{defect.formattedId}
 				</h2>
-				{defect.scheduledState && (
+				{defect.scheduleState && (
 					<div
 						style={{
 							fontSize: '14px',
 							fontWeight: '500',
-							color: getScheduledStateColor(defect.scheduledState)
+							color: getScheduleStateColor(defect.scheduleState)
 						}}
 					>
-						{defect.scheduledState}
+						{defect.scheduleState}
 					</div>
 				)}
 			</div>
@@ -242,19 +260,19 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 				<h3 style={{ margin: '16px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
 				<div style={{ gridColumn: '1 / -1' }}>
 					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
-						<div style={{ background: 'color(srgb 0.2 0.2 0.2 / 0.6)', border: '1px solid color(srgb 0.8 0.8 0.8 / 0.08)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', justifyContent: 'center', minHeight: '56px' }}>
+						<div style={getInfoCardStyles()}>
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Environment</span>
 							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.environment || 'N/A'}</span>
 						</div>
-						<div style={{ background: 'color(srgb 0.2 0.2 0.2 / 0.6)', border: '1px solid color(srgb 0.8 0.8 0.8 / 0.08)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', justifyContent: 'center', minHeight: '56px' }}>
+						<div style={getInfoCardStyles()}>
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Found In Build</span>
 							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.foundInBuild || 'N/A'}</span>
 						</div>
-						<div style={{ background: 'color(srgb 0.2 0.2 0.2 / 0.6)', border: '1px solid color(srgb 0.8 0.8 0.8 / 0.08)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', justifyContent: 'center', minHeight: '56px' }}>
+						<div style={getInfoCardStyles()}>
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Target Build</span>
 							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.targetBuild || 'N/A'}</span>
 						</div>
-						<div style={{ background: 'color(srgb 0.2 0.2 0.2 / 0.6)', border: '1px solid color(srgb 0.8 0.8 0.8 / 0.08)', borderRadius: '10px', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-start', justifyContent: 'center', minHeight: '56px' }}>
+						<div style={getInfoCardStyles()}>
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Discussions</span>
 							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.discussionCount}</span>
 						</div>

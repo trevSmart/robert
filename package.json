@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.0.227",
+	"version": "0.0.256",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -203,6 +203,7 @@
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^7.0.1",
 		"prettier": "^3.7.4",
+		"rally": "^2.1.3",
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {

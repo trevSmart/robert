@@ -766,15 +766,22 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									const selectedIterationId = message.iterationId as string | undefined;
 
 									// Get progress for each team member
-									const teamMembersWithProgress = await Promise.all(
-										teamMembersResult.teamMembers.map(async (memberName: string) => {
-											const progress = await getUserSprintProgress(memberName, selectedIterationId);
-											return {
-												name: memberName,
-												progress: progress
-											};
-										})
-									);
+									// Limit concurrency to avoid overwhelming the Rally API
+									const concurrencyLimit = 5;
+									const teamMembersWithProgress: { name: string; progress: unknown }[] = [];
+									for (let i = 0; i < teamMembersResult.teamMembers.length; i += concurrencyLimit) {
+										const batch = teamMembersResult.teamMembers.slice(i, i + concurrencyLimit);
+										const batchResults = await Promise.all(
+											batch.map(async (memberName: string) => {
+												const progress = await getUserSprintProgress(memberName, selectedIterationId);
+												return {
+													name: memberName,
+													progress: progress
+												};
+											})
+										);
+										teamMembersWithProgress.push(...batchResults);
+									}
 
 									webview.postMessage({
 										command: 'teamMembersLoaded',

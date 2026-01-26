@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getUserSprintProgress } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getUserSprintProgress, getAllTeamMembersProgress } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 
@@ -765,23 +765,22 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									// Get the selected iteration from message (if provided)
 									const selectedIterationId = message.iterationId as string | undefined;
 
-									// Get progress for each team member
-									// Limit concurrency to avoid overwhelming the Rally API
-									const concurrencyLimit = 5;
-									const teamMembersWithProgress: { name: string; progress: unknown }[] = [];
-									for (let i = 0; i < teamMembersResult.teamMembers.length; i += concurrencyLimit) {
-										const batch = teamMembersResult.teamMembers.slice(i, i + concurrencyLimit);
-										const batchResults = await Promise.all(
-											batch.map(async (memberName: string) => {
-												const progress = await getUserSprintProgress(memberName, selectedIterationId);
-												return {
-													name: memberName,
-													progress: progress
-												};
-											})
-										);
-										teamMembersWithProgress.push(...batchResults);
-									}
+									// Use optimized batch progress fetching
+									const progressMap = await getAllTeamMembersProgress(
+										teamMembersResult.teamMembers,
+										selectedIterationId
+									);
+
+									// Transform map to array format for webview
+									const teamMembersWithProgress = teamMembersResult.teamMembers.map(memberName => ({
+										name: memberName,
+										progress: progressMap.get(memberName) || {
+											completedHours: 0,
+											totalHours: 0,
+											percentage: 0,
+											source: 'not-found'
+										}
+									}));
 
 									webview.postMessage({
 										command: 'teamMembersLoaded',

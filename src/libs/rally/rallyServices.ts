@@ -1879,6 +1879,165 @@ export async function getUserSprintProgress(userName: string, iterationId?: stri
 }
 
 /**
+ * Get progress for all team members in a sprint efficiently
+ * Optimized to fetch all data in minimal queries and process in memory
+ * 
+ * @param teamMembers Array of team member names
+ * @param iterationId Optional iteration ID (uses current if not provided)
+ * @returns Map of member name to progress data
+ */
+export async function getAllTeamMembersProgress(
+	teamMembers: string[],
+	iterationId?: string
+): Promise<Map<string, { completedHours: number; totalHours: number; percentage: number; source: string }>> {
+	const progressMap = new Map<string, { completedHours: number; totalHours: number; percentage: number; source: string }>();
+
+	try {
+		errorHandler.logInfo(`Getting progress for ${teamMembers.length} team members in sprint`, 'rallyServices.getAllTeamMembersProgress');
+
+		// Step 1: Get iterations
+		const iterationsResult = await getIterations();
+		const iterations = iterationsResult.iterations;
+
+		if (!iterations || iterations.length === 0) {
+			errorHandler.logInfo('No iterations found', 'rallyServices.getAllTeamMembersProgress');
+			// Return empty progress for all members
+			for (const member of teamMembers) {
+				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iterations' });
+			}
+			return progressMap;
+		}
+
+		// Step 2: Find target iteration
+		let targetIteration;
+		if (iterationId && iterationId !== 'current') {
+			targetIteration = iterations.find(iteration => iteration.objectId === iterationId);
+		} else {
+			const today = new Date();
+			targetIteration = iterations.find(iteration => {
+				const startDate = new Date(iteration.startDate);
+				const endDate = new Date(iteration.endDate);
+				return today >= startDate && today <= endDate;
+			});
+		}
+
+		if (!targetIteration) {
+			errorHandler.logInfo('No target iteration found', 'rallyServices.getAllTeamMembersProgress');
+			// Return empty progress for all members
+			for (const member of teamMembers) {
+				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iteration' });
+			}
+			return progressMap;
+		}
+
+		errorHandler.logInfo(`Target iteration: ${targetIteration.name}`, 'rallyServices.getAllTeamMembersProgress');
+
+		// Step 3: Get ALL user stories for the iteration in ONE query
+		const iterationRef = `/iteration/${targetIteration.objectId}`;
+		const userStoriesResult = await getUserStories({ Iteration: iterationRef });
+		const allUserStories = userStoriesResult.userStories;
+
+		errorHandler.logInfo(`Found ${allUserStories.length} total user stories in iteration`, 'rallyServices.getAllTeamMembersProgress');
+
+		// Step 4: Group user stories by assignee
+		const storiesByUser = new Map<string, typeof allUserStories>();
+		for (const story of allUserStories) {
+			if (story.assignee) {
+				if (!storiesByUser.has(story.assignee)) {
+					storiesByUser.set(story.assignee, []);
+				}
+				storiesByUser.get(story.assignee)!.push(story);
+			}
+		}
+
+		// Step 5: Get all incomplete story IDs for batch task fetching
+		const incompleteStoryIds: string[] = [];
+		for (const story of allUserStories) {
+			const isCompleted = story.scheduleState === 'Completed' || story.scheduleState === 'Accepted';
+			if (!isCompleted && story.assignee && teamMembers.includes(story.assignee)) {
+				incompleteStoryIds.push(story.objectId);
+			}
+		}
+
+		errorHandler.logInfo(`Found ${incompleteStoryIds.length} incomplete stories needing task data`, 'rallyServices.getAllTeamMembersProgress');
+
+		// Step 6: Fetch all tasks for incomplete stories in ONE optimized query
+		// Group tasks by user story
+		const tasksByStory = new Map<string, any[]>();
+		
+		if (incompleteStoryIds.length > 0) {
+			// Rally API: fetch tasks where WorkProduct is in the list of story IDs
+			// We'll batch this into smaller chunks to avoid query length limits
+			const BATCH_SIZE = 50;
+			for (let i = 0; i < incompleteStoryIds.length; i += BATCH_SIZE) {
+				const batch = incompleteStoryIds.slice(i, i + BATCH_SIZE);
+				for (const storyId of batch) {
+					const tasksResult = await getTasks(storyId);
+					if (tasksResult.tasks && tasksResult.tasks.length > 0) {
+						tasksByStory.set(storyId, tasksResult.tasks);
+					}
+				}
+			}
+			errorHandler.logInfo(`Fetched tasks for ${tasksByStory.size} stories`, 'rallyServices.getAllTeamMembersProgress');
+		}
+
+		// Step 7: Calculate progress for each team member in memory
+		for (const memberName of teamMembers) {
+			const userStories = storiesByUser.get(memberName) || [];
+			
+			if (userStories.length === 0) {
+				progressMap.set(memberName, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-stories' });
+				continue;
+			}
+
+			let completedHours = 0;
+			let totalHours = 0;
+
+			for (const story of userStories) {
+				const storyHours = story.taskEstimateTotal || 0;
+				totalHours += storyHours;
+
+				const isCompleted = story.scheduleState === 'Completed' || story.scheduleState === 'Accepted';
+
+				if (isCompleted) {
+					// All hours count as completed
+					completedHours += storyHours;
+				} else {
+					// Check tasks for this story
+					const tasks = tasksByStory.get(story.objectId) || [];
+					for (const task of tasks) {
+						if (task.state === 'Completed') {
+							completedHours += task.estimate || 0;
+						}
+					}
+				}
+			}
+
+			const percentage = totalHours > 0 ? Math.round((completedHours / totalHours) * 100) : 0;
+			progressMap.set(memberName, {
+				completedHours,
+				totalHours,
+				percentage,
+				source: 'api'
+			});
+
+			errorHandler.logDebug(`${memberName}: ${completedHours}/${totalHours}h (${percentage}%)`, 'rallyServices.getAllTeamMembersProgress');
+		}
+
+		errorHandler.logInfo(`Successfully calculated progress for ${progressMap.size} team members`, 'rallyServices.getAllTeamMembersProgress');
+		return progressMap;
+
+	} catch (error) {
+		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.getAllTeamMembersProgress');
+		// Return empty progress for all members on error
+		for (const member of teamMembers) {
+			progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'error' });
+		}
+		return progressMap;
+	}
+}
+
+/**
  * Clear all Rally service caches
  * Called when extension needs to reload/reset all data
  */

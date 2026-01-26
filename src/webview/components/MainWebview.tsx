@@ -756,15 +756,30 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoryDiscussionsError, setUserStoryDiscussionsError] = useState<string | null>(null);
 
 	// Team members state
-	const [teamMembers, setTeamMembers] = useState<string[]>([]);
+	// Team members state
+	const [teamMembers, setTeamMembers] = useState<
+		Array<{
+			name: string;
+			progress: {
+				completedHours: number;
+				totalHours: number;
+				percentage: number;
+				source: string;
+			};
+		}>
+	>([]);
 	const [teamMembersLoading, setTeamMembersLoading] = useState(false);
 	const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
+	const [selectedTeamIteration, setSelectedTeamIteration] = useState<string>('current'); // 'current' or iteration objectId
 
-	// Metrics state
+	// Metrics state - each chart has independent loading state
 	const [metricsLoading, setMetricsLoading] = useState(false);
 	const [velocityData, setVelocityData] = useState<VelocityData[]>([]);
+	const [velocityLoading, setVelocityLoading] = useState(false);
 	const [stateDistribution, setStateDistribution] = useState<StateDistribution[]>([]);
+	const [stateDistributionLoading, setStateDistributionLoading] = useState(false);
 	const [defectsBySeverity, setDefectsBySeverity] = useState<DefectsBySeverity[]>([]);
+	const [defectsBySeverityLoading, setDefectsBySeverityLoading] = useState(false);
 	const [averageVelocity, setAverageVelocity] = useState<number>(0);
 	const [completedPoints, setCompletedPoints] = useState<number>(0);
 	const [wip, setWip] = useState<number>(0);
@@ -792,7 +807,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const attemptedUserStoryDiscussions = useRef<Set<string>>(new Set());
 
 	const loadIterations = useCallback(() => {
-		logDebug('Loading iterations...', 'Frontend');
 		setIterationsLoading(true);
 		setIterationsError(null);
 		sendMessage({
@@ -800,18 +814,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		});
 	}, [sendMessage]);
 
-	const loadTeamMembers = useCallback(() => {
-		logDebug('Loading team members...', 'Frontend');
-		setTeamMembersLoading(true);
-		setTeamMembersError(null);
-		sendMessage({
-			command: 'loadTeamMembers'
-		});
-	}, [sendMessage]);
+	const loadTeamMembers = useCallback(
+		(iterationId?: string) => {
+			setTeamMembersLoading(true);
+			setTeamMembersError(null);
+			sendMessage({
+				command: 'loadTeamMembers',
+				iterationId: iterationId
+			});
+		},
+		[sendMessage]
+	);
 
 	const loadUserStories = useCallback(
 		(iteration?: Iteration) => {
-			logDebug(`Loading user stories... ${iteration ? `for iteration: ${iteration.name}` : 'for all'}`, 'Frontend');
 
 			if (iteration) {
 				// Sprint context - use sprint state
@@ -836,7 +852,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	);
 
 	const loadAllUserStories = useCallback(() => {
-		logDebug('Loading ALL user stories...', 'Frontend');
 		setPortfolioUserStoriesLoading(true);
 		setUserStoriesError(null);
 		setPortfolioUserStoriesOffset(0);
@@ -855,7 +870,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	}, [sendMessage]);
 
 	const loadAllDefects = useCallback(() => {
-		logDebug('Loading ALL defects...', 'Frontend');
 		setDefectsLoading(true);
 		setDefectsError(null);
 		setDefectsOffset(0);
@@ -867,7 +881,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	}, [sendMessage]);
 
 	const loadMoreUserStories = useCallback(() => {
-		logDebug('Loading more user stories...', 'Frontend');
 		setPortfolioUserStoriesLoadingMore(true);
 
 		// Keep backward compatibility
@@ -881,7 +894,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	}, [sendMessage, portfolioUserStoriesOffset]);
 
 	const loadMoreDefects = useCallback(() => {
-		logDebug('Loading more defects...', 'Frontend');
 		setDefectsLoadingMore(true);
 		const nextOffset = defectsOffset + 100;
 		sendMessage({
@@ -892,7 +904,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const loadUserStoryDefects = useCallback(
 		(userStoryId: string) => {
-			logDebug(`Loading defects for user story: ${userStoryId}`, 'Frontend');
 			setUserStoryDefectsLoading(true);
 			setUserStoryDefectsError(null);
 			sendMessage({
@@ -905,7 +916,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const loadUserStoryDiscussions = useCallback(
 		(userStoryId: string) => {
-			logDebug(`Loading discussions for user story: ${userStoryId}`, 'Frontend');
 			setUserStoryDiscussionsLoading(true);
 			setUserStoryDiscussionsError(null);
 			sendMessage({
@@ -917,7 +927,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	);
 
 	const handleDefectSelected = useCallback((defect: RallyDefect) => {
-		logDebug(`Defect selected: ${defect.formattedId}`, 'Frontend');
 		setSelectedDefect(defect);
 		setCurrentScreen('defectDetail');
 	}, []);
@@ -929,7 +938,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const switchViewType = useCallback(
 		(newViewType: PortfolioViewType) => {
-			logDebug(`Switching to view type: ${newViewType}`, 'Frontend');
 
 			// State cleaners for each view type (only clear when necessary)
 			const stateCleaners = {
@@ -966,7 +974,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			// Only load data if this view hasn't been loaded yet in this session
 			// This prevents redundant fetches when switching between tabs
 			if (!loadedViews.current.has(newViewType)) {
-				logDebug(`First time loading view: ${newViewType} - fetching data`, 'Frontend');
 				loadedViews.current.add(newViewType);
 
 				const newLoader = dataLoaders[newViewType];
@@ -974,7 +981,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					newLoader();
 				}
 			} else {
-				logDebug(`View already loaded: ${newViewType} - skipping fetch`, 'Frontend');
 			}
 		},
 		[loadIterations, loadAllUserStories, loadAllDefects]
@@ -982,7 +988,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const handleIterationSelected = useCallback(
 		(iteration: Iteration) => {
-			logDebug(`Iteration selected: ${iteration.name}`, 'Frontend');
 			setSelectedIteration(iteration);
 			loadUserStories(iteration);
 			setCurrentScreen('userStories');
@@ -1000,7 +1005,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const loadTasks = useCallback(
 		(userStoryId: string) => {
-			logDebug(`Loading tasks for user story: ${userStoryId}`, 'Frontend');
 			setTasksLoading(true);
 			setTasksError(null);
 			sendMessage({
@@ -1013,7 +1017,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const handleUserStorySelected = useCallback(
 		(userStory: UserStory) => {
-			logDebug(`User story selected: ${userStory.formattedId}`, 'Frontend');
 			setSelectedUserStory(userStory);
 			setCurrentScreen('userStoryDetail');
 			setActiveUserStoryTab('tasks');
@@ -1062,7 +1065,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			if (section === 'team') {
 				// Load team members when navigating to the team section
 				if (!teamMembers.length && !teamMembersLoading && !teamMembersError) {
-					loadTeamMembers();
+					loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
 				}
 			}
 			if (section === 'metrics') {
@@ -1078,8 +1081,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				}
 			}
 		},
-		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories]
+		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories, selectedTeamIteration]
 	);
+
+	// Reload team members when selected iteration changes
+	useEffect(() => {
+		if (activeSection === 'team' && teamMembers.length > 0) {
+			loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [selectedTeamIteration, activeSection, loadTeamMembers]);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {
 		const today = new Date();
@@ -1130,7 +1141,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Initialize webview on mount
 	useEffect(() => {
-		logDebug('MainWebview initializing on mount', 'Frontend');
 
 		sendMessage({
 			command: 'webviewReady'
@@ -1145,7 +1155,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		// Since activeSection defaults to 'calendar', we should load iterations immediately
 		setTimeout(() => {
 			if (!hasLoadedCalendarIterations.current) {
-				logDebug('Initial mount - loading iterations for calendar', 'Frontend');
 				hasLoadedCalendarIterations.current = true;
 				loadIterations();
 			}
@@ -1158,7 +1167,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data;
 
-			logDebug(`Received message from extension: ${message.command}`, 'Frontend');
 
 			switch (message.command) {
 				case 'showLogo':
@@ -1175,12 +1183,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						// Auto-select current iteration if available
 						const currentIteration = findCurrentIteration(message.iterations);
 						if (currentIteration) {
-							logDebug(`Auto-selecting current iteration: ${currentIteration.name}`, 'Frontend');
 							setSelectedIteration(currentIteration);
 							loadUserStories(currentIteration);
 							setCurrentScreen('userStories');
 						} else {
-							logDebug('No active iteration found for today', 'Frontend');
 						}
 					} else {
 						setIterationsError('Failed to load iterations');
@@ -1324,22 +1330,59 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		return () => window.removeEventListener('message', handleMessage);
 	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen]); // Only include dependencies needed by handleMessage
 
-	// Calculate metrics when data changes
+	// Calculate metrics when data changes - load charts in parallel
 	useEffect(() => {
 		if (activeSection !== 'metrics') return;
 		if (!iterations.length || !portfolioUserStories.length) return;
 
 		setMetricsLoading(true);
 
+		// Load each chart in parallel
+		// Velocity chart - last 12 sprints
+		(async () => {
+			try {
+				setVelocityLoading(true);
+				const velocityResult = calculateVelocity(portfolioUserStories, iterations, 12);
+				setVelocityData(velocityResult);
+
+				// Calculate average velocity
+				const avgVelocity = calculateAverageVelocity(velocityResult);
+				setAverageVelocity(avgVelocity);
+			} catch (error) {
+				console.error('Error calculating velocity:', error);
+			} finally {
+				setVelocityLoading(false);
+			}
+		})();
+
+		// State distribution chart
+		(async () => {
+			try {
+				setStateDistributionLoading(true);
+				const stateDistrib = groupByState(portfolioUserStories);
+				setStateDistribution(stateDistrib);
+			} catch (error) {
+				console.error('Error calculating state distribution:', error);
+			} finally {
+				setStateDistributionLoading(false);
+			}
+		})();
+
+		// Defects trend chart - last 6 sprints
+		(async () => {
+			try {
+				setDefectsBySeverityLoading(true);
+				const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 6);
+				setDefectsBySeverity(defectsBySev);
+			} catch (error) {
+				console.error('Error calculating defects:', error);
+			} finally {
+				setDefectsBySeverityLoading(false);
+			}
+		})();
+
+		// Calculate other KPI metrics
 		try {
-			// Calculate velocity data (last 6 sprints)
-			const velocityResult = calculateVelocity(portfolioUserStories, iterations, 6);
-			setVelocityData(velocityResult);
-
-			// Calculate average velocity
-			const avgVelocity = calculateAverageVelocity(velocityResult);
-			setAverageVelocity(avgVelocity);
-
 			// Calculate completed points (current sprint or all)
 			const points = calculateCompletedPoints(portfolioUserStories);
 			setCompletedPoints(points);
@@ -1352,14 +1395,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			const blocked = calculateBlockedItems(portfolioUserStories, defects);
 			setBlockedItems(blocked);
 
-			// Calculate state distribution
-			const stateDistrib = groupByState(portfolioUserStories);
-			setStateDistribution(stateDistrib);
-
-			// Calculate defects by severity
-			const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 6);
-			setDefectsBySeverity(defectsBySev);
-
 			setMetricsLoading(false);
 		} catch (error) {
 			console.error('Error calculating metrics:', error);
@@ -1370,17 +1405,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	// Load iterations when navigating to calendar section
 	useEffect(() => {
 		// eslint-disable-next-line no-console
-		console.log('[Frontend] Calendar section effect triggered', {
-			activeSection,
-			hasLoaded: hasLoadedCalendarIterations.current,
-			iterationsCount: iterations.length,
-			iterationsLoading,
-			iterationsError
-		});
-
 		if (activeSection === 'calendar' && !hasLoadedCalendarIterations.current && !iterations.length && !iterationsLoading && !iterationsError) {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Entering calendar section - loading iterations');
 			hasLoadedCalendarIterations.current = true;
 			// Use setTimeout to make the call asynchronous and avoid linter warning about setState in effects
 			setTimeout(() => {
@@ -1395,8 +1420,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	// Load iterations when navigating to portfolio section
 	useEffect(() => {
 		if (activeSection === 'portfolio' && !hasLoadedPortfolioIterations.current) {
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Entering portfolio section');
 			hasLoadedPortfolioIterations.current = true;
 			// Note: Don't auto-load here; let switchViewType handle data loading
 		} else if (activeSection !== 'portfolio') {
@@ -1404,8 +1427,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			hasLoadedPortfolioIterations.current = false;
 			loadedViews.current.clear();
 			attemptedUserStoryDefects.current.clear();
-			// eslint-disable-next-line no-console
-			console.log('[Frontend] Exiting portfolio section - cleared view cache');
 		}
 	}, [activeSection]);
 
@@ -1414,11 +1435,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		if (selectedUserStory && activeUserStoryTab === 'defects' && !userStoryDefectsLoading) {
 			// Check if we've already attempted to load defects for this user story
 			if (!attemptedUserStoryDefects.current.has(selectedUserStory.objectId)) {
-				logDebug(`First time loading defects for user story: ${selectedUserStory.formattedId}`, 'Frontend');
 				attemptedUserStoryDefects.current.add(selectedUserStory.objectId);
 				loadUserStoryDefects(selectedUserStory.objectId);
 			} else {
-				logDebug(`Already attempted to load defects for user story: ${selectedUserStory.formattedId}`, 'Frontend');
 			}
 		}
 	}, [selectedUserStory, activeUserStoryTab, userStoryDefectsLoading, loadUserStoryDefects]);
@@ -1428,11 +1447,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		if (selectedUserStory && activeUserStoryTab === 'discussions' && !userStoryDiscussionsLoading) {
 			// Check if we've already attempted to load discussions for this user story
 			if (!attemptedUserStoryDiscussions.current.has(selectedUserStory.objectId)) {
-				logDebug(`First time loading discussions for user story: ${selectedUserStory.formattedId}`, 'Frontend');
 				attemptedUserStoryDiscussions.current.add(selectedUserStory.objectId);
 				loadUserStoryDiscussions(selectedUserStory.objectId);
 			} else {
-				logDebug(`Already attempted to load discussions for user story: ${selectedUserStory.formattedId}`, 'Frontend');
 			}
 		}
 	}, [selectedUserStory, activeUserStoryTab, userStoryDiscussionsLoading, loadUserStoryDiscussions]);
@@ -1472,49 +1489,21 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Handle mouse back button navigation
 	useEffect(() => {
-		// eslint-disable-next-line no-console
-		console.log('[MainWebview] Setting up mouse back button handler');
-
 		const handleMouseEvent = (event: globalThis.MouseEvent) => {
-			// eslint-disable-next-line no-console
-			console.log('[MainWebview] Mouse event detected:', {
-				button: event.button,
-				buttons: event.buttons,
-				type: event.type,
-				currentScreen,
-				hasSelectedUserStory: !!selectedUserStory,
-				hasSelectedIteration: !!selectedIteration,
-				hasSelectedDefect: !!selectedDefect
-			});
-
 			// Mouse back button is typically button 3 (some mice use button 4)
 			// Button values: 0 = left, 1 = middle, 2 = right, 3 = back, 4 = forward
 			if (event.button === 3) {
-				// eslint-disable-next-line no-console
-				console.log('[MainWebview] Mouse back button (button 3) detected!');
 				event.preventDefault();
 				event.stopPropagation();
 
 				// Navigate back based on current screen
 				if (currentScreen === 'userStoryDetail' && selectedUserStory) {
-					// eslint-disable-next-line no-console
-					console.log('[MainWebview] Navigating back to user stories list');
 					handleBackToUserStories();
 				} else if (currentScreen === 'userStories' && selectedIteration) {
-					// eslint-disable-next-line no-console
-					console.log('[MainWebview] Navigating back to iterations list');
 					handleBackToIterations();
 				} else if (currentScreen === 'defectDetail' && selectedDefect) {
-					// eslint-disable-next-line no-console
-					console.log('[MainWebview] Navigating back to defects list');
 					handleBackToDefects();
-				} else {
-					// eslint-disable-next-line no-console
-					console.log('[MainWebview] Back button pressed but no navigation action available for current screen:', currentScreen);
 				}
-			} else if (event.button === 4) {
-				// eslint-disable-next-line no-console
-				console.log('[MainWebview] Mouse forward button (button 4) detected - not handling');
 			}
 		};
 
@@ -1523,8 +1512,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		document.addEventListener('mousedown', handleMouseEvent);
 		document.addEventListener('mouseup', handleMouseEvent);
 		document.addEventListener('auxclick', handleMouseEvent);
-		// eslint-disable-next-line no-console
-		console.log('[MainWebview] Mouse event listeners added to document (mousedown, mouseup, auxclick)');
 
 		return () => {
 			document.removeEventListener('mousedown', handleMouseEvent);
@@ -1601,7 +1588,45 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 							{/* Team Members */}
 							<div style={{ marginBottom: '20px' }}>
-								<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+									<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+									<select
+										value={selectedTeamIteration}
+										onChange={e => setSelectedTeamIteration(e.target.value)}
+										style={{
+											padding: '4px 8px',
+											borderRadius: '4px',
+											backgroundColor: 'var(--vscode-dropdown-background)',
+											color: 'var(--vscode-dropdown-foreground)',
+											border: '1px solid var(--vscode-dropdown-border)',
+											cursor: 'pointer',
+											fontSize: '12px'
+										}}
+									>
+										<option value="current">{findCurrentIteration(iterations)?.name || 'Current Sprint'} (current)</option>
+										{iterations
+											.filter(it => {
+												// Exclude current iteration to avoid duplicates
+												const currentIteration = findCurrentIteration(iterations);
+												if (currentIteration && it.objectId === currentIteration.objectId) {
+													return false;
+												}
+												// Only include past iterations (end date before today)
+												const endDate = new Date(it.endDate);
+												const today = new Date();
+												today.setHours(0, 0, 0, 0);
+												endDate.setHours(0, 0, 0, 0);
+												return endDate < today;
+											})
+											.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+											.slice(0, 12)
+											.map(it => (
+												<option key={it.objectId} value={it.objectId}>
+													{it.name}
+												</option>
+											))}
+									</select>
+								</div>
 
 								{teamMembersLoading && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading team members...</div>}
 
@@ -1609,76 +1634,249 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 								{!teamMembersLoading && !teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
 
-								{!teamMembersLoading && !teamMembersError && teamMembers.length > 0 && (
-									<div
-										style={{
-											display: 'grid',
-											gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-											gap: '12px'
-										}}
-									>
-										{teamMembers.map(memberName => {
-											// Generate initials from name
-											const initials = memberName
-												.split(' ')
-												.map(part => part.charAt(0).toUpperCase())
-												.join('')
-												.slice(0, 2);
+								{!teamMembersLoading &&
+									!teamMembersError &&
+									teamMembers.length > 0 &&
+									(() => {
+										// Active members: those with user stories assigned (even if 0 hours) OR with totalHours > 0
+										// This ensures users with assigned work (even 0 hours) appear in ACTIVE IN SPRINT
+										const activeMembers = teamMembers.filter(m => {
+											const hasStories = (m.progress as any).userStoriesCount > 0;
+											const hasHours = m.progress.totalHours > 0;
+											return hasStories || hasHours;
+										});
+										const inactiveMembers = teamMembers.filter(m => {
+											const hasStories = (m.progress as any).userStoriesCount > 0;
+											const hasHours = m.progress.totalHours > 0;
+											return !hasStories && !hasHours;
+										});
 
-											return (
-												<div
-													key={memberName}
-													style={{
-														backgroundColor: '#1e1e1e',
-														border: '1px solid var(--vscode-panel-border)',
-														borderRadius: '8px',
-														padding: '12px',
-														display: 'flex',
-														flexDirection: 'column',
-														alignItems: 'center',
-														textAlign: 'center',
-														cursor: 'pointer',
-														transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-													}}
-													onMouseEnter={e => {
-														e.currentTarget.style.transform = 'translateY(-2px)';
-														e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-													}}
-													onMouseLeave={e => {
-														e.currentTarget.style.transform = 'translateY(0)';
-														e.currentTarget.style.boxShadow = 'none';
-													}}
-												>
-													{/* Avatar */}
-													<div
-														style={{
-															width: '36px',
-															height: '36px',
-															borderRadius: '50%',
-															background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-															display: 'flex',
-															alignItems: 'center',
-															justifyContent: 'center',
-															color: 'white',
-															fontWeight: 'bold',
-															fontSize: '12px',
-															marginBottom: '6px'
-														}}
-													>
-														{initials}
-													</div>
+										return (
+											<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+												{/* Active Members Section */}
+												{activeMembers.length > 0 && (
+													<div>
+														<h4
+															style={{
+																margin: '0 0 12px 0',
+																color: 'var(--vscode-foreground)',
+																fontSize: '13px',
+																fontWeight: '600',
+																textTransform: 'uppercase',
+																letterSpacing: '0.5px',
+																opacity: 0.7
+															}}
+														>
+															Active in Sprint
+														</h4>
+														<div
+															style={{
+																display: 'grid',
+																gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+																gap: '12px'
+															}}
+														>
+															{activeMembers.map(member => {
+																// Generate initials from name
+																const initials = member.name
+																	.split(' ')
+																	.map(part => part.charAt(0).toUpperCase())
+																	.join('')
+																	.slice(0, 2);
 
-													{/* Member Info */}
-													<div style={{ width: '100%' }}>
-														<div style={{ marginBottom: '6px' }}>
-															<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{memberName}</h4>
+																const percentage = member.progress.percentage;
+																const progressColor = percentage >= 75 ? 'var(--vscode-charts-green, #4caf50)' : percentage >= 50 ? 'var(--vscode-charts-orange, #ff9800)' : percentage >= 25 ? 'var(--vscode-charts-yellow, #ffc107)' : 'var(--vscode-charts-red, #f44336)';
+
+																return (
+																	<div
+																		key={member.name}
+																		style={{
+																			backgroundColor: '#1e1e1e',
+																			border: '1px solid var(--vscode-panel-border)',
+																			borderRadius: '8px',
+																			padding: '12px',
+																			display: 'flex',
+																			flexDirection: 'column',
+																			alignItems: 'center',
+																			textAlign: 'center',
+																			cursor: 'pointer',
+																			transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																		}}
+																		onMouseEnter={e => {
+																			e.currentTarget.style.transform = 'translateY(-2px)';
+																			e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																		}}
+																		onMouseLeave={e => {
+																			e.currentTarget.style.transform = 'translateY(0)';
+																			e.currentTarget.style.boxShadow = 'none';
+																		}}
+																	>
+																		{/* Avatar with Progress Ring */}
+																		<div role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`} style={{ position: 'relative' }}>
+																			<svg
+																				width="64"
+																				height="64"
+																				style={{
+																					position: 'absolute',
+																					top: '-8px',
+																					left: '-8px',
+																					transform: 'rotate(-90deg)'
+																				}}
+																			>
+																				<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
+																				<circle
+																					cx="32"
+																					cy="32"
+																					r="28"
+																					stroke={progressColor}
+																					strokeWidth="3"
+																					fill="none"
+																					strokeDasharray={2 * Math.PI * 28}
+																					strokeDashoffset={2 * Math.PI * 28 * (1 - percentage / 100)}
+																					strokeLinecap="round"
+																					style={{
+																						transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
+																					}}
+																				/>
+																			</svg>
+																			<div
+																				style={{
+																					width: '48px',
+																					height: '48px',
+																					borderRadius: '50%',
+																					background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																					display: 'flex',
+																					alignItems: 'center',
+																					justifyContent: 'center',
+																					color: 'white',
+																					fontWeight: 'bold',
+																					fontSize: '16px',
+																					marginBottom: '6px'
+																				}}
+																			>
+																				{initials}
+																			</div>
+																		</div>
+
+																		{/* Member Info */}
+																		<div style={{ width: '100%' }}>
+																			<div style={{ marginBottom: '6px' }}>
+																				<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
+																				<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
+																				<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
+																					{member.progress.completedHours}h / {member.progress.totalHours}h
+																				</div>
+																			</div>
+																		</div>
+																	</div>
+																);
+															})}
 														</div>
 													</div>
-												</div>
-											);
-										})}
-									</div>
-								)}
+												)}
+
+												{/* Inactive Members Section */}
+												{inactiveMembers.length > 0 && (
+													<div>
+														<h4
+															style={{
+																margin: '0 0 12px 0',
+																color: 'var(--vscode-foreground)',
+																fontSize: '13px',
+																fontWeight: '600',
+																textTransform: 'uppercase',
+																letterSpacing: '0.5px',
+																opacity: 0.7
+															}}
+														>
+															Other Team Members
+														</h4>
+														<div
+															style={{
+																display: 'grid',
+																gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+																gap: '12px'
+															}}
+														>
+															{inactiveMembers.map(member => {
+																// Generate initials from name
+																const initials = member.name
+																	.split(' ')
+																	.map(part => part.charAt(0).toUpperCase())
+																	.join('')
+																	.slice(0, 2);
+
+																return (
+																	<div
+																		key={member.name}
+																		style={{
+																			backgroundColor: '#1e1e1e',
+																			border: '1px solid var(--vscode-panel-border)',
+																			borderRadius: '8px',
+																			padding: '12px',
+																			display: 'flex',
+																			flexDirection: 'column',
+																			alignItems: 'center',
+																			textAlign: 'center',
+																			cursor: 'pointer',
+																			transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																		}}
+																		onMouseEnter={e => {
+																			e.currentTarget.style.transform = 'translateY(-2px)';
+																			e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																		}}
+																		onMouseLeave={e => {
+																			e.currentTarget.style.transform = 'translateY(0)';
+																			e.currentTarget.style.boxShadow = 'none';
+																		}}
+																	>
+																		{/* Avatar without Progress Ring */}
+																		<div style={{ position: 'relative' }}>
+																			<svg
+																				width="48"
+																				height="48"
+																				style={{
+																					position: 'absolute',
+																					top: '-6px',
+																					left: '-6px'
+																				}}
+																			>
+																				<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
+																			</svg>
+																			<div
+																				style={{
+																					width: '36px',
+																					height: '36px',
+																					borderRadius: '50%',
+																					background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																					display: 'flex',
+																					alignItems: 'center',
+																					justifyContent: 'center',
+																					color: 'white',
+																					fontWeight: 'bold',
+																					fontSize: '12px',
+																					marginBottom: '6px'
+																				}}
+																			>
+																				{initials}
+																			</div>
+																		</div>
+
+																		{/* Member Info */}
+																		<div style={{ width: '100%' }}>
+																			<div style={{ marginBottom: '6px' }}>
+																				<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
+																			</div>
+																		</div>
+																	</div>
+																);
+															})}
+														</div>
+													</div>
+												)}
+											</div>
+										);
+									})()}
 							</div>
 						</div>
 					)}
@@ -1812,13 +2010,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 							{/* Velocity Trend Chart */}
 							<div style={{ marginBottom: '20px' }}>
-								<VelocityTrendChart data={velocityData} loading={metricsLoading} />
+								<VelocityTrendChart data={velocityData} loading={velocityLoading} />
 							</div>
 
 							{/* State Distribution and Defect Severity Charts */}
 							<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-								<StateDistributionPie data={stateDistribution} loading={metricsLoading} />
-								<DefectSeverityChart data={defectsBySeverity} loading={metricsLoading} />
+								<StateDistributionPie data={stateDistribution} loading={stateDistributionLoading} />
+								<DefectSeverityChart data={defectsBySeverity} loading={defectsBySeverityLoading} />
 							</div>
 						</div>
 					)}

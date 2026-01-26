@@ -1,0 +1,261 @@
+{
+  "sprint": {
+    "name": "Sprint 86",
+    "objectId": "82380436809",
+    "state": "Planning",
+    "startDate": "2025-12-16T23:00:00.000Z",
+    "endDate": "2026-01-28T22:59:59.000Z",
+    "project": "Team.CC IBM_CC"
+  },
+  "totalUserStories": 26,
+  "userStories": [
+    {
+      "ObjectID": 80358017229,
+      "FormattedID": "US1226070",
+      "Name": "Actualización Grupo Colaborador del caso (para Facilitea) (IN1271802)",
+      "Owner": "Jesús Lerma",
+      "Blocked": true,
+      "TaskEstimateTotal": 60,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 80362252669,
+      "FormattedID": "US1226483",
+      "Name": "No Crear/Mostrasr Caso en las llamadas a colas de 2N de Empleados",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 0,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 80612752065,
+      "FormattedID": "US1246877",
+      "Name": "Autenticación - Plan de Contingencia",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 100,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 81781564825,
+      "FormattedID": "US1330010",
+      "Name": "Crear nuevo Cuadro de Mandos Analytics para la información de UNBLU",
+      "Owner": "Jaume Garreta",
+      "Blocked": true,
+      "TaskEstimateTotal": 162,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 82055889193,
+      "FormattedID": "US1340088",
+      "Name": "Registrar tarea de Llamadas emitidas desde Salesforce-Widget",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 168,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 82835880533,
+      "FormattedID": "US1376162",
+      "Name": "IN1313954 - Encuestas sin actividad tipo encuesta",
+      "Owner": "Isabel Solsona",
+      "Blocked": false,
+      "TaskEstimateTotal": 72,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 82941742577,
+      "FormattedID": "US1381714",
+      "Name": "Botón \"Derivar\" - Modificaciones en ámbitos Bizum Fraude",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 100,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 83009923133,
+      "FormattedID": "US1386142",
+      "Name": "Modificar cálculo repetitividad",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 102,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 83079962729,
+      "FormattedID": "US1388458",
+      "Name": "Nueva cola Contact",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 16,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 83899455157,
+      "FormattedID": "US1428059",
+      "Name": "Unificación de servicios Genesys - Salesforce",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 16,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 83957889245,
+      "FormattedID": "US1431783",
+      "Name": "Preclasificación de casos en Salesforce",
+      "Owner": "Alex Bonich",
+      "Blocked": true,
+      "TaskEstimateTotal": 197,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84106894785,
+      "FormattedID": "US1438812",
+      "Name": "Incluir nuevo campo de Activo en el objeto GRUPO",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 96,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84189179053,
+      "FormattedID": "US1446573",
+      "Name": "Dividir tratamiento GDPR de Elaboración de informes",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 8,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84256498189,
+      "FormattedID": "US1448352",
+      "Name": "Derivar - Automatizar los traslados a colaborador a CYBERSOC",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 94,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84485769969,
+      "FormattedID": "US1456416",
+      "Name": "Piloto X-Sell - Fase I (remediación)",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 256,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84550379525,
+      "FormattedID": "US1461296",
+      "Name": "Creación de llamadas procedentes de cognitivo - Fase 1",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 96,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84553841413,
+      "FormattedID": "US1461872",
+      "Name": "Derivar al SAC - Vincular caso de SAC con el de CC",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 46,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84660523473,
+      "FormattedID": "US1464627",
+      "Name": "Añadir la URL de la llamada en la plantilla de amenazas suicidios",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 90,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84664911125,
+      "FormattedID": "US1465529",
+      "Name": "Eliminar validación estado Email Revisar para el CCO",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 72,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84738067093,
+      "FormattedID": "US1471749",
+      "Name": "Cambio del título del modal de Onboarding",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 36,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84759998909,
+      "FormattedID": "US1472591",
+      "Name": "Exportación Datos DATAPOOL (solo indicar campos nuevos)",
+      "Owner": "Isabel Solsona",
+      "Blocked": false,
+      "TaskEstimateTotal": 0,
+      "TaskStatus": "NONE"
+    },
+    {
+      "ObjectID": 84789458129,
+      "FormattedID": "US1474001",
+      "Name": "Control del Servei - Envio de comunicaciones masivas (Ordenar campos Fecha)",
+      "Owner": "Jaume Garreta",
+      "Blocked": false,
+      "TaskEstimateTotal": 38,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 84860769693,
+      "FormattedID": "US1475146",
+      "Name": "Rediseño pantalla caso",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 0,
+      "TaskStatus": "NONE"
+    },
+    {
+      "ObjectID": 85208994621,
+      "FormattedID": "US1479487",
+      "Name": "Salesforce Segmentos: Derivar casos a 3N CBK Now de Contact Center",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 101,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 85664563881,
+      "FormattedID": "US1503288",
+      "Name": "Incluir campo 'Producto asociado' a los report types relativos al catálogo de facturación",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 4,
+      "TaskStatus": "DEFINED"
+    },
+    {
+      "ObjectID": 85735242029,
+      "FormattedID": "US1504972",
+      "Name": "Campo Causa denegación obligatorio",
+      "Owner": "Alex Bonich",
+      "Blocked": false,
+      "TaskEstimateTotal": 0,
+      "TaskStatus": "NONE"
+    }
+  ],
+  "summary": {
+    "byOwner": {
+      "Jaume Garreta": 9,
+      "Alex Bonich": 12,
+      "Jesús Lerma": 1,
+      "Isabel Solsona": 2
+    },
+    "blocked": 3,
+    "totalTaskEstimate": 1830,
+    "taskStatusDistribution": {
+      "DEFINED": 23,
+      "NONE": 3
+    }
+  }
+}

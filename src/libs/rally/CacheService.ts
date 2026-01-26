@@ -18,6 +18,7 @@ const errorHandler = ErrorHandler.getInstance();
 let userStoriesCacheManager: CacheManager<RallyUserStory[]> | null = null;
 let projectsCacheManager: CacheManager<RallyProject[]> | null = null;
 let iterationsCacheManager: CacheManager<RallyIteration[]> | null = null;
+let teamMembersCacheManager: CacheManager<string[]> | null = null;
 
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes - persists through Portfolio navigation
 
@@ -55,6 +56,17 @@ export function getIterationsCacheManager(): CacheManager<RallyIteration[]> {
 }
 
 /**
+ * Get or initialize the team members cache manager
+ */
+export function getTeamMembersCacheManager(): CacheManager<string[]> {
+	if (!teamMembersCacheManager) {
+		teamMembersCacheManager = new CacheManager<string[]>(CACHE_TTL_MS);
+		errorHandler.logDebug('Team members cache manager initialized', 'CacheService.getTeamMembersCacheManager');
+	}
+	return teamMembersCacheManager;
+}
+
+/**
  * Clear all cache managers
  * Used when extension needs to reload/reset all data
  */
@@ -68,6 +80,9 @@ export function clearAllCaches(): void {
 		}
 		if (iterationsCacheManager) {
 			iterationsCacheManager.clear();
+		}
+		if (teamMembersCacheManager) {
+			teamMembersCacheManager.clear();
 		}
 		errorHandler.logInfo('All cache managers cleared', 'CacheService.clearAllCaches');
 	} catch (error) {
@@ -93,6 +108,10 @@ export function destroyAllCaches(): void {
 			iterationsCacheManager.destroy();
 			iterationsCacheManager = null;
 		}
+		if (teamMembersCacheManager) {
+			teamMembersCacheManager.destroy();
+			teamMembersCacheManager = null;
+		}
 		errorHandler.logInfo('All cache managers destroyed', 'CacheService.destroyAllCaches');
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'CacheService.destroyAllCaches');
@@ -106,6 +125,7 @@ export function getCacheStats() {
 	return {
 		userStories: userStoriesCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
 		projects: projectsCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
-		iterations: iterationsCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 }
+		iterations: iterationsCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
+		teamMembers: teamMembersCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 }
 	};
 }

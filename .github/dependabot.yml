@@ -57,8 +57,8 @@ updates:
       # Group linting and formatting tools
       tooling:
         patterns:
-          - "@biomejs/*"
-          - "biome"
+          - "@ESLint/*"
+          - "eslint"
         update-types:
           - "minor"
           - "patch"

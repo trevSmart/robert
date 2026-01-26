@@ -771,11 +771,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [teamMembersLoading, setTeamMembersLoading] = useState(false);
 	const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
 
-	// Metrics state
+	// Metrics state - each chart has independent loading state
 	const [metricsLoading, setMetricsLoading] = useState(false);
 	const [velocityData, setVelocityData] = useState<VelocityData[]>([]);
+	const [velocityLoading, setVelocityLoading] = useState(false);
 	const [stateDistribution, setStateDistribution] = useState<StateDistribution[]>([]);
+	const [stateDistributionLoading, setStateDistributionLoading] = useState(false);
 	const [defectsBySeverity, setDefectsBySeverity] = useState<DefectsBySeverity[]>([]);
+	const [defectsBySeverityLoading, setDefectsBySeverityLoading] = useState(false);
 	const [averageVelocity, setAverageVelocity] = useState<number>(0);
 	const [completedPoints, setCompletedPoints] = useState<number>(0);
 	const [wip, setWip] = useState<number>(0);
@@ -1335,22 +1338,59 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		return () => window.removeEventListener('message', handleMessage);
 	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen]); // Only include dependencies needed by handleMessage
 
-	// Calculate metrics when data changes
+	// Calculate metrics when data changes - load charts in parallel
 	useEffect(() => {
 		if (activeSection !== 'metrics') return;
 		if (!iterations.length || !portfolioUserStories.length) return;
 
 		setMetricsLoading(true);
 
+		// Load each chart in parallel
+		// Velocity chart - last 12 sprints
+		(async () => {
+			try {
+				setVelocityLoading(true);
+				const velocityResult = calculateVelocity(portfolioUserStories, iterations, 12);
+				setVelocityData(velocityResult);
+
+				// Calculate average velocity
+				const avgVelocity = calculateAverageVelocity(velocityResult);
+				setAverageVelocity(avgVelocity);
+			} catch (error) {
+				console.error('Error calculating velocity:', error);
+			} finally {
+				setVelocityLoading(false);
+			}
+		})();
+
+		// State distribution chart
+		(async () => {
+			try {
+				setStateDistributionLoading(true);
+				const stateDistrib = groupByState(portfolioUserStories);
+				setStateDistribution(stateDistrib);
+			} catch (error) {
+				console.error('Error calculating state distribution:', error);
+			} finally {
+				setStateDistributionLoading(false);
+			}
+		})();
+
+		// Defects trend chart - last 6 sprints
+		(async () => {
+			try {
+				setDefectsBySeverityLoading(true);
+				const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 6);
+				setDefectsBySeverity(defectsBySev);
+			} catch (error) {
+				console.error('Error calculating defects:', error);
+			} finally {
+				setDefectsBySeverityLoading(false);
+			}
+		})();
+
+		// Calculate other KPI metrics
 		try {
-			// Calculate velocity data (last 6 sprints)
-			const velocityResult = calculateVelocity(portfolioUserStories, iterations, 6);
-			setVelocityData(velocityResult);
-
-			// Calculate average velocity
-			const avgVelocity = calculateAverageVelocity(velocityResult);
-			setAverageVelocity(avgVelocity);
-
 			// Calculate completed points (current sprint or all)
 			const points = calculateCompletedPoints(portfolioUserStories);
 			setCompletedPoints(points);
@@ -1362,14 +1402,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			// Calculate blocked items
 			const blocked = calculateBlockedItems(portfolioUserStories, defects);
 			setBlockedItems(blocked);
-
-			// Calculate state distribution
-			const stateDistrib = groupByState(portfolioUserStories);
-			setStateDistribution(stateDistrib);
-
-			// Calculate defects by severity
-			const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 6);
-			setDefectsBySeverity(defectsBySev);
 
 			setMetricsLoading(false);
 		} catch (error) {
@@ -1845,13 +1877,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 							{/* Velocity Trend Chart */}
 							<div style={{ marginBottom: '20px' }}>
-								<VelocityTrendChart data={velocityData} loading={metricsLoading} />
+								<VelocityTrendChart data={velocityData} loading={velocityLoading} />
 							</div>
 
 							{/* State Distribution and Defect Severity Charts */}
 							<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-								<StateDistributionPie data={stateDistribution} loading={metricsLoading} />
-								<DefectSeverityChart data={defectsBySeverity} loading={metricsLoading} />
+								<StateDistributionPie data={stateDistribution} loading={stateDistributionLoading} />
+								<DefectSeverityChart data={defectsBySeverity} loading={defectsBySeverityLoading} />
 							</div>
 						</div>
 					)}

@@ -1749,7 +1749,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 															}}
 														>
 															<circle cx="24" cy="24" r="21" stroke="#2a2a2a" strokeWidth="3" fill="none" />
-															<circle cx="24" cy="24" r="21" stroke={progressColor} strokeWidth="3" fill="none" strokeDasharray={2 * Math.PI * 21} strokeDashoffset={2 * Math.PI * 21 * (1 - percentage / 100)} strokeLinecap="round" />
+															<circle
+																cx="24"
+																cy="24"
+																r="21"
+																stroke={progressColor}
+																strokeWidth="3"
+																fill="none"
+																strokeDasharray={2 * Math.PI * 21}
+																strokeDashoffset={2 * Math.PI * 21 * (1 - percentage / 100)}
+																strokeLinecap="round"
+																style={{
+																	transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
+																}}
+															/>
 														</svg>
 														<div
 															style={{

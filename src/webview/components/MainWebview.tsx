@@ -770,6 +770,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	>([]);
 	const [teamMembersLoading, setTeamMembersLoading] = useState(false);
 	const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
+	const [selectedTeamIteration, setSelectedTeamIteration] = useState<string>('current'); // 'current' or iteration objectId
 
 	// Metrics state - each chart has independent loading state
 	const [metricsLoading, setMetricsLoading] = useState(false);
@@ -814,14 +815,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		});
 	}, [sendMessage]);
 
-	const loadTeamMembers = useCallback(() => {
-		logDebug('Loading team members...', 'Frontend');
-		setTeamMembersLoading(true);
-		setTeamMembersError(null);
-		sendMessage({
-			command: 'loadTeamMembers'
-		});
-	}, [sendMessage]);
+	const loadTeamMembers = useCallback(
+		(iterationId?: string) => {
+			logDebug(`Loading team members for iteration: ${iterationId || 'current'}...`, 'Frontend');
+			setTeamMembersLoading(true);
+			setTeamMembersError(null);
+			sendMessage({
+				command: 'loadTeamMembers',
+				iterationId: iterationId
+			});
+		},
+		[sendMessage]
+	);
 
 	const loadUserStories = useCallback(
 		(iteration?: Iteration) => {
@@ -1076,7 +1081,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			if (section === 'team') {
 				// Load team members when navigating to the team section
 				if (!teamMembers.length && !teamMembersLoading && !teamMembersError) {
-					loadTeamMembers();
+					loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
 				}
 			}
 			if (section === 'metrics') {
@@ -1094,6 +1099,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		},
 		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories]
 	);
+
+	// Reload team members when selected iteration changes
+	useEffect(() => {
+		if (activeSection === 'team' && teamMembers.length > 0) {
+			loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
+		}
+	}, [selectedTeamIteration, activeSection, loadTeamMembers]);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {
 		const today = new Date();
@@ -1644,7 +1656,36 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 							{/* Team Members */}
 							<div style={{ marginBottom: '20px' }}>
-								<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+									<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+									<select
+										value={selectedTeamIteration}
+										onChange={e => setSelectedTeamIteration(e.target.value)}
+										style={{
+											padding: '4px 8px',
+											borderRadius: '4px',
+											backgroundColor: 'var(--vscode-dropdown-background)',
+											color: 'var(--vscode-dropdown-foreground)',
+											border: '1px solid var(--vscode-dropdown-border)',
+											cursor: 'pointer',
+											fontSize: '12px'
+										}}
+									>
+										<option value="current">Current Sprint</option>
+										{iterations
+											.filter(it => {
+												const endDate = new Date(it.endDate);
+												return endDate <= new Date();
+											})
+											.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+											.slice(0, 12)
+											.map(it => (
+												<option key={it.objectId} value={it.objectId}>
+													{it.name}
+												</option>
+											))}
+									</select>
+								</div>
 
 								{teamMembersLoading && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading team members...</div>}
 

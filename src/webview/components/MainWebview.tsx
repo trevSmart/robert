@@ -1066,13 +1066,19 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				}
 			}
 			if (section === 'metrics') {
-				// Load iterations for metrics when navigating to metrics section
+				// Load iterations, user stories, and defects for metrics when navigating to metrics section
 				if (!iterations.length && !iterationsLoading && !iterationsError) {
 					loadIterations();
 				}
+				if (!portfolioUserStories.length && !portfolioUserStoriesLoading) {
+					loadAllUserStories();
+				}
+				if (!defects.length && !defectsLoading && !defectsError) {
+					loadAllDefects();
+				}
 			}
 		},
-		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError]
+		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories]
 	);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {
@@ -1809,61 +1815,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 								<VelocityTrendChart data={velocityData} loading={metricsLoading} />
 							</div>
 
-							{/* Additional Metrics */}
-							<div
-								style={{
-									display: 'grid',
-									gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-									gap: '16px'
-								}}
-							>
-								<div
-									style={{
-										backgroundColor: 'var(--vscode-editor-background)',
-										border: '1px solid var(--vscode-panel-border)',
-										borderRadius: '8px',
-										padding: '16px'
-									}}
-								>
-									<h4 style={{ margin: '0 0 12px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Code Quality</h4>
-									<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-										<span style={{ fontSize: '18px', fontWeight: 'bold', color: '#4caf50' }}>A</span>
-										<span style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>Grade</span>
-									</div>
-									<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>0 critical issues, 3 minor issues</div>
-								</div>
-
-								<div
-									style={{
-										backgroundColor: 'var(--vscode-editor-background)',
-										border: '1px solid var(--vscode-panel-border)',
-										borderRadius: '8px',
-										padding: '16px'
-									}}
-								>
-									<h4 style={{ margin: '0 0 12px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Team Productivity</h4>
-									<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-										<span style={{ fontSize: '18px', fontWeight: 'bold', color: '#2196f3' }}>8.5h</span>
-										<span style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>Avg daily</span>
-									</div>
-									<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>↑ 15% from last month</div>
-								</div>
-
-								<div
-									style={{
-										backgroundColor: 'var(--vscode-editor-background)',
-										border: '1px solid var(--vscode-panel-border)',
-										borderRadius: '8px',
-										padding: '16px'
-									}}
-								>
-									<h4 style={{ margin: '0 0 12px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Risk Assessment</h4>
-									<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-										<span style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff9800' }}>Medium</span>
-										<span style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '12px' }}>Risk Level</span>
-									</div>
-									<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>2 dependencies need attention</div>
-								</div>
+							{/* State Distribution and Defect Severity Charts */}
+							<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+								<StateDistributionPie data={stateDistribution} loading={metricsLoading} />
+								<DefectSeverityChart data={defectsBySeverity} loading={metricsLoading} />
 							</div>
 						</div>
 					)}

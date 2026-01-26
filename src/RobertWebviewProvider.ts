@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 
@@ -630,11 +630,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 								this._errorHandler.logDebug(`Webview received loadUserStoryDefects command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
 
-								const defectsResult = await getDefects({
-									WorkProduct: `/hierarchicalrequirement/${message.userStoryId}`
-								});
+								const defectsResult = await getUserStoryDefects(message.userStoryId);
 
-								if (defectsResult?.defects) {
+								if (defectsResult?.defects && defectsResult.defects.length > 0) {
 									webview.postMessage({
 										command: 'userStoryDefectsLoaded',
 										defects: defectsResult.defects,
@@ -643,8 +641,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									this._errorHandler.logInfo(`Defects loaded successfully for user story ${message.userStoryId}: ${defectsResult.count} defects`, 'WebviewMessageListener');
 								} else {
 									webview.postMessage({
-										command: 'userStoryDefectsError',
-										error: 'No defects found',
+										command: 'userStoryDefectsLoaded',
+										defects: [],
 										userStoryId: message.userStoryId
 									});
 									this._errorHandler.logInfo('No defects found for this user story', 'WebviewMessageListener');
@@ -665,6 +663,131 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 										command: 'userStoryDefectsError',
 										error: 'Failed to load defects',
 										userStoryId: message.userStoryId
+									});
+								}
+							}
+							break;
+						case 'loadUserStoryTests':
+							try {
+								this._errorHandler.logInfo('Loading test cases for user story from Rally API', 'WebviewMessageListener');
+
+								this._errorHandler.logDebug(`Webview received loadUserStoryTests command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
+
+								const testCasesResult = await getUserStoryTests(message.userStoryId);
+
+								if (testCasesResult?.testCases && testCasesResult.testCases.length > 0) {
+									webview.postMessage({
+										command: 'userStoryTestsLoaded',
+										testCases: testCasesResult.testCases,
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo(`Test cases loaded successfully for user story ${message.userStoryId}: ${testCasesResult.count} test cases`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'userStoryTestsLoaded',
+										testCases: [],
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo('No test cases found for this user story', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStoryTests');
+
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'userStoryTestsError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true,
+										userStoryId: message.userStoryId
+									});
+								} else {
+									webview.postMessage({
+										command: 'userStoryTestsError',
+										error: 'Failed to load test cases',
+										userStoryId: message.userStoryId
+									});
+								}
+							}
+							break;
+						case 'loadUserStoryDiscussions':
+							try {
+								this._errorHandler.logInfo('Loading discussions for user story from Rally API', 'WebviewMessageListener');
+
+								this._errorHandler.logDebug(`Webview received loadUserStoryDiscussions command for user story: ${message.userStoryId}`, 'RobertWebviewProvider');
+
+								const discussionsResult = await getUserStoryDiscussions(message.userStoryId);
+
+								if (discussionsResult?.discussions && discussionsResult.discussions.length > 0) {
+									webview.postMessage({
+										command: 'userStoryDiscussionsLoaded',
+										discussions: discussionsResult.discussions,
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo(`Discussions loaded successfully for user story ${message.userStoryId}: ${discussionsResult.count} discussions`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'userStoryDiscussionsLoaded',
+										discussions: [],
+										userStoryId: message.userStoryId
+									});
+									this._errorHandler.logInfo('No discussions found for this user story', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStoryDiscussions');
+
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'userStoryDiscussionsError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true,
+										userStoryId: message.userStoryId
+									});
+								} else {
+									webview.postMessage({
+										command: 'userStoryDiscussionsError',
+										error: 'Failed to load discussions',
+										userStoryId: message.userStoryId
+									});
+								}
+							}
+							break;
+						case 'loadTeamMembers':
+							try {
+								this._errorHandler.logInfo('Loading team members from last 6 sprints', 'WebviewMessageListener');
+
+								this._errorHandler.logDebug('Webview received loadTeamMembers command', 'RobertWebviewProvider');
+
+								const teamMembersResult = await getRecentTeamMembers(6);
+
+								if (teamMembersResult?.teamMembers) {
+									webview.postMessage({
+										command: 'teamMembersLoaded',
+										teamMembers: teamMembersResult.teamMembers
+									});
+									this._errorHandler.logInfo(`Team members loaded successfully: ${teamMembersResult.count} members`, 'WebviewMessageListener');
+								} else {
+									webview.postMessage({
+										command: 'teamMembersLoaded',
+										teamMembers: []
+									});
+									this._errorHandler.logInfo('No team members found', 'WebviewMessageListener');
+								}
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadTeamMembers');
+
+								if (errorMessage.includes('Rally configuration error')) {
+									webview.postMessage({
+										command: 'teamMembersError',
+										error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+										needsConfiguration: true
+									});
+								} else {
+									webview.postMessage({
+										command: 'teamMembersError',
+										error: 'Failed to load team members'
 									});
 								}
 							}
@@ -806,6 +929,44 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		markdown += `*Generated by IBM Robert - ${new Date().toLocaleDateString()}*`;
 
 		return markdown;
+	}
+
+	/**
+	 * Reset and refresh all webviews after extension reload
+	 * Sends a refresh message to all active webviews to reload their data
+	 */
+	public async resetAndRefreshWebviews(): Promise<void> {
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			this._errorHandler.logInfo('Refreshing all webviews after extension reload', 'RobertWebviewProvider.resetAndRefreshWebviews');
+
+			// Send refresh message to activity bar view
+			if (this._currentView) {
+				try {
+					this._errorHandler.logInfo('Refreshing activity bar webview...', 'RobertWebviewProvider.resetAndRefreshWebviews');
+					await this._currentView.webview.postMessage({
+						command: 'refresh',
+						timestamp: new Date().toISOString()
+					});
+				} catch (error) {
+					this._errorHandler.logWarning(`Failed to refresh activity bar view: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.resetAndRefreshWebviews');
+				}
+			}
+
+			// Send refresh message to panel view
+			if (this._currentPanel) {
+				try {
+					this._errorHandler.logInfo('Refreshing panel webview...', 'RobertWebviewProvider.resetAndRefreshWebviews');
+					await this._currentPanel.webview.postMessage({
+						command: 'refresh',
+						timestamp: new Date().toISOString()
+					});
+				} catch (error) {
+					this._errorHandler.logWarning(`Failed to refresh panel view: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.resetAndRefreshWebviews');
+				}
+			}
+
+			this._errorHandler.logInfo('Webview refresh messages sent successfully', 'RobertWebviewProvider.resetAndRefreshWebviews');
+		}, 'RobertWebviewProvider.resetAndRefreshWebviews');
 	}
 
 	public dispose() {

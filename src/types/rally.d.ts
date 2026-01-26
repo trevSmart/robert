@@ -14,13 +14,13 @@ export interface UserStory {
 	iteration: string | null;
 	blocked: boolean;
 	taskEstimateTotal: number;
-	taskStatus: string;
+	taskStatus?: string; // Deprecated - use scheduleState instead
 	tasksCount: number;
 	testCasesCount: number;
 	defectsCount: number;
 	discussionCount: number;
 	appgar: string;
-	scheduleState?: string; // Optional - not always present
+	scheduleState: string; // PRIMARY: Rally ScheduleState (Defined, In-Progress, Completed, New)
 	_ref?: string; // Optional - reference field
 }
 
@@ -53,9 +53,32 @@ export interface Defect {
 	owner: string;
 	project: string | null;
 	iteration: string | null;
-	scheduledState?: string;
+	scheduleState: string; // PRIMARY: Rally ScheduleState (Defined, In-Progress, Completed, New)
 	blocked: boolean;
 	discussionCount: number;
+	_ref?: string;
+}
+
+export interface TestCase {
+	objectId: string;
+	formattedId: string;
+	name: string;
+	description: string | null;
+	state: string;
+	owner: string;
+	project: string | null;
+	type?: string;
+	priority?: string;
+	testFolder?: string | null;
+	_ref?: string;
+}
+
+export interface Discussion {
+	objectId: string;
+	text: string;
+	author: string;
+	createdDate: string;
+	userStoryId?: string;
 	_ref?: string;
 }
 
@@ -118,6 +141,7 @@ export interface RallyData {
 	userStories: UserStory[];
 	tasks: Task[];
 	defects: Defect[];
+	testCases?: TestCase[];
 	iterations: Iteration[];
 	currentUser?: User;
 }

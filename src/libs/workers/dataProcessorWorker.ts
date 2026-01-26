@@ -60,7 +60,7 @@ function formatUserStories(results: any[]): any[] {
 		defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
 		discussionCount: userStory.Discussion?.Count ?? userStory.discussion?.count ?? 0,
 		appgar: userStory.c_Appgar ?? userStory.appgar,
-		scheduleState: userStory.ScheduleState ?? userStory.scheduleState
+		scheduleState: userStory.ScheduleState ?? userStory.scheduleState ?? 'Unknown'
 	}));
 }
 
@@ -104,6 +104,7 @@ function formatDefects(results: any[]): any[] {
 		owner: defect.Owner ? (defect.Owner._refObjectName ?? defect.Owner.refObjectName) : defect.owner ? (defect.owner._refObjectName ?? defect.owner.refObjectName) : 'Sense assignat',
 		project: defect.Project ? (defect.Project._refObjectName ?? defect.Project.refObjectName) : defect.project ? (defect.project._refObjectName ?? defect.project.refObjectName) : null,
 		iteration: defect.Iteration ? (defect.Iteration._refObjectName ?? defect.Iteration.refObjectName) : defect.iteration ? (defect.iteration._refObjectName ?? defect.iteration.refObjectName) : null,
+		scheduleState: defect.ScheduleState ?? defect.scheduleState ?? 'Unknown',
 		blocked: defect.Blocked ?? defect.blocked ?? false,
 		discussionCount: defect.Discussion?.Count ?? defect.discussion?.count ?? 0
 	}));

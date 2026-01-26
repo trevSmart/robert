@@ -7,13 +7,15 @@ import UserStoryForm from './common/UserStoryForm';
 import TasksTable from './common/TasksTable';
 import DefectsTable from './common/DefectsTable';
 import DefectForm from './common/DefectForm';
+import DiscussionsTable from './common/DiscussionsTable';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Task, type Defect } from '../../types/rally';
+import { type UserStory, type Task, type Defect, type Discussion } from '../../types/rally';
+import { isLightTheme } from '../utils/themeColors';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (
@@ -142,10 +144,16 @@ const TasksTabIcon = ({ size = '14px' }: { size?: string }) => (
 
 const TestsTabIcon = ({ size = '14px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+	</svg>
+);
+
+const DefectsTabIcon = ({ size = '14px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
-			d="M16.712 4.33a9.027 9.027 0 0 1 1.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 0 0-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 0 1 0 9.424m-4.138-5.976a3.736 3.736 0 0 0-.88-1.388 3.737 3.737 0 0 0-1.388-.88m2.268 2.268a3.765 3.765 0 0 1 0 2.528m-2.268-4.796a3.765 3.765 0 0 0-2.528 0m4.796 4.796c-.181.506-.475.982-.88 1.388a3.736 3.736 0 0 1-1.388.88m2.268-2.268 4.138 3.448m0 0a9.027 9.027 0 0 1-1.306 1.652c-.51.51-1.064.944-1.652 1.306m0 0-3.448-4.138m3.448 4.138a9.014 9.014 0 0 1-9.424 0m5.976-4.138a3.765 3.765 0 0 1-2.528 0m0 0a3.736 3.736 0 0 1-1.388-.88 3.737 3.737 0 0 1-.88-1.388m2.268 2.268L7.288 19.67m0 0a9.024 9.024 0 0 1-1.652-1.306 9.027 9.027 0 0 1-1.306-1.652m0 0 4.138-3.448M4.33 16.712a9.014 9.014 0 0 1 0-9.424m4.138 5.976a3.765 3.765 0 0 1 0-2.528m0 0c.181-.506.475-.982.88-1.388a3.736 3.736 0 0 1 1.388-.88m-2.268 2.268L4.33 7.288m6.406 1.18L7.288 4.33m0 0a9.024 9.024 0 0 0-1.652 1.306A9.025 9.025 0 0 0 4.33 7.288"
+			d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0 1 12 12.75Zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 0 1-1.152 6.06M12 12.75c-2.883 0-5.647.508-8.208 1.44.125 2.104.52 4.136 1.153 6.06M12 12.75a2.25 2.25 0 0 0 2.248-2.354M12 12.75a2.25 2.25 0 0 1-2.248-2.354M12 8.25c.995 0 1.971-.08 2.922-.236.403-.066.74-.358.795-.762a3.778 3.778 0 0 0-.399-2.25M12 8.25c-.995 0-1.97-.08-2.922-.236-.402-.066-.74-.358-.795-.762a3.734 3.734 0 0 1 .4-2.253M12 8.25a2.25 2.25 0 0 0-2.248 2.146M12 8.25a2.25 2.25 0 0 1 2.248 2.146M8.683 5a6.032 6.032 0 0 1-1.155-1.002c.07-.63.27-1.222.574-1.747m.581 2.749A3.75 3.75 0 0 1 15.318 5m0 0c.427-.283.815-.62 1.155-.999a4.471 4.471 0 0 0-.575-1.752M4.921 6a24.048 24.048 0 0 0-.392 3.314c1.668.546 3.416.914 5.223 1.082M19.08 6c.205 1.08.337 2.187.392 3.314a23.882 23.882 0 0 1-5.223 1.082"
 		/>
 	</svg>
 );
@@ -184,7 +192,7 @@ import { CenteredContainer, Container, ContentArea, GlobalStyle } from './common
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
-type SectionType = 'calendar' | 'portfolio' | 'team' | 'salesforce' | 'assets' | 'metrics';
+type SectionType = 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
 
@@ -230,6 +238,9 @@ interface PortfolioViewProps {
 	userStoryDefects: RallyDefect[];
 	userStoryDefectsLoading: boolean;
 	_userStoryDefectsError: string | null;
+	userStoryDiscussions: Discussion[];
+	userStoryDiscussionsLoading: boolean;
+	userStoryDiscussionsError: string | null;
 	_defects: RallyDefect[];
 	_defectsLoading: boolean;
 	_defectsError: string | null;
@@ -237,7 +248,7 @@ interface PortfolioViewProps {
 	_defectsLoadingMore?: boolean;
 	_onLoadMoreDefects?: () => void;
 	_selectedDefect: RallyDefect | null;
-	activeUserStoryTab: 'tasks' | 'tests' | 'defects';
+	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions';
 	currentScreen: ScreenType;
 	onLoadIterations: () => void;
 	onIterationSelected: (iteration: Iteration) => void;
@@ -251,7 +262,7 @@ interface PortfolioViewProps {
 	onBackToIterations: () => void;
 	onBackToUserStories: () => void;
 	_onBackToDefects: () => void;
-	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects') => void;
+	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
 }
 
 // Portfolio View Components
@@ -270,6 +281,9 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	userStoryDefects,
 	userStoryDefectsLoading,
 	_userStoryDefectsError,
+	userStoryDiscussions,
+	userStoryDiscussionsLoading,
+	userStoryDiscussionsError,
 	_defects,
 	_defectsLoading,
 	_defectsError,
@@ -290,13 +304,6 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	_onBackToDefects,
 	onActiveUserStoryTabChange
 }) => {
-	// Auto-load defects when defects tab is selected
-	useEffect(() => {
-		if (selectedUserStory && activeUserStoryTab === 'defects' && (!userStoryDefects || !userStoryDefects.length) && !userStoryDefectsLoading) {
-			onLoadUserStoryDefects(selectedUserStory.objectId);
-		}
-	}, [selectedUserStory, activeUserStoryTab, userStoryDefects, userStoryDefectsLoading, onLoadUserStoryDefects]);
-
 	return (
 		<>
 			{currentScreen === 'iterations' && (
@@ -326,77 +333,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
 					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} />
-					<div
-						style={{
-							marginTop: '8px',
-							marginBottom: '4px',
-							display: 'flex',
-							gap: '8px',
-							borderBottom: '1px solid var(--vscode-panel-border)'
-						}}
-					>
-						<button
-							type="button"
-							onClick={() => activeUserStoryTab !== 'tasks' && onActiveUserStoryTabChange('tasks')}
-							style={{
-								display: 'inline-flex',
-								alignItems: 'center',
-								gap: '6px',
-								padding: '6px 10px',
-								border: 'none',
-								borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-								backgroundColor: 'transparent',
-								color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-								cursor: activeUserStoryTab === 'tasks' ? 'default' : 'pointer',
-								fontSize: '12px',
-								fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
-							}}
-						>
-							<TasksTabIcon />
-							<span>Tasks</span>
-						</button>
-						<button
-							type="button"
-							onClick={() => activeUserStoryTab !== 'tests' && onActiveUserStoryTabChange('tests')}
-							style={{
-								display: 'inline-flex',
-								alignItems: 'center',
-								gap: '6px',
-								padding: '6px 10px',
-								border: 'none',
-								borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-								backgroundColor: 'transparent',
-								color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-								cursor: activeUserStoryTab === 'tests' ? 'default' : 'pointer',
-								fontSize: '12px',
-								fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
-							}}
-						>
-							<TestsTabIcon />
-							<span>Tests</span>
-						</button>
-						<button
-							type="button"
-							onClick={() => activeUserStoryTab !== 'defects' && onActiveUserStoryTabChange('defects')}
-							style={{
-								display: 'inline-flex',
-								alignItems: 'center',
-								gap: '6px',
-								padding: '6px 10px',
-								border: 'none',
-								borderBottom: activeUserStoryTab === 'defects' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-								backgroundColor: 'transparent',
-								color: activeUserStoryTab === 'defects' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-								cursor: activeUserStoryTab === 'defects' ? 'default' : 'pointer',
-								fontSize: '12px',
-								fontWeight: activeUserStoryTab === 'defects' ? 600 : 400
-							}}
-						>
-							<div className="codicon codicon-bug" style={{ fontSize: '14px' }}></div>
-							<span>Defects</span>
-						</button>
-					</div>
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
 					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
 					{activeUserStoryTab === 'tests' && (
 						<div
@@ -436,6 +373,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 							selectedDefect={_selectedDefect as Defect | null}
 						/>
 					)}
+					{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
 				</>
 			)}
 		</>
@@ -455,6 +393,9 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	userStoryDefects,
 	userStoryDefectsLoading,
 	_userStoryDefectsError,
+	userStoryDiscussions,
+	userStoryDiscussionsLoading,
+	userStoryDiscussionsError,
 	_selectedDefect,
 	activeUserStoryTab,
 	currentScreen,
@@ -490,77 +431,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 		{currentScreen === 'userStoryDetail' && selectedUserStory && (
 			<>
 				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
-				<UserStoryForm userStory={selectedUserStory} />
-				<div
-					style={{
-						marginTop: '8px',
-						marginBottom: '4px',
-						display: 'flex',
-						gap: '8px',
-						borderBottom: '1px solid var(--vscode-panel-border)'
-					}}
-				>
-					<button
-						type="button"
-						onClick={() => onActiveUserStoryTabChange('tasks')}
-						style={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: '6px',
-							padding: '6px 10px',
-							border: 'none',
-							borderBottom: activeUserStoryTab === 'tasks' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-							backgroundColor: 'transparent',
-							color: activeUserStoryTab === 'tasks' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-							cursor: activeUserStoryTab === 'tasks' ? 'default' : 'pointer',
-							fontSize: '12px',
-							fontWeight: activeUserStoryTab === 'tasks' ? 600 : 400
-						}}
-					>
-						<TasksTabIcon />
-						<span>Tasks</span>
-					</button>
-					<button
-						type="button"
-						onClick={() => onActiveUserStoryTabChange('tests')}
-						style={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: '6px',
-							padding: '6px 10px',
-							border: 'none',
-							borderBottom: activeUserStoryTab === 'tests' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-							backgroundColor: 'transparent',
-							color: activeUserStoryTab === 'tests' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-							cursor: activeUserStoryTab === 'tests' ? 'default' : 'pointer',
-							fontSize: '12px',
-							fontWeight: activeUserStoryTab === 'tests' ? 600 : 400
-						}}
-					>
-						<TestsTabIcon />
-						<span>Tests</span>
-					</button>
-					<button
-						type="button"
-						onClick={() => onActiveUserStoryTabChange('defects')}
-						style={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: '6px',
-							padding: '6px 10px',
-							border: 'none',
-							borderBottom: activeUserStoryTab === 'defects' ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-							backgroundColor: 'transparent',
-							color: activeUserStoryTab === 'defects' ? 'var(--vscode-foreground)' : 'var(--vscode-descriptionForeground)',
-							cursor: activeUserStoryTab === 'defects' ? 'default' : 'pointer',
-							fontSize: '12px',
-							fontWeight: activeUserStoryTab === 'defects' ? 600 : 400
-						}}
-					>
-						<div className="codicon codicon-bug" style={{ fontSize: '14px' }}></div>
-						<span>Defects</span>
-					</button>
-				</div>
+				<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
 				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
 				{activeUserStoryTab === 'tests' && (
 					<div
@@ -600,6 +471,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 						selectedDefect={_selectedDefect as Defect | null}
 					/>
 				)}
+				{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
 			</>
 		)}
 	</>
@@ -657,6 +529,16 @@ const UserStoriesIcon = ({ size = '16px' }: { size?: string }) => (
 	</svg>
 );
 
+const DefectsIcon = ({ size = '16px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0 1 12 12.75Zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 0 1-1.152 6.06M12 12.75c-2.883 0-5.647.508-8.208 1.44.125 2.104.52 4.136 1.153 6.06M12 12.75a2.25 2.25 0 0 0 2.248-2.354M12 12.75a2.25 2.25 0 0 1-2.248-2.354M12 8.25c.995 0 1.971-.08 2.922-.236.403-.066.74-.358.795-.762a3.778 3.778 0 0 0-.399-2.25M12 8.25c-.995 0-1.97-.08-2.922-.236-.402-.066-.74-.358-.795-.762a3.734 3.734 0 0 1 .4-2.253M12 8.25a2.25 2.25 0 0 0-2.248 2.146M12 8.25a2.25 2.25 0 0 1 2.248 2.146M8.683 5a6.032 6.032 0 0 1-1.155-1.002c.07-.63.27-1.222.574-1.747m.581 2.749A3.75 3.75 0 0 1 15.318 5m0 0c.427-.283.815-.62 1.155-.999a4.471 4.471 0 0 0-.575-1.752M4.921 6a24.048 24.048 0 0 0-.392 3.314c1.668.546 3.416.914 5.223 1.082M19.08 6c.205 1.08.337 2.187.392 3.314a23.882 23.882 0 0 1-5.223 1.082"
+		/>
+	</svg>
+);
+
 const portfolioViews: PortfolioViewConfig[] = [
 	{
 		id: 'bySprints',
@@ -700,10 +582,46 @@ const PortfolioViewSelector: FC<{
 			case 'user-stories':
 				return <UserStoriesIcon />;
 			case 'bug':
-				return <div className="codicon codicon-bug" style={{ fontSize: '16px' }}></div>;
+				return <DefectsIcon />;
 			default:
 				return null;
 		}
+	};
+
+	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number) => {
+		const lightTheme = isLightTheme();
+		return {
+			padding: '12px 20px',
+			border: 'none',
+			borderRight: index < totalTabs - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
+			borderBottom: isActive
+				? lightTheme
+					? '2px solid #007acc' // Blau més fosc i visible per temes clars
+					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
+				: '2px solid transparent',
+			borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
+			backgroundColor: isActive
+				? lightTheme
+					? 'rgba(0, 123, 255, 0.1)' // Blau clar subtil per temes clars
+					: 'var(--vscode-tab-activeBackground)' // Color estàndard per temes foscos
+				: 'transparent',
+			color: isActive
+				? lightTheme
+					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars
+					: 'var(--vscode-tab-activeForeground)' // Color estàndard per temes foscos
+				: lightTheme
+					? '#333333'
+					: 'var(--vscode-tab-inactiveForeground)',
+			cursor: isActive ? 'default' : 'pointer',
+			display: 'flex',
+			alignItems: 'center',
+			gap: '8px',
+			fontSize: '13px',
+			fontWeight: isActive ? 600 : 400,
+			transition: 'all 0.15s ease',
+			position: 'relative' as const,
+			zIndex: isActive ? 1 : 0
+		};
 	};
 
 	return (
@@ -717,29 +635,7 @@ const PortfolioViewSelector: FC<{
 			}}
 		>
 			{views.map((view, index) => (
-				<button
-					key={view.id}
-					onClick={() => activeView !== view.id && onViewChange(view.id)}
-					style={{
-						padding: '12px 20px',
-						border: 'none',
-						borderRight: index < views.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
-						borderBottom: activeView === view.id ? '2px solid var(--vscode-textLink-foreground)' : '2px solid transparent',
-						borderRadius: index === 0 ? '6px 0 0 0' : index === views.length - 1 ? '0 6px 0 0' : '0',
-						backgroundColor: activeView === view.id ? 'var(--vscode-tab-activeBackground)' : 'transparent',
-						color: activeView === view.id ? 'var(--vscode-tab-activeForeground)' : 'var(--vscode-tab-inactiveForeground)',
-						cursor: activeView === view.id ? 'default' : 'pointer',
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px',
-						fontSize: '13px',
-						fontWeight: activeView === view.id ? 600 : 400,
-						transition: 'all 0.15s ease',
-						position: 'relative',
-						zIndex: activeView === view.id ? 1 : 0
-					}}
-					title={view.description}
-				>
+				<button key={view.id} onClick={() => activeView !== view.id && onViewChange(view.id)} style={getSubTabStyles(activeView === view.id, index, views.length)} title={view.description}>
 					{renderIcon(view.icon)}
 					<span>{view.label}</span>
 				</button>
@@ -836,7 +732,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [tasks, setTasks] = useState<RallyTask[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
 	const [tasksError, setTasksError] = useState<string | null>(null);
-	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests' | 'defects'>('tasks');
+	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests' | 'defects' | 'discussions'>('tasks');
 
 	const [defects, setDefects] = useState<RallyDefect[]>([]);
 	const [defectsLoading, setDefectsLoading] = useState(false);
@@ -849,6 +745,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoryDefects, setUserStoryDefects] = useState<RallyDefect[]>([]);
 	const [userStoryDefectsLoading, setUserStoryDefectsLoading] = useState(false);
 	const [userStoryDefectsError, setUserStoryDefectsError] = useState<string | null>(null);
+
+	const [userStoryDiscussions, setUserStoryDiscussions] = useState<Discussion[]>([]);
+	const [userStoryDiscussionsLoading, setUserStoryDiscussionsLoading] = useState(false);
+	const [userStoryDiscussionsError, setUserStoryDiscussionsError] = useState<string | null>(null);
+
+	// Team members state
+	const [teamMembers, setTeamMembers] = useState<string[]>([]);
+	const [teamMembersLoading, setTeamMembersLoading] = useState(false);
+	const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
 
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
@@ -865,12 +770,27 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	// Track which portfolio views have been loaded to avoid redundant fetches
 	const loadedViews = useRef<Set<PortfolioViewType>>(new Set());
 
+	// Track which user stories have already been attempted to load defects for (by objectId)
+	const attemptedUserStoryDefects = useRef<Set<string>>(new Set());
+
+	// Track which user stories have already been attempted to load discussions for (by objectId)
+	const attemptedUserStoryDiscussions = useRef<Set<string>>(new Set());
+
 	const loadIterations = useCallback(() => {
 		logDebug('Loading iterations...', 'Frontend');
 		setIterationsLoading(true);
 		setIterationsError(null);
 		sendMessage({
 			command: 'loadIterations'
+		});
+	}, [sendMessage]);
+
+	const loadTeamMembers = useCallback(() => {
+		logDebug('Loading team members...', 'Frontend');
+		setTeamMembersLoading(true);
+		setTeamMembersError(null);
+		sendMessage({
+			command: 'loadTeamMembers'
 		});
 	}, [sendMessage]);
 
@@ -962,6 +882,19 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			setUserStoryDefectsError(null);
 			sendMessage({
 				command: 'loadUserStoryDefects',
+				userStoryId
+			});
+		},
+		[sendMessage]
+	);
+
+	const loadUserStoryDiscussions = useCallback(
+		(userStoryId: string) => {
+			logDebug(`Loading discussions for user story: ${userStoryId}`, 'Frontend');
+			setUserStoryDiscussionsLoading(true);
+			setUserStoryDiscussionsError(null);
+			sendMessage({
+				command: 'loadUserStoryDiscussions',
 				userStoryId
 			});
 		},
@@ -1092,7 +1025,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		setSelectedUserStory(null);
 		setTasks([]);
 		setTasksError(null);
+		setUserStoryDefects([]);
+		setUserStoryDefectsError(null);
+		setUserStoryDiscussions([]);
+		setUserStoryDiscussionsError(null);
 		setActiveUserStoryTab('tasks');
+		// Clear the attempted tracking when going back
+		attemptedUserStoryDefects.current.clear();
+		attemptedUserStoryDiscussions.current.clear();
 	}, [activeViewType]);
 
 	const handleSectionChange = useCallback(
@@ -1104,8 +1044,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					loadIterations();
 				}
 			}
+			if (section === 'team') {
+				// Load team members when navigating to the team section
+				if (!teamMembers.length && !teamMembersLoading && !teamMembersError) {
+					loadTeamMembers();
+				}
+			}
 		},
-		[loadIterations, iterations, iterationsLoading, iterationsError]
+		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError]
 	);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {
@@ -1318,6 +1264,32 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setUserStoryDefectsLoading(false);
 					setUserStoryDefectsError(message.error || 'Error loading defects');
 					break;
+				case 'userStoryDiscussionsLoaded':
+					setUserStoryDiscussionsLoading(false);
+					if (message.discussions) {
+						setUserStoryDiscussions(message.discussions);
+						setUserStoryDiscussionsError(null);
+					} else {
+						setUserStoryDiscussionsError('Failed to load discussions');
+					}
+					break;
+				case 'userStoryDiscussionsError':
+					setUserStoryDiscussionsLoading(false);
+					setUserStoryDiscussionsError(message.error || 'Error loading discussions');
+					break;
+				case 'teamMembersLoaded':
+					setTeamMembersLoading(false);
+					if (message.teamMembers) {
+						setTeamMembers(message.teamMembers);
+						setTeamMembersError(null);
+					} else {
+						setTeamMembersError('Failed to load team members');
+					}
+					break;
+				case 'teamMembersError':
+					setTeamMembersLoading(false);
+					setTeamMembersError(message.error || 'Error loading team members');
+					break;
 			}
 		};
 
@@ -1361,10 +1333,39 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			// Reset flags when leaving portfolio section
 			hasLoadedPortfolioIterations.current = false;
 			loadedViews.current.clear();
+			attemptedUserStoryDefects.current.clear();
 			// eslint-disable-next-line no-console
 			console.log('[Frontend] Exiting portfolio section - cleared view cache');
 		}
 	}, [activeSection]);
+
+	// Auto-load defects when defects tab is selected for a user story
+	useEffect(() => {
+		if (selectedUserStory && activeUserStoryTab === 'defects' && !userStoryDefectsLoading) {
+			// Check if we've already attempted to load defects for this user story
+			if (!attemptedUserStoryDefects.current.has(selectedUserStory.objectId)) {
+				logDebug(`First time loading defects for user story: ${selectedUserStory.formattedId}`, 'Frontend');
+				attemptedUserStoryDefects.current.add(selectedUserStory.objectId);
+				loadUserStoryDefects(selectedUserStory.objectId);
+			} else {
+				logDebug(`Already attempted to load defects for user story: ${selectedUserStory.formattedId}`, 'Frontend');
+			}
+		}
+	}, [selectedUserStory, activeUserStoryTab, userStoryDefectsLoading, loadUserStoryDefects]);
+
+	// Auto-load discussions when discussions tab is selected for a user story
+	useEffect(() => {
+		if (selectedUserStory && activeUserStoryTab === 'discussions' && !userStoryDiscussionsLoading) {
+			// Check if we've already attempted to load discussions for this user story
+			if (!attemptedUserStoryDiscussions.current.has(selectedUserStory.objectId)) {
+				logDebug(`First time loading discussions for user story: ${selectedUserStory.formattedId}`, 'Frontend');
+				attemptedUserStoryDiscussions.current.add(selectedUserStory.objectId);
+				loadUserStoryDiscussions(selectedUserStory.objectId);
+			} else {
+				logDebug(`Already attempted to load discussions for user story: ${selectedUserStory.formattedId}`, 'Frontend');
+			}
+		}
+	}, [selectedUserStory, activeUserStoryTab, userStoryDiscussionsLoading, loadUserStoryDiscussions]);
 
 	useEffect(() => {
 		if (!hasVsCodeApi) {
@@ -1523,166 +1524,91 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 										color: 'white'
 									}}
 								>
-									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>8</div>
-									<div style={{ fontSize: '10px', opacity: 0.9 }}>Active Members</div>
-								</div>
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #9a7a8a 0%, #9a6b7a 100%)',
-										borderRadius: '8px',
-										padding: '12px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>12</div>
-									<div style={{ fontSize: '10px', opacity: 0.9 }}>Tasks in Progress</div>
-								</div>
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #6b8a9a 0%, #7a9a9a 100%)',
-										borderRadius: '8px',
-										padding: '12px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>95%</div>
-									<div style={{ fontSize: '10px', opacity: 0.9 }}>Sprint Completion</div>
-								</div>
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #7a9a8a 0%, #8a9a7a 100%)',
-										borderRadius: '8px',
-										padding: '12px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>24</div>
-									<div style={{ fontSize: '10px', opacity: 0.9 }}>Messages Today</div>
+									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{teamMembers.length}</div>
+									<div style={{ fontSize: '10px', opacity: 0.9 }}>Team Members (Last 6 Sprints)</div>
 								</div>
 							</div>
 
 							{/* Team Members */}
 							<div style={{ marginBottom: '20px' }}>
 								<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
-								<div
-									style={{
-										display: 'grid',
-										gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-										gap: '12px'
-									}}
-								>
-									{[
-										{
-											name: 'Sarah Johnson',
-											role: 'Product Owner',
-											avatar: 'SJ',
-											status: 'online',
-											tasks: 5,
-											lastActive: '2 min ago',
-											currentTask: 'Reviewing user stories'
-										},
-										{
-											name: 'Mike Chen',
-											role: 'Scrum Master',
-											avatar: 'MC',
-											status: 'in-meeting',
-											tasks: 3,
-											lastActive: '15 min ago',
-											currentTask: 'Sprint planning'
-										},
-										{
-											name: 'Emily Davis',
-											role: 'Senior Developer',
-											avatar: 'ED',
-											status: 'online',
-											tasks: 4,
-											lastActive: '5 min ago',
-											currentTask: 'Code review'
-										},
-										{
-											name: 'Alex Rodriguez',
-											role: 'UI/UX Designer',
-											avatar: 'AR',
-											status: 'away',
-											tasks: 2,
-											lastActive: '1 hour ago',
-											currentTask: 'Wireframe design'
-										},
-										{
-											name: 'Lisa Wang',
-											role: 'QA Engineer',
-											avatar: 'LW',
-											status: 'online',
-											tasks: 6,
-											lastActive: '1 min ago',
-											currentTask: 'Test case execution'
-										},
-										{
-											name: 'David Kim',
-											role: 'DevOps Engineer',
-											avatar: 'DK',
-											status: 'busy',
-											tasks: 3,
-											lastActive: '30 min ago',
-											currentTask: 'CI/CD pipeline'
-										}
-									].map(member => (
-										<div
-											key={member.name}
-											style={{
-												backgroundColor: '#1e1e1e',
-												border: '1px solid var(--vscode-panel-border)',
-												borderRadius: '8px',
-												padding: '12px',
-												display: 'flex',
-												flexDirection: 'column',
-												alignItems: 'center',
-												textAlign: 'center',
-												cursor: 'pointer',
-												transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-											}}
-											onMouseEnter={e => {
-												e.currentTarget.style.transform = 'translateY(-2px)';
-												e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-											}}
-											onMouseLeave={e => {
-												e.currentTarget.style.transform = 'translateY(0)';
-												e.currentTarget.style.boxShadow = 'none';
-											}}
-										>
-											{/* Avatar */}
-											<div
-												style={{
-													width: '36px',
-													height: '36px',
-													borderRadius: '50%',
-													background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-													display: 'flex',
-													alignItems: 'center',
-													justifyContent: 'center',
-													color: 'white',
-													fontWeight: 'bold',
-													fontSize: '12px',
-													marginBottom: '6px'
-												}}
-											>
-												{member.avatar}
-											</div>
 
-											{/* Member Info */}
-											<div style={{ width: '100%' }}>
-												<div style={{ marginBottom: '6px' }}>
-													<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '600' }}>{member.name}</h4>
+								{teamMembersLoading && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading team members...</div>}
+
+								{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
+
+								{!teamMembersLoading && !teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
+
+								{!teamMembersLoading && !teamMembersError && teamMembers.length > 0 && (
+									<div
+										style={{
+											display: 'grid',
+											gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+											gap: '12px'
+										}}
+									>
+										{teamMembers.map(memberName => {
+											// Generate initials from name
+											const initials = memberName
+												.split(' ')
+												.map(part => part.charAt(0).toUpperCase())
+												.join('')
+												.slice(0, 2);
+
+											return (
+												<div
+													key={memberName}
+													style={{
+														backgroundColor: '#1e1e1e',
+														border: '1px solid var(--vscode-panel-border)',
+														borderRadius: '8px',
+														padding: '12px',
+														display: 'flex',
+														flexDirection: 'column',
+														alignItems: 'center',
+														textAlign: 'center',
+														cursor: 'pointer',
+														transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+													}}
+													onMouseEnter={e => {
+														e.currentTarget.style.transform = 'translateY(-2px)';
+														e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+													}}
+													onMouseLeave={e => {
+														e.currentTarget.style.transform = 'translateY(0)';
+														e.currentTarget.style.boxShadow = 'none';
+													}}
+												>
+													{/* Avatar */}
+													<div
+														style={{
+															width: '36px',
+															height: '36px',
+															borderRadius: '50%',
+															background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+															display: 'flex',
+															alignItems: 'center',
+															justifyContent: 'center',
+															color: 'white',
+															fontWeight: 'bold',
+															fontSize: '12px',
+															marginBottom: '6px'
+														}}
+													>
+														{initials}
+													</div>
+
+													{/* Member Info */}
+													<div style={{ width: '100%' }}>
+														<div style={{ marginBottom: '6px' }}>
+															<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '600' }}>{memberName}</h4>
+														</div>
+													</div>
 												</div>
-												<p style={{ margin: '0 0 4px 0', color: 'var(--vscode-descriptionForeground)', fontSize: '11px' }}>{member.role}</p>
-												<p style={{ margin: '0 0 0 0', color: 'var(--vscode-foreground)', fontSize: '11px', lineHeight: '1.3' }}>{member.currentTask}</p>
-											</div>
-										</div>
-									))}
-								</div>
+											);
+										})}
+									</div>
+								)}
 							</div>
 
 							{/* Recent Activity */}
@@ -1752,7 +1678,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						</div>
 					)}
 
-					{activeSection === 'salesforce' && !selectedTutorial && (
+					{activeSection === 'library' && !selectedTutorial && (
 						<div style={{ padding: '20px' }}>
 							{/* Salesforce Banners */}
 							<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -2570,7 +2496,7 @@ jobs:
 						</div>
 					)}
 
-					{activeSection === 'assets' && (
+					{activeSection === 'library' && !selectedTutorial && (
 						<div style={{ padding: '20px' }}>
 							{/* Assets Grid */}
 							<div
@@ -2710,6 +2636,9 @@ jobs:
 									userStoryDefects,
 									userStoryDefectsLoading,
 									_userStoryDefectsError: userStoryDefectsError,
+									userStoryDiscussions,
+									userStoryDiscussionsLoading,
+									userStoryDiscussionsError,
 									_defects: defects,
 									_defectsLoading: defectsLoading,
 									_defectsError: defectsError,

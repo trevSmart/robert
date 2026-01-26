@@ -6,6 +6,9 @@
       "Bash(npx tsc:*)",
       "Bash(grep:*)",
       "Bash(eslint:*)"
+    ],
+    "additionalDirectories": [
+      "/Users/marcpla/Documents/Feina/Projectes/Robert/src/webview/components"
     ]
   },
   "outputStyle": "Explanatory"

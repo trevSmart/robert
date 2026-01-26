@@ -1,6 +1,7 @@
 import { FC } from 'react';
 import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
+import { isLightTheme } from '../../utils/themeColors';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -17,24 +18,99 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.45)' : 'color(srgb 0.2 0.6 0.35 / 0.45)')};
 `;
 
-const StatPill = styled.div`
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-	align-items: flex-start;
-	justify-content: center;
-	min-height: 56px;
-	padding: 10px 12px;
-	border-radius: 10px;
-	background: color(srgb 0.2 0.2 0.2 / 0.6);
-	border: 1px solid color(srgb 0.8 0.8 0.8 / 0.08);
-`;
+// StatPill component with theme-aware styling
+const StatPill: FC<{
+	isSelected: boolean;
+	onClick: () => void;
+	title: string;
+	children: React.ReactNode;
+}> = ({ isSelected, onClick, title, children }) => {
+	const lightTheme = isLightTheme();
+
+	const getStatPillStyles = () => {
+		return {
+			display: 'flex',
+			flexDirection: 'column' as const,
+			gap: '4px',
+			alignItems: 'flex-start',
+			justifyContent: 'center',
+			minHeight: '56px',
+			padding: '10px 12px',
+			borderRadius: '10px',
+			border: isSelected ? '1px solid var(--vscode-textLink-foreground)' : lightTheme ? '1px solid rgba(0, 0, 0, 0.12)' : '1px solid color(srgb 0.8 0.8 0.8 / 0.08)',
+			background: isSelected ? 'color(srgb 0.2 0.6 0.35 / 0.12)' : lightTheme ? 'rgba(0, 0, 0, 0.04)' : 'color(srgb 0.2 0.2 0.2 / 0.6)',
+			cursor: 'pointer',
+			transition: 'all 0.2s ease'
+		};
+	};
+
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			title={title}
+			style={getStatPillStyles()}
+			onMouseEnter={e => {
+				const button = e.currentTarget;
+				button.style.background = isSelected ? 'color(srgb 0.2 0.6 0.35 / 0.18)' : lightTheme ? 'rgba(0, 0, 0, 0.08)' : 'color(srgb 0.2 0.2 0.2 / 0.8)';
+				button.style.borderColor = 'var(--vscode-textLink-foreground)';
+			}}
+			onMouseLeave={e => {
+				const button = e.currentTarget;
+				button.style.background = isSelected ? 'color(srgb 0.2 0.6 0.35 / 0.12)' : lightTheme ? 'rgba(0, 0, 0, 0.04)' : 'color(srgb 0.2 0.2 0.2 / 0.6)';
+				button.style.borderColor = isSelected ? 'var(--vscode-textLink-foreground)' : lightTheme ? 'rgba(0, 0, 0, 0.12)' : 'color(srgb 0.8 0.8 0.8 / 0.08)';
+			}}
+		>
+			{children}
+		</button>
+	);
+};
 
 interface UserStoryFormProps {
 	userStory: UserStory;
+	selectedAdditionalTab?: 'tasks' | 'tests' | 'defects' | 'discussions';
+	onAdditionalTabChange?: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
 }
 
-const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
+// Icon components for cards
+const TasksIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M21.75 6.75a4.5 4.5 0 0 1-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 1 1-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 0 1 6.336-4.486l-3.276 3.276a3.004 3.004 0 0 0 2.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852Z"
+		/>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M4.867 19.125h.008v.008h-.008v-.008Z" />
+	</svg>
+);
+
+const TestsIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+	</svg>
+);
+
+const DefectsIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0 1 12 12.75Zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 0 1-1.152 6.06M12 12.75c-2.883 0-5.647.508-8.208 1.44.125 2.104.52 4.136 1.153 6.06M12 12.75a2.25 2.25 0 0 0 2.248-2.354M12 12.75a2.25 2.25 0 0 1-2.248-2.354M12 8.25c.995 0 1.971-.08 2.922-.236.403-.066.74-.358.795-.762a3.778 3.778 0 0 0-.399-2.25M12 8.25c-.995 0-1.97-.08-2.922-.236-.402-.066-.74-.358-.795-.762a3.734 3.734 0 0 1 .4-2.253M12 8.25a2.25 2.25 0 0 0-2.248 2.146M12 8.25a2.25 2.25 0 0 1 2.248 2.146M8.683 5a6.032 6.032 0 0 1-1.155-1.002c.07-.63.27-1.222.574-1.747m.581 2.749A3.75 3.75 0 0 1 15.318 5m0 0c.427-.283.815-.62 1.155-.999a4.471 4.471 0 0 0-.575-1.752M4.921 6a24.048 24.048 0 0 0-.392 3.314c1.668.546 3.416.914 5.223 1.082M19.08 6c.205 1.08.337 2.187.392 3.314a23.882 23.882 0 0 1-5.223 1.082"
+		/>
+	</svg>
+);
+
+const DiscussionsIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"
+		/>
+	</svg>
+);
+
+const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange }) => {
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
 			case 'new':
@@ -53,6 +129,13 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 				return 'var(--vscode-descriptionForeground)';
 		}
 	};
+
+	const handleTabChange = (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => {
+		if (onAdditionalTabChange) {
+			onAdditionalTabChange(tab);
+		}
+	};
+
 	return (
 		<div
 			style={{
@@ -126,41 +209,22 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
 				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
 
-				<div style={{ display: 'flex', gap: '16px' }}>
-					<div style={{ flex: '1' }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Plan Estimate</label>
-						<input
-							type="number"
-							value={userStory.planEstimate || 0}
-							readOnly
-							style={{
-								width: '100%',
-								padding: '6px 8px',
-								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '3px',
-								fontSize: '13px'
-							}}
-						/>
-					</div>
-					<div style={{ flex: '1' }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>To Do</label>
-						<input
-							type="number"
-							value={userStory.toDo}
-							readOnly
-							style={{
-								width: '100%',
-								padding: '6px 8px',
-								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '3px',
-								fontSize: '13px'
-							}}
-						/>
-					</div>
+				<div>
+					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Plan Estimate</label>
+					<input
+						type="number"
+						value={userStory.planEstimate || 0}
+						readOnly
+						style={{
+							width: '100%',
+							padding: '6px 8px',
+							backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+							color: 'var(--vscode-input-foreground)',
+							border: '1px solid var(--vscode-input-border)',
+							borderRadius: '3px',
+							fontSize: '13px'
+						}}
+					/>
 				</div>
 
 				<div>
@@ -214,21 +278,33 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory }) => {
 				<h3 style={{ margin: '16px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
 				<div style={{ gridColumn: '1 / -1' }}>
 					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
-						<StatPill>
+						<StatPill isSelected={selectedAdditionalTab === 'tasks'} onClick={() => handleTabChange('tasks')} title="Click to view tasks">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Tasks</span>
-							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.tasksCount}</span>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+								<TasksIcon />
+								{userStory.tasksCount}
+							</span>
 						</StatPill>
-						<StatPill>
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Test Cases</span>
-							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.testCasesCount}</span>
+						<StatPill isSelected={selectedAdditionalTab === 'tests'} onClick={() => handleTabChange('tests')} title="Click to view test cases">
+							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Tests</span>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+								<TestsIcon />
+								{userStory.testCasesCount}
+							</span>
 						</StatPill>
-						<StatPill>
+						<StatPill isSelected={selectedAdditionalTab === 'defects'} onClick={() => handleTabChange('defects')} title="Click to view defects">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Defects</span>
-							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.defectsCount}</span>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+								<DefectsIcon />
+								{userStory.defectsCount}
+							</span>
 						</StatPill>
-						<StatPill>
+						<StatPill isSelected={selectedAdditionalTab === 'discussions'} onClick={() => handleTabChange('discussions')} title="Click to view discussions">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Discussions</span>
-							<span style={{ fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{userStory.discussionCount}</span>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+								<DiscussionsIcon />
+								{userStory.discussionCount}
+							</span>
 						</StatPill>
 					</div>
 				</div>

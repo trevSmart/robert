@@ -3,6 +3,7 @@ import { ErrorHandler } from './ErrorHandler';
 import { RobertWebviewProvider } from './RobertWebviewProvider';
 import type { RallyData } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
+import { clearAllRallyCaches } from './libs/rally/rallyServices';
 
 // Immediate logging when module is loaded
 const immediateOutput = OutputChannelManager.getInstance();
@@ -19,6 +20,10 @@ export const rallyData: RallyData = {
 	currentUser: undefined
 };
 
+// Store global references for reload functionality
+let globalWebviewProvider: RobertWebviewProvider | null = null;
+let globalExtensionContext: vscode.ExtensionContext | null = null;
+
 // In-memory state for the status popover (dummy content)
 const robertPopoverState = {
 	allFiles: true,
@@ -26,12 +31,55 @@ const robertPopoverState = {
 	snoozedUntil: 0
 };
 
+/**
+ * Reload the extension without reloading the IDE
+ * Clears cache, resets data, and refreshes the webview
+ */
+async function reloadExtension(outputManager: OutputChannelManager, errorHandler: ErrorHandler): Promise<void> {
+	try {
+		outputManager.appendLine('[Robert] 🔄 Starting extension reload');
+
+		// Step 1: Clear all Rally caches
+		outputManager.appendLine('[Robert] 🗑️  Clearing Rally caches...');
+		clearAllRallyCaches();
+
+		// Step 2: Clear rallyData
+		outputManager.appendLine('[Robert] 🗑️  Clearing rally data...');
+		rallyData.projects = [];
+		rallyData.users = [];
+		rallyData.iterations = [];
+		rallyData.userStories = [];
+		rallyData.tasks = [];
+		rallyData.defects = [];
+		rallyData.currentUser = undefined;
+
+		// Step 3: Refresh webview provider (no need to re-register, just refresh data)
+		if (globalWebviewProvider) {
+			outputManager.appendLine('[Robert] 🔄 Refreshing webview provider...');
+			// Prefetch Rally data to warm the cache and trigger webview refresh
+			await globalWebviewProvider.prefetchRallyData('reload');
+			// Notify webview to refresh (via postMessage)
+			await globalWebviewProvider.resetAndRefreshWebviews();
+			outputManager.appendLine('[Robert] ✅ Extension reload completed successfully');
+		} else {
+			outputManager.appendLine('[Robert] ⚠️  Global webview provider not available');
+		}
+	} catch (error) {
+		const err = error instanceof Error ? error : new Error(String(error));
+		outputManager.appendLine(`[Robert] ❌ Error during extension reload: ${err.message}`);
+		throw err;
+	}
+}
+
 export function activate(context: vscode.ExtensionContext) {
 	// Get the centralized output channel manager
 	const outputManager = OutputChannelManager.getInstance();
 	outputManager.appendLine('[Robert] 🚀 Extension activate() function called');
 	outputManager.appendLine('[Robert] Extension activated');
 	context.subscriptions.push(outputManager);
+
+	// Store global context for reload functionality
+	globalExtensionContext = context;
 
 	// Detect if running in debug mode
 	const isDebugMode = detectDebugMode(context);
@@ -51,6 +99,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register the webview provider for activity bar
 	outputManager.appendLine('[Robert] 📋 Registering webview provider for activity bar');
 	const webviewProvider = new RobertWebviewProvider(context.extensionUri);
+	globalWebviewProvider = webviewProvider;
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(RobertWebviewProvider.viewType, webviewProvider, {
 			webviewOptions: { retainContextWhenHidden: true }
@@ -85,12 +134,11 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(openMainViewCommand);
 
-	// Register command to reload extension
+	// Register command to reload extension (without reloading the entire IDE)
 	const reloadCommand = vscode.commands.registerCommand('robert.reload', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: reload');
-			// Reload the entire extension
-			await vscode.commands.executeCommand('workbench.action.reloadWindow');
+			outputManager.appendLine('[Robert] Command: reload - Starting extension reload');
+			await reloadExtension(outputManager, errorHandler);
 		}, 'robert.reload command');
 	});
 	context.subscriptions.push(reloadCommand);

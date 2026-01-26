@@ -8,7 +8,7 @@ interface Defect {
 	name: string;
 	description: string | null;
 	state: string;
-	scheduledState?: string;
+	scheduleState: string; // PRIMARY: Rally ScheduleState (Defined, In-Progress, Completed, New, Accepted)
 	severity: string;
 	priority: string;
 	owner: string;
@@ -188,10 +188,10 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 									style={{
 										padding: '10px 12px',
 										fontWeight: 'normal',
-										color: getScheduleStateColor(defect.scheduledState || 'new')
+										color: getScheduleStateColor(defect.scheduleState || 'new')
 									}}
 								>
-									{defect.scheduledState || 'N/A'}
+									{defect.scheduleState || 'N/A'}
 								</td>
 								<td
 									style={{

@@ -2,7 +2,7 @@ import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
-import { CacheManager } from '../cache/CacheManager';
+import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, clearAllCaches as clearAllCachesService } from './CacheService';
 
 // Error handler singleton instance
 const errorHandler = ErrorHandler.getInstance();
@@ -19,10 +19,7 @@ function yieldToEventLoop(): Promise<void> {
 	return new Promise<void>(resolve => setImmediate(() => resolve()));
 }
 
-// Cache managers with 5 minute TTL
-const userStoriesCacheManager = new CacheManager<RallyUserStory[]>(5 * 60 * 1000);
-const projectsCacheManager = new CacheManager<RallyProject[]>(5 * 60 * 1000);
-const iterationsCacheManager = new CacheManager<RallyIteration[]>(5 * 60 * 1000);
+// Cache managers are now managed by CacheService for global persistence
 
 // Constants for pagination
 const PAGE_SIZE = 100;
@@ -56,7 +53,8 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const cacheKey = `projects:${JSON.stringify(query)}`;
 
 	// Check TTL cache first
-	const cachedProjects = projectsCacheManager.get(cacheKey);
+	const projectsCacheMgr = getProjectsCacheManager();
+	const cachedProjects = projectsCacheMgr.get(cacheKey);
 	if (cachedProjects) {
 		errorHandler.logDebug('Projects retrieved from TTL cache', 'rallyServices.getProjects');
 		return {
@@ -121,7 +119,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) {
 		// Cache empty results too
-		projectsCacheManager.set(cacheKey, []);
+		projectsCacheMgr.set(cacheKey, []);
 		return {
 			projects: [],
 			source: 'api',
@@ -146,7 +144,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	}
 
 	// Store in TTL cache
-	projectsCacheManager.set(cacheKey, projects);
+	projectsCacheMgr.set(cacheKey, projects);
 
 	return {
 		projects: projects,
@@ -511,7 +509,8 @@ async function formatDefectsAsync(results: any[]): Promise<RallyDefect[]> {
 			project: defect.Project ? (defect.Project._refObjectName ?? defect.Project.refObjectName) : defect.project ? (defect.project._refObjectName ?? defect.project.refObjectName) : null,
 			iteration: defect.Iteration ? (defect.Iteration._refObjectName ?? defect.Iteration.refObjectName) : defect.iteration ? (defect.iteration._refObjectName ?? defect.iteration.refObjectName) : null,
 			blocked: defect.Blocked ?? defect.blocked ?? false,
-			discussionCount: defect.Discussion?.Count ?? defect.discussion?.count ?? 0
+			discussionCount: defect.Discussion?.Count ?? defect.discussion?.count ?? 0,
+			scheduleState: defect.ScheduleState ?? defect.scheduleState ?? 'Unknown'
 		});
 
 		// Yield to event loop every CHUNK_SIZE items
@@ -550,6 +549,7 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 			blocked: userStory.Blocked ?? userStory.blocked,
 			taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
 			taskStatus: userStory.TaskStatus ?? userStory.taskStatus,
+			scheduleState: userStory.ScheduleState ?? userStory.scheduleState ?? 'Unknown',
 			tasksCount: userStory.Tasks?.Count ?? userStory.tasks?.count ?? 0,
 			testCasesCount: userStory.TestCases?.Count ?? userStory.testCases?.count ?? 0,
 			defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
@@ -641,7 +641,8 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	const cacheKey = `iterations:${JSON.stringify(query)}`;
 
 	// Check TTL cache first
-	const cachedIterations = iterationsCacheManager.get(cacheKey);
+	const iterationsCacheMgr = getIterationsCacheManager();
+	const cachedIterations = iterationsCacheMgr.get(cacheKey);
 	if (cachedIterations) {
 		errorHandler.logDebug('Iterations retrieved from TTL cache', 'rallyServices.getIterations');
 		return {
@@ -711,7 +712,8 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) {
 		// Cache empty results too
-		iterationsCacheManager.set(cacheKey, []);
+		const iterationsCacheMgr = getIterationsCacheManager();
+		iterationsCacheMgr.set(cacheKey, []);
 		return {
 			iterations: [],
 			source: 'api',
@@ -751,7 +753,7 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	}
 
 	// Store in TTL cache
-	iterationsCacheManager.set(cacheKey, iterations);
+	iterationsCacheMgr.set(cacheKey, iterations);
 
 	return {
 		iterations: iterations,
@@ -1015,7 +1017,7 @@ export async function getDefects(query: RallyQueryParams = {}, offset: number = 
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'defect',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID'],
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
 		order: 'FormattedID desc' // Order by FormattedID descending for pagination
 	};
 
@@ -1106,4 +1108,639 @@ export async function getDefects(query: RallyQueryParams = {}, offset: number = 
 		hasMore: hasMore,
 		offset: offset
 	};
+}
+
+/**
+ * Formateia TestCases de forma assincròna en chunks
+ * Per a molts items, usa yield per mantenir UI responsiva
+ */
+async function formatTestCasesAsync(results: any[]): Promise<any[]> {
+	const formatted: any[] = [];
+
+	for (let i = 0; i < results.length; i++) {
+		const testCase: any = results[i];
+
+		formatted.push({
+			objectId: testCase.ObjectID ?? testCase.objectId,
+			formattedId: testCase.FormattedID ?? testCase.formattedId,
+			name: testCase.Name ?? testCase.name,
+			description: sanitizeDescription(testCase.Description ?? testCase.description),
+			state: testCase.State ?? testCase.state ?? 'Draft',
+			owner: testCase.Owner ? (testCase.Owner._refObjectName ?? testCase.Owner.refObjectName) : testCase.owner ? (testCase.owner._refObjectName ?? testCase.owner.refObjectName) : 'Sense assignat',
+			project: testCase.Project ? (testCase.Project._refObjectName ?? testCase.Project.refObjectName) : testCase.project ? (testCase.project._refObjectName ?? testCase.project.refObjectName) : null,
+			type: testCase.Type ?? testCase.type ?? 'Functional',
+			priority: testCase.Priority ?? testCase.priority ?? 'Unset',
+			testFolder: testCase.TestFolder ? (testCase.TestFolder._refObjectName ?? testCase.TestFolder.refObjectName) : testCase.testFolder ? (testCase.testFolder._refObjectName ?? testCase.testFolder.refObjectName) : null
+		});
+
+		// Yield to event loop every CHUNK_SIZE items
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted;
+}
+
+/**
+ * Get test cases for a specific user story
+ * Obtains a user story by ID and extracts its related test cases
+ */
+export async function getUserStoryTests(userStoryId: string) {
+	try {
+		errorHandler.logDebug(`Getting test cases for user story: ${userStoryId}`, 'rallyServices.getUserStoryTests');
+
+		const rallyApi = getRallyApi();
+		const projectId = await getProjectId();
+
+		// Query to get the user story with its test cases expanded
+		const queryOptions: RallyQueryOptions = {
+			type: 'hierarchicalrequirement',
+			fetch: ['ObjectID', 'FormattedID', 'Name', 'TestCases'],
+			query: queryUtils.where('ObjectID', '=', userStoryId)
+		};
+
+		const result = await rallyApi.query(queryOptions);
+		const resultData = result as RallyApiResult;
+
+		const results = resultData.Results || resultData.QueryResult?.Results || [];
+		if (!results.length) {
+			return {
+				testCases: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		const userStory: any = results[0];
+
+		errorHandler.logDebug(`User story TestCases field: ${JSON.stringify(userStory.TestCases)}`, 'rallyServices.getUserStoryTests');
+
+		if (!userStory.TestCases) {
+			return {
+				testCases: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Check if TestCases is just a count object
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		if (userStory.TestCases && typeof userStory.TestCases === 'object' && !Array.isArray(userStory.TestCases) && userStory.TestCases.Count !== undefined && !userStory.TestCases.Results) {
+			errorHandler.logDebug(`TestCases is a count object (${userStory.TestCases.Count}), need to query separately`, 'rallyServices.getUserStoryTests');
+			// If it's just a count, we need to query test cases directly by WorkProduct
+			const testCaseQueryOptions: RallyQueryOptions = {
+				type: 'testcase',
+				fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Project', 'Type', 'Priority', 'TestFolder', 'ObjectID'],
+				query: queryUtils.where('WorkProduct.ObjectID', '=', userStoryId)
+			};
+
+			const testCaseResult = await rallyApi.query(testCaseQueryOptions);
+			const testCaseResultData = testCaseResult as RallyApiResult;
+			const testCaseResults = testCaseResultData.Results || testCaseResultData.QueryResult?.Results || [];
+
+			if (!testCaseResults.length) {
+				return {
+					testCases: [],
+					source: 'api',
+					count: 0,
+					hasMore: false
+				};
+			}
+
+			const testCases: any[] = await formatTestCasesAsync(testCaseResults);
+			return {
+				testCases: testCases,
+				source: 'api',
+				count: testCases.length,
+				hasMore: false
+			};
+		}
+
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		const testCaseRefs: any[] = (userStory.TestCases as any)?.Results || userStory.TestCases || [];
+
+		if (!Array.isArray(testCaseRefs) || testCaseRefs.length === 0) {
+			return {
+				testCases: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Extract test case IDs from the test case references
+		const testCaseIds = testCaseRefs
+			.map((testCaseRef: any) => {
+				// Handle both full objects and references
+				if (typeof testCaseRef === 'string') {
+					return testCaseRef;
+				}
+				if (testCaseRef.ObjectID) {
+					return testCaseRef.ObjectID;
+				}
+				if (testCaseRef._ref) {
+					// Extract ID from reference like "/testcase/12345"
+					const match = testCaseRef._ref.match(/\/testcase\/(.+)/);
+					return match ? match[1] : testCaseRef._ref;
+				}
+				return null;
+			})
+			.filter(Boolean);
+
+		if (testCaseIds.length === 0) {
+			return {
+				testCases: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Build a query to get all the test case details
+		// Query each test case by ID
+		const testCaseQueries = testCaseIds.map((testCaseId: string) => queryUtils.where('ObjectID', '=', testCaseId));
+
+		const testCaseQueryOptions: RallyQueryOptions = {
+			type: 'testcase',
+			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Project', 'Type', 'Priority', 'TestFolder', 'ObjectID']
+		};
+
+		if (testCaseQueries.length === 1) {
+			testCaseQueryOptions.query = testCaseQueries[0];
+		} else if (testCaseQueries.length > 1) {
+			// @ts-expect-error - Rally query builder has or method
+			testCaseQueryOptions.query = testCaseQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
+		}
+
+		const testCaseResult = await rallyApi.query(testCaseQueryOptions);
+		const testCaseResultData = testCaseResult as RallyApiResult;
+
+		const testCaseResults = testCaseResultData.Results || testCaseResultData.QueryResult?.Results || [];
+		if (!testCaseResults.length) {
+			return {
+				testCases: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		//Formatem la resposta per ser més llegible
+		const testCases: any[] = await formatTestCasesAsync(testCaseResults);
+
+		return {
+			testCases: testCases,
+			source: 'api',
+			count: testCases.length,
+			hasMore: false
+		};
+	} catch (error) {
+		errorHandler.logDebug(`Error getting test cases for user story: ${error instanceof Error ? error.message : String(error)}`, 'rallyServices.getUserStoryTests');
+		throw error;
+	}
+}
+
+/**
+ * Get defects for a specific user story
+ * Obtains a user story by ID and extracts its related defects
+ */
+export async function getUserStoryDefects(userStoryId: string) {
+	try {
+		errorHandler.logDebug(`Getting defects for user story: ${userStoryId}`, 'rallyServices.getUserStoryDefects');
+
+		const rallyApi = getRallyApi();
+		const projectId = await getProjectId();
+
+		// Query to get the user story with its defects expanded
+		const queryOptions: RallyQueryOptions = {
+			type: 'hierarchicalrequirement',
+			fetch: ['ObjectID', 'FormattedID', 'Name', 'Defects'],
+			query: queryUtils.where('ObjectID', '=', userStoryId)
+		};
+
+		const result = await rallyApi.query(queryOptions);
+		const resultData = result as RallyApiResult;
+
+		const results = resultData.Results || resultData.QueryResult?.Results || [];
+		if (!results.length) {
+			return {
+				defects: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		const userStory: any = results[0];
+
+		errorHandler.logDebug(`User story Defects field: ${JSON.stringify(userStory.Defects)}`, 'rallyServices.getUserStoryDefects');
+
+		if (!userStory.Defects) {
+			return {
+				defects: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Check if Defects is just a count object
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		if (userStory.Defects && typeof userStory.Defects === 'object' && !Array.isArray(userStory.Defects) && userStory.Defects.Count !== undefined && !userStory.Defects.Results) {
+			errorHandler.logDebug(`Defects is a count object (${userStory.Defects.Count}), need to query separately`, 'rallyServices.getUserStoryDefects');
+			// If it's just a count, we need to query defects directly by Requirement
+			const defectQueryOptions: RallyQueryOptions = {
+				type: 'defect',
+				fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
+				query: queryUtils.where('Requirement.ObjectID', '=', userStoryId)
+			};
+
+			const defectResult = await rallyApi.query(defectQueryOptions);
+			const defectResultData = defectResult as RallyApiResult;
+			const defectResults = defectResultData.Results || defectResultData.QueryResult?.Results || [];
+
+			if (!defectResults.length) {
+				return {
+					defects: [],
+					source: 'api',
+					count: 0,
+					hasMore: false
+				};
+			}
+
+			const defects: RallyDefect[] = await formatDefectsAsync(defectResults);
+			return {
+				defects: defects,
+				source: 'api',
+				count: defects.length,
+				hasMore: false
+			};
+		}
+
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		const defectRefs: any[] = (userStory.Defects as any)?.Results || userStory.Defects || [];
+
+		if (!Array.isArray(defectRefs) || defectRefs.length === 0) {
+			return {
+				defects: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Extract defect IDs from the defect references
+		const defectIds = defectRefs
+			.map((defectRef: any) => {
+				// Handle both full objects and references
+				if (typeof defectRef === 'string') {
+					return defectRef;
+				}
+				if (defectRef.ObjectID) {
+					return defectRef.ObjectID;
+				}
+				if (defectRef._ref) {
+					// Extract ID from reference like "/defect/12345"
+					const match = defectRef._ref.match(/\/defect\/(.+)/);
+					return match ? match[1] : defectRef._ref;
+				}
+				return null;
+			})
+			.filter(Boolean);
+
+		if (defectIds.length === 0) {
+			return {
+				defects: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Build a query to get all the defect details
+		// Query each defect by ID
+		const defectQueries = defectIds.map((defectId: string) => queryUtils.where('ObjectID', '=', defectId));
+
+		const defectQueryOptions: RallyQueryOptions = {
+			type: 'defect',
+			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState']
+		};
+
+		if (defectQueries.length === 1) {
+			defectQueryOptions.query = defectQueries[0];
+		} else if (defectQueries.length > 1) {
+			// @ts-expect-error - Rally query builder has or method
+			defectQueryOptions.query = defectQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
+		}
+
+		const defectResult = await rallyApi.query(defectQueryOptions);
+		const defectResultData = defectResult as RallyApiResult;
+
+		const defectResults = defectResultData.Results || defectResultData.QueryResult?.Results || [];
+		if (!defectResults.length) {
+			return {
+				defects: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		//Formatem la resposta per ser més llegible
+		const defects: RallyDefect[] = await formatDefectsAsync(defectResults);
+
+		return {
+			defects: defects,
+			source: 'api',
+			count: defects.length,
+			hasMore: false
+		};
+	} catch (error) {
+		errorHandler.logDebug(`Error getting defects for user story: ${error instanceof Error ? error.message : String(error)}`, 'rallyServices.getUserStoryDefects');
+		throw error;
+	}
+}
+
+/**
+ * Formateia Discussions de forma assincròna en chunks
+ * Per a molts items, usa yield per mantenir UI responsiva
+ */
+async function formatDiscussionsAsync(results: any[], userStoryId: string): Promise<any[]> {
+	const formatted: any[] = [];
+
+	for (let i = 0; i < results.length; i++) {
+		const discussion: any = results[i];
+
+		// DEBUG: Log the entire discussion object
+		errorHandler.logDebug(`Discussion ${i} raw data: ${JSON.stringify(discussion, null, 2)}`, 'formatDiscussionsAsync');
+
+		// Extract author name from various possible fields
+		let authorName = 'Unknown';
+		const author = discussion.Author ?? discussion.author;
+		errorHandler.logDebug(`Author object: ${JSON.stringify(author, null, 2)}`, 'formatDiscussionsAsync');
+		if (author) {
+			authorName = author.DisplayName ?? author.displayName ?? author.Name ?? author.name ?? author.UserName ?? author.userName ?? author._refObjectName ?? author.refObjectName ?? 'Unknown';
+		}
+		errorHandler.logDebug(`Extracted author name: ${authorName}`, 'formatDiscussionsAsync');
+
+		formatted.push({
+			objectId: discussion.ObjectID ?? discussion.objectId,
+			text: sanitizeDescription(discussion.Text ?? discussion.text ?? ''),
+			author: authorName,
+			createdDate: discussion.CreationDate ?? discussion.creationDate ?? discussion.CreatedDate ?? discussion.createdDate ?? '',
+			userStoryId: userStoryId
+		});
+
+		// Yield to event loop every CHUNK_SIZE items
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted;
+}
+
+/**
+ * Get discussions for a specific user story
+ * Obtains a user story by ID and extracts its related discussions
+ */
+export async function getUserStoryDiscussions(userStoryId: string) {
+	try {
+		errorHandler.logDebug(`Getting discussions for user story: ${userStoryId}`, 'rallyServices.getUserStoryDiscussions');
+
+		const rallyApi = getRallyApi();
+		const projectId = await getProjectId();
+
+		// Query to get the user story with its discussions expanded
+		const queryOptions: RallyQueryOptions = {
+			type: 'hierarchicalrequirement',
+			fetch: ['ObjectID', 'FormattedID', 'Name', 'Discussion'],
+			query: queryUtils.where('ObjectID', '=', userStoryId)
+		};
+
+		const result = await rallyApi.query(queryOptions);
+		const resultData = result as RallyApiResult;
+
+		const results = resultData.Results || resultData.QueryResult?.Results || [];
+		if (!results.length) {
+			return {
+				discussions: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		const userStory: any = results[0];
+
+		errorHandler.logDebug(`User story Discussion field: ${JSON.stringify(userStory.Discussion)}`, 'rallyServices.getUserStoryDiscussions');
+
+		// Check if Discussion is just a count object or if we need to query separately
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		if (!userStory.Discussion || (userStory.Discussion && typeof userStory.Discussion === 'object' && !Array.isArray(userStory.Discussion) && userStory.Discussion.Count !== undefined && !userStory.Discussion.Results)) {
+			errorHandler.logDebug(`Discussion is a count object or missing, querying ConversationPost directly`, 'rallyServices.getUserStoryDiscussions');
+			// If it's just a count or missing, we need to query conversation posts directly by Artifact
+			const discussionQueryOptions: RallyQueryOptions = {
+				type: 'conversationpost',
+				fetch: ['ObjectID', 'Text', 'Author', 'Author.DisplayName', 'Author.Name', 'Author.UserName', 'CreationDate', 'CreatedDate'],
+				query: queryUtils.where('Artifact.ObjectID', '=', userStoryId)
+			};
+
+			const discussionResult = await rallyApi.query(discussionQueryOptions);
+			const discussionResultData = discussionResult as RallyApiResult;
+			const discussionResults = discussionResultData.Results || discussionResultData.QueryResult?.Results || [];
+
+			if (!discussionResults.length) {
+				return {
+					discussions: [],
+					source: 'api',
+					count: 0,
+					hasMore: false
+				};
+			}
+
+			const discussions: any[] = await formatDiscussionsAsync(discussionResults, userStoryId);
+			return {
+				discussions: discussions,
+				source: 'api',
+				count: discussions.length,
+				hasMore: false
+			};
+		}
+
+		// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
+		const discussionRefs: any[] = (userStory.Discussion as any)?.Results || userStory.Discussion || [];
+
+		if (!Array.isArray(discussionRefs) || discussionRefs.length === 0) {
+			return {
+				discussions: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Extract discussion IDs from the discussion references
+		const discussionIds = discussionRefs
+			.map((discussionRef: any) => {
+				// Handle both full objects and references
+				if (typeof discussionRef === 'string') {
+					return discussionRef;
+				}
+				if (discussionRef.ObjectID) {
+					return discussionRef.ObjectID;
+				}
+				if (discussionRef._ref) {
+					// Extract ID from reference like "/conversationpost/12345"
+					const match = discussionRef._ref.match(/\/(conversationpost|discussion)\/(.+)/);
+					return match ? match[2] : discussionRef._ref;
+				}
+				return null;
+			})
+			.filter(Boolean);
+
+		if (discussionIds.length === 0) {
+			return {
+				discussions: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Build a query to get all the discussion details
+		// Query each discussion by ID
+		const discussionQueries = discussionIds.map((discussionId: string) => queryUtils.where('ObjectID', '=', discussionId));
+
+		const discussionQueryOptions: RallyQueryOptions = {
+			type: 'conversationpost',
+			fetch: ['ObjectID', 'Text', 'Author', 'Author.DisplayName', 'Author.Name', 'Author.UserName', 'CreationDate', 'CreatedDate']
+		};
+
+		if (discussionQueries.length === 1) {
+			discussionQueryOptions.query = discussionQueries[0];
+		} else if (discussionQueries.length > 1) {
+			// @ts-expect-error - Rally query builder has or method
+			discussionQueryOptions.query = discussionQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
+		}
+
+		const discussionResult = await rallyApi.query(discussionQueryOptions);
+		const discussionResultData = discussionResult as RallyApiResult;
+
+		const discussionResults = discussionResultData.Results || discussionResultData.QueryResult?.Results || [];
+		if (!discussionResults.length) {
+			return {
+				discussions: [],
+				source: 'api',
+				count: 0,
+				hasMore: false
+			};
+		}
+
+		// Formatem la resposta per ser més llegible
+		const discussions: any[] = await formatDiscussionsAsync(discussionResults, userStoryId);
+
+		return {
+			discussions: discussions,
+			source: 'api',
+			count: discussions.length,
+			hasMore: false
+		};
+	} catch (error) {
+		errorHandler.logDebug(`Error getting discussions for user story: ${error instanceof Error ? error.message : String(error)}`, 'rallyServices.getUserStoryDiscussions');
+		throw error;
+	}
+}
+
+/**
+ * Get unique team members from the last N iterations
+ * Returns a list of unique assignees from user stories in recent sprints
+ */
+export async function getRecentTeamMembers(numberOfIterations: number = 6) {
+	try {
+		errorHandler.logDebug(`Getting team members from last ${numberOfIterations} iterations`, 'rallyServices.getRecentTeamMembers');
+
+		// Get all iterations for the project
+		const iterationsResult = await getIterations();
+		const iterations = iterationsResult.iterations;
+
+		if (!iterations || iterations.length === 0) {
+			errorHandler.logDebug('No iterations found', 'rallyServices.getRecentTeamMembers');
+			return {
+				teamMembers: [],
+				source: 'api',
+				count: 0
+			};
+		}
+
+		// Sort iterations by end date (most recent first) and take the last N
+		const sortedIterations = [...iterations].sort((a, b) => {
+			const dateA = new Date(a.endDate).getTime();
+			const dateB = new Date(b.endDate).getTime();
+			return dateB - dateA; // Descending order (most recent first)
+		});
+
+		const recentIterations = sortedIterations.slice(0, numberOfIterations);
+		errorHandler.logDebug(`Found ${recentIterations.length} recent iterations`, 'rallyServices.getRecentTeamMembers');
+
+		// Collect unique assignees from user stories in these iterations
+		const assigneeSet = new Set<string>();
+
+		for (const iteration of recentIterations) {
+			errorHandler.logDebug(`Processing iteration: ${iteration.name}`, 'rallyServices.getRecentTeamMembers');
+
+			// Get user stories for this iteration using the iteration reference
+			const iterationRef = `/iteration/${iteration.objectId}`;
+			const userStoriesResult = await getUserStories({ Iteration: iterationRef });
+			const userStories = userStoriesResult.userStories;
+
+			if (userStories && userStories.length > 0) {
+				for (const userStory of userStories) {
+					// Add assignee if it exists and is not "Sense assignat"
+					if (userStory.assignee && userStory.assignee !== 'Sense assignat') {
+						assigneeSet.add(userStory.assignee);
+					}
+				}
+			}
+		}
+
+		// Convert Set to Array
+		const teamMembers = Array.from(assigneeSet).sort();
+
+		errorHandler.logDebug(`Found ${teamMembers.length} unique team members`, 'rallyServices.getRecentTeamMembers');
+
+		return {
+			teamMembers: teamMembers,
+			source: 'api',
+			count: teamMembers.length
+		};
+	} catch (error) {
+		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.getRecentTeamMembers');
+		return {
+			teamMembers: [],
+			source: 'api',
+			count: 0
+		};
+	}
+}
+
+/**
+ * Clear all Rally service caches
+ * Called when extension needs to reload/reset all data
+ */
+export function clearAllRallyCaches(): void {
+	try {
+		getUserStoriesCacheManager().clear();
+		getProjectsCacheManager().clear();
+		getIterationsCacheManager().clear();
+		errorHandler.logInfo('All Rally caches cleared', 'rallyServices.clearAllRallyCaches');
+	} catch (error) {
+		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.clearAllRallyCaches');
+	}
 }

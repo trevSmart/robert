@@ -1879,7 +1879,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 																				left: '-6px'
 																			}}
 																		>
-																			<circle cx="24" cy="24" r="21" stroke="#2a2a2a" strokeWidth="3" fill="none" />
+																			<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
 																		</svg>
 																		<div
 																			style={{

@@ -756,7 +756,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoryDiscussionsError, setUserStoryDiscussionsError] = useState<string | null>(null);
 
 	// Team members state
-	const [teamMembers, setTeamMembers] = useState<string[]>([]);
+	// Team members state
+	const [teamMembers, setTeamMembers] = useState<
+		Array<{
+			name: string;
+			progress: {
+				completedHours: number;
+				totalHours: number;
+				percentage: number;
+				source: string;
+			};
+		}>
+	>([]);
 	const [teamMembersLoading, setTeamMembersLoading] = useState(false);
 	const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
 
@@ -1617,17 +1628,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 											gap: '12px'
 										}}
 									>
-										{teamMembers.map(memberName => {
+										{teamMembers.map(member => {
 											// Generate initials from name
-											const initials = memberName
+											const initials = member.name
 												.split(' ')
 												.map(part => part.charAt(0).toUpperCase())
 												.join('')
 												.slice(0, 2);
 
+											const percentage = member.progress.percentage;
+											const progressColor = percentage >= 75 ? '#4caf50' : percentage >= 50 ? '#ff9800' : percentage >= 25 ? '#ffc107' : '#f44336';
+
 											return (
 												<div
-													key={memberName}
+													key={member.name}
 													style={{
 														backgroundColor: '#1e1e1e',
 														border: '1px solid var(--vscode-panel-border)',
@@ -1649,29 +1663,48 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 														e.currentTarget.style.boxShadow = 'none';
 													}}
 												>
-													{/* Avatar */}
-													<div
-														style={{
-															width: '36px',
-															height: '36px',
-															borderRadius: '50%',
-															background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-															display: 'flex',
-															alignItems: 'center',
-															justifyContent: 'center',
-															color: 'white',
-															fontWeight: 'bold',
-															fontSize: '12px',
-															marginBottom: '6px'
-														}}
-													>
-														{initials}
+													{/* Avatar with Progress Ring */}
+													<div style={{ position: 'relative' }} title={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`}>
+														<svg
+															width="48"
+															height="48"
+															style={{
+																position: 'absolute',
+																top: '-6px',
+																left: '-6px',
+																transform: 'rotate(-90deg)'
+															}}
+														>
+															<circle cx="24" cy="24" r="21" stroke="#2a2a2a" strokeWidth="3" fill="none" />
+															<circle cx="24" cy="24" r="21" stroke={progressColor} strokeWidth="3" fill="none" strokeDasharray={2 * Math.PI * 21} strokeDashoffset={2 * Math.PI * 21 * (1 - percentage / 100)} strokeLinecap="round" />
+														</svg>
+														<div
+															style={{
+																width: '36px',
+																height: '36px',
+																borderRadius: '50%',
+																background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																display: 'flex',
+																alignItems: 'center',
+																justifyContent: 'center',
+																color: 'white',
+																fontWeight: 'bold',
+																fontSize: '12px',
+																marginBottom: '6px'
+															}}
+														>
+															{initials}
+														</div>
 													</div>
 
 													{/* Member Info */}
 													<div style={{ width: '100%' }}>
 														<div style={{ marginBottom: '6px' }}>
-															<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{memberName}</h4>
+															<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
+															<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
+															<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
+																{member.progress.completedHours}h / {member.progress.totalHours}h
+															</div>
 														</div>
 													</div>
 												</div>

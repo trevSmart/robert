@@ -1755,6 +1755,122 @@ export async function getRecentTeamMembers(numberOfIterations: number = 6) {
 }
 
 /**
+ * Get progress information for a specific user in the current sprint
+ * @param userName - The name of the user (assignee)
+ * @returns Object with completedHours, totalHours, and percentage
+ */
+export async function getUserSprintProgress(userName: string) {
+	try {
+		errorHandler.logInfo(`Getting sprint progress for user: ${userName}`, 'rallyServices.getUserSprintProgress');
+
+		// Get all iterations
+		const iterationsResult = await getIterations();
+		const iterations = iterationsResult.iterations;
+
+		if (!iterations || iterations.length === 0) {
+			errorHandler.logInfo('No iterations found', 'rallyServices.getUserSprintProgress');
+			return {
+				completedHours: 0,
+				totalHours: 0,
+				percentage: 0,
+				source: 'api'
+			};
+		}
+
+		// Find current iteration (today is between startDate and endDate)
+		const today = new Date();
+		const currentIteration = iterations.find(iteration => {
+			const startDate = new Date(iteration.startDate);
+			const endDate = new Date(iteration.endDate);
+			return today >= startDate && today <= endDate;
+		});
+
+		if (!currentIteration) {
+			errorHandler.logInfo('No current iteration found', 'rallyServices.getUserSprintProgress');
+			return {
+				completedHours: 0,
+				totalHours: 0,
+				percentage: 0,
+				source: 'api'
+			};
+		}
+
+		errorHandler.logInfo(`Current iteration: ${currentIteration.name} (${currentIteration.objectId})`, 'rallyServices.getUserSprintProgress');
+
+		// Get user stories for current iteration assigned to this user
+		const iterationRef = `/iteration/${currentIteration.objectId}`;
+		const userStoriesResult = await getUserStories({ Iteration: iterationRef });
+		const allUserStories = userStoriesResult.userStories;
+
+		// Filter by assignee
+		const userStories = allUserStories.filter(story => story.assignee === userName);
+
+		errorHandler.logInfo(`Found ${userStories.length} user stories assigned to ${userName} in current iteration`, 'rallyServices.getUserSprintProgress');
+
+		if (userStories.length === 0) {
+			return {
+				completedHours: 0,
+				totalHours: 0,
+				percentage: 0,
+				source: 'api'
+			};
+		}
+
+		let completedHours = 0;
+		let totalHours = 0;
+
+		// Process each user story
+		for (const story of userStories) {
+			const storyHours = story.taskEstimateTotal || 0;
+			totalHours += storyHours;
+
+			// Check if story is completed
+			const isCompleted = story.scheduleState === 'Completed' || story.scheduleState === 'Accepted';
+
+			if (isCompleted) {
+				// All hours count as completed
+				completedHours += storyHours;
+				errorHandler.logDebug(`Story ${story.formattedId} is completed, adding ${storyHours} hours`, 'rallyServices.getUserSprintProgress');
+			} else {
+				// Check tasks to see which hours are completed
+				const tasksResult = await getTasks(story.objectId);
+				const tasks = tasksResult.tasks;
+
+				if (tasks && tasks.length > 0) {
+					for (const task of tasks) {
+						// Task is completed if state is 'Completed'
+						if (task.state === 'Completed') {
+							const taskHours = task.estimate || 0;
+							completedHours += taskHours;
+							errorHandler.logDebug(`Task ${task.formattedId} is completed, adding ${taskHours} hours`, 'rallyServices.getUserSprintProgress');
+						}
+					}
+				}
+			}
+		}
+
+		const percentage = totalHours > 0 ? Math.round((completedHours / totalHours) * 100) : 0;
+
+		errorHandler.logInfo(`User ${userName} progress: ${completedHours}/${totalHours} hours (${percentage}%)`, 'rallyServices.getUserSprintProgress');
+
+		return {
+			completedHours,
+			totalHours,
+			percentage,
+			source: 'api'
+		};
+	} catch (error) {
+		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.getUserSprintProgress');
+		return {
+			completedHours: 0,
+			totalHours: 0,
+			percentage: 0,
+			source: 'error'
+		};
+	}
+}
+
+/**
  * Clear all Rally service caches
  * Called when extension needs to reload/reset all data
  */

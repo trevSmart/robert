@@ -54,7 +54,7 @@ async function getUserStoriesWithScheduleState() {
 
 		console.log('🚀 Inicialitzant client Rally...');
 		console.log(`   Server: ${server}`);
-		console.log(`   API Key: ***${apiKey.slice(-4)}\n`);
+		console.log('   API Key: [HIDDEN]\n');
 
 		// Inicialitzar client de Rally
 		const rallyApi = rally({

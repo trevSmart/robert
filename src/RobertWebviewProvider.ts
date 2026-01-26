@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getUserSprintProgress, getAllTeamMembersProgress } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 
@@ -762,11 +762,28 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								const teamMembersResult = await getRecentTeamMembers(6);
 
 								if (teamMembersResult?.teamMembers) {
+									// Get the selected iteration from message (if provided)
+									const selectedIterationId = message.iterationId as string | undefined;
+
+									// Use optimized batch progress fetching
+									const progressMap = await getAllTeamMembersProgress(teamMembersResult.teamMembers, selectedIterationId);
+
+									// Transform map to array format for webview
+									const teamMembersWithProgress = teamMembersResult.teamMembers.map(memberName => ({
+										name: memberName,
+										progress: progressMap.get(memberName) || {
+											completedHours: 0,
+											totalHours: 0,
+											percentage: 0,
+											source: 'not-found'
+										}
+									}));
+
 									webview.postMessage({
 										command: 'teamMembersLoaded',
-										teamMembers: teamMembersResult.teamMembers
+										teamMembers: teamMembersWithProgress
 									});
-									this._errorHandler.logInfo(`Team members loaded successfully: ${teamMembersResult.count} members`, 'WebviewMessageListener');
+									this._errorHandler.logInfo(`Team members loaded successfully: ${teamMembersWithProgress.length} members with progress`, 'WebviewMessageListener');
 								} else {
 									webview.postMessage({
 										command: 'teamMembersLoaded',

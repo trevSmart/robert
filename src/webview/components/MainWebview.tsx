@@ -1671,7 +1671,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 											fontSize: '12px'
 										}}
 									>
-										<option value="current">Current Sprint</option>
+										<option value="current">{findCurrentIteration(iterations)?.name || 'Current Sprint'} (current)</option>
 										{iterations
 											.filter(it => {
 												const endDate = new Date(it.endDate);
@@ -1693,111 +1693,228 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 								{!teamMembersLoading && !teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
 
-								{!teamMembersLoading && !teamMembersError && teamMembers.length > 0 && (
-									<div
-										style={{
-											display: 'grid',
-											gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-											gap: '12px'
-										}}
-									>
-										{teamMembers.map(member => {
-											// Generate initials from name
-											const initials = member.name
-												.split(' ')
-												.map(part => part.charAt(0).toUpperCase())
-												.join('')
-												.slice(0, 2);
+								{!teamMembersLoading && !teamMembersError && teamMembers.length > 0 && (() => {
+									const activeMembers = teamMembers.filter(m => m.progress.totalHours > 0);
+									const inactiveMembers = teamMembers.filter(m => m.progress.totalHours === 0);
 
-											const percentage = member.progress.percentage;
-											const progressColor = percentage >= 75 ? '#4caf50' : percentage >= 50 ? '#ff9800' : percentage >= 25 ? '#ffc107' : '#f44336';
+									return (
+										<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+											{/* Active Members Section */}
+											{activeMembers.length > 0 && (
+												<div>
+													<h4 style={{ 
+														margin: '0 0 12px 0', 
+														color: 'var(--vscode-foreground)', 
+														fontSize: '13px', 
+														fontWeight: '600',
+														textTransform: 'uppercase',
+														letterSpacing: '0.5px',
+														opacity: 0.7
+													}}>Active in Sprint</h4>
+													<div
+														style={{
+															display: 'grid',
+															gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+															gap: '12px'
+														}}
+													>
+														{activeMembers.map(member => {
+															// Generate initials from name
+															const initials = member.name
+																.split(' ')
+																.map(part => part.charAt(0).toUpperCase())
+																.join('')
+																.slice(0, 2);
 
-											return (
-												<div
-													key={member.name}
-													style={{
-														backgroundColor: '#1e1e1e',
-														border: '1px solid var(--vscode-panel-border)',
-														borderRadius: '8px',
-														padding: '12px',
-														display: 'flex',
-														flexDirection: 'column',
-														alignItems: 'center',
-														textAlign: 'center',
-														cursor: 'pointer',
-														transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-													}}
-													onMouseEnter={e => {
-														e.currentTarget.style.transform = 'translateY(-2px)';
-														e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-													}}
-													onMouseLeave={e => {
-														e.currentTarget.style.transform = 'translateY(0)';
-														e.currentTarget.style.boxShadow = 'none';
-													}}
-												>
-													{/* Avatar with Progress Ring */}
-													<div style={{ position: 'relative' }} title={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`}>
-														<svg
-															width="48"
-															height="48"
-															style={{
-																position: 'absolute',
-																top: '-6px',
-																left: '-6px',
-																transform: 'rotate(-90deg)'
-															}}
-														>
-															<circle cx="24" cy="24" r="21" stroke="#2a2a2a" strokeWidth="3" fill="none" />
-															<circle
-																cx="24"
-																cy="24"
-																r="21"
-																stroke={progressColor}
-																strokeWidth="3"
-																fill="none"
-																strokeDasharray={2 * Math.PI * 21}
-																strokeDashoffset={2 * Math.PI * 21 * (1 - percentage / 100)}
-																strokeLinecap="round"
-																style={{
-																	transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
-																}}
-															/>
-														</svg>
-														<div
-															style={{
-																width: '36px',
-																height: '36px',
-																borderRadius: '50%',
-																background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-																display: 'flex',
-																alignItems: 'center',
-																justifyContent: 'center',
-																color: 'white',
-																fontWeight: 'bold',
-																fontSize: '12px',
-																marginBottom: '6px'
-															}}
-														>
-															{initials}
-														</div>
-													</div>
+															const percentage = member.progress.percentage;
+															const progressColor = percentage >= 75 ? '#4caf50' : percentage >= 50 ? '#ff9800' : percentage >= 25 ? '#ffc107' : '#f44336';
 
-													{/* Member Info */}
-													<div style={{ width: '100%' }}>
-														<div style={{ marginBottom: '6px' }}>
-															<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
-															<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
-															<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
-																{member.progress.completedHours}h / {member.progress.totalHours}h
-															</div>
-														</div>
+															return (
+																<div
+																	key={member.name}
+																	style={{
+																		backgroundColor: '#1e1e1e',
+																		border: '1px solid var(--vscode-panel-border)',
+																		borderRadius: '8px',
+																		padding: '12px',
+																		display: 'flex',
+																		flexDirection: 'column',
+																		alignItems: 'center',
+																		textAlign: 'center',
+																		cursor: 'pointer',
+																		transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																	}}
+																	onMouseEnter={e => {
+																		e.currentTarget.style.transform = 'translateY(-2px)';
+																		e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																	}}
+																	onMouseLeave={e => {
+																		e.currentTarget.style.transform = 'translateY(0)';
+																		e.currentTarget.style.boxShadow = 'none';
+																	}}
+																>
+																	{/* Avatar with Progress Ring */}
+																	<div style={{ position: 'relative' }} title={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`}>
+																		<svg
+																			width="64"
+																			height="64"
+																			style={{
+																				position: 'absolute',
+																				top: '-8px',
+																				left: '-8px',
+																				transform: 'rotate(-90deg)'
+																			}}
+																		>
+																			<circle cx="32" cy="32" r="28" stroke="#2a2a2a" strokeWidth="3" fill="none" />
+																			<circle
+																				cx="32"
+																				cy="32"
+																				r="28"
+																				stroke={progressColor}
+																				strokeWidth="3"
+																				fill="none"
+																				strokeDasharray={2 * Math.PI * 28}
+																				strokeDashoffset={2 * Math.PI * 28 * (1 - percentage / 100)}
+																				strokeLinecap="round"
+																				style={{
+																					transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
+																				}}
+																			/>
+																		</svg>
+																		<div
+																			style={{
+																				width: '48px',
+																				height: '48px',
+																				borderRadius: '50%',
+																				background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																				display: 'flex',
+																				alignItems: 'center',
+																				justifyContent: 'center',
+																				color: 'white',
+																				fontWeight: 'bold',
+																				fontSize: '16px',
+																				marginBottom: '6px'
+																			}}
+																		>
+																			{initials}
+																		</div>
+																	</div>
+
+																	{/* Member Info */}
+																	<div style={{ width: '100%' }}>
+																		<div style={{ marginBottom: '6px' }}>
+																			<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
+																			<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
+																			<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
+																				{member.progress.completedHours}h / {member.progress.totalHours}h
+																			</div>
+																		</div>
+																	</div>
+																</div>
+															);
+														})}
 													</div>
 												</div>
-											);
-										})}
-									</div>
-								)}
+											)}
+
+											{/* Inactive Members Section */}
+											{inactiveMembers.length > 0 && (
+												<div>
+													<h4 style={{ 
+														margin: '0 0 12px 0', 
+														color: 'var(--vscode-foreground)', 
+														fontSize: '13px', 
+														fontWeight: '600',
+														textTransform: 'uppercase',
+														letterSpacing: '0.5px',
+														opacity: 0.7
+													}}>Other Team Members</h4>
+													<div
+														style={{
+															display: 'grid',
+															gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+															gap: '12px'
+														}}
+													>
+														{inactiveMembers.map(member => {
+															// Generate initials from name
+															const initials = member.name
+																.split(' ')
+																.map(part => part.charAt(0).toUpperCase())
+																.join('')
+																.slice(0, 2);
+
+															return (
+																<div
+																	key={member.name}
+																	style={{
+																		backgroundColor: '#1e1e1e',
+																		border: '1px solid var(--vscode-panel-border)',
+																		borderRadius: '8px',
+																		padding: '12px',
+																		display: 'flex',
+																		flexDirection: 'column',
+																		alignItems: 'center',
+																		textAlign: 'center',
+																		cursor: 'pointer',
+																		transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																	}}
+																	onMouseEnter={e => {
+																		e.currentTarget.style.transform = 'translateY(-2px)';
+																		e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																	}}
+																	onMouseLeave={e => {
+																		e.currentTarget.style.transform = 'translateY(0)';
+																		e.currentTarget.style.boxShadow = 'none';
+																	}}
+																>
+																	{/* Avatar without Progress Ring */}
+																	<div style={{ position: 'relative' }}>
+																		<svg
+																			width="48"
+																			height="48"
+																			style={{
+																				position: 'absolute',
+																				top: '-6px',
+																				left: '-6px'
+																			}}
+																		>
+																			<circle cx="24" cy="24" r="21" stroke="#2a2a2a" strokeWidth="3" fill="none" />
+																		</svg>
+																		<div
+																			style={{
+																				width: '36px',
+																				height: '36px',
+																				borderRadius: '50%',
+																				background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																				display: 'flex',
+																				alignItems: 'center',
+																				justifyContent: 'center',
+																				color: 'white',
+																				fontWeight: 'bold',
+																				fontSize: '12px',
+																				marginBottom: '6px'
+																			}}
+																		>
+																			{initials}
+																		</div>
+																	</div>
+
+																	{/* Member Info */}
+																	<div style={{ width: '100%' }}>
+																		<div style={{ marginBottom: '6px' }}>
+																			<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
+																		</div>
+																	</div>
+																</div>
+															);
+														})}
+													</div>
+												</div>
+											)}
+										</div>
+									);
+								})()}
 							</div>
 						</div>
 					)}

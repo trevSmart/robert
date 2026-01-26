@@ -543,7 +543,7 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 			state: userStory.State ?? userStory.state,
 			planEstimate: userStory.PlanEstimate ?? userStory.planEstimate,
 			toDo: userStory.ToDo ?? userStory.toDo,
-			assignee: userStory.Owner ? (userStory.Owner._refObjectName ?? userStory.Owner.refObjectName) : userStory.owner ? (userStory.owner._refObjectName ?? userStory.owner.refObjectName) : 'Unassigned',
+			assignee: userStory.c_Assignee ? (userStory.c_Assignee._refObjectName ?? userStory.c_Assignee.refObjectName) : userStory.c_assignee ? (userStory.c_assignee._refObjectName ?? userStory.c_assignee.refObjectName) : 'Unassigned',
 			project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
 			iteration: userStory.Iteration ? (userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName) : userStory.iteration ? (userStory.iteration._refObjectName ?? userStory.iteration.refObjectName) : null,
 			blocked: userStory.Blocked ?? userStory.blocked,
@@ -612,7 +612,7 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 function buildUserStoryQueryOptions(query: RallyQueryParams, offset: number = 0) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],
 		order: 'FormattedID desc' // Order by FormattedID descending to get proper pagination
 	};
 

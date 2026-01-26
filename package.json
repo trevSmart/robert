@@ -190,7 +190,7 @@
 	"devDependencies": {
 		"@types/node": "^25.0.10",
 		"@types/react": "^18.2.75",
-		"@types/react-dom": "^18.2.25",
+		"@types/react-dom": "^19.2.3",
 		"@types/vscode": "^1.108.1",
 		"@typescript-eslint/eslint-plugin": "^8.54.0",
 		"@typescript-eslint/parser": "^8.54.0",
@@ -208,7 +208,7 @@
 	},
 	"dependencies": {
 		"@types/react-dnd": "^3.0.2",
-		"@types/react-dom": "^18.2.25",
+		"@types/react-dom": "^19.2.3",
 		"@vitejs/plugin-react": "^5.1.2",
 		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",
@@ -216,7 +216,7 @@
 		"react": "^18.2.0",
 		"react-dnd": "^16.0.1",
 		"react-dnd-html5-backend": "^16.0.1",
-		"react-dom": "^18.2.0",
+		"react-dom": "^19.2.4",
 		"striptags": "^3.2.0",
 		"styled-components": "^6.3.8",
 		"vite": "^7.3.0",

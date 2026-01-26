@@ -1765,7 +1765,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 																				transform: 'rotate(-90deg)'
 																			}}
 																		>
-																			<circle cx="32" cy="32" r="28" stroke="#2a2a2a" strokeWidth="3" fill="none" />
+																			<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
 																			<circle
 																				cx="32"
 																				cy="32"

@@ -13,9 +13,14 @@ import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
+import SprintKPIs from './metrics/SprintKPIs';
+import VelocityTrendChart from './metrics/VelocityTrendChart';
+import StateDistributionPie from './metrics/StateDistributionPie';
+import DefectSeverityChart from './metrics/DefectSeverityChart';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Task, type Defect, type Discussion } from '../../types/rally';
 import { isLightTheme } from '../utils/themeColors';
+import { calculateVelocity, calculateAverageVelocity, calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, type VelocityData, type StateDistribution, type DefectsBySeverity } from '../utils/metricsUtils';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (
@@ -755,6 +760,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [teamMembersLoading, setTeamMembersLoading] = useState(false);
 	const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
 
+	// Metrics state
+	const [metricsLoading, setMetricsLoading] = useState(false);
+	const [velocityData, setVelocityData] = useState<VelocityData[]>([]);
+	const [stateDistribution, setStateDistribution] = useState<StateDistribution[]>([]);
+	const [defectsBySeverity, setDefectsBySeverity] = useState<DefectsBySeverity[]>([]);
+	const [averageVelocity, setAverageVelocity] = useState<number>(0);
+	const [completedPoints, setCompletedPoints] = useState<number>(0);
+	const [wip, setWip] = useState<number>(0);
+	const [blockedItems, setBlockedItems] = useState<number>(0);
+
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
@@ -1050,6 +1065,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					loadTeamMembers();
 				}
 			}
+			if (section === 'metrics') {
+				// Load iterations for metrics when navigating to metrics section
+				if (!iterations.length && !iterationsLoading && !iterationsError) {
+					loadIterations();
+				}
+			}
 		},
 		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError]
 	);
@@ -1296,6 +1317,49 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
 	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen]); // Only include dependencies needed by handleMessage
+
+	// Calculate metrics when data changes
+	useEffect(() => {
+		if (activeSection !== 'metrics') return;
+		if (!iterations.length || !portfolioUserStories.length) return;
+
+		setMetricsLoading(true);
+
+		try {
+			// Calculate velocity data (last 6 sprints)
+			const velocityResult = calculateVelocity(portfolioUserStories, iterations, 6);
+			setVelocityData(velocityResult);
+
+			// Calculate average velocity
+			const avgVelocity = calculateAverageVelocity(velocityResult);
+			setAverageVelocity(avgVelocity);
+
+			// Calculate completed points (current sprint or all)
+			const points = calculateCompletedPoints(portfolioUserStories);
+			setCompletedPoints(points);
+
+			// Calculate WIP
+			const wipCount = calculateWIP(portfolioUserStories);
+			setWip(wipCount);
+
+			// Calculate blocked items
+			const blocked = calculateBlockedItems(portfolioUserStories, defects);
+			setBlockedItems(blocked);
+
+			// Calculate state distribution
+			const stateDistrib = groupByState(portfolioUserStories);
+			setStateDistribution(stateDistrib);
+
+			// Calculate defects by severity
+			const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 6);
+			setDefectsBySeverity(defectsBySev);
+
+			setMetricsLoading(false);
+		} catch (error) {
+			console.error('Error calculating metrics:', error);
+			setMetricsLoading(false);
+		}
+	}, [activeSection, iterations, portfolioUserStories, defects]);
 
 	// Load iterations when navigating to calendar section
 	useEffect(() => {
@@ -1601,7 +1665,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 													{/* Member Info */}
 													<div style={{ width: '100%' }}>
 														<div style={{ marginBottom: '6px' }}>
-															<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '600' }}>{memberName}</h4>
+															<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{memberName}</h4>
 														</div>
 													</div>
 												</div>
@@ -1609,71 +1673,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 										})}
 									</div>
 								)}
-							</div>
-
-							{/* Recent Activity */}
-							<div>
-								<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Recent Activity</h3>
-								<div
-									style={{
-										backgroundColor: 'var(--vscode-editor-background)',
-										border: '1px solid var(--vscode-panel-border)',
-										borderRadius: '12px',
-										padding: '20px'
-									}}
-								>
-									{[
-										{ user: 'Sarah Johnson', action: 'completed task', target: '"User authentication flow"', time: '5 min ago', type: 'task' },
-										{ user: 'Mike Chen', action: 'commented on', target: '"Sprint Review Meeting"', time: '12 min ago', type: 'comment' },
-										{ user: 'Emily Davis', action: 'pushed code to', target: 'feature/user-profile', time: '18 min ago', type: 'code' },
-										{ user: 'Lisa Wang', action: 'reported bug in', target: 'QA-247', time: '25 min ago', type: 'bug' },
-										{ user: 'Alex Rodriguez', action: 'shared design for', target: 'New Dashboard Layout', time: '32 min ago', type: 'design' }
-									].map((activity, index) => (
-										<div
-											key={index}
-											style={{
-												display: 'flex',
-												alignItems: 'center',
-												gap: '12px',
-												padding: '12px 0',
-												borderBottom: index < 4 ? '1px solid var(--vscode-panel-border)' : 'none'
-											}}
-										>
-											<div
-												style={{
-													width: '32px',
-													height: '32px',
-													borderRadius: '50%',
-													background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-													display: 'flex',
-													alignItems: 'center',
-													justifyContent: 'center',
-													color: 'white',
-													fontSize: '12px',
-													fontWeight: 'bold'
-												}}
-											>
-												{activity.user
-													.split(' ')
-													.map(n => n[0])
-													.join('')}
-											</div>
-											<div style={{ flex: 1 }}>
-												<span style={{ color: 'var(--vscode-foreground)', fontSize: '13px' }}>
-													<strong>{activity.user}</strong> {activity.action} <em style={{ color: 'var(--vscode-textLink-foreground)' }}>{activity.target}</em>
-												</span>
-												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>{activity.time}</div>
-											</div>
-											<div style={{ fontSize: '14px' }}>
-												{activity.type === 'task' && '✅'}
-												{activity.type === 'comment' && '💬'}
-												{activity.type === 'code' && '💻'}
-												{activity.type === 'bug' && '🐛'}
-												{activity.type === 'design' && '🎨'}
-											</div>
-										</div>
-									))}
-								</div>
 							</div>
 						</div>
 					)}
@@ -1799,179 +1798,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							{/* Metrics Header */}
 							<div style={{ marginBottom: '30px', textAlign: 'center' }}>
 								<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '600' }}>Project Analytics</h2>
-								<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Track performance, identify trends, and make data-driven decisions</p>
+								<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Real-time insights from Rally</p>
 							</div>
 
-							{/* Key Metrics Grid */}
-							<div
-								style={{
-									display: 'grid',
-									gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-									gap: '16px',
-									marginBottom: '30px'
-								}}
-							>
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #3a1c71 0%, #c86dd7 60%, #f0b7ff 100%)',
-										borderRadius: '12px',
-										padding: '20px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>94%</div>
-									<div style={{ fontSize: '12px', opacity: 0.9 }}>Sprint Velocity</div>
-									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>↑ 12% from last sprint</div>
-								</div>
+							{/* Sprint KPIs */}
+							<SprintKPIs averageVelocity={averageVelocity} completedPoints={completedPoints} wip={wip} blockedItems={blockedItems} loading={metricsLoading} />
 
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #1e3c72 0%, #3b6fd6 100%)',
-										borderRadius: '12px',
-										padding: '20px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>23</div>
-									<div style={{ fontSize: '12px', opacity: 0.9 }}>Story Points Delivered</div>
-									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>Target: 25 points</div>
-								</div>
-
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #0f4c75 0%, #3a8bbb 60%, #c3e4ff 100%)',
-										borderRadius: '12px',
-										padding: '20px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '8px' }}>4.2</div>
-									<div style={{ fontSize: '12px', opacity: 0.9 }}>Avg Cycle Time (days)</div>
-									<div style={{ fontSize: '10px', opacity: 0.7, marginTop: '4px' }}>↓ 18% improvement</div>
-								</div>
-							</div>
-
-							{/* Charts Section */}
-							<div style={{ marginBottom: '30px' }}>
-								<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Burndown Chart</h3>
-								<div
-									style={{
-										backgroundColor: 'var(--vscode-editor-background)',
-										border: '1px solid var(--vscode-panel-border)',
-										borderRadius: '12px',
-										padding: '20px',
-										height: '300px',
-										maxWidth: '90%',
-										width: '90%',
-										margin: '0 auto'
-									}}
-								>
-									<svg width="100%" height="100%" viewBox="0 0 600 250" style={{ display: 'block' }}>
-										{/* Grid lines */}
-										<g stroke="var(--vscode-panel-border)" strokeWidth="0.5" opacity="0.3">
-											{/* Horizontal grid lines */}
-											<line x1="60" y1="30" x2="570" y2="30" />
-											<line x1="60" y1="80" x2="570" y2="80" />
-											<line x1="60" y1="130" x2="570" y2="130" />
-											<line x1="60" y1="180" x2="570" y2="180" />
-											<line x1="60" y1="230" x2="570" y2="230" />
-
-											{/* Vertical grid lines */}
-											<line x1="120" y1="20" x2="120" y2="230" />
-											<line x1="210" y1="20" x2="210" y2="230" />
-											<line x1="300" y1="20" x2="300" y2="230" />
-											<line x1="390" y1="20" x2="390" y2="230" />
-											<line x1="480" y1="20" x2="480" y2="230" />
-										</g>
-
-										{/* Ideal burndown line (straight line from 25 to 0) */}
-										<path d="M60,230 L120,184 L180,138 L240,92 L300,46 L360,0 L420,-46 L480,-92 L540,-138" stroke="#4caf50" strokeWidth="3" fill="none" strokeDasharray="5,5" opacity="0.7" />
-
-										{/* Actual burndown line (more realistic progress) */}
-										<path d="M60,230 L120,200 L180,160 L240,140 L300,100 L360,60 L420,40 L480,20 L540,10" stroke="#2196f3" strokeWidth="3" fill="none" />
-
-										{/* Data points for actual line */}
-										<circle cx="60" cy="230" r="4" fill="#2196f3" />
-										<circle cx="120" cy="200" r="4" fill="#2196f3" />
-										<circle cx="180" cy="160" r="4" fill="#2196f3" />
-										<circle cx="240" cy="140" r="4" fill="#2196f3" />
-										<circle cx="300" cy="100" r="4" fill="#2196f3" />
-										<circle cx="360" cy="60" r="4" fill="#2196f3" />
-										<circle cx="420" cy="40" r="4" fill="#2196f3" />
-										<circle cx="480" cy="20" r="4" fill="#2196f3" />
-										<circle cx="540" cy="10" r="4" fill="#2196f3" />
-
-										{/* Labels */}
-										<text x="20" y="235" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											25
-										</text>
-										<text x="20" y="185" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											20
-										</text>
-										<text x="20" y="135" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											15
-										</text>
-										<text x="20" y="85" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											10
-										</text>
-										<text x="20" y="35" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											5
-										</text>
-										<text x="20" y="10" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											0
-										</text>
-
-										{/* Day labels */}
-										<text x="60" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 1
-										</text>
-										<text x="120" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 2
-										</text>
-										<text x="180" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 3
-										</text>
-										<text x="240" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 4
-										</text>
-										<text x="300" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 5
-										</text>
-										<text x="360" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 6
-										</text>
-										<text x="420" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 7
-										</text>
-										<text x="480" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 8
-										</text>
-										<text x="540" y="250" fontSize="10" fill="var(--vscode-descriptionForeground)" textAnchor="middle">
-											Day 9
-										</text>
-
-										{/* Legend */}
-										<g transform="translate(60, 15)">
-											<line x1="0" y1="0" x2="20" y2="0" stroke="#2196f3" strokeWidth="3" />
-											<text x="25" y="4" fontSize="11" fill="var(--vscode-foreground)">
-												Actual
-											</text>
-
-											<line x1="80" y1="0" x2="100" y2="0" stroke="#4caf50" strokeWidth="3" strokeDasharray="5,5" />
-											<text x="105" y="4" fontSize="11" fill="var(--vscode-foreground)">
-												Ideal
-											</text>
-										</g>
-
-										{/* Title */}
-										<text x="300" y="15" fontSize="14" fontWeight="bold" fill="var(--vscode-foreground)" textAnchor="middle">
-											Sprint Burndown
-										</text>
-									</svg>
-								</div>
+							{/* Velocity Trend Chart */}
+							<div style={{ marginBottom: '20px' }}>
+								<VelocityTrendChart data={velocityData} loading={metricsLoading} />
 							</div>
 
 							{/* Additional Metrics */}

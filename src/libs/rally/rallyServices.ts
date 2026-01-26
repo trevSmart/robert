@@ -1664,14 +1664,14 @@ export async function getUserStoryDiscussions(userStoryId: string) {
  */
 export async function getRecentTeamMembers(numberOfIterations: number = 6) {
 	try {
-		errorHandler.logDebug(`Getting team members from last ${numberOfIterations} iterations`, 'rallyServices.getRecentTeamMembers');
+		errorHandler.logInfo(`Getting team members from last ${numberOfIterations} iterations`, 'rallyServices.getRecentTeamMembers');
 
 		// Get all iterations for the project
 		const iterationsResult = await getIterations();
 		const iterations = iterationsResult.iterations;
 
 		if (!iterations || iterations.length === 0) {
-			errorHandler.logDebug('No iterations found', 'rallyServices.getRecentTeamMembers');
+			errorHandler.logInfo('No iterations found', 'rallyServices.getRecentTeamMembers');
 			return {
 				teamMembers: [],
 				source: 'api',
@@ -1679,32 +1679,56 @@ export async function getRecentTeamMembers(numberOfIterations: number = 6) {
 			};
 		}
 
+		errorHandler.logInfo(`Total iterations available: ${iterations.length}`, 'rallyServices.getRecentTeamMembers');
+
+		// Filter only past or current iterations (endDate <= today)
+		const today = new Date();
+		today.setHours(23, 59, 59, 999); // End of today
+
+		const pastIterations = iterations.filter(iteration => {
+			const endDate = new Date(iteration.endDate);
+			return endDate <= today;
+		});
+
+		errorHandler.logInfo(`Past/current iterations: ${pastIterations.length}`, 'rallyServices.getRecentTeamMembers');
+
 		// Sort iterations by end date (most recent first) and take the last N
-		const sortedIterations = [...iterations].sort((a, b) => {
+		const sortedIterations = [...pastIterations].sort((a, b) => {
 			const dateA = new Date(a.endDate).getTime();
 			const dateB = new Date(b.endDate).getTime();
 			return dateB - dateA; // Descending order (most recent first)
 		});
 
 		const recentIterations = sortedIterations.slice(0, numberOfIterations);
-		errorHandler.logDebug(`Found ${recentIterations.length} recent iterations`, 'rallyServices.getRecentTeamMembers');
+		errorHandler.logInfo(`Found ${recentIterations.length} recent iterations: ${recentIterations.map(i => i.name).join(', ')}`, 'rallyServices.getRecentTeamMembers');
 
 		// Collect unique assignees from user stories in these iterations
 		const assigneeSet = new Set<string>();
 
 		for (const iteration of recentIterations) {
-			errorHandler.logDebug(`Processing iteration: ${iteration.name}`, 'rallyServices.getRecentTeamMembers');
+			errorHandler.logInfo(`Processing iteration: ${iteration.name} (${iteration.objectId})`, 'rallyServices.getRecentTeamMembers');
 
 			// Get user stories for this iteration using the iteration reference
 			const iterationRef = `/iteration/${iteration.objectId}`;
+			errorHandler.logInfo(`Querying user stories with iteration ref: ${iterationRef}`, 'rallyServices.getRecentTeamMembers');
+
 			const userStoriesResult = await getUserStories({ Iteration: iterationRef });
 			const userStories = userStoriesResult.userStories;
 
+			errorHandler.logInfo(`Found ${userStories?.length || 0} user stories in iteration ${iteration.name}`, 'rallyServices.getRecentTeamMembers');
+
 			if (userStories && userStories.length > 0) {
+				// Log first user story as sample
+				if (userStories.length > 0) {
+					const sample = userStories[0];
+					errorHandler.logInfo(`Sample user story: ${sample.formattedId}, assignee="${sample.assignee}"`, 'rallyServices.getRecentTeamMembers');
+				}
+
 				for (const userStory of userStories) {
 					// Add assignee if it exists and is not "Sense assignat"
 					if (userStory.assignee && userStory.assignee !== 'Sense assignat') {
 						assigneeSet.add(userStory.assignee);
+						errorHandler.logInfo(`Added assignee: ${userStory.assignee} (from ${userStory.formattedId})`, 'rallyServices.getRecentTeamMembers');
 					}
 				}
 			}
@@ -1713,7 +1737,7 @@ export async function getRecentTeamMembers(numberOfIterations: number = 6) {
 		// Convert Set to Array
 		const teamMembers = Array.from(assigneeSet).sort();
 
-		errorHandler.logDebug(`Found ${teamMembers.length} unique team members`, 'rallyServices.getRecentTeamMembers');
+		errorHandler.logInfo(`Found ${teamMembers.length} unique team members: ${teamMembers.join(', ') || 'none'}`, 'rallyServices.getRecentTeamMembers');
 
 		return {
 			teamMembers: teamMembers,

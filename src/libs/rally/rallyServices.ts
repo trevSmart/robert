@@ -1757,11 +1757,12 @@ export async function getRecentTeamMembers(numberOfIterations: number = 6) {
 /**
  * Get progress information for a specific user in the current sprint
  * @param userName - The name of the user (assignee)
+ * @param iterationId - Optional iteration objectId. If not provided, uses current iteration
  * @returns Object with completedHours, totalHours, and percentage
  */
-export async function getUserSprintProgress(userName: string) {
+export async function getUserSprintProgress(userName: string, iterationId?: string) {
 	try {
-		errorHandler.logInfo(`Getting sprint progress for user: ${userName}`, 'rallyServices.getUserSprintProgress');
+		errorHandler.logInfo(`Getting sprint progress for user: ${userName}${iterationId ? ` in iteration ${iterationId}` : ' in current iteration'}`, 'rallyServices.getUserSprintProgress');
 
 		// Get all iterations
 		const iterationsResult = await getIterations();
@@ -1777,16 +1778,23 @@ export async function getUserSprintProgress(userName: string) {
 			};
 		}
 
-		// Find current iteration (today is between startDate and endDate)
-		const today = new Date();
-		const currentIteration = iterations.find(iteration => {
-			const startDate = new Date(iteration.startDate);
-			const endDate = new Date(iteration.endDate);
-			return today >= startDate && today <= endDate;
-		});
+		let targetIteration;
 
-		if (!currentIteration) {
-			errorHandler.logInfo('No current iteration found', 'rallyServices.getUserSprintProgress');
+		if (iterationId && iterationId !== 'current') {
+			// Find specific iteration by objectId
+			targetIteration = iterations.find(iteration => iteration.objectId === iterationId);
+		} else {
+			// Find current iteration (today is between startDate and endDate)
+			const today = new Date();
+			targetIteration = iterations.find(iteration => {
+				const startDate = new Date(iteration.startDate);
+				const endDate = new Date(iteration.endDate);
+				return today >= startDate && today <= endDate;
+			});
+		}
+
+		if (!targetIteration) {
+			errorHandler.logInfo('No target iteration found', 'rallyServices.getUserSprintProgress');
 			return {
 				completedHours: 0,
 				totalHours: 0,
@@ -1795,10 +1803,10 @@ export async function getUserSprintProgress(userName: string) {
 			};
 		}
 
-		errorHandler.logInfo(`Current iteration: ${currentIteration.name} (${currentIteration.objectId})`, 'rallyServices.getUserSprintProgress');
+		errorHandler.logInfo(`Target iteration: ${targetIteration.name} (${targetIteration.objectId})`, 'rallyServices.getUserSprintProgress');
 
-		// Get user stories for current iteration assigned to this user
-		const iterationRef = `/iteration/${currentIteration.objectId}`;
+		// Get user stories for target iteration assigned to this user
+		const iterationRef = `/iteration/${targetIteration.objectId}`;
 		const userStoriesResult = await getUserStories({ Iteration: iterationRef });
 		const allUserStories = userStoriesResult.userStories;
 

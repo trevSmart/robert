@@ -762,10 +762,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								const teamMembersResult = await getRecentTeamMembers(6);
 
 								if (teamMembersResult?.teamMembers) {
+									// Get the selected iteration from message (if provided)
+									const selectedIterationId = message.iterationId as string | undefined;
+
 									// Get progress for each team member
 									const teamMembersWithProgress = await Promise.all(
 										teamMembersResult.teamMembers.map(async (memberName: string) => {
-											const progress = await getUserSprintProgress(memberName);
+											const progress = await getUserSprintProgress(memberName, selectedIterationId);
 											return {
 												name: memberName,
 												progress: progress

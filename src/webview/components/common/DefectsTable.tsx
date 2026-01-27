@@ -88,7 +88,7 @@ const getScheduleStateColor = (scheduleState: string) => {
 	}
 };
 
-const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects, onDefectSelected, selectedDefect, hasMore = false, onLoadMore, loadingMore = false }) => {
+const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects: _onLoadDefects, onDefectSelected, selectedDefect, hasMore = false, onLoadMore, loadingMore = false }) => {
 	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, defects.length: ${defects.length}`, 'DefectsTable');
 	return (
 		<div

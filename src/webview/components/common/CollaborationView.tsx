@@ -171,6 +171,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 
 	useEffect(() => {
 		if (selectedUserStoryId) {
+			// eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing prop to local state is a valid pattern
 			setSelectedUserStoryFilter(selectedUserStoryId);
 			loadMessages(selectedUserStoryId);
 		}

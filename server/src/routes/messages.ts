@@ -82,14 +82,20 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
 		for (const existingMessage of existingMessages) {
 			if (existingMessage.userId !== user.id && !notifiedUserIds.has(existingMessage.userId)) {
-				await createNotification({
+				const notification = await createNotification({
 					userId: existingMessage.userId,
 					messageId: message.id,
 					type: 'new_message'
 				});
 				notifiedUserIds.add(existingMessage.userId);
+				
+				// Broadcast notification via WebSocket
+				await broadcastNotification(existingMessage.userId, notification);
 			}
 		}
+
+		// Broadcast new message to subscribed clients
+		await broadcastNewMessage(message.id, userStoryId);
 
 		res.status(201).json({ message });
 	} catch (error) {
@@ -122,6 +128,9 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 			content: req.body.content,
 			status: req.body.status
 		});
+
+		// Broadcast message update to subscribed clients
+		await broadcastMessageUpdate(updatedMessage.id, updatedMessage.userStoryId);
 
 		res.json({ message: updatedMessage });
 	} catch (error) {
@@ -157,6 +166,9 @@ router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
 		}
 
 		await deleteMessage(req.params.id);
+
+		// Broadcast message deletion to subscribed clients
+		await broadcastMessageDelete(req.params.id, message.userStoryId);
 
 		res.status(204).send();
 	} catch (error) {
@@ -200,12 +212,18 @@ router.post('/:id/replies', async (req: AuthenticatedRequest, res: Response) => 
 
 		// Create notification for message author (if not the same user)
 		if (message.userId !== user.id) {
-			await createNotification({
+			const notification = await createNotification({
 				userId: message.userId,
 				messageId: message.id,
 				type: 'reply'
 			});
+			
+			// Broadcast notification via WebSocket
+			await broadcastNotification(message.userId, notification);
 		}
+
+		// Broadcast message update (with new reply) to subscribed clients
+		await broadcastMessageUpdate(message.id, message.userStoryId);
 
 		res.status(201).json({ reply });
 	} catch (error) {

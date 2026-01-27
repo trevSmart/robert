@@ -11,6 +11,9 @@ export interface RobertSettings {
 	rallyInstance: string;
 	rallyApiKey: string;
 	rallyProjectName: string;
+	collaborationServerUrl: string;
+	collaborationEnabled: boolean;
+	collaborationAutoConnect: boolean;
 }
 
 export class SettingsManager {
@@ -45,7 +48,10 @@ export class SettingsManager {
 					maxResults: config.get<number>('maxResults', 100),
 					rallyInstance: config.get<string>('rallyInstance', 'https://rally1.rallydev.com'),
 					rallyApiKey: config.get<string>('rallyApiKey', ''),
-					rallyProjectName: config.get<string>('rallyProjectName', '')
+					rallyProjectName: config.get<string>('rallyProjectName', ''),
+					collaborationServerUrl: config.get<string>('collaboration.serverUrl', 'http://localhost:3001'),
+					collaborationEnabled: config.get<boolean>('collaboration.enabled', false),
+					collaborationAutoConnect: config.get<boolean>('collaboration.autoConnect', true)
 				};
 
 				this._errorHandler.logInfo('Settings retrieved from VS Code configuration', 'SettingsManager.getSettings');
@@ -89,6 +95,15 @@ export class SettingsManager {
 			if (settings.rallyProjectName !== undefined) {
 				await config.update('rallyProjectName', settings.rallyProjectName, vscode.ConfigurationTarget.Global);
 			}
+			if (settings.collaborationServerUrl !== undefined) {
+				await config.update('collaboration.serverUrl', settings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
+			}
+			if (settings.collaborationEnabled !== undefined) {
+				await config.update('collaboration.enabled', settings.collaborationEnabled, vscode.ConfigurationTarget.Global);
+			}
+			if (settings.collaborationAutoConnect !== undefined) {
+				await config.update('collaboration.autoConnect', settings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
+			}
 
 			this._errorHandler.logInfo('Settings saved to VS Code configuration', 'SettingsManager.saveSettings');
 		}, 'SettingsManager.saveSettings');
@@ -112,6 +127,9 @@ export class SettingsManager {
 			await config.update('rallyInstance', defaultSettings.rallyInstance, vscode.ConfigurationTarget.Global);
 			await config.update('rallyApiKey', defaultSettings.rallyApiKey, vscode.ConfigurationTarget.Global);
 			await config.update('rallyProjectName', defaultSettings.rallyProjectName, vscode.ConfigurationTarget.Global);
+			await config.update('collaboration.serverUrl', defaultSettings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
+			await config.update('collaboration.enabled', defaultSettings.collaborationEnabled, vscode.ConfigurationTarget.Global);
+			await config.update('collaboration.autoConnect', defaultSettings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
 
 			this._errorHandler.logInfo('Settings reset to default values', 'SettingsManager.resetSettings');
 		}, 'SettingsManager.resetSettings');
@@ -126,6 +144,17 @@ export class SettingsManager {
 				const config = vscode.workspace.getConfiguration('robert');
 				const defaultValue = this.getDefaultSettings()[key];
 
+				// Handle nested settings
+				if (key === 'collaborationServerUrl') {
+					return config.get('collaboration.serverUrl', defaultValue) as RobertSettings[K];
+				}
+				if (key === 'collaborationEnabled') {
+					return config.get('collaboration.enabled', defaultValue) as RobertSettings[K];
+				}
+				if (key === 'collaborationAutoConnect') {
+					return config.get('collaboration.autoConnect', defaultValue) as RobertSettings[K];
+				}
+
 				// Type assertion to handle the generic return type
 				return config.get(key, defaultValue) as RobertSettings[K];
 			}, `SettingsManager.getSetting.${key}`) || this.getDefaultSettings()[key]
@@ -138,7 +167,17 @@ export class SettingsManager {
 	public async updateSetting<K extends keyof RobertSettings>(key: K, value: RobertSettings[K]): Promise<void> {
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			const config = vscode.workspace.getConfiguration('robert');
-			await config.update(key, value, vscode.ConfigurationTarget.Global);
+			
+			// Handle nested settings
+			if (key === 'collaborationServerUrl') {
+				await config.update('collaboration.serverUrl', value, vscode.ConfigurationTarget.Global);
+			} else if (key === 'collaborationEnabled') {
+				await config.update('collaboration.enabled', value, vscode.ConfigurationTarget.Global);
+			} else if (key === 'collaborationAutoConnect') {
+				await config.update('collaboration.autoConnect', value, vscode.ConfigurationTarget.Global);
+			} else {
+				await config.update(key, value, vscode.ConfigurationTarget.Global);
+			}
 
 			this._errorHandler.logInfo(`Setting ${key} updated to ${value}`, 'SettingsManager.updateSetting');
 		}, `SettingsManager.updateSetting.${key}`);
@@ -157,7 +196,10 @@ export class SettingsManager {
 			maxResults: 100,
 			rallyInstance: 'https://rally1.rallydev.com',
 			rallyApiKey: '',
-			rallyProjectName: ''
+			rallyProjectName: '',
+			collaborationServerUrl: 'http://localhost:3001',
+			collaborationEnabled: false,
+			collaborationAutoConnect: true
 		};
 	}
 
@@ -187,6 +229,14 @@ export class SettingsManager {
 
 		if (settings.rallyProjectName !== undefined && settings.rallyProjectName.trim() === '') {
 			errors.push('Rally project name cannot be empty');
+		}
+
+		if (settings.collaborationServerUrl !== undefined) {
+			try {
+				new URL(settings.collaborationServerUrl);
+			} catch {
+				errors.push('Collaboration server URL must be a valid URL');
+			}
 		}
 
 		return {

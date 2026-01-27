@@ -95,6 +95,21 @@
 					"type": "string",
 					"default": "",
 					"description": "Rally project name to connect to"
+				},
+				"robert.collaboration.serverUrl": {
+					"type": "string",
+					"default": "http://localhost:3001",
+					"description": "URL of the collaboration server"
+				},
+				"robert.collaboration.enabled": {
+					"type": "boolean",
+					"default": false,
+					"description": "Enable collaboration features"
+				},
+				"robert.collaboration.autoConnect": {
+					"type": "boolean",
+					"default": true,
+					"description": "Automatically connect to collaboration server on startup"
 				}
 			}
 		},

@@ -17,6 +17,7 @@ import SprintKPIs from './metrics/SprintKPIs';
 import VelocityTrendChart from './metrics/VelocityTrendChart';
 import StateDistributionPie from './metrics/StateDistributionPie';
 import DefectSeverityChart from './metrics/DefectSeverityChart';
+import CollaborationView from './common/CollaborationView';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Task, type Defect, type Discussion } from '../../types/rally';
 import { isLightTheme } from '../utils/themeColors';
@@ -197,7 +198,7 @@ import { CenteredContainer, Container, ContentArea, GlobalStyle } from './common
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
-type SectionType = 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics';
+type SectionType = 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
 
@@ -2019,6 +2020,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 								<DefectSeverityChart data={defectsBySeverity} loading={defectsBySeverityLoading} />
 							</div>
 						</div>
+					)}
+
+					{activeSection === 'collaboration' && (
+						<CollaborationView selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} />
 					)}
 
 					{/* Tutorial Content */}

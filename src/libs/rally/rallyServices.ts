@@ -185,24 +185,22 @@ export async function getCurrentUser() {
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
-	// Get the authenticated user from Rally API
+	// Get the authenticated user from Rally API using the get method
+	// The /user endpoint returns the currently authenticated user when no ref is provided
 	const rallyApi = getRallyApi();
-	errorHandler.logInfo('Executing Rally user query to get authenticated user', 'getCurrentUser');
+	errorHandler.logInfo('Executing Rally get request to retrieve authenticated user', 'getCurrentUser');
 
 	try {
-		const userResult = await rallyApi.query({
+		const userResult = await rallyApi.get({
 			type: 'user',
-			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled'],
-			limit: 1
+			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled']
 		});
 
-		errorHandler.logInfo(`Rally user query completed. Result type: ${typeof userResult}`, 'getCurrentUser');
+		errorHandler.logInfo(`Rally user get completed. Result type: ${typeof userResult}`, 'getCurrentUser');
 
-		const resultData = userResult as RallyApiResult;
+		const user = userResult.Object;
 
-		const results = resultData.Results || resultData.QueryResult?.Results || [];
-		if (results.length > 0) {
-			const user = results[0];
+		if (user) {
 			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
 
 			const userData = {
@@ -227,7 +225,7 @@ export async function getCurrentUser() {
 			};
 		}
 
-		errorHandler.logWarning('Rally user query returned no results', 'getCurrentUser');
+		errorHandler.logWarning('Rally user get returned no user object', 'getCurrentUser');
 		return {
 			user: null,
 			source: 'api'

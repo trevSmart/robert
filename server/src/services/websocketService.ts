@@ -2,12 +2,14 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { getOrCreateUser } from './userService';
 import { getMessageById } from './messageService';
 
-interface WebSocketClient extends WebSocket {
+// Remove the unused WebSocketClient interface since we're using WebSocketServerClient
+
+type WebSocketServerClient = WebSocket & {
 	userId?: string;
 	rallyUserId?: string;
 	subscribedUserStories?: Set<string>;
 	isAlive?: boolean;
-}
+};
 
 let globalWss: WebSocketServer | null = null;
 
@@ -16,7 +18,7 @@ export function setupWebSocket(wss: WebSocketServer): void {
 	// Heartbeat to detect dead connections
 	const interval = setInterval(() => {
 		wss.clients.forEach((ws) => {
-			const client = ws as WebSocketClient;
+			const client = ws as WebSocketServerClient;
 			if (!client.isAlive) {
 				client.terminate();
 				return;
@@ -27,7 +29,7 @@ export function setupWebSocket(wss: WebSocketServer): void {
 	}, 30000);
 
 	wss.on('connection', async (ws: WebSocket) => {
-		const client = ws as WebSocketClient;
+		const client = ws as WebSocketServerClient;
 		client.isAlive = true;
 		client.subscribedUserStories = new Set();
 
@@ -63,7 +65,7 @@ export function setupWebSocket(wss: WebSocketServer): void {
 	});
 }
 
-async function handleWebSocketMessage(client: WebSocketClient, message: any): Promise<void> {
+async function handleWebSocketMessage(client: WebSocketServerClient, message: any): Promise<void> {
 	switch (message.type) {
 		case 'authenticate':
 			await handleAuthenticate(client, message);
@@ -89,7 +91,7 @@ async function handleWebSocketMessage(client: WebSocketClient, message: any): Pr
 	}
 }
 
-async function handleAuthenticate(client: WebSocketClient, message: any): Promise<void> {
+async function handleAuthenticate(client: WebSocketServerClient, message: any): Promise<void> {
 	const { rallyUserId, displayName } = message;
 
 	if (!rallyUserId) {
@@ -118,7 +120,7 @@ async function handleAuthenticate(client: WebSocketClient, message: any): Promis
 	}
 }
 
-async function handleSubscribeNotifications(client: WebSocketClient): Promise<void> {
+async function handleSubscribeNotifications(client: WebSocketServerClient): Promise<void> {
 	if (!client.userId) {
 		client.send(JSON.stringify({
 			type: 'error',
@@ -133,7 +135,7 @@ async function handleSubscribeNotifications(client: WebSocketClient): Promise<vo
 	}));
 }
 
-async function handleSubscribeUserStory(client: WebSocketClient, userStoryId: string): Promise<void> {
+async function handleSubscribeUserStory(client: WebSocketServerClient, userStoryId: string): Promise<void> {
 	if (!client.userId) {
 		client.send(JSON.stringify({
 			type: 'error',
@@ -158,7 +160,7 @@ async function handleSubscribeUserStory(client: WebSocketClient, userStoryId: st
 	}));
 }
 
-async function handleUnsubscribeUserStory(client: WebSocketClient, userStoryId: string): Promise<void> {
+async function handleUnsubscribeUserStory(client: WebSocketServerClient, userStoryId: string): Promise<void> {
 	if (client.subscribedUserStories) {
 		client.subscribedUserStories.delete(userStoryId);
 	}
@@ -183,7 +185,7 @@ export async function broadcastNewMessage(messageId: string, userStoryId: string
 	};
 
 	globalWss.clients.forEach((ws) => {
-		const client = ws as WebSocketClient;
+		const client = ws as WebSocketServerClient;
 		if (client.readyState === WebSocket.OPEN && client.subscribedUserStories?.has(userStoryId)) {
 			client.send(JSON.stringify(messageData));
 		}
@@ -202,7 +204,7 @@ export async function broadcastMessageUpdate(messageId: string, userStoryId: str
 	};
 
 	globalWss.clients.forEach((ws) => {
-		const client = ws as WebSocketClient;
+		const client = ws as WebSocketServerClient;
 		if (client.readyState === WebSocket.OPEN && client.subscribedUserStories?.has(userStoryId)) {
 			client.send(JSON.stringify(messageData));
 		}
@@ -218,7 +220,7 @@ export async function broadcastMessageDelete(messageId: string, userStoryId: str
 	};
 
 	globalWss.clients.forEach((ws) => {
-		const client = ws as WebSocketClient;
+		const client = ws as WebSocketServerClient;
 		if (client.readyState === WebSocket.OPEN && client.subscribedUserStories?.has(userStoryId)) {
 			client.send(JSON.stringify(messageData));
 		}
@@ -234,7 +236,7 @@ export async function broadcastNotification(userId: string, notification: any): 
 	};
 
 	globalWss.clients.forEach((ws) => {
-		const client = ws as WebSocketClient;
+		const client = ws as WebSocketServerClient;
 		if (client.readyState === WebSocket.OPEN && client.userId === userId) {
 			client.send(JSON.stringify(notificationData));
 		}

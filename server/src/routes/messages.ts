@@ -1,0 +1,220 @@
+import { Router, Request, Response } from 'express';
+import { authenticate, AuthenticatedRequest } from '../middleware/auth';
+import { createError } from '../middleware/errorHandler';
+import {
+	getMessagesByUserStory,
+	getMessageById,
+	createMessage,
+	updateMessage,
+	deleteMessage,
+	createMessageReply
+} from '../services/messageService';
+import { getOrCreateUser } from '../services/userService';
+import { createNotification } from '../services/notificationService';
+import { broadcastNewMessage, broadcastMessageUpdate, broadcastMessageDelete } from '../services/websocketService';
+import { query } from '../config/database';
+
+const router = Router();
+
+// All routes require authentication
+router.use(authenticate);
+
+// GET /api/messages?userStoryId={id}
+router.get('/', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const userStoryId = req.query.userStoryId as string;
+
+		if (!userStoryId) {
+			throw createError('userStoryId query parameter is required', 400);
+		}
+
+		const messages = await getMessagesByUserStory(userStoryId);
+		res.json({ messages });
+	} catch (error) {
+		const err = error as Error;
+		throw createError(err.message, 500);
+	}
+});
+
+// GET /api/messages/:id
+router.get('/:id', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const message = await getMessageById(req.params.id);
+
+		if (!message) {
+			throw createError('Message not found', 404);
+		}
+
+		res.json({ message });
+	} catch (error) {
+		const err = error as Error;
+		if (err.message === 'Message not found') {
+			throw createError(err.message, 404);
+		}
+		throw createError(err.message, 500);
+	}
+});
+
+// POST /api/messages
+router.post('/', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const { userStoryId, content } = req.body;
+
+		if (!userStoryId || !content) {
+			throw createError('userStoryId and content are required', 400);
+		}
+
+		// Get or create user
+		const user = await getOrCreateUser(
+			req.user!.rallyUserId,
+			req.user!.displayName
+		);
+
+		// Create message
+		const message = await createMessage(user.id, {
+			userStoryId,
+			content: content.trim()
+		});
+
+		// Create notifications for other users who have messages on this user story
+		const existingMessages = await getMessagesByUserStory(userStoryId);
+		const notifiedUserIds = new Set<string>();
+
+		for (const existingMessage of existingMessages) {
+			if (existingMessage.userId !== user.id && !notifiedUserIds.has(existingMessage.userId)) {
+				await createNotification({
+					userId: existingMessage.userId,
+					messageId: message.id,
+					type: 'new_message'
+				});
+				notifiedUserIds.add(existingMessage.userId);
+			}
+		}
+
+		res.status(201).json({ message });
+	} catch (error) {
+		const err = error as Error;
+		throw createError(err.message, 500);
+	}
+});
+
+// PUT /api/messages/:id
+router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const message = await getMessageById(req.params.id);
+
+		if (!message) {
+			throw createError('Message not found', 404);
+		}
+
+		// Get or create user
+		const user = await getOrCreateUser(
+			req.user!.rallyUserId,
+			req.user!.displayName
+		);
+
+		// Only the author can update their message
+		if (message.userId !== user.id) {
+			throw createError('Unauthorized: You can only update your own messages', 403);
+		}
+
+		const updatedMessage = await updateMessage(req.params.id, {
+			content: req.body.content,
+			status: req.body.status
+		});
+
+		res.json({ message: updatedMessage });
+	} catch (error) {
+		const err = error as Error;
+		if (err.message === 'Message not found') {
+			throw createError(err.message, 404);
+		}
+		if (err.message.includes('Unauthorized')) {
+			throw createError(err.message, 403);
+		}
+		throw createError(err.message, 500);
+	}
+});
+
+// DELETE /api/messages/:id
+router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const message = await getMessageById(req.params.id);
+
+		if (!message) {
+			throw createError('Message not found', 404);
+		}
+
+		// Get or create user
+		const user = await getOrCreateUser(
+			req.user!.rallyUserId,
+			req.user!.displayName
+		);
+
+		// Only the author can delete their message
+		if (message.userId !== user.id) {
+			throw createError('Unauthorized: You can only delete your own messages', 403);
+		}
+
+		await deleteMessage(req.params.id);
+
+		res.status(204).send();
+	} catch (error) {
+		const err = error as Error;
+		if (err.message === 'Message not found') {
+			throw createError(err.message, 404);
+		}
+		if (err.message.includes('Unauthorized')) {
+			throw createError(err.message, 403);
+		}
+		throw createError(err.message, 500);
+	}
+});
+
+// POST /api/messages/:id/replies
+router.post('/:id/replies', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const message = await getMessageById(req.params.id);
+
+		if (!message) {
+			throw createError('Message not found', 404);
+		}
+
+		const { content } = req.body;
+
+		if (!content) {
+			throw createError('content is required', 400);
+		}
+
+		// Get or create user
+		const user = await getOrCreateUser(
+			req.user!.rallyUserId,
+			req.user!.displayName
+		);
+
+		// Create reply
+		const reply = await createMessageReply(user.id, {
+			messageId: req.params.id,
+			content: content.trim()
+		});
+
+		// Create notification for message author (if not the same user)
+		if (message.userId !== user.id) {
+			await createNotification({
+				userId: message.userId,
+				messageId: message.id,
+				type: 'reply'
+			});
+		}
+
+		res.status(201).json({ reply });
+	} catch (error) {
+		const err = error as Error;
+		if (err.message === 'Message not found') {
+			throw createError(err.message, 404);
+		}
+		throw createError(err.message, 500);
+	}
+});
+
+export default router;

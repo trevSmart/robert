@@ -109,7 +109,7 @@ export class CollaborationClient {
 		// Check if Rally User ID is set before making any requests
 		// The collaboration server requires this header for all API calls
 		if (!this._rallyUserId) {
-			throw new Error('Missing Rally User ID in headers');
+			throw new Error('Rally User ID is required for collaboration server requests');
 		}
 
 		const headers: Record<string, string> = {

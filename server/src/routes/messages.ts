@@ -1,4 +1,4 @@
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import {
@@ -10,9 +10,8 @@ import {
 	createMessageReply
 } from '../services/messageService';
 import { getOrCreateUser } from '../services/userService';
-import { createNotification, getUnreadNotificationCount } from '../services/notificationService';
+import { createNotification } from '../services/notificationService';
 import { broadcastNewMessage, broadcastMessageUpdate, broadcastMessageDelete, broadcastNotification } from '../services/websocketService';
-import { query } from '../config/database';
 
 const router = Router();
 

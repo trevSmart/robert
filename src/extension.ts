@@ -79,7 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(outputManager);
 
 	// Store global context for reload functionality
-	globalExtensionContext = context;
+	_globalExtensionContext = context;
 
 	// Detect if running in debug mode
 	const isDebugMode = detectDebugMode(context);

@@ -2097,7 +2097,6 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 				// Return the first sprint iteration if any exist, otherwise return the first active iteration
 				targetIteration = sprintIterations.length > 0 ? sprintIterations[0] : activeIterations[0];
 			}
-
 		}
 
 		if (!targetIteration) {
@@ -2123,7 +2122,6 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 		const storiesByUser = new Map<string, typeof allUserStories>();
 		const assigneeNameMap = new Map<string, string>(); // Maps normalized name to original name
 
-
 		for (const story of allUserStories) {
 			// Only group stories that have an assignee (c_Assignee), not just Owner
 			// The assignee field comes from c_Assignee, which is the AssignedTo field in Rally
@@ -2141,7 +2139,6 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 				storiesByUser.get(normalizedAssignee)!.push(story);
 			}
 		}
-
 
 		// Step 5: Get all incomplete story IDs for batch task fetching
 		const incompleteStoryIds: string[] = [];

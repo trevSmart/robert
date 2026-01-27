@@ -828,7 +828,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const loadUserStories = useCallback(
 		(iteration?: Iteration) => {
-
 			if (iteration) {
 				// Sprint context - use sprint state
 				setSprintUserStoriesLoading(true);
@@ -938,7 +937,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const switchViewType = useCallback(
 		(newViewType: PortfolioViewType) => {
-
 			// State cleaners for each view type (only clear when necessary)
 			const stateCleaners = {
 				bySprints: () => {
@@ -1141,7 +1139,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Initialize webview on mount
 	useEffect(() => {
-
 		sendMessage({
 			command: 'webviewReady'
 		});
@@ -1166,7 +1163,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data;
-
 
 			switch (message.command) {
 				case 'showLogo':
@@ -1404,7 +1400,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Load iterations when navigating to calendar section
 	useEffect(() => {
-		// eslint-disable-next-line no-console
+		 
 		if (activeSection === 'calendar' && !hasLoadedCalendarIterations.current && !iterations.length && !iterationsLoading && !iterationsError) {
 			hasLoadedCalendarIterations.current = true;
 			// Use setTimeout to make the call asynchronous and avoid linter warning about setState in effects

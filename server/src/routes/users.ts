@@ -1,7 +1,7 @@
 import { Router, Response } from 'express';
 import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
-import { getOrCreateUser, findUserByRallyId } from '../services/userService';
+import { getOrCreateUser } from '../services/userService';
 
 const router = Router();
 

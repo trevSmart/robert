@@ -2,7 +2,7 @@ import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
-import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, clearAllCaches as clearAllCachesService } from './CacheService';
+import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
 
 // Error handler singleton instance
 const errorHandler = ErrorHandler.getInstance();
@@ -1163,7 +1163,7 @@ export async function getUserStoryTests(userStoryId: string) {
 		errorHandler.logDebug(`Getting test cases for user story: ${userStoryId}`, 'rallyServices.getUserStoryTests');
 
 		const rallyApi = getRallyApi();
-		const projectId = await getProjectId();
+		const _projectId = await getProjectId();
 
 		// Query to get the user story with its test cases expanded
 		const queryOptions: RallyQueryOptions = {

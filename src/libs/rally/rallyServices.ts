@@ -185,85 +185,35 @@ export async function getCurrentUser() {
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
-	// Get the authenticated user from Rally API using /security/authorize endpoint
+	// Get the authenticated user from Rally API
 	const rallyApi = getRallyApi();
-	errorHandler.logInfo('Fetching authenticated user via /security/authorize endpoint', 'getCurrentUser');
+	errorHandler.logInfo('Executing Rally user query to get authenticated user', 'getCurrentUser');
 
 	try {
-		// First, get the current user's ref from the authorize endpoint
-		const authorizeResult = await rallyApi.get({
-			ref: '/security/authorize',
-			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled']
+		const userResult = await rallyApi.query({
+			type: 'user',
+			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled'],
+			limit: 1
 		});
 
-		errorHandler.logInfo(`Authorize endpoint completed. Result type: ${typeof authorizeResult}`, 'getCurrentUser');
+		errorHandler.logInfo(`Rally user query completed. Result type: ${typeof userResult}`, 'getCurrentUser');
 
-		// The authorize endpoint returns the authenticated user directly
-		const resultObject = authorizeResult?.Object || authorizeResult;
+		const resultData = userResult as RallyApiResult;
 
-		// Check if we have a user reference in the result
-		const userRef = resultObject?.OperationResult?.SecurityToken?.User?._ref || resultObject?.SecurityToken?.User?._ref || resultObject?.User?._ref;
-
-		if (userRef) {
-			errorHandler.logInfo(`Found user ref: ${userRef}, fetching full user details`, 'getCurrentUser');
-
-			// Fetch the full user details
-			const userDetailsResult = await rallyApi.get({
-				ref: userRef,
-				fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled']
-			});
-
-			const user = userDetailsResult?.Object || userDetailsResult;
-
-			if (user && (user.ObjectID || user.UserName)) {
-				errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || 'N/A'}, UserName: ${user.UserName || 'N/A'}`, 'getCurrentUser');
-
-				const userData = {
-					objectId: String(user.ObjectID ?? user.objectId),
-					userName: user.UserName ?? user.userName,
-					displayName: user.DisplayName ?? user.displayName,
-					emailAddress: user.EmailAddress ?? user.emailAddress,
-					firstName: user.FirstName ?? user.firstName,
-					lastName: user.LastName ?? user.lastName,
-					disabled: Boolean(user.Disabled ?? user.disabled),
-					_ref: user._ref || userRef
-				} as User;
-
-				// Cache the user data
-				rallyData.currentUser = userData;
-
-				errorHandler.logInfo(`Processed and cached user data: ${JSON.stringify(userData)}`, 'getCurrentUser');
-
-				return {
-					user: userData,
-					source: 'api'
-				};
-			}
-		}
-
-		// Fallback: Try direct user query with the API key owner
-		errorHandler.logInfo('Authorize endpoint did not return user ref, trying direct user endpoint', 'getCurrentUser');
-
-		// Try to get user info by querying the /user endpoint directly (returns current user in v2.0)
-		const directUserResult = await rallyApi.get({
-			ref: '/user',
-			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled']
-		});
-
-		const directUser = directUserResult?.Object || directUserResult;
-
-		if (directUser && (directUser.ObjectID || directUser.UserName)) {
-			errorHandler.logInfo(`Direct user endpoint returned user: ${directUser.DisplayName || directUser.UserName}`, 'getCurrentUser');
+		const results = resultData.Results || resultData.QueryResult?.Results || [];
+		if (results.length > 0) {
+			const user = results[0];
+			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
 
 			const userData = {
-				objectId: String(directUser.ObjectID ?? directUser.objectId),
-				userName: directUser.UserName ?? directUser.userName,
-				displayName: directUser.DisplayName ?? directUser.displayName,
-				emailAddress: directUser.EmailAddress ?? directUser.emailAddress,
-				firstName: directUser.FirstName ?? directUser.firstName,
-				lastName: directUser.LastName ?? directUser.lastName,
-				disabled: Boolean(directUser.Disabled ?? directUser.disabled),
-				_ref: directUser._ref
+				objectId: String(user.ObjectID ?? user.objectId),
+				userName: user.UserName ?? user.userName,
+				displayName: user.DisplayName ?? user.displayName,
+				emailAddress: user.EmailAddress ?? user.emailAddress,
+				firstName: user.FirstName ?? user.firstName,
+				lastName: user.LastName ?? user.lastName,
+				disabled: Boolean(user.Disabled ?? user.disabled),
+				_ref: user._ref
 			} as User;
 
 			// Cache the user data
@@ -277,7 +227,7 @@ export async function getCurrentUser() {
 			};
 		}
 
-		errorHandler.logWarning('Could not retrieve authenticated user from Rally API', 'getCurrentUser');
+		errorHandler.logWarning('Rally user query returned no results', 'getCurrentUser');
 		return {
 			user: null,
 			source: 'api'

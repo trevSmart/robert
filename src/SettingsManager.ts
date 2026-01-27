@@ -167,7 +167,7 @@ export class SettingsManager {
 	public async updateSetting<K extends keyof RobertSettings>(key: K, value: RobertSettings[K]): Promise<void> {
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			const config = vscode.workspace.getConfiguration('robert');
-			
+
 			// Handle nested settings
 			if (key === 'collaborationServerUrl') {
 				await config.update('collaboration.serverUrl', value, vscode.ConfigurationTarget.Global);

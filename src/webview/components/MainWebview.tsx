@@ -1401,7 +1401,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Load iterations when navigating to calendar section
 	useEffect(() => {
-		 
 		if (activeSection === 'calendar' && !hasLoadedCalendarIterations.current && !iterations.length && !iterationsLoading && !iterationsError) {
 			hasLoadedCalendarIterations.current = true;
 			// Use setTimeout to make the call asynchronous and avoid linter warning about setState in effects
@@ -2018,9 +2017,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						</div>
 					)}
 
-					{activeSection === 'collaboration' && (
-						<CollaborationView selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} />
-					)}
+					{activeSection === 'collaboration' && <CollaborationView selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} />}
 
 					{/* Tutorial Content */}
 					{selectedTutorial && (

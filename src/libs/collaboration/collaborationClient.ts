@@ -102,10 +102,7 @@ export class CollaborationClient {
 		return this._serverUrl;
 	}
 
-	private async makeRequest<T>(
-		endpoint: string,
-		options: RequestInit = {}
-	): Promise<T> {
+	private async makeRequest<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
 		const serverUrl = this.getServerUrl();
 		const url = `${serverUrl}${endpoint}`;
 
@@ -135,10 +132,7 @@ export class CollaborationClient {
 
 			return await response.json();
 		} catch (error) {
-			this._errorHandler.handleError(
-				error instanceof Error ? error : new Error(String(error)),
-				`CollaborationClient.${endpoint}`
-			);
+			this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), `CollaborationClient.${endpoint}`);
 			throw error;
 		}
 	}
@@ -146,68 +140,52 @@ export class CollaborationClient {
 	// Messages API
 	public async getMessages(userStoryId: string): Promise<Message[]> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ messages: Message[] }>(
-				`/api/messages?userStoryId=${encodeURIComponent(userStoryId)}`
-			);
+			const response = await this.makeRequest<{ messages: Message[] }>(`/api/messages?userStoryId=${encodeURIComponent(userStoryId)}`);
 			return response.messages;
 		}, 'CollaborationClient.getMessages');
 	}
 
 	public async getMessage(messageId: string): Promise<Message> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ message: Message }>(
-				`/api/messages/${messageId}`
-			);
+			const response = await this.makeRequest<{ message: Message }>(`/api/messages/${messageId}`);
 			return response.message;
 		}, 'CollaborationClient.getMessage');
 	}
 
 	public async createMessage(input: CreateMessageInput): Promise<Message> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ message: Message }>(
-				'/api/messages',
-				{
-					method: 'POST',
-					body: JSON.stringify(input)
-				}
-			);
+			const response = await this.makeRequest<{ message: Message }>('/api/messages', {
+				method: 'POST',
+				body: JSON.stringify(input)
+			});
 			return response.message;
 		}, 'CollaborationClient.createMessage');
 	}
 
 	public async updateMessage(messageId: string, input: UpdateMessageInput): Promise<Message> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ message: Message }>(
-				`/api/messages/${messageId}`,
-				{
-					method: 'PUT',
-					body: JSON.stringify(input)
-				}
-			);
+			const response = await this.makeRequest<{ message: Message }>(`/api/messages/${messageId}`, {
+				method: 'PUT',
+				body: JSON.stringify(input)
+			});
 			return response.message;
 		}, 'CollaborationClient.updateMessage');
 	}
 
 	public async deleteMessage(messageId: string): Promise<void> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			await this.makeRequest(
-				`/api/messages/${messageId}`,
-				{
-					method: 'DELETE'
-				}
-			);
+			await this.makeRequest(`/api/messages/${messageId}`, {
+				method: 'DELETE'
+			});
 		}, 'CollaborationClient.deleteMessage');
 	}
 
 	public async createMessageReply(input: CreateMessageReplyInput): Promise<MessageReply> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ reply: MessageReply }>(
-				`/api/messages/${input.messageId}/replies`,
-				{
-					method: 'POST',
-					body: JSON.stringify({ content: input.content })
-				}
-			);
+			const response = await this.makeRequest<{ reply: MessageReply }>(`/api/messages/${input.messageId}/replies`, {
+				method: 'POST',
+				body: JSON.stringify({ content: input.content })
+			});
 			return response.reply;
 		}, 'CollaborationClient.createMessageReply');
 	}
@@ -215,50 +193,38 @@ export class CollaborationClient {
 	// Notifications API
 	public async getNotifications(unreadOnly: boolean = false): Promise<{ notifications: Notification[]; unreadCount: number }> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			return this.makeRequest<{ notifications: Notification[]; unreadCount: number }>(
-				`/api/notifications${unreadOnly ? '?unreadOnly=true' : ''}`
-			);
+			return this.makeRequest<{ notifications: Notification[]; unreadCount: number }>(`/api/notifications${unreadOnly ? '?unreadOnly=true' : ''}`);
 		}, 'CollaborationClient.getNotifications');
 	}
 
 	public async getUnreadNotificationCount(): Promise<number> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ unreadCount: number }>(
-				'/api/notifications/count'
-			);
+			const response = await this.makeRequest<{ unreadCount: number }>('/api/notifications/count');
 			return response.unreadCount;
 		}, 'CollaborationClient.getUnreadNotificationCount');
 	}
 
 	public async markNotificationAsRead(notificationId: string): Promise<Notification> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ notification: Notification }>(
-				`/api/notifications/${notificationId}/read`,
-				{
-					method: 'PUT'
-				}
-			);
+			const response = await this.makeRequest<{ notification: Notification }>(`/api/notifications/${notificationId}/read`, {
+				method: 'PUT'
+			});
 			return response.notification;
 		}, 'CollaborationClient.markNotificationAsRead');
 	}
 
 	public async markAllNotificationsAsRead(): Promise<void> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			await this.makeRequest(
-				'/api/notifications/read-all',
-				{
-					method: 'PUT'
-				}
-			);
+			await this.makeRequest('/api/notifications/read-all', {
+				method: 'PUT'
+			});
 		}, 'CollaborationClient.markAllNotificationsAsRead');
 	}
 
 	// Users API
 	public async getCurrentUser(): Promise<{ id: string; rallyUserId: string; displayName: string; email?: string }> {
 		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ user: any }>(
-				'/api/users/me'
-			);
+			const response = await this.makeRequest<{ user: any }>('/api/users/me');
 			return response.user;
 		}, 'CollaborationClient.getCurrentUser');
 	}
@@ -272,10 +238,7 @@ export class CollaborationClient {
 			});
 			return response.ok;
 		} catch (error) {
-			this._errorHandler.logWarning(
-				`Server health check failed: ${error instanceof Error ? error.message : String(error)}`,
-				'CollaborationClient.checkServerHealth'
-			);
+			this._errorHandler.logWarning(`Server health check failed: ${error instanceof Error ? error.message : String(error)}`, 'CollaborationClient.checkServerHealth');
 			return false;
 		}
 	}

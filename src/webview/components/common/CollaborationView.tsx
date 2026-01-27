@@ -199,22 +199,12 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 
 				case 'collaborationMessageReplyCreated':
 					if (message.reply) {
-						setMessages(prev =>
-							prev.map(msg =>
-								msg.id === message.reply.messageId
-									? { ...msg, replies: [...(msg.replies || []), message.reply] }
-									: msg
-							)
-						);
+						setMessages(prev => prev.map(msg => (msg.id === message.reply.messageId ? { ...msg, replies: [...(msg.replies || []), message.reply] } : msg)));
 					}
 					break;
 
 				case 'collaborationNotificationMarkedAsRead':
-					setNotifications(prev =>
-						prev.map(notif =>
-							notif.id === message.notificationId ? { ...notif, read: true } : notif
-						)
-					);
+					setNotifications(prev => prev.map(notif => (notif.id === message.notificationId ? { ...notif, read: true } : notif)));
 					setUnreadCount(prev => Math.max(0, prev - 1));
 					break;
 
@@ -307,11 +297,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 								onClick={() => !notif.read && markNotificationAsRead(notif.id)}
 								style={{
 									padding: '10px',
-									backgroundColor: notif.read
-										? 'transparent'
-										: lightTheme
-											? '#e3f2fd'
-											: 'var(--vscode-list-activeSelectionBackground)',
+									backgroundColor: notif.read ? 'transparent' : lightTheme ? '#e3f2fd' : 'var(--vscode-list-activeSelectionBackground)',
 									borderRadius: '4px',
 									cursor: notif.read ? 'default' : 'pointer',
 									fontSize: '12px'
@@ -343,9 +329,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 					borderRadius: '6px'
 				}}
 			>
-				<label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600 }}>
-					Filter by User Story ID:
-				</label>
+				<label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600 }}>Filter by User Story ID:</label>
 				<input
 					type="text"
 					value={selectedUserStoryFilter || ''}
@@ -416,24 +400,9 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 							padding: '8px 16px',
 							borderRadius: '4px',
 							border: 'none',
-							backgroundColor:
-								newMessageContent.trim() && newMessageUserStoryId.trim()
-									? lightTheme
-										? '#007acc'
-										: 'var(--vscode-button-background)'
-									: lightTheme
-										? '#ccc'
-										: 'var(--vscode-button-secondaryBackground)',
-							color:
-								newMessageContent.trim() && newMessageUserStoryId.trim()
-									? lightTheme
-										? '#fff'
-										: 'var(--vscode-button-foreground)'
-									: lightTheme
-										? '#666'
-										: 'var(--vscode-button-secondaryForeground)',
-							cursor:
-								newMessageContent.trim() && newMessageUserStoryId.trim() ? 'pointer' : 'not-allowed',
+							backgroundColor: newMessageContent.trim() && newMessageUserStoryId.trim() ? (lightTheme ? '#007acc' : 'var(--vscode-button-background)') : lightTheme ? '#ccc' : 'var(--vscode-button-secondaryBackground)',
+							color: newMessageContent.trim() && newMessageUserStoryId.trim() ? (lightTheme ? '#fff' : 'var(--vscode-button-foreground)') : lightTheme ? '#666' : 'var(--vscode-button-secondaryForeground)',
+							cursor: newMessageContent.trim() && newMessageUserStoryId.trim() ? 'pointer' : 'not-allowed',
 							fontSize: '12px',
 							fontWeight: 600
 						}}
@@ -444,11 +413,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 			</div>
 
 			{/* Messages List */}
-			{messagesLoading && (
-				<div style={{ textAlign: 'center', padding: '20px', color: 'var(--vscode-descriptionForeground)' }}>
-					Loading messages...
-				</div>
-			)}
+			{messagesLoading && <div style={{ textAlign: 'center', padding: '20px', color: 'var(--vscode-descriptionForeground)' }}>Loading messages...</div>}
 
 			{messagesError && (
 				<div
@@ -464,11 +429,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 				</div>
 			)}
 
-			{!messagesLoading && !messagesError && filteredMessages.length === 0 && (
-				<div style={{ textAlign: 'center', padding: '40px', color: 'var(--vscode-descriptionForeground)' }}>
-					No messages found. Create a new message to start a discussion!
-				</div>
-			)}
+			{!messagesLoading && !messagesError && filteredMessages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--vscode-descriptionForeground)' }}>No messages found. Create a new message to start a discussion!</div>}
 
 			{!messagesLoading && !messagesError && filteredMessages.length > 0 && (
 				<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -496,21 +457,12 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 								>
 									<div style={{ flex: 1 }}>
 										<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-											<span style={{ fontWeight: 600, fontSize: '13px' }}>
-												{message.user?.displayName || 'Unknown User'}
-											</span>
+											<span style={{ fontWeight: 600, fontSize: '13px' }}>{message.user?.displayName || 'Unknown User'}</span>
 											<span
 												style={{
 													padding: '2px 6px',
 													borderRadius: '3px',
-													backgroundColor:
-														message.status === 'open'
-															? lightTheme
-																? '#e3f2fd'
-																: 'var(--vscode-badge-background)'
-															: lightTheme
-																? '#e8f5e9'
-																: 'var(--vscode-badge-background)',
+													backgroundColor: message.status === 'open' ? (lightTheme ? '#e3f2fd' : 'var(--vscode-badge-background)') : lightTheme ? '#e8f5e9' : 'var(--vscode-badge-background)',
 													color: 'var(--vscode-foreground)',
 													fontSize: '10px',
 													fontWeight: 600,
@@ -523,9 +475,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 										<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', marginBottom: '8px' }}>
 											User Story: {message.userStoryId} • {new Date(message.createdAt).toLocaleString()}
 										</div>
-										<div style={{ fontSize: '13px', lineHeight: '1.5', marginBottom: '12px' }}>
-											{message.content}
-										</div>
+										<div style={{ fontSize: '13px', lineHeight: '1.5', marginBottom: '12px' }}>{message.content}</div>
 									</div>
 								</div>
 
@@ -565,13 +515,9 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 															borderLeft: `3px solid ${lightTheme ? '#007acc' : 'var(--vscode-progressBar-background)'}`
 														}}
 													>
-														<div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>
-															{reply.user?.displayName || 'Unknown User'}
-														</div>
+														<div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>{reply.user?.displayName || 'Unknown User'}</div>
 														<div style={{ fontSize: '12px', lineHeight: '1.5' }}>{reply.content}</div>
-														<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>
-															{new Date(reply.createdAt).toLocaleString()}
-														</div>
+														<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{new Date(reply.createdAt).toLocaleString()}</div>
 													</div>
 												))}
 											</div>
@@ -610,20 +556,8 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 											padding: '6px 12px',
 											borderRadius: '4px',
 											border: 'none',
-											backgroundColor: replyContent.trim()
-												? lightTheme
-													? '#007acc'
-													: 'var(--vscode-button-background)'
-												: lightTheme
-													? '#ccc'
-													: 'var(--vscode-button-secondaryBackground)',
-											color: replyContent.trim()
-												? lightTheme
-													? '#fff'
-													: 'var(--vscode-button-foreground)'
-												: lightTheme
-													? '#666'
-													: 'var(--vscode-button-secondaryForeground)',
+											backgroundColor: replyContent.trim() ? (lightTheme ? '#007acc' : 'var(--vscode-button-background)') : lightTheme ? '#ccc' : 'var(--vscode-button-secondaryBackground)',
+											color: replyContent.trim() ? (lightTheme ? '#fff' : 'var(--vscode-button-foreground)') : lightTheme ? '#666' : 'var(--vscode-button-secondaryForeground)',
 											cursor: replyContent.trim() ? 'pointer' : 'not-allowed',
 											fontSize: '11px'
 										}}

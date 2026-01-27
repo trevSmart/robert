@@ -10,8 +10,8 @@ import {
 	createMessageReply
 } from '../services/messageService';
 import { getOrCreateUser } from '../services/userService';
-import { createNotification } from '../services/notificationService';
-import { broadcastNewMessage, broadcastMessageUpdate, broadcastMessageDelete } from '../services/websocketService';
+import { createNotification, getUnreadNotificationCount } from '../services/notificationService';
+import { broadcastNewMessage, broadcastMessageUpdate, broadcastMessageDelete, broadcastNotification } from '../services/websocketService';
 import { query } from '../config/database';
 
 const router = Router();

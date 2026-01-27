@@ -106,14 +106,17 @@ export class CollaborationClient {
 		const serverUrl = this.getServerUrl();
 		const url = `${serverUrl}${endpoint}`;
 
+		// Check if Rally User ID is set before making any requests
+		// The collaboration server requires this header for all API calls
+		if (!this._rallyUserId) {
+			throw new Error('Missing Rally User ID in headers');
+		}
+
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
+			'X-Rally-User-Id': this._rallyUserId,
 			...((options.headers as Record<string, string>) || {})
 		};
-
-		if (this._rallyUserId) {
-			headers['X-Rally-User-Id'] = this._rallyUserId;
-		}
 
 		if (this._displayName) {
 			headers['X-Display-Name'] = this._displayName;

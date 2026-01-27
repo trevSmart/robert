@@ -15,7 +15,6 @@ declare module 'ibm-rally-node' {
 
 	export interface RallyApi {
 		query(queryOptions: RallyQueryOptions): Promise<RallyApiResult>;
-		get(options: { type: string; fetch?: string[]; ref?: string }): Promise<{ Object: RallyApiObject }>;
 		create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
 		update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
 		del(options: { type: string; ref: string }): Promise<void>;
@@ -41,7 +40,6 @@ declare module 'ibm-rally-node' {
 	export declare class RestApi implements RallyApi {
 		constructor(options?: RallyOptions);
 		query(queryOptions: RallyQueryOptions): Promise<RallyApiResult>;
-		get(options: { type: string; fetch?: string[]; ref?: string }): Promise<{ Object: RallyApiObject }>;
 		create(options: { type: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
 		update(options: { type: string; ref: string; data: Record<string, unknown> }): Promise<{ Object: RallyApiObject }>;
 		del(options: { type: string; ref: string }): Promise<void>;

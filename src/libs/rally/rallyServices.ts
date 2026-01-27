@@ -1322,7 +1322,7 @@ export async function getUserStoryDefects(userStoryId: string) {
 		errorHandler.logDebug(`Getting defects for user story: ${userStoryId}`, 'rallyServices.getUserStoryDefects');
 
 		const rallyApi = getRallyApi();
-		const projectId = await getProjectId();
+		const _projectId = await getProjectId();
 
 		// Query to get the user story with its defects expanded
 		const queryOptions: RallyQueryOptions = {
@@ -1520,7 +1520,7 @@ export async function getUserStoryDiscussions(userStoryId: string) {
 		errorHandler.logDebug(`Getting discussions for user story: ${userStoryId}`, 'rallyServices.getUserStoryDiscussions');
 
 		const rallyApi = getRallyApi();
-		const projectId = await getProjectId();
+		const _projectId = await getProjectId();
 
 		// Query to get the user story with its discussions expanded
 		const queryOptions: RallyQueryOptions = {

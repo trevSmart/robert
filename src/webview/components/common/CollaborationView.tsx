@@ -71,6 +71,18 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 		[vscode]
 	);
 
+	// Send load messages command (does not set loading state - caller handles that)
+	const sendLoadMessagesCommand = useCallback(
+		(userStoryId: string) => {
+			sendMessage({
+				command: 'loadCollaborationMessages',
+				userStoryId
+			});
+		},
+		[sendMessage]
+	);
+
+	// Full load messages with loading state management (for user-triggered loads)
 	const loadMessages = useCallback(
 		(userStoryId: string | null) => {
 			if (!userStoryId) {
@@ -80,12 +92,9 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 
 			setMessagesLoading(true);
 			setMessagesError(null);
-			sendMessage({
-				command: 'loadCollaborationMessages',
-				userStoryId
-			});
+			sendLoadMessagesCommand(userStoryId);
 		},
-		[sendMessage]
+		[sendLoadMessagesCommand]
 	);
 
 	const loadNotifications = useCallback(() => {
@@ -157,20 +166,15 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 		});
 	}, []);
 
-	// Handle selectedUserStoryId prop changes by loading messages
-	// The filter state is initialized from prop, so we only need to load messages here
+	// Handle selectedUserStoryId prop changes by syncing filter state and loading messages
+	// This is a legitimate use case for setState in effect: syncing derived state from props
+	 
 	useEffect(() => {
 		if (selectedUserStoryId) {
+			setSelectedUserStoryFilter(selectedUserStoryId);
 			loadMessages(selectedUserStoryId);
 		}
 	}, [selectedUserStoryId, loadMessages]);
-
-	// Sync filter state when prop changes (separate effect to avoid setState warning)
-	useEffect(() => {
-		if (selectedUserStoryId !== undefined) {
-			setSelectedUserStoryFilter(prev => (prev !== selectedUserStoryId ? selectedUserStoryId : prev));
-		}
-	}, [selectedUserStoryId]);
 
 	useEffect(() => {
 		loadNotifications();

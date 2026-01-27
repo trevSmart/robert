@@ -5,7 +5,8 @@
       "Bash(git checkout:*)",
       "Bash(npx tsc:*)",
       "Bash(grep:*)",
-      "Bash(eslint:*)"
+      "Bash(eslint:*)",
+      "Bash(npx eslint:*)"
     ],
     "additionalDirectories": [
       "/Users/marcpla/Documents/Feina/Projectes/Robert/src/webview/components"

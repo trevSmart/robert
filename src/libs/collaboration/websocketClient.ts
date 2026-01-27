@@ -99,32 +99,23 @@ export class WebSocketClient {
 					resolve();
 				};
 
-				ws.onmessage = (event) => {
+				ws.onmessage = event => {
 					try {
 						const message: WebSocketMessage = JSON.parse(event.data as string);
 						this.handleMessage(message);
 					} catch (error) {
-						this._errorHandler.logWarning(
-							`Failed to parse WebSocket message: ${error instanceof Error ? error.message : String(error)}`,
-							'WebSocketClient'
-						);
+						this._errorHandler.logWarning(`Failed to parse WebSocket message: ${error instanceof Error ? error.message : String(error)}`, 'WebSocketClient');
 					}
 				};
 
-				ws.onerror = (error) => {
-					this._errorHandler.logWarning(
-						`WebSocket error: ${error}`,
-						'WebSocketClient'
-					);
+				ws.onerror = error => {
+					this._errorHandler.logWarning(`WebSocket error: ${error}`, 'WebSocketClient');
 					this._isConnecting = false;
 					reject(error);
 				};
 
-				ws.onclose = (event) => {
-					this._errorHandler.logInfo(
-						`WebSocket closed: code=${event.code}, reason=${event.reason || 'none'}`,
-						'WebSocketClient'
-					);
+				ws.onclose = event => {
+					this._errorHandler.logInfo(`WebSocket closed: code=${event.code}, reason=${event.reason || 'none'}`, 'WebSocketClient');
 					this._isConnecting = false;
 					this._ws = null;
 
@@ -163,10 +154,7 @@ export class WebSocketClient {
 		try {
 			this._ws.send(JSON.stringify(message));
 		} catch (error) {
-			this._errorHandler.handleError(
-				error instanceof Error ? error : new Error(String(error)),
-				'WebSocketClient.send'
-			);
+			this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'WebSocketClient.send');
 		}
 	}
 
@@ -229,10 +217,7 @@ export class WebSocketClient {
 				break;
 
 			case 'error':
-				this._errorHandler.logWarning(
-					`WebSocket error: ${(data as any).message || 'Unknown error'}`,
-					'WebSocketClient'
-				);
+				this._errorHandler.logWarning(`WebSocket error: ${(data as any).message || 'Unknown error'}`, 'WebSocketClient');
 				this.emit('error', data);
 				break;
 
@@ -249,10 +234,7 @@ export class WebSocketClient {
 				try {
 					handler(data);
 				} catch (error) {
-					this._errorHandler.handleError(
-						error instanceof Error ? error : new Error(String(error)),
-						`WebSocketClient.emit.${event}`
-					);
+					this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), `WebSocketClient.emit.${event}`);
 				}
 			});
 		}
@@ -266,18 +248,12 @@ export class WebSocketClient {
 		this._reconnectAttempts++;
 		const delay = this._reconnectDelay * this._reconnectAttempts;
 
-		this._errorHandler.logInfo(
-			`Scheduling WebSocket reconnect attempt ${this._reconnectAttempts}/${this._maxReconnectAttempts} in ${delay}ms`,
-			'WebSocketClient'
-		);
+		this._errorHandler.logInfo(`Scheduling WebSocket reconnect attempt ${this._reconnectAttempts}/${this._maxReconnectAttempts} in ${delay}ms`, 'WebSocketClient');
 
 		this._reconnectTimer = setTimeout(() => {
 			this._reconnectTimer = null;
 			this.connect().catch(error => {
-				this._errorHandler.logWarning(
-					`Reconnect attempt failed: ${error instanceof Error ? error.message : String(error)}`,
-					'WebSocketClient'
-				);
+				this._errorHandler.logWarning(`Reconnect attempt failed: ${error instanceof Error ? error.message : String(error)}`, 'WebSocketClient');
 			});
 		}, delay);
 	}

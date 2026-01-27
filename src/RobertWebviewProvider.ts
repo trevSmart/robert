@@ -44,7 +44,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private async initializeCollaboration(): Promise<void> {
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			const settings = this._settingsManager.getSettings();
-			
+
 			if (!settings.collaborationEnabled) {
 				this._errorHandler.logInfo('Collaboration features disabled', 'RobertWebviewProvider.initializeCollaboration');
 				return;
@@ -60,7 +60,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				if (userResult?.user) {
 					const rallyUserId = userResult.user.objectId || userResult.user.userName || '';
 					const displayName = userResult.user.displayName || userResult.user.userName || 'Unknown User';
-					
+
 					this._collaborationClient.setUserInfo(rallyUserId, displayName);
 					this._websocketClient.setUserInfo(rallyUserId, displayName);
 
@@ -93,10 +93,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					}
 				}
 			} catch (error) {
-				this._errorHandler.logWarning(
-					`Failed to initialize collaboration: ${error instanceof Error ? error.message : String(error)}`,
-					'RobertWebviewProvider.initializeCollaboration'
-				);
+				this._errorHandler.logWarning(`Failed to initialize collaboration: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.initializeCollaboration');
 			}
 		}, 'RobertWebviewProvider.initializeCollaboration');
 	}

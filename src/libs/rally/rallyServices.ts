@@ -2,6 +2,7 @@ import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
+import { SettingsManager } from '../../SettingsManager';
 import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
 
 // Error handler singleton instance
@@ -185,27 +186,44 @@ export async function getCurrentUser() {
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
-	// Get the authenticated user from Rally API using the get method
-	// The /user endpoint returns the currently authenticated user when no ref is provided
-	const rallyApi = getRallyApi();
-	errorHandler.logInfo('Executing Rally get request to retrieve authenticated user', 'getCurrentUser');
+	// Get the authenticated user from Rally API using direct REST call
+	// When authenticated with an API key, the /user endpoint returns the current user
+	const settingsManager = SettingsManager.getInstance();
+	const rallyInstance = settingsManager.getSetting('rallyInstance');
+	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
+	
+	const userEndpoint = `${rallyInstance}/slm/webservice/v2.0/user`;
+	const fetchFields = 'ObjectID,UserName,DisplayName,EmailAddress,FirstName,LastName,Disabled';
+	
+	errorHandler.logInfo(`Executing Rally REST call to get authenticated user: ${userEndpoint}`, 'getCurrentUser');
 
 	try {
-		const userResult = await rallyApi.get({
-			type: 'user',
-			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled']
+		const response = await fetch(`${userEndpoint}?fetch=${fetchFields}`, {
+			method: 'GET',
+			headers: {
+				'zsessionid': rallyApiKey,
+				'Content-Type': 'application/json',
+				'X-RallyIntegrationName': 'IBM Robert Extension',
+				'X-RallyIntegrationVendor': 'IBM',
+				'X-RallyIntegrationVersion': '0.0.9'
+			}
 		});
 
-		errorHandler.logInfo(`Rally user get completed. Result type: ${typeof userResult}`, 'getCurrentUser');
+		if (!response.ok) {
+			throw new Error(`Rally API returned ${response.status}: ${response.statusText}`);
+		}
 
-		// Check if userResult and Object property exist
-		const user = userResult?.Object;
+		const data = await response.json();
+		errorHandler.logInfo(`Rally user response received. Status: ${response.status}`, 'getCurrentUser');
+
+		// The response should contain a User object
+		const user = data.User;
 
 		if (user) {
 			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
 
 			const userData = {
-				objectId: String(user.ObjectID ?? user.objectId),
+				objectId: String(user.ObjectID ?? user.objectId ?? user._ref?.split('/').pop()),
 				userName: user.UserName ?? user.userName,
 				displayName: user.DisplayName ?? user.displayName,
 				emailAddress: user.EmailAddress ?? user.emailAddress,
@@ -226,7 +244,7 @@ export async function getCurrentUser() {
 			};
 		}
 
-		errorHandler.logWarning('Rally user get returned no user object', 'getCurrentUser');
+		errorHandler.logWarning('Rally user endpoint returned no user object', 'getCurrentUser');
 		return {
 			user: null,
 			source: 'api'

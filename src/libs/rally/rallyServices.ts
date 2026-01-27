@@ -222,8 +222,19 @@ export async function getCurrentUser() {
 		if (user) {
 			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
 
+			// Extract ObjectID with fallback to _ref parsing
+			let objectId = user.ObjectID ?? user.objectId;
+			if (!objectId && user._ref && typeof user._ref === 'string') {
+				try {
+					const parts = user._ref.split('/');
+					objectId = parts[parts.length - 1];
+				} catch (error) {
+					errorHandler.logWarning(`Failed to extract ObjectID from _ref: ${error}`, 'getCurrentUser');
+				}
+			}
+
 			const userData = {
-				objectId: String(user.ObjectID ?? user.objectId ?? user._ref?.split('/').pop()),
+				objectId: String(objectId || 'unknown'),
 				userName: user.UserName ?? user.userName,
 				displayName: user.DisplayName ?? user.displayName,
 				emailAddress: user.EmailAddress ?? user.emailAddress,

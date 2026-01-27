@@ -198,7 +198,8 @@ export async function getCurrentUser() {
 
 		errorHandler.logInfo(`Rally user get completed. Result type: ${typeof userResult}`, 'getCurrentUser');
 
-		const user = userResult.Object;
+		// Check if userResult and Object property exist
+		const user = userResult?.Object;
 
 		if (user) {
 			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');

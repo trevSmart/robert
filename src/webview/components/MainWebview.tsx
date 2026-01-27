@@ -19,7 +19,7 @@ import StateDistributionPie from './metrics/StateDistributionPie';
 import DefectSeverityChart from './metrics/DefectSeverityChart';
 import CollaborationView from './common/CollaborationView';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Task, type Defect, type Discussion } from '../../types/rally';
+import { type UserStory, type Defect, type Discussion } from '../../types/rally';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateVelocity, calculateAverageVelocity, calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, type VelocityData, type StateDistribution, type DefectsBySeverity } from '../utils/metricsUtils';
 

@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getUserSprintProgress, getAllTeamMembersProgress } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
@@ -98,14 +98,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		}, 'RobertWebviewProvider.initializeCollaboration');
 	}
 
-	private broadcastToWebviews(message: any): void {
+	private broadcastToWebviews(message: Record<string, unknown>): void {
 		if (this._currentView) {
-			this._currentView.webview.postMessage(message).catch(err => {
+			Promise.resolve(this._currentView.webview.postMessage(message)).catch((err: unknown) => {
 				this._errorHandler.logWarning(`Failed to post message to view: ${err}`, 'RobertWebviewProvider.broadcastToWebviews');
 			});
 		}
 		if (this._currentPanel) {
-			this._currentPanel.webview.postMessage(message).catch(err => {
+			Promise.resolve(this._currentPanel.webview.postMessage(message)).catch((err: unknown) => {
 				this._errorHandler.logWarning(`Failed to post message to panel: ${err}`, 'RobertWebviewProvider.broadcastToWebviews');
 			});
 		}

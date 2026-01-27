@@ -93,7 +93,7 @@ export class CollaborationClient {
 
 	private getServerUrl(): string {
 		if (!this._serverUrl) {
-			const url = this._settingsManager.getSetting('collaboration.serverUrl');
+			const url = this._settingsManager.getSetting('collaborationServerUrl');
 			if (!url) {
 				throw new Error('Collaboration server URL not configured');
 			}
@@ -106,9 +106,9 @@ export class CollaborationClient {
 		const serverUrl = this.getServerUrl();
 		const url = `${serverUrl}${endpoint}`;
 
-		const headers: HeadersInit = {
+		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
-			...(options.headers || {})
+			...(options.headers as Record<string, string> || {})
 		};
 
 		if (this._rallyUserId) {
@@ -139,82 +139,90 @@ export class CollaborationClient {
 
 	// Messages API
 	public async getMessages(userStoryId: string): Promise<Message[]> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ messages: Message[] }>(`/api/messages?userStoryId=${encodeURIComponent(userStoryId)}`);
 			return response.messages;
 		}, 'CollaborationClient.getMessages');
+		return result ?? [];
 	}
 
-	public async getMessage(messageId: string): Promise<Message> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+	public async getMessage(messageId: string): Promise<Message | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ message: Message }>(`/api/messages/${messageId}`);
 			return response.message;
 		}, 'CollaborationClient.getMessage');
+		return result ?? null;
 	}
 
-	public async createMessage(input: CreateMessageInput): Promise<Message> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+	public async createMessage(input: CreateMessageInput): Promise<Message | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ message: Message }>('/api/messages', {
 				method: 'POST',
 				body: JSON.stringify(input)
 			});
 			return response.message;
 		}, 'CollaborationClient.createMessage');
+		return result ?? null;
 	}
 
-	public async updateMessage(messageId: string, input: UpdateMessageInput): Promise<Message> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+	public async updateMessage(messageId: string, input: UpdateMessageInput): Promise<Message | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ message: Message }>(`/api/messages/${messageId}`, {
 				method: 'PUT',
 				body: JSON.stringify(input)
 			});
 			return response.message;
 		}, 'CollaborationClient.updateMessage');
+		return result ?? null;
 	}
 
 	public async deleteMessage(messageId: string): Promise<void> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+		await this._errorHandler.executeWithErrorHandling(async () => {
 			await this.makeRequest(`/api/messages/${messageId}`, {
 				method: 'DELETE'
 			});
 		}, 'CollaborationClient.deleteMessage');
 	}
 
-	public async createMessageReply(input: CreateMessageReplyInput): Promise<MessageReply> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+	public async createMessageReply(input: CreateMessageReplyInput): Promise<MessageReply | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ reply: MessageReply }>(`/api/messages/${input.messageId}/replies`, {
 				method: 'POST',
 				body: JSON.stringify({ content: input.content })
 			});
 			return response.reply;
 		}, 'CollaborationClient.createMessageReply');
+		return result ?? null;
 	}
 
 	// Notifications API
 	public async getNotifications(unreadOnly: boolean = false): Promise<{ notifications: Notification[]; unreadCount: number }> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			return this.makeRequest<{ notifications: Notification[]; unreadCount: number }>(`/api/notifications${unreadOnly ? '?unreadOnly=true' : ''}`);
 		}, 'CollaborationClient.getNotifications');
+		return result ?? { notifications: [], unreadCount: 0 };
 	}
 
 	public async getUnreadNotificationCount(): Promise<number> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ unreadCount: number }>('/api/notifications/count');
 			return response.unreadCount;
 		}, 'CollaborationClient.getUnreadNotificationCount');
+		return result ?? 0;
 	}
 
-	public async markNotificationAsRead(notificationId: string): Promise<Notification> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+	public async markNotificationAsRead(notificationId: string): Promise<Notification | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ notification: Notification }>(`/api/notifications/${notificationId}/read`, {
 				method: 'PUT'
 			});
 			return response.notification;
 		}, 'CollaborationClient.markNotificationAsRead');
+		return result ?? null;
 	}
 
 	public async markAllNotificationsAsRead(): Promise<void> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
+		await this._errorHandler.executeWithErrorHandling(async () => {
 			await this.makeRequest('/api/notifications/read-all', {
 				method: 'PUT'
 			});
@@ -222,11 +230,12 @@ export class CollaborationClient {
 	}
 
 	// Users API
-	public async getCurrentUser(): Promise<{ id: string; rallyUserId: string; displayName: string; email?: string }> {
-		return this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ user: any }>('/api/users/me');
+	public async getCurrentUser(): Promise<{ id: string; rallyUserId: string; displayName: string; email?: string } | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
+			const response = await this.makeRequest<{ user: { id: string; rallyUserId: string; displayName: string; email?: string } }>('/api/users/me');
 			return response.user;
 		}, 'CollaborationClient.getCurrentUser');
+		return result ?? null;
 	}
 
 	public async checkServerHealth(): Promise<boolean> {

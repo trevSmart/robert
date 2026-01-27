@@ -55,45 +55,68 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			this._websocketClient.setServerUrl(settings.collaborationServerUrl);
 
 			// Get current user from Rally
+			let rallyUserId = '';
+			let displayName = 'Unknown User';
+
 			try {
 				const userResult = await getCurrentUser();
 				if (userResult?.user) {
-					const rallyUserId = userResult.user.objectId || userResult.user.userName || '';
-					const displayName = userResult.user.displayName || userResult.user.userName || 'Unknown User';
-
-					this._collaborationClient.setUserInfo(rallyUserId, displayName);
-					this._websocketClient.setUserInfo(rallyUserId, displayName);
-
-					// Connect WebSocket if auto-connect is enabled
-					if (settings.collaborationAutoConnect) {
-						await this._websocketClient.connect();
-						this._websocketClient.subscribeNotifications();
-
-						// Setup WebSocket event handlers
-						this._websocketClient.on('notification:new', (data: any) => {
-							this.broadcastToWebviews({
-								command: 'collaborationNewNotification',
-								notification: data.notification
-							});
-						});
-
-						this._websocketClient.on('message:new', (data: any) => {
-							this.broadcastToWebviews({
-								command: 'collaborationNewMessage',
-								message: data.message
-							});
-						});
-
-						this._websocketClient.on('message:updated', (data: any) => {
-							this.broadcastToWebviews({
-								command: 'collaborationMessageUpdated',
-								message: data.message
-							});
-						});
-					}
+					rallyUserId = userResult.user.objectId || userResult.user.userName || '';
+					displayName = userResult.user.displayName || userResult.user.userName || 'Unknown User';
+					this._errorHandler.logInfo(`Rally user retrieved: ${displayName} (${rallyUserId})`, 'RobertWebviewProvider.initializeCollaboration');
 				}
 			} catch (error) {
-				this._errorHandler.logWarning(`Failed to initialize collaboration: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.initializeCollaboration');
+				this._errorHandler.logWarning(`Failed to get Rally user: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.initializeCollaboration');
+			}
+
+			// Fallback: Use machine username if Rally user not available
+			if (!rallyUserId) {
+				const os = await import('os');
+				const fallbackUserId = `local-${os.userInfo().username}`;
+				const fallbackDisplayName = os.userInfo().username || 'Local User';
+
+				this._errorHandler.logWarning(`Rally user not available, using fallback: ${fallbackDisplayName} (${fallbackUserId})`, 'RobertWebviewProvider.initializeCollaboration');
+
+				rallyUserId = fallbackUserId;
+				displayName = fallbackDisplayName;
+			}
+
+			// Set user info for collaboration clients
+			this._collaborationClient.setUserInfo(rallyUserId, displayName);
+			this._websocketClient.setUserInfo(rallyUserId, displayName);
+
+			// Connect WebSocket if auto-connect is enabled
+			if (settings.collaborationAutoConnect) {
+				try {
+					await this._websocketClient.connect();
+					this._websocketClient.subscribeNotifications();
+
+					// Setup WebSocket event handlers
+					this._websocketClient.on('notification:new', (data: any) => {
+						this.broadcastToWebviews({
+							command: 'collaborationNewNotification',
+							notification: data.notification
+						});
+					});
+
+					this._websocketClient.on('message:new', (data: any) => {
+						this.broadcastToWebviews({
+							command: 'collaborationNewMessage',
+							message: data.message
+						});
+					});
+
+					this._websocketClient.on('message:updated', (data: any) => {
+						this.broadcastToWebviews({
+							command: 'collaborationMessageUpdated',
+							message: data.message
+						});
+					});
+
+					this._errorHandler.logInfo('Collaboration WebSocket connected successfully', 'RobertWebviewProvider.initializeCollaboration');
+				} catch (wsError) {
+					this._errorHandler.logWarning(`Failed to connect WebSocket: ${wsError instanceof Error ? wsError.message : String(wsError)}`, 'RobertWebviewProvider.initializeCollaboration');
+				}
 			}
 		}, 'RobertWebviewProvider.initializeCollaboration');
 	}

@@ -1,8 +1,6 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { getOrCreateUser } from './userService';
 import { getMessageById } from './messageService';
-import { createNotification } from './notificationService';
-import { query } from '../config/database';
 
 interface WebSocketClient extends WebSocket {
 	userId?: string;

@@ -5,6 +5,8 @@ import { ErrorHandler } from './ErrorHandler';
 import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getUserSprintProgress, getAllTeamMembersProgress } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
+import { CollaborationClient } from './libs/collaboration/collaborationClient';
+import { WebSocketClient } from './libs/collaboration/websocketClient';
 
 interface Tutorial {
 	title: string;
@@ -20,6 +22,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private _currentView?: vscode.WebviewView;
 	private _errorHandler: ErrorHandler;
 	private _settingsManager: SettingsManager;
+	private _collaborationClient: CollaborationClient;
+	private _websocketClient: WebSocketClient;
 
 	// State persistence for webview
 	private _webviewState: Map<string, unknown> = new Map();
@@ -30,8 +34,84 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	constructor(private readonly _extensionUri: vscode.Uri) {
 		this._errorHandler = ErrorHandler.getInstance();
 		this._settingsManager = SettingsManager.getInstance();
+		this._collaborationClient = CollaborationClient.getInstance();
+		this._websocketClient = WebSocketClient.getInstance();
 
 		this._errorHandler.logInfo('WebviewProvider initialized', 'RobertWebviewProvider.constructor');
+		this.initializeCollaboration();
+	}
+
+	private async initializeCollaboration(): Promise<void> {
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			const settings = this._settingsManager.getSettings();
+			
+			if (!settings.collaborationEnabled) {
+				this._errorHandler.logInfo('Collaboration features disabled', 'RobertWebviewProvider.initializeCollaboration');
+				return;
+			}
+
+			// Set server URL
+			this._collaborationClient.setServerUrl(settings.collaborationServerUrl);
+			this._websocketClient.setServerUrl(settings.collaborationServerUrl);
+
+			// Get current user from Rally
+			try {
+				const userResult = await getCurrentUser();
+				if (userResult?.user) {
+					const rallyUserId = userResult.user.objectId || userResult.user.userName || '';
+					const displayName = userResult.user.displayName || userResult.user.userName || 'Unknown User';
+					
+					this._collaborationClient.setUserInfo(rallyUserId, displayName);
+					this._websocketClient.setUserInfo(rallyUserId, displayName);
+
+					// Connect WebSocket if auto-connect is enabled
+					if (settings.collaborationAutoConnect) {
+						await this._websocketClient.connect();
+						this._websocketClient.subscribeNotifications();
+
+						// Setup WebSocket event handlers
+						this._websocketClient.on('notification:new', (data: any) => {
+							this.broadcastToWebviews({
+								command: 'collaborationNewNotification',
+								notification: data.notification
+							});
+						});
+
+						this._websocketClient.on('message:new', (data: any) => {
+							this.broadcastToWebviews({
+								command: 'collaborationNewMessage',
+								message: data.message
+							});
+						});
+
+						this._websocketClient.on('message:updated', (data: any) => {
+							this.broadcastToWebviews({
+								command: 'collaborationMessageUpdated',
+								message: data.message
+							});
+						});
+					}
+				}
+			} catch (error) {
+				this._errorHandler.logWarning(
+					`Failed to initialize collaboration: ${error instanceof Error ? error.message : String(error)}`,
+					'RobertWebviewProvider.initializeCollaboration'
+				);
+			}
+		}, 'RobertWebviewProvider.initializeCollaboration');
+	}
+
+	private broadcastToWebviews(message: any): void {
+		if (this._currentView) {
+			this._currentView.webview.postMessage(message).catch(err => {
+				this._errorHandler.logWarning(`Failed to post message to view: ${err}`, 'RobertWebviewProvider.broadcastToWebviews');
+			});
+		}
+		if (this._currentPanel) {
+			this._currentPanel.webview.postMessage(message).catch(err => {
+				this._errorHandler.logWarning(`Failed to post message to panel: ${err}`, 'RobertWebviewProvider.broadcastToWebviews');
+			});
+		}
 	}
 
 	/**
@@ -814,6 +894,124 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._errorHandler.logDebug(message.message as string, message.context as string);
 							}
 							break;
+						case 'loadCollaborationMessages':
+							try {
+								this._errorHandler.logInfo(`Loading collaboration messages for user story: ${message.userStoryId}`, 'WebviewMessageListener');
+								const messages = await this._collaborationClient.getMessages(message.userStoryId);
+								webview.postMessage({
+									command: 'collaborationMessagesLoaded',
+									messages
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadCollaborationMessages');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'createCollaborationMessage':
+							try {
+								this._errorHandler.logInfo('Creating collaboration message', 'WebviewMessageListener');
+								const newMessage = await this._collaborationClient.createMessage({
+									userStoryId: message.userStoryId,
+									content: message.content
+								});
+								webview.postMessage({
+									command: 'collaborationMessageCreated',
+									message: newMessage
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'createCollaborationMessage');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'createCollaborationMessageReply':
+							try {
+								this._errorHandler.logInfo(`Creating reply for message: ${message.messageId}`, 'WebviewMessageListener');
+								const reply = await this._collaborationClient.createMessageReply({
+									messageId: message.messageId,
+									content: message.content
+								});
+								webview.postMessage({
+									command: 'collaborationMessageReplyCreated',
+									reply
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'createCollaborationMessageReply');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'loadCollaborationNotifications':
+							try {
+								this._errorHandler.logInfo('Loading collaboration notifications', 'WebviewMessageListener');
+								const result = await this._collaborationClient.getNotifications(message.unreadOnly || false);
+								webview.postMessage({
+									command: 'collaborationNotificationsLoaded',
+									notifications: result.notifications,
+									unreadCount: result.unreadCount
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadCollaborationNotifications');
+								webview.postMessage({
+									command: 'collaborationNotificationsError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'markCollaborationNotificationAsRead':
+							try {
+								this._errorHandler.logInfo(`Marking notification as read: ${message.notificationId}`, 'WebviewMessageListener');
+								await this._collaborationClient.markNotificationAsRead(message.notificationId);
+								webview.postMessage({
+									command: 'collaborationNotificationMarkedAsRead',
+									notificationId: message.notificationId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markCollaborationNotificationAsRead');
+								webview.postMessage({
+									command: 'collaborationNotificationsError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'markAllCollaborationNotificationsAsRead':
+							try {
+								this._errorHandler.logInfo('Marking all notifications as read', 'WebviewMessageListener');
+								await this._collaborationClient.markAllNotificationsAsRead();
+								webview.postMessage({
+									command: 'collaborationNotificationsMarkedAsRead'
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markAllCollaborationNotificationsAsRead');
+								webview.postMessage({
+									command: 'collaborationNotificationsError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'subscribeCollaborationUserStory':
+							if (this._websocketClient.isConnected()) {
+								this._websocketClient.subscribeUserStory(message.userStoryId);
+							}
+							break;
+						case 'unsubscribeCollaborationUserStory':
+							if (this._websocketClient.isConnected()) {
+								this._websocketClient.unsubscribeUserStory(message.userStoryId);
+							}
+							break;
 						default:
 							this._errorHandler.logWarning(`Unknown message command: ${message.command}`, 'WebviewMessageListener');
 							break;
@@ -988,6 +1186,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	public dispose() {
 		this._errorHandler.executeWithErrorHandlingSync(() => {
+			// Disconnect WebSocket
+			this._websocketClient.disconnect();
+
 			for (const disposable of this._disposables) {
 				disposable.dispose();
 			}

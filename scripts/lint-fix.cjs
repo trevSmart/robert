@@ -1,7 +1,7 @@
 const { spawnSync } = require('child_process');
 
 console.log('🔍 Running ESLint...');
-const eslint = spawnSync('eslint', ['.', '--fix'], {
+const eslint = spawnSync('eslint', ['src/**/*.{ts,tsx}', '--fix', '--ext', '.ts,.tsx'], {
   stdio: 'inherit',
   shell: true
 });

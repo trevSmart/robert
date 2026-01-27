@@ -469,7 +469,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												style={{
 													height: '6px',
 													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-													opacity: isHoveredDay ? 1 : lightTheme ? 0.35 : 0.15,
+													opacity: isHoveredDay ? 1 : lightTheme ? 0.7 : 0.5,
 													transition: 'opacity 0.2s ease',
 													borderTopLeftRadius: isFirstDay ? '4px' : '0',
 													borderBottomLeftRadius: isFirstDay ? '4px' : '0',

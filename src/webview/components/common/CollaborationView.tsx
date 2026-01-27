@@ -168,7 +168,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 
 	// Handle selectedUserStoryId prop changes by syncing filter state and loading messages
 	// This is a legitimate use case for setState in effect: syncing derived state from props
-	 
+
 	useEffect(() => {
 		if (selectedUserStoryId) {
 			setSelectedUserStoryFilter(selectedUserStoryId);

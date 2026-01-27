@@ -1,6 +1,5 @@
 import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
-import type { Message, Notification } from './collaborationClient';
 
 export interface WebSocketMessage {
 	type: string;
@@ -49,7 +48,7 @@ export class WebSocketClient {
 
 	private getWebSocketUrl(): string {
 		if (!this._serverUrl) {
-			const url = this._settingsManager.getSetting('collaboration.serverUrl');
+			const url = this._settingsManager.getSetting('collaborationServerUrl');
 			if (!url) {
 				throw new Error('Collaboration server URL not configured');
 			}
@@ -217,7 +216,7 @@ export class WebSocketClient {
 				break;
 
 			case 'error':
-				this._errorHandler.logWarning(`WebSocket error: ${(data as any).message || 'Unknown error'}`, 'WebSocketClient');
+				this._errorHandler.logWarning(`WebSocket error: ${(data as { message?: string }).message || 'Unknown error'}`, 'WebSocketClient');
 				this.emit('error', data);
 				break;
 

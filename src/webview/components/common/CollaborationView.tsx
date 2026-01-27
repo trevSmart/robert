@@ -157,12 +157,20 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 		});
 	}, []);
 
+	// Handle selectedUserStoryId prop changes by loading messages
+	// The filter state is initialized from prop, so we only need to load messages here
 	useEffect(() => {
 		if (selectedUserStoryId) {
-			setSelectedUserStoryFilter(selectedUserStoryId);
 			loadMessages(selectedUserStoryId);
 		}
 	}, [selectedUserStoryId, loadMessages]);
+
+	// Sync filter state when prop changes (separate effect to avoid setState warning)
+	useEffect(() => {
+		if (selectedUserStoryId !== undefined) {
+			setSelectedUserStoryFilter(prev => (prev !== selectedUserStoryId ? selectedUserStoryId : prev));
+		}
+	}, [selectedUserStoryId]);
 
 	useEffect(() => {
 		loadNotifications();

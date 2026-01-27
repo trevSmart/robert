@@ -22,7 +22,7 @@ export const rallyData: RallyData = {
 
 // Store global references for reload functionality
 let globalWebviewProvider: RobertWebviewProvider | null = null;
-let globalExtensionContext: vscode.ExtensionContext | null = null;
+let _globalExtensionContext: vscode.ExtensionContext | null = null;
 
 // In-memory state for the status popover (dummy content)
 const robertPopoverState = {
@@ -35,7 +35,7 @@ const robertPopoverState = {
  * Reload the extension without reloading the IDE
  * Clears cache, resets data, and refreshes the webview
  */
-async function reloadExtension(outputManager: OutputChannelManager, errorHandler: ErrorHandler): Promise<void> {
+async function reloadExtension(outputManager: OutputChannelManager, _errorHandler: ErrorHandler): Promise<void> {
 	try {
 		outputManager.appendLine('[Robert] 🔄 Starting extension reload');
 

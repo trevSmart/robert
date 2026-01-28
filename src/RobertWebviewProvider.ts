@@ -2,7 +2,24 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress } from './libs/rally/rallyServices';
+import {
+	getProjects,
+	getIterations,
+	getUserStories,
+	getTasks,
+	getDefects,
+	getCurrentUser,
+	getUserStoryDefects,
+	getUserStoryTests,
+	getUserStoryDiscussions,
+	getRecentTeamMembers,
+	getAllTeamMembersProgress,
+	globalSearch,
+	getUserStoryByObjectId,
+	getDefectByObjectId,
+	getTaskWithParent,
+	getTestCaseWithParent
+} from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
@@ -637,6 +654,50 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								}
 							}
 							break;
+						case 'loadVelocityData':
+							try {
+								this._errorHandler.logInfo('Loading velocity data (hours per sprint) from Rally API', 'WebviewMessageListener');
+								const iterationsResult = await getIterations();
+								const iterations = iterationsResult?.iterations ?? [];
+								const today = new Date();
+								today.setHours(23, 59, 59, 999);
+								const numberOfSprints = 12;
+								const sortedIterations = iterations
+									.filter((it: { startDate: string; endDate: string }) => {
+										const startDate = new Date(it.startDate);
+										const endDate = new Date(it.endDate);
+										return endDate <= today || (startDate <= today && endDate > today);
+									})
+									.sort((a: { endDate: string }, b: { endDate: string }) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+									.slice(0, numberOfSprints)
+									.reverse();
+								const velocityData: { sprintName: string; points: number; completedStories: number }[] = [];
+								for (const iteration of sortedIterations) {
+									const ref = `/iteration/${iteration.objectId}`;
+									// Fetch all user stories for this iteration; rely on service to handle pagination/caching
+									const usResult = await getUserStories({ Iteration: ref });
+									const allStories: { taskEstimateTotal?: number; scheduleState?: string }[] = usResult?.userStories ?? [];
+									const points = allStories.reduce((sum: number, s: { taskEstimateTotal?: number }) => sum + (s.taskEstimateTotal ?? 0), 0);
+									const completedStories = allStories.filter((s: { scheduleState?: string }) => s.scheduleState === 'Completed' || s.scheduleState === 'Accepted').length;
+									velocityData.push({
+										sprintName: iteration.name,
+										points: Math.round(points * 10) / 10,
+										completedStories
+									});
+								}
+								webview.postMessage({
+									command: 'velocityDataLoaded',
+									velocityData
+								});
+								this._errorHandler.logInfo(`Velocity data loaded: ${velocityData.length} sprints`, 'WebviewMessageListener');
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadVelocityData');
+								webview.postMessage({
+									command: 'velocityDataError',
+									error: 'Failed to load velocity data'
+								});
+							}
+							break;
 						case 'loadTasks':
 							try {
 								this._errorHandler.logInfo('Loading tasks from Rally API', 'WebviewMessageListener');
@@ -1030,6 +1091,99 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'unsubscribeCollaborationUserStory':
 							if (this._websocketClient.isConnected()) {
 								this._websocketClient.unsubscribeUserStory(message.userStoryId);
+							}
+							break;
+						case 'globalSearch':
+							try {
+								this._errorHandler.logDebug(`Global search: "${message.term}"`, 'WebviewMessageListener');
+								const searchResult = await globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 15 });
+								webview.postMessage({
+									command: 'globalSearchResults',
+									results: searchResult.results,
+									term: message.term
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'globalSearch');
+								webview.postMessage({
+									command: 'globalSearchError',
+									error: errorMessage,
+									term: message.term
+								});
+							}
+							break;
+						case 'loadUserStoryByObjectId':
+							try {
+								const usResult = await getUserStoryByObjectId(message.objectId);
+								webview.postMessage({
+									command: 'userStoryByObjectIdLoaded',
+									userStory: usResult.userStory,
+									objectId: message.objectId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStoryByObjectId');
+								webview.postMessage({
+									command: 'userStoryByObjectIdError',
+									error: errorMessage,
+									objectId: message.objectId
+								});
+							}
+							break;
+						case 'loadDefectByObjectId':
+							try {
+								const defResult = await getDefectByObjectId(message.objectId);
+								webview.postMessage({
+									command: 'defectByObjectIdLoaded',
+									defect: defResult.defect,
+									objectId: message.objectId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadDefectByObjectId');
+								webview.postMessage({
+									command: 'defectByObjectIdError',
+									error: errorMessage,
+									objectId: message.objectId
+								});
+							}
+							break;
+						case 'loadTaskWithParent':
+							try {
+								const taskResult = await getTaskWithParent(message.objectId);
+								webview.postMessage({
+									command: 'taskWithParentLoaded',
+									task: taskResult.task,
+									userStoryObjectId: taskResult.userStoryObjectId,
+									objectId: message.objectId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadTaskWithParent');
+								webview.postMessage({
+									command: 'taskWithParentError',
+									error: errorMessage,
+									objectId: message.objectId
+								});
+							}
+							break;
+						case 'loadTestCaseWithParent':
+							try {
+								const tcResult = await getTestCaseWithParent(message.objectId);
+								webview.postMessage({
+									command: 'testCaseWithParentLoaded',
+									testCase: tcResult.testCase,
+									userStoryObjectId: tcResult.userStoryObjectId,
+									objectId: message.objectId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadTestCaseWithParent');
+								webview.postMessage({
+									command: 'testCaseWithParentError',
+									error: errorMessage,
+									objectId: message.objectId
+								});
 							}
 							break;
 						default:

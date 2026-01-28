@@ -1,8 +1,27 @@
 import { rallyData } from '../../extension.js';
-import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
+import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User, GlobalSearchResultItem } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
+import { SettingsManager } from '../../SettingsManager';
 import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
+
+// Polyfill for fetch in older VS Code versions (< 1.77, Node.js < 18)
+// Use dynamic import to avoid errors in environments where fetch is available
+const fetchPolyfill = async (url: string, options?: RequestInit): Promise<Response> => {
+	// Try to use native fetch if available (Node.js 18+ / VS Code 1.77+)
+	if (typeof globalThis.fetch === 'function') {
+		return globalThis.fetch(url, options);
+	}
+
+	// Fallback to node-fetch for older environments
+	try {
+		// @ts-ignore - dynamic import for compatibility
+		const nodeFetch = await import('node-fetch');
+		return nodeFetch.default(url, options) as unknown as Response;
+	} catch (error) {
+		throw new Error('fetch is not available and node-fetch polyfill could not be loaded. Please upgrade VS Code to version 1.77 or later.');
+	}
+};
 
 // Error handler singleton instance
 const errorHandler = ErrorHandler.getInstance();
@@ -185,28 +204,65 @@ export async function getCurrentUser() {
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
-	// Get the authenticated user from Rally API
-	const rallyApi = getRallyApi();
-	errorHandler.logInfo('Executing Rally user query to get authenticated user', 'getCurrentUser');
+	// Get the authenticated user from Rally API using direct REST call
+	// When authenticated with an API key, the /user endpoint returns the current user
+	const settingsManager = SettingsManager.getInstance();
+	const rallyInstance = settingsManager.getSetting('rallyInstance');
+	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
+
+	const userEndpoint = `${rallyInstance}/slm/webservice/v2.0/user`;
+	const fetchFields = 'ObjectID,UserName,DisplayName,EmailAddress,FirstName,LastName,Disabled';
+
+	errorHandler.logInfo(`Executing Rally REST call to get authenticated user: ${userEndpoint}`, 'getCurrentUser');
 
 	try {
-		const userResult = await rallyApi.query({
-			type: 'user',
-			fetch: ['ObjectID', 'UserName', 'DisplayName', 'EmailAddress', 'FirstName', 'LastName', 'Disabled'],
-			limit: 1
+		const response = await fetchPolyfill(`${userEndpoint}?fetch=${fetchFields}`, {
+			method: 'GET',
+			headers: {
+				zsessionid: rallyApiKey,
+				'Content-Type': 'application/json',
+				'X-RallyIntegrationName': 'IBM Robert Extension',
+				'X-RallyIntegrationVendor': 'IBM',
+				'X-RallyIntegrationVersion': '0.0.9'
+			}
 		});
 
-		errorHandler.logInfo(`Rally user query completed. Result type: ${typeof userResult}`, 'getCurrentUser');
+		if (!response.ok) {
+			throw new Error(`Rally API returned ${response.status}: ${response.statusText}`);
+		}
 
-		const resultData = userResult as RallyApiResult;
+		const data = await response.json();
+		errorHandler.logInfo(`Rally user response received. Status: ${response.status}`, 'getCurrentUser');
 
-		const results = resultData.Results || resultData.QueryResult?.Results || [];
-		if (results.length > 0) {
-			const user = results[0];
+		// The response should contain a User object
+		const user = data.User;
+
+		if (user) {
 			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
 
+			// Extract ObjectID with fallback to _ref parsing
+			let objectId = user.ObjectID ?? user.objectId;
+			if (!objectId && user._ref && typeof user._ref === 'string') {
+				try {
+					const parts = user._ref.split('/');
+					objectId = parts[parts.length - 1];
+				} catch (error) {
+					errorHandler.logWarning(`Failed to extract ObjectID from _ref: ${error}`, 'getCurrentUser');
+				}
+			}
+
+			// If we still don't have an ObjectID, treat this as an authentication failure
+			// A missing ObjectID means we can't properly identify the user for collaboration
+			if (!objectId) {
+				errorHandler.logError('Rally user data missing ObjectID - cannot authenticate user', 'getCurrentUser');
+				return {
+					user: null,
+					source: 'api'
+				};
+			}
+
 			const userData = {
-				objectId: String(user.ObjectID ?? user.objectId),
+				objectId: String(objectId),
 				userName: user.UserName ?? user.userName,
 				displayName: user.DisplayName ?? user.displayName,
 				emailAddress: user.EmailAddress ?? user.emailAddress,
@@ -227,7 +283,7 @@ export async function getCurrentUser() {
 			};
 		}
 
-		errorHandler.logWarning('Rally user query returned no results', 'getCurrentUser');
+		errorHandler.logWarning('Rally user endpoint returned no user object', 'getCurrentUser');
 		return {
 			user: null,
 			source: 'api'
@@ -689,7 +745,7 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'iteration',
-		fetch: ['ObjectID', 'Name', 'StartDate', 'EndDate', 'State', 'Project', 'CreationDate', 'LastUpdateDate', 'PlannedVelocity', 'Theme', 'Notes', 'RevisionHistory']
+		fetch: ['ObjectID', 'Name', 'StartDate', 'EndDate', 'State', 'Project', 'CreationDate', 'LastUpdateDate', 'PlannedVelocity', 'Theme', 'Notes', 'RevisionHistory', 'TaskEstimateTotal']
 	};
 
 	if (limit) {
@@ -2232,4 +2288,220 @@ export function clearAllRallyCaches(): void {
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.clearAllRallyCaches');
 	}
+}
+
+/** Default limit per entity type for global search */
+const GLOBAL_SEARCH_LIMIT_PER_TYPE = 15;
+
+/**
+ * Build a Rally query that matches term by FormattedID (exact or contains) or Name (contains).
+ * Combines with project filter.
+ */
+function buildGlobalSearchQuery(term: string, projectRef: string): RallyQueryBuilder {
+	const formIdExact = queryUtils.where('FormattedID', '=', term);
+	const formIdContains = queryUtils.where('FormattedID', 'contains', term);
+	const nameContains = queryUtils.where('Name', 'contains', term);
+	// @ts-expect-error - Rally query builder has or method
+	const searchOr = formIdExact.or(formIdContains).or(nameContains);
+	const projectFilter = queryUtils.where('Project', '=', projectRef);
+	return searchOr.and(projectFilter);
+}
+
+/**
+ * Global search across Rally entities (user stories, defects, tasks, test cases).
+ * Searches by FormattedID (exact or partial) and by Name (partial).
+ * There is no single "search" endpoint in the Rally Web Services API; this runs parallel queries per type.
+ *
+ * @param term - Search string (code like US12345 or text from title)
+ * @param options - Optional limit per entity type (default 15)
+ * @returns Combined results with entityType, formattedId, name, objectId
+ */
+export async function globalSearch(term: string, options?: { limitPerType?: number }): Promise<{ results: GlobalSearchResultItem[]; source: string }> {
+	const trimmed = (term || '').trim();
+	if (!trimmed) {
+		errorHandler.logDebug('Global search called with empty term', 'rallyServices.globalSearch');
+		return { results: [], source: 'api' };
+	}
+
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+
+	const projectId = await getProjectId();
+	const projectRef = `/project/${projectId}`;
+	const limitPerType = options?.limitPerType ?? GLOBAL_SEARCH_LIMIT_PER_TYPE;
+	const searchQuery = buildGlobalSearchQuery(trimmed, projectRef);
+
+	const rallyApi = getRallyApi();
+
+	const fetchOptions = [
+		{
+			type: 'hierarchicalrequirement' as const,
+			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', 'Iteration', '_ref'],
+			entityType: 'userstory' as const
+		},
+		{
+			type: 'defect' as const,
+			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', 'Iteration', '_ref'],
+			entityType: 'defect' as const
+		},
+		{
+			type: 'task' as const,
+			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', 'WorkProduct', '_ref'],
+			entityType: 'task' as const
+		},
+		{
+			type: 'testcase' as const,
+			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', '_ref'],
+			entityType: 'testcase' as const
+		}
+	];
+
+	const runOne = async (opts: (typeof fetchOptions)[0]): Promise<GlobalSearchResultItem[]> => {
+		try {
+			const result = await rallyApi.query({
+				type: opts.type,
+				fetch: opts.fetch,
+				query: searchQuery,
+				limit: limitPerType
+			});
+			const resultData = result as RallyApiResult;
+			const results = resultData.Results || resultData.QueryResult?.Results || [];
+			return results.map((r: any) => ({
+				entityType: opts.entityType,
+				formattedId: r.FormattedID ?? r.formattedId ?? '',
+				name: r.Name ?? r.name ?? '',
+				objectId: String(r.ObjectID ?? r.objectId ?? ''),
+				project: r.Project?._refObjectName ?? r.Project?.refObjectName ?? r.project?._refObjectName ?? r.project?.refObjectName ?? null,
+				iteration: r.Iteration?._refObjectName ?? r.Iteration?.refObjectName ?? r.iteration?._refObjectName ?? r.iteration?.refObjectName ?? null,
+				_ref: r._ref
+			}));
+		} catch (err) {
+			errorHandler.logWarning(`Global search failed for ${opts.type}: ${err instanceof Error ? err.message : String(err)}`, 'rallyServices.globalSearch');
+			return [];
+		}
+	};
+
+	errorHandler.logInfo(`Global search: "${trimmed}" (limit ${limitPerType} per type)`, 'rallyServices.globalSearch');
+
+	const arrays = await Promise.all(fetchOptions.map(runOne));
+	const results: GlobalSearchResultItem[] = arrays.flat();
+
+	errorHandler.logInfo(`Global search returned ${results.length} results`, 'rallyServices.globalSearch');
+
+	return { results, source: 'api' };
+}
+
+/**
+ * Fetch a single user story by ObjectID for opening from global search.
+ */
+export async function getUserStoryByObjectId(objectId: string): Promise<{ userStory: RallyUserStory | null }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+
+	// Get project ID from cached rallyData if available, otherwise fetch it
+	let projectRef: string | undefined;
+	const settingsManager = SettingsManager.getInstance();
+	const rallyProjectName = settingsManager.getSetting('rallyProjectName')?.trim();
+
+	if (rallyProjectName && rallyData.projects.length > 0) {
+		const currentProject = rallyData.projects.find((p: RallyProject) => p.name === rallyProjectName);
+		if (currentProject) {
+			projectRef = `/project/${currentProject.objectId}`;
+			errorHandler.logDebug(`Scoping user story query to project: ${rallyProjectName} (${currentProject.objectId})`, 'getUserStoryByObjectId');
+		} else {
+			errorHandler.logWarning(`Project "${rallyProjectName}" not found in cached rallyData, querying without project scope`, 'getUserStoryByObjectId');
+		}
+	} else {
+		errorHandler.logDebug('No project name configured or rallyData.projects empty, querying without project scope', 'getUserStoryByObjectId');
+	}
+
+	const rallyApi = getRallyApi();
+	const queryOptions: RallyQueryOptions = {
+		type: 'hierarchicalrequirement',
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	};
+
+	// Scope to project if available
+	if (projectRef) {
+		queryOptions.query = queryUtils.where('ObjectID', '=', objectId).and(queryUtils.where('Project', '=', projectRef));
+	}
+
+	const result = await rallyApi.query(queryOptions);
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) return { userStory: null };
+	const formatted = await formatUserStoriesAsync({ ...resultData, Results: results });
+	return { userStory: formatted[0] ?? null };
+}
+
+/**
+ * Fetch a single defect by ObjectID for opening from global search.
+ */
+export async function getDefectByObjectId(objectId: string): Promise<{ defect: RallyDefect | null }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+	const rallyApi = getRallyApi();
+	const result = await rallyApi.query({
+		type: 'defect',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	});
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) return { defect: null };
+	const formatted = await formatDefectsAsync(results);
+	return { defect: formatted[0] ?? null };
+}
+
+/**
+ * Fetch a single task by ObjectID and its parent user story ObjectID for opening from global search.
+ */
+export async function getTaskWithParent(objectId: string): Promise<{ task: any; userStoryObjectId: string | null }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+	const rallyApi = getRallyApi();
+	const result = await rallyApi.query({
+		type: 'task',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID', 'Rank'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	});
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) return { task: null, userStoryObjectId: null };
+	const raw = results[0] as any;
+	const userStoryObjectId = raw.WorkProduct?.ObjectID ?? raw.WorkProduct?.objectId ?? null;
+	const formatted = await formatTasksAsync(results);
+	return { task: formatted[0] ?? null, userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null };
+}
+
+/**
+ * Fetch a single test case by ObjectID and its parent user story ObjectID for opening from global search.
+ */
+export async function getTestCaseWithParent(objectId: string): Promise<{ testCase: any; userStoryObjectId: string | null }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+	const rallyApi = getRallyApi();
+	const result = await rallyApi.query({
+		type: 'testcase',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Project', 'Type', 'Priority', 'TestFolder', 'ObjectID', 'WorkProduct'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	});
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) return { testCase: null, userStoryObjectId: null };
+	const raw = results[0] as any;
+	const userStoryObjectId = raw.WorkProduct?.ObjectID ?? raw.WorkProduct?.objectId ?? null;
+	const formatted = await formatTestCasesAsync(results);
+	return { testCase: formatted[0] ?? null, userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null };
 }

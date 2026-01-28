@@ -51,14 +51,16 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			chartInstanceRef.current = echarts.init(chartRef.current);
 		}
 
-		// Prepare data
-		const totalHours = assigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
+		// Prepare data - sort by total hours descending (most hours first)
+		// With yAxis.inverse enabled, this ordering shows the highest bars at the top of the chart
+		const sortedAssigneeData = [...assigneeData].sort((a, b) => b.totalHours - a.totalHours);
+		const totalHours = sortedAssigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
 		const lightTheme = isLightTheme();
 
 		// Create series data for stacked bars
 		// First, collect all unique user stories across assignees
 		const allUserStories = new Set<string>();
-		assigneeData.forEach(assignee => {
+		sortedAssigneeData.forEach(assignee => {
 			assignee.userStories.forEach(story => {
 				allUserStories.add(story.id);
 			});
@@ -66,7 +68,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 		// Create a map of story ID to story details for easy lookup
 		const storyDetailsMap = new Map<string, { formattedId: string; name: string }>();
-		assigneeData.forEach(assignee => {
+		sortedAssigneeData.forEach(assignee => {
 			assignee.userStories.forEach(story => {
 				storyDetailsMap.set(story.id, { formattedId: story.formattedId, name: story.name });
 			});
@@ -75,7 +77,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		// Create series for each user story
 		const series = Array.from(allUserStories).map(storyId => {
 			const storyDetails = storyDetailsMap.get(storyId);
-			const storyData = assigneeData.map(assignee => {
+			const storyData = sortedAssigneeData.map(assignee => {
 				const story = assignee.userStories.find(s => s.id === storyId);
 				return story ? story.hours : 0;
 			});
@@ -207,7 +209,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			},
 			yAxis: {
 				type: 'category',
-				data: assigneeData.map(item => item.name),
+				data: sortedAssigneeData.map(item => item.name),
+				inverse: true, // Display from top to bottom (highest bars at top)
 				nameTextStyle: {
 					color: themeColors.foreground
 				},

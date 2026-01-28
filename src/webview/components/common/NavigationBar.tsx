@@ -1,22 +1,29 @@
 import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { isLightTheme } from '../../utils/themeColors';
 
-type Section = 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
+type Section = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 
 interface NavigationBarProps {
 	activeSection: Section;
 	onSectionChange: (section: Section) => void;
 }
 
+// Search tab: magnifying glass SVG only (no label)
+const SearchIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '18px', height: '18px' }} aria-hidden>
+		<path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+	</svg>
+);
+
 // Icon components
 const CalendarIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
 		<path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5" />
 	</svg>
 );
 
 const PortfolioIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -26,7 +33,7 @@ const PortfolioIcon = () => (
 );
 
 const TeamIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -36,7 +43,7 @@ const TeamIcon = () => (
 );
 
 const LibraryIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -46,7 +53,7 @@ const LibraryIcon = () => (
 );
 
 const MetricsIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -56,7 +63,7 @@ const MetricsIcon = () => (
 );
 
 const CollaborationIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -68,12 +75,13 @@ const CollaborationIcon = () => (
 const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange }) => {
 	const tabs = useMemo(
 		() => [
-			{ id: 'calendar' as const, label: 'Plan', Icon: CalendarIcon },
-			{ id: 'portfolio' as const, label: 'Portfolio', Icon: PortfolioIcon },
-			{ id: 'team' as const, label: 'Team', Icon: TeamIcon },
-			{ id: 'library' as const, label: 'Library', Icon: LibraryIcon },
-			{ id: 'metrics' as const, label: 'Metrics', Icon: MetricsIcon },
-			{ id: 'collaboration' as const, label: 'Collaboration', Icon: CollaborationIcon }
+			{ id: 'search' as const, label: '', Icon: SearchIcon, iconOnly: true },
+			{ id: 'calendar' as const, label: 'Plan', Icon: CalendarIcon, iconOnly: false },
+			{ id: 'portfolio' as const, label: 'Portfolio', Icon: PortfolioIcon, iconOnly: false },
+			{ id: 'team' as const, label: 'Team', Icon: TeamIcon, iconOnly: false },
+			{ id: 'metrics' as const, label: 'Metrics', Icon: MetricsIcon, iconOnly: false },
+			{ id: 'collaboration' as const, label: 'Collaboration', Icon: CollaborationIcon, iconOnly: false },
+			{ id: 'library' as const, label: 'Library', Icon: LibraryIcon, iconOnly: false }
 		],
 		[]
 	);
@@ -227,10 +235,10 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				}}
 				ref={containerRef}
 			>
-				{visibleTabs.map(({ id, label, Icon }) => (
-					<button key={id} type="button" onClick={() => activeSection !== id && onSectionChange(id)} style={getTabStyles(activeSection === id)}>
+				{visibleTabs.map(({ id, label, Icon, iconOnly }) => (
+					<button key={id} type="button" onClick={() => activeSection !== id && onSectionChange(id)} style={getTabStyles(activeSection === id)} aria-label={iconOnly ? 'Search' : undefined} title={iconOnly ? 'Search' : undefined}>
 						<Icon />
-						<span>{label}</span>
+						{!iconOnly && <span>{label}</span>}
 					</button>
 				))}
 				{overflowTabs.length > 0 && (
@@ -265,7 +273,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 									padding: '6px 0'
 								}}
 							>
-								{overflowTabs.map(({ id, label, Icon }) => (
+								{overflowTabs.map(({ id, label, Icon, iconOnly }) => (
 									<button
 										key={id}
 										type="button"
@@ -288,9 +296,10 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 											fontSize: '12px',
 											textAlign: 'left'
 										}}
+										aria-label={iconOnly ? 'Search' : undefined}
 									>
 										<Icon />
-										<span>{label}</span>
+										{!iconOnly && <span>{label}</span>}
 									</button>
 								))}
 							</div>
@@ -307,10 +316,10 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 					}}
 				>
 					<div ref={measureTabsRef} style={{ display: 'inline-flex' }}>
-						{tabs.map(({ id, label, Icon }) => (
+						{tabs.map(({ id, label, Icon, iconOnly }) => (
 							<button key={id} type="button" style={getTabStyles(false)}>
 								<Icon />
-								<span>{label}</span>
+								{!iconOnly && <span>{label}</span>}
 							</button>
 						))}
 					</div>

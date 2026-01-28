@@ -1,6 +1,0 @@
----
-description: Any action performed by our extension must be logged to the "Robert" Output channel. Any errors or warnings must also be registered in the "Robert" Output channel.
-globs:
-alwaysApply: true
----
-Any action performed by our extension must be logged to the "Robert" Output channel. Any errors or warnings must also be registered in the "Robert" Output channel.

@@ -1328,7 +1328,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					if (message.velocityData?.length) {
 						setVelocityData(message.velocityData);
 						const avg = message.velocityData.reduce((s: number, d: { points: number }) => s + d.points, 0) / message.velocityData.length;
-						setAverageVelocity(Math.round(avg));
+						setAverageVelocity(Math.round(avg * 10) / 10);
 					}
 					break;
 				case 'velocityDataError':

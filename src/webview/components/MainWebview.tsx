@@ -1767,10 +1767,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 										}}
 									>
 										{globalSearchResults.map((item, idx) => (
-											<li
-												key={`${item.entityType}-${item.objectId}-${idx}`}
-												style={{ margin: 0, padding: 0 }}
-											>
+											<li key={`${item.entityType}-${item.objectId}-${idx}`} style={{ margin: 0, padding: 0 }}>
 												<button
 													type="button"
 													className="search-result-button"

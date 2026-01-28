@@ -89,6 +89,7 @@ export interface Iteration {
 	endDate: string;
 	state: string;
 	project: string | null;
+	taskEstimateTotal?: number;
 	_ref?: string;
 }
 

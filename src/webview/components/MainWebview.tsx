@@ -1818,36 +1818,57 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 								<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Monitor team activity, collaboration, and project progress</p>
 							</div>
 
-							{/* Team Stats */}
-							<div
-								style={{
-									display: 'grid',
-									gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-									gap: '12px',
-									marginBottom: '20px'
-								}}
-							>
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-										borderRadius: '8px',
-										padding: '12px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{teamMembers.length}</div>
-									<div style={{ fontSize: '10px', opacity: 0.9 }}>Team Members (Last 6 Sprints)</div>
+							{/* Loading Spinner */}
+							{teamMembersLoading && (
+								<div style={{ textAlign: 'center', padding: '40px 20px' }}>
+									<div
+										style={{
+											border: `2px solid var(--vscode-panel-border)`,
+											borderTop: `2px solid var(--vscode-progressBar-background)`,
+											borderRadius: '50%',
+											width: '24px',
+											height: '24px',
+											animation: 'spin 1s linear infinite',
+											margin: '0 auto 16px'
+										}}
+									/>
+									<p style={{ color: 'var(--vscode-descriptionForeground)' }}>Loading team data...</p>
 								</div>
-							</div>
+							)}
 
-							{/* Team Members */}
-							<div style={{ marginBottom: '20px' }}>
-								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-									<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
-									<select
-										value={selectedTeamIteration}
-										onChange={e => setSelectedTeamIteration(e.target.value)}
+							{/* Team Content - only show when not loading */}
+							{!teamMembersLoading && (
+								<>
+									{/* Team Stats */}
+									<div
+										style={{
+											display: 'grid',
+											gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+											gap: '12px',
+											marginBottom: '20px'
+										}}
+									>
+										<div
+											style={{
+												background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+												borderRadius: '8px',
+												padding: '12px',
+												textAlign: 'center',
+												color: 'white'
+											}}
+										>
+											<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{teamMembers.length}</div>
+											<div style={{ fontSize: '10px', opacity: 0.9 }}>Team Members (Last 6 Sprints)</div>
+										</div>
+									</div>
+
+									{/* Team Members */}
+									<div style={{ marginBottom: '20px' }}>
+										<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+											<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+											<select
+												value={selectedTeamIteration}
+												onChange={e => setSelectedTeamIteration(e.target.value)}
 										style={{
 											padding: '4px 8px',
 											borderRadius: '4px',
@@ -1883,14 +1904,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 									</select>
 								</div>
 
-								{teamMembersLoading && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading team members...</div>}
-
 								{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
 
-								{!teamMembersLoading && !teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
+								{!teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
 
-								{!teamMembersLoading &&
-									!teamMembersError &&
+								{!teamMembersError &&
 									teamMembers.length > 0 &&
 									(() => {
 										// Active members: those with user stories assigned (even if 0 hours) OR with totalHours > 0
@@ -2132,7 +2150,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 											</div>
 										);
 									})()}
-							</div>
+								</div>
+								</>
+							)}
 						</div>
 					)}
 

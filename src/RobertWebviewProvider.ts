@@ -674,10 +674,25 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								const velocityData: { sprintName: string; points: number; completedStories: number }[] = [];
 								for (const iteration of sortedIterations) {
 									const ref = `/iteration/${iteration.objectId}`;
-									const usResult = await getUserStories({ Iteration: ref }, 0);
-									const stories = usResult?.userStories ?? [];
-									const points = stories.reduce((sum: number, s: { taskEstimateTotal?: number }) => sum + (s.taskEstimateTotal ?? 0), 0);
-									const completedStories = stories.filter((s: { scheduleState?: string }) => s.scheduleState === 'Completed' || s.scheduleState === 'Accepted').length;
+									// Fetch all user stories for this iteration (handle pagination)
+									const allStories: { taskEstimateTotal?: number; scheduleState?: string }[] = [];
+									let startIndex = 0;
+									let hasMore = true;
+									while (hasMore) {
+										const usResult = await getUserStories({ Iteration: ref }, startIndex);
+										const storiesPage = usResult?.userStories ?? [];
+										if (!storiesPage.length) {
+											break;
+										}
+										allStories.push(...storiesPage);
+										hasMore = !!usResult?.hasMore;
+										if (!hasMore) {
+											break;
+										}
+										startIndex += storiesPage.length;
+									}
+									const points = allStories.reduce((sum: number, s: { taskEstimateTotal?: number }) => sum + (s.taskEstimateTotal ?? 0), 0);
+									const completedStories = allStories.filter((s: { scheduleState?: string }) => s.scheduleState === 'Completed' || s.scheduleState === 'Accepted').length;
 									velocityData.push({
 										sprintName: iteration.name,
 										points: Math.round(points * 10) / 10,

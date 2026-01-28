@@ -12,7 +12,7 @@ const fetchPolyfill = async (url: string, options?: RequestInit): Promise<Respon
 	if (typeof globalThis.fetch === 'function') {
 		return globalThis.fetch(url, options);
 	}
-	
+
 	// Fallback to node-fetch for older environments
 	try {
 		// @ts-ignore - dynamic import for compatibility
@@ -2401,12 +2401,12 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 	if (!validation.isValid) {
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
-	
+
 	// Get project ID from cached rallyData if available, otherwise fetch it
 	let projectRef: string | undefined;
 	const settingsManager = SettingsManager.getInstance();
 	const rallyProjectName = settingsManager.getSetting('rallyProjectName')?.trim();
-	
+
 	if (rallyProjectName && rallyData.projects.length > 0) {
 		const currentProject = rallyData.projects.find((p: RallyProject) => p.name === rallyProjectName);
 		if (currentProject) {
@@ -2418,19 +2418,19 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 	} else {
 		errorHandler.logDebug('No project name configured or rallyData.projects empty, querying without project scope', 'getUserStoryByObjectId');
 	}
-	
+
 	const rallyApi = getRallyApi();
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
 		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],
 		query: queryUtils.where('ObjectID', '=', objectId)
 	};
-	
+
 	// Scope to project if available
 	if (projectRef) {
 		queryOptions.query = queryUtils.where('ObjectID', '=', objectId).and(queryUtils.where('Project', '=', projectRef));
 	}
-	
+
 	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 	const results = resultData.Results || resultData.QueryResult?.Results || [];

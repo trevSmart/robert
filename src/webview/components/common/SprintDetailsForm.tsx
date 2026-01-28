@@ -8,6 +8,7 @@ interface Iteration {
 	endDate: string;
 	state: string;
 	project: string | null;
+	taskEstimateTotal?: number;
 	_ref: string;
 }
 
@@ -141,6 +142,33 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 					<input
 						type="text"
 						value={iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}
+						readOnly
+						style={{
+							width: '100%',
+							padding: '6px 8px',
+							backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+							color: themeColors.inputForeground,
+							border: `1px solid ${themeColors.inputBorder}`,
+							borderRadius: '3px',
+							fontSize: '13px'
+						}}
+					/>
+				</div>
+
+				<div>
+					<label
+						style={{
+							display: 'block',
+							marginBottom: '4px',
+							fontSize: '12px',
+							color: themeColors.descriptionForeground
+						}}
+					>
+						Total Hours
+					</label>
+					<input
+						type="text"
+						value={iteration.taskEstimateTotal !== undefined ? `${iteration.taskEstimateTotal}h` : 'N/A'}
 						readOnly
 						style={{
 							width: '100%',

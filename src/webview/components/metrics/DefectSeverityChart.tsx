@@ -158,6 +158,11 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 			yAxis: {
 				type: 'value',
 				name: 'Defects',
+				min: 0,
+				max: (value: any) => {
+					// Assegurar mínim de 5 unitats i reescalar si n'hi ha més
+					return Math.max(5, Math.ceil(value.max / 5) * 5);
+				},
 				nameTextStyle: {
 					color: lightTheme ? '#666' : '#999'
 				},

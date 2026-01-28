@@ -45,11 +45,13 @@ cp .env.example .env
 Edit `.env`:
 
 ```env
-DATABASE_URL=postgresql://user:password@localhost:5432/robert_collaboration
+DATABASE_URL=postgresql://USERNAME:PASSWORD@localhost:5432/robert_collaboration
 PORT=3001
 NODE_ENV=development
 CORS_ORIGIN=*
 ```
+
+Replace `USERNAME` and `PASSWORD` with your actual PostgreSQL credentials.
 
 ### 4. Build and Run
 

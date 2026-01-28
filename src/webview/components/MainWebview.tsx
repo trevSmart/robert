@@ -19,9 +19,9 @@ import StateDistributionPie from './metrics/StateDistributionPie';
 import DefectSeverityChart from './metrics/DefectSeverityChart';
 import CollaborationView from './common/CollaborationView';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Defect, type Discussion } from '../../types/rally';
+import { type UserStory, type Defect, type Discussion, type GlobalSearchResultItem } from '../../types/rally';
 import { isLightTheme } from '../utils/themeColors';
-import { calculateVelocity, calculateAverageVelocity, calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, type VelocityData, type StateDistribution, type DefectsBySeverity } from '../utils/metricsUtils';
+import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, type VelocityData, type StateDistribution, type DefectsBySeverity } from '../utils/metricsUtils';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (
@@ -116,6 +116,41 @@ const DocumentTextIcon = () => (
 	</svg>
 );
 
+// Small icons for global search result entity type badges (match UserStoryForm tab icons)
+const SearchResultUserStoryIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z"
+		/>
+	</svg>
+);
+const SearchResultTaskIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M21.75 6.75a4.5 4.5 0 0 1-4.884 4.484c-1.076-.091-2.264.071-2.95.904l-7.152 8.684a2.548 2.548 0 1 1-3.586-3.586l8.684-7.152c.833-.686.995-1.874.904-2.95a4.5 4.5 0 0 1 6.336-4.486l-3.276 3.276a3.004 3.004 0 0 0 2.25 2.25l3.276-3.276c.256.565.398 1.192.398 1.852Z"
+		/>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M4.867 19.125h.008v.008h-.008v-.008Z" />
+	</svg>
+);
+const SearchResultTestCaseIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+	</svg>
+);
+const SearchResultDefectIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0 1 12 12.75Zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 0 1-1.152 6.06M12 12.75c-2.883 0-5.647.508-8.208 1.44.125 2.104.52 4.136 1.153 6.06M12 12.75a2.25 2.25 0 0 0 2.248-2.354M12 12.75a2.25 2.25 0 0 1-2.248-2.354M12 8.25c.995 0 1.971-.08 2.922-.236.403-.066.74-.358.795-.762a3.778 3.778 0 0 0-.399-2.25M12 8.25c-.995 0-1.97-.08-2.922-.236-.402-.066-.74-.358-.795-.762a3.734 3.734 0 0 1 .4-2.253M12 8.25a2.25 2.25 0 0 0-2.248 2.146M12 8.25a2.25 2.25 0 0 1 2.248 2.146M8.683 5a6.032 6.032 0 0 1-1.155-1.002c.07-.63.27-1.222.574-1.747m.581 2.749A3.75 3.75 0 0 1 15.318 5m0 0c.427-.283.815-.62 1.155-.999a4.471 4.471 0 0 0-.575-1.752M4.921 6a24.048 24.048 0 0 0-.392 3.314c1.668.546 3.416.914 5.223 1.082M19.08 6c.205 1.08.337 2.187.392 3.314a23.882 23.882 0 0 1-5.223 1.082"
+		/>
+	</svg>
+);
+
 const ChartBarIcon = () => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '36px', height: '36px' }}>
 		<path
@@ -198,7 +233,7 @@ import { CenteredContainer, Container, ContentArea, GlobalStyle } from './common
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
-type SectionType = 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
+type SectionType = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
 
@@ -515,7 +550,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _de
 
 // Portfolio Views Configuration
 // Icon components for portfolio tabs
-const SprintsIcon = ({ size = '16px' }: { size?: string }) => (
+const SprintsIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
@@ -525,7 +560,7 @@ const SprintsIcon = ({ size = '16px' }: { size?: string }) => (
 	</svg>
 );
 
-const UserStoriesIcon = ({ size = '16px' }: { size?: string }) => (
+const UserStoriesIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
@@ -535,7 +570,7 @@ const UserStoriesIcon = ({ size = '16px' }: { size?: string }) => (
 	</svg>
 );
 
-const DefectsIcon = ({ size = '16px' }: { size?: string }) => (
+const DefectsIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
@@ -786,6 +821,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [wip, setWip] = useState<number>(0);
 	const [blockedItems, setBlockedItems] = useState<number>(0);
 
+	// Global search state
+	const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+	const [globalSearchResults, setGlobalSearchResults] = useState<GlobalSearchResultItem[]>([]);
+	const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
+	const [globalSearchError, setGlobalSearchError] = useState<string | null>(null);
+	// When opening a user story from a task/testcase search result, which tab to select
+	const pendingSearchUserStoryTabRef = useRef<'tasks' | 'tests' | null>(null);
+
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
@@ -807,6 +850,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	// Track which user stories have already been attempted to load discussions for (by objectId)
 	const attemptedUserStoryDiscussions = useRef<Set<string>>(new Set());
 
+	// Track if we've loaded velocity data for metrics (reset when leaving metrics)
+	const hasLoadedVelocityDataForMetrics = useRef(false);
+
 	const loadIterations = useCallback(() => {
 		setIterationsLoading(true);
 		setIterationsError(null);
@@ -823,6 +869,40 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				command: 'loadTeamMembers',
 				iterationId: iterationId
 			});
+		},
+		[sendMessage]
+	);
+
+	const runGlobalSearch = useCallback(
+		(term: string) => {
+			const t = (term || '').trim();
+			if (!t) return;
+			setGlobalSearchLoading(true);
+			setGlobalSearchError(null);
+			setGlobalSearchResults([]);
+			sendMessage({
+				command: 'globalSearch',
+				term: t,
+				limitPerType: 15
+			});
+		},
+		[sendMessage]
+	);
+
+	const openSearchResult = useCallback(
+		(item: GlobalSearchResultItem) => {
+			if (item.entityType === 'userstory') {
+				pendingSearchUserStoryTabRef.current = null;
+				sendMessage({ command: 'loadUserStoryByObjectId', objectId: item.objectId });
+			} else if (item.entityType === 'defect') {
+				sendMessage({ command: 'loadDefectByObjectId', objectId: item.objectId });
+			} else if (item.entityType === 'task') {
+				pendingSearchUserStoryTabRef.current = 'tasks';
+				sendMessage({ command: 'loadTaskWithParent', objectId: item.objectId });
+			} else if (item.entityType === 'testcase') {
+				pendingSearchUserStoryTabRef.current = 'tests';
+				sendMessage({ command: 'loadTestCaseWithParent', objectId: item.objectId });
+			}
 		},
 		[sendMessage]
 	);
@@ -1243,6 +1323,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setUserStoriesLoading(false);
 					setUserStoriesError(message.error || 'Error loading user stories');
 					break;
+				case 'velocityDataLoaded':
+					setVelocityLoading(false);
+					if (message.velocityData?.length) {
+						setVelocityData(message.velocityData);
+						const avg = message.velocityData.reduce((s: number, d: { points: number }) => s + d.points, 0) / message.velocityData.length;
+						setAverageVelocity(Math.round(avg * 10) / 10);
+					}
+					break;
+				case 'velocityDataError':
+					setVelocityLoading(false);
+					setVelocityData([]);
+					break;
 				case 'tasksLoaded':
 					setTasksLoading(false);
 					if (message.tasks) {
@@ -1320,37 +1412,92 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setTeamMembersLoading(false);
 					setTeamMembersError(message.error || 'Error loading team members');
 					break;
+				case 'globalSearchResults':
+					setGlobalSearchLoading(false);
+					setGlobalSearchError(null);
+					setGlobalSearchResults(message.results || []);
+					break;
+				case 'globalSearchError':
+					setGlobalSearchLoading(false);
+					setGlobalSearchError(message.error || 'Search failed');
+					setGlobalSearchResults([]);
+					break;
+				case 'userStoryByObjectIdLoaded':
+					if (message.userStory) {
+						setSelectedUserStory(message.userStory);
+						setActiveSection('portfolio');
+						setCurrentScreen('userStoryDetail');
+						setActiveViewType('bySprints');
+						loadTasks(message.userStory.objectId);
+						const tab = pendingSearchUserStoryTabRef.current;
+						if (tab) {
+							setActiveUserStoryTab(tab);
+							pendingSearchUserStoryTabRef.current = null;
+						}
+						loadIterations();
+					}
+					break;
+				case 'defectByObjectIdLoaded':
+					if (message.defect) {
+						setSelectedDefect(message.defect);
+						setActiveSection('portfolio');
+						setActiveViewType('allDefects');
+						setCurrentScreen('defectDetail');
+						loadIterations();
+						loadAllDefects();
+					}
+					break;
+				case 'taskWithParentLoaded':
+					if (message.userStoryObjectId) {
+						sendMessage({ command: 'loadUserStoryByObjectId', objectId: message.userStoryObjectId });
+					}
+					break;
+				case 'testCaseWithParentLoaded':
+					if (message.userStoryObjectId) {
+						sendMessage({ command: 'loadUserStoryByObjectId', objectId: message.userStoryObjectId });
+					}
+					break;
+				case 'userStoryByObjectIdError':
+					setGlobalSearchError(message.error || 'Failed to load user story');
+					setGlobalSearchLoading(false);
+					break;
+				case 'defectByObjectIdError':
+					setGlobalSearchError(message.error || 'Failed to load defect');
+					setGlobalSearchLoading(false);
+					break;
+				case 'taskWithParentError':
+					setGlobalSearchError(message.error || 'Failed to load task');
+					setGlobalSearchLoading(false);
+					break;
+				case 'testCaseWithParentError':
+					setGlobalSearchError(message.error || 'Failed to load test case');
+					setGlobalSearchLoading(false);
+					break;
 			}
 		};
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects]); // Only include dependencies needed by handleMessage
 
-	// Calculate metrics when data changes - load charts in parallel
+	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
+	useEffect(() => {
+		if (activeSection !== 'metrics') {
+			hasLoadedVelocityDataForMetrics.current = false;
+			return;
+		}
+		if (!iterations.length || hasLoadedVelocityDataForMetrics.current) return;
+		hasLoadedVelocityDataForMetrics.current = true;
+		setVelocityLoading(true);
+		sendMessage({ command: 'loadVelocityData' });
+	}, [activeSection, iterations.length, sendMessage]);
+
+	// Calculate metrics when data changes - load charts in parallel (state distribution, defects, KPIs)
 	useEffect(() => {
 		if (activeSection !== 'metrics') return;
 		if (!iterations.length || !portfolioUserStories.length) return;
 
 		setMetricsLoading(true);
-
-		// Load each chart in parallel
-		// Velocity chart - last 12 sprints
-		(async () => {
-			try {
-				setVelocityLoading(true);
-				const velocityResult = calculateVelocity(portfolioUserStories, iterations, 12);
-				setVelocityData(velocityResult);
-
-				// Calculate average velocity
-				const avgVelocity = calculateAverageVelocity(velocityResult);
-				setAverageVelocity(avgVelocity);
-			} catch (error) {
-				console.error('Error calculating velocity:', error);
-			} finally {
-				setVelocityLoading(false);
-			}
-		})();
 
 		// State distribution chart
 		(async () => {
@@ -1549,6 +1696,135 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} />
 
 				<ContentArea noPaddingTop={activeSection === 'portfolio'}>
+					{activeSection === 'search' && (
+						<div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 'calc(100vh - 140px)', height: '100%' }}>
+							<div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '18px', height: '18px', color: 'var(--vscode-foreground)', flexShrink: 0 }} aria-hidden>
+									<path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+								</svg>
+								<input
+									type="text"
+									placeholder="Search by code (e.g. US123) or title..."
+									value={globalSearchTerm}
+									onChange={e => setGlobalSearchTerm(e.target.value)}
+									onKeyDown={e => {
+										if (e.key === 'Enter') runGlobalSearch(globalSearchTerm);
+									}}
+									style={{
+										flex: 1,
+										padding: '8px 12px',
+										fontSize: '13px',
+										border: '1px solid var(--vscode-input-border)',
+										backgroundColor: 'var(--vscode-input-background)',
+										color: 'var(--vscode-input-foreground)',
+										borderRadius: '4px',
+										outline: 'none'
+									}}
+									aria-label="Global search by code or title"
+								/>
+								<button
+									type="button"
+									onClick={() => runGlobalSearch(globalSearchTerm)}
+									disabled={globalSearchLoading || !globalSearchTerm.trim()}
+									style={{
+										padding: '8px 14px',
+										fontSize: '13px',
+										backgroundColor: 'var(--vscode-button-background)',
+										color: 'var(--vscode-button-foreground)',
+										border: 'none',
+										borderRadius: '4px',
+										cursor: globalSearchLoading || !globalSearchTerm.trim() ? 'default' : 'pointer',
+										opacity: globalSearchLoading || !globalSearchTerm.trim() ? 0.6 : 1
+									}}
+								>
+									{globalSearchLoading ? 'Searching…' : 'Search'}
+								</button>
+							</div>
+							{globalSearchError && <div style={{ color: 'var(--vscode-errorForeground)', fontSize: '13px' }}>{globalSearchError}</div>}
+							{globalSearchResults.length > 0 && (
+								<div
+									style={{
+										flex: 1,
+										minHeight: 0,
+										display: 'flex',
+										flexDirection: 'column',
+										border: '1px solid var(--vscode-panel-border)',
+										borderRadius: '6px',
+										overflow: 'hidden'
+									}}
+								>
+									<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', padding: '8px 12px', borderBottom: '1px solid var(--vscode-panel-border)', flexShrink: 0 }}>
+										{globalSearchResults.length} result{globalSearchResults.length !== 1 ? 's' : ''}
+									</div>
+									<ul
+										style={{
+											listStyle: 'none',
+											margin: 0,
+											padding: 0,
+											flex: 1,
+											minHeight: 0,
+											overflowY: 'scroll'
+										}}
+									>
+										{globalSearchResults.map((item, idx) => (
+											<li key={`${item.entityType}-${item.objectId}-${idx}`} style={{ margin: 0, padding: 0 }}>
+												<button
+													type="button"
+													className="search-result-button"
+													onClick={() => openSearchResult(item)}
+													style={{
+														padding: '10px 12px',
+														borderBottom: idx < globalSearchResults.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
+														fontSize: '13px',
+														display: 'flex',
+														alignItems: 'center',
+														gap: '8px',
+														flexWrap: 'wrap',
+														cursor: 'pointer',
+														backgroundColor: 'transparent',
+														border: 'none',
+														width: '100%',
+														textAlign: 'left',
+														color: 'inherit',
+														transition: 'background-color 0.15s ease'
+													}}
+													onMouseEnter={e => {
+														e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+													}}
+													onMouseLeave={e => {
+														e.currentTarget.style.backgroundColor = 'transparent';
+													}}
+												>
+													<span
+														style={{
+															fontSize: '10px',
+															fontWeight: 400,
+															padding: '2px 6px',
+															borderRadius: '4px',
+															backgroundColor: 'var(--vscode-badge-background)',
+															color: 'var(--vscode-badge-foreground)',
+															textTransform: 'capitalize',
+															display: 'inline-flex',
+															alignItems: 'center',
+															gap: '4px'
+														}}
+													>
+														{item.entityType === 'userstory' && <SearchResultUserStoryIcon />}
+														{item.entityType === 'task' && <SearchResultTaskIcon />}
+														{item.entityType === 'testcase' && <SearchResultTestCaseIcon />}
+														{item.entityType === 'defect' && <SearchResultDefectIcon />}
+														{item.entityType === 'userstory' ? 'User Story' : item.entityType}
+													</span>
+													<span style={{ fontWeight: 600, color: 'var(--vscode-foreground)' }}>{item.formattedId}</span>
+													<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{item.name || '—'}</span>
+												</button>
+											</li>
+										))}
+									</ul>
+								</div>
+							)}
+						</div>
+					)}
 					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} onIterationClick={handleIterationClickFromCalendar} />}
 
 					{activeSection === 'team' && (
@@ -1559,321 +1835,341 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 								<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Monitor team activity, collaboration, and project progress</p>
 							</div>
 
-							{/* Team Stats */}
-							<div
-								style={{
-									display: 'grid',
-									gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-									gap: '12px',
-									marginBottom: '20px'
-								}}
-							>
-								<div
-									style={{
-										background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-										borderRadius: '8px',
-										padding: '12px',
-										textAlign: 'center',
-										color: 'white'
-									}}
-								>
-									<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{teamMembers.length}</div>
-									<div style={{ fontSize: '10px', opacity: 0.9 }}>Team Members (Last 6 Sprints)</div>
-								</div>
-							</div>
-
-							{/* Team Members */}
-							<div style={{ marginBottom: '20px' }}>
-								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-									<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
-									<select
-										value={selectedTeamIteration}
-										onChange={e => setSelectedTeamIteration(e.target.value)}
+							{/* Loading Spinner */}
+							{teamMembersLoading && (
+								<div style={{ textAlign: 'center', padding: '40px 20px' }}>
+									<div
 										style={{
-											padding: '4px 8px',
-											borderRadius: '4px',
-											backgroundColor: 'var(--vscode-dropdown-background)',
-											color: 'var(--vscode-dropdown-foreground)',
-											border: '1px solid var(--vscode-dropdown-border)',
-											cursor: 'pointer',
-											fontSize: '12px'
+											border: `2px solid var(--vscode-panel-border)`,
+											borderTop: `2px solid var(--vscode-progressBar-background)`,
+											borderRadius: '50%',
+											width: '24px',
+											height: '24px',
+											animation: 'spin 1s linear infinite',
+											margin: '0 auto 16px'
+										}}
+									/>
+									<p style={{ color: 'var(--vscode-descriptionForeground)' }}>Loading team data...</p>
+								</div>
+							)}
+
+							{/* Team Content - only show when not loading */}
+							{!teamMembersLoading && (
+								<>
+									{/* Team Stats */}
+									<div
+										style={{
+											display: 'grid',
+											gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+											gap: '12px',
+											marginBottom: '20px'
 										}}
 									>
-										<option value="current">{findCurrentIteration(iterations)?.name || 'Current Sprint'} (current)</option>
-										{iterations
-											.filter(it => {
-												// Exclude current iteration to avoid duplicates
-												const currentIteration = findCurrentIteration(iterations);
-												if (currentIteration && it.objectId === currentIteration.objectId) {
-													return false;
-												}
-												// Only include past iterations (end date before today)
-												const endDate = new Date(it.endDate);
-												const today = new Date();
-												today.setHours(0, 0, 0, 0);
-												endDate.setHours(0, 0, 0, 0);
-												return endDate < today;
-											})
-											.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
-											.slice(0, 12)
-											.map(it => (
-												<option key={it.objectId} value={it.objectId}>
-													{it.name}
-												</option>
-											))}
-									</select>
-								</div>
+										<div
+											style={{
+												background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+												borderRadius: '8px',
+												padding: '12px',
+												textAlign: 'center',
+												color: 'white'
+											}}
+										>
+											<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{teamMembers.length}</div>
+											<div style={{ fontSize: '10px', opacity: 0.9 }}>Team Members (Last 6 Sprints)</div>
+										</div>
+									</div>
 
-								{teamMembersLoading && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading team members...</div>}
+									{/* Team Members */}
+									<div style={{ marginBottom: '20px' }}>
+										<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+											<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+											<select
+												value={selectedTeamIteration}
+												onChange={e => setSelectedTeamIteration(e.target.value)}
+												style={{
+													padding: '4px 8px',
+													borderRadius: '4px',
+													backgroundColor: 'var(--vscode-dropdown-background)',
+													color: 'var(--vscode-dropdown-foreground)',
+													border: '1px solid var(--vscode-dropdown-border)',
+													cursor: 'pointer',
+													fontSize: '12px'
+												}}
+											>
+												<option value="current">{findCurrentIteration(iterations)?.name || 'Current Sprint'} (current)</option>
+												{iterations
+													.filter(it => {
+														// Exclude current iteration to avoid duplicates
+														const currentIteration = findCurrentIteration(iterations);
+														if (currentIteration && it.objectId === currentIteration.objectId) {
+															return false;
+														}
+														// Only include past iterations (end date before today)
+														const endDate = new Date(it.endDate);
+														const today = new Date();
+														today.setHours(0, 0, 0, 0);
+														endDate.setHours(0, 0, 0, 0);
+														return endDate < today;
+													})
+													.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+													.slice(0, 12)
+													.map(it => (
+														<option key={it.objectId} value={it.objectId}>
+															{it.name}
+														</option>
+													))}
+											</select>
+										</div>
 
-								{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
+										{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
 
-								{!teamMembersLoading && !teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
+										{!teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
 
-								{!teamMembersLoading &&
-									!teamMembersError &&
-									teamMembers.length > 0 &&
-									(() => {
-										// Active members: those with user stories assigned (even if 0 hours) OR with totalHours > 0
-										// This ensures users with assigned work (even 0 hours) appear in ACTIVE IN SPRINT
-										const activeMembers = teamMembers.filter(m => {
-											const hasStories = (m.progress as any).userStoriesCount > 0;
-											const hasHours = m.progress.totalHours > 0;
-											return hasStories || hasHours;
-										});
-										const inactiveMembers = teamMembers.filter(m => {
-											const hasStories = (m.progress as any).userStoriesCount > 0;
-											const hasHours = m.progress.totalHours > 0;
-											return !hasStories && !hasHours;
-										});
+										{!teamMembersError &&
+											teamMembers.length > 0 &&
+											(() => {
+												// Active members: those with user stories assigned (even if 0 hours) OR with totalHours > 0
+												// This ensures users with assigned work (even 0 hours) appear in ACTIVE IN SPRINT
+												const activeMembers = teamMembers.filter(m => {
+													const hasStories = (m.progress as any).userStoriesCount > 0;
+													const hasHours = m.progress.totalHours > 0;
+													return hasStories || hasHours;
+												});
+												const inactiveMembers = teamMembers.filter(m => {
+													const hasStories = (m.progress as any).userStoriesCount > 0;
+													const hasHours = m.progress.totalHours > 0;
+													return !hasStories && !hasHours;
+												});
 
-										return (
-											<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-												{/* Active Members Section */}
-												{activeMembers.length > 0 && (
-													<div>
-														<h4
-															style={{
-																margin: '0 0 12px 0',
-																color: 'var(--vscode-foreground)',
-																fontSize: '13px',
-																fontWeight: '600',
-																textTransform: 'uppercase',
-																letterSpacing: '0.5px',
-																opacity: 0.7
-															}}
-														>
-															Active in Sprint
-														</h4>
-														<div
-															style={{
-																display: 'grid',
-																gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-																gap: '12px'
-															}}
-														>
-															{activeMembers.map(member => {
-																// Generate initials from name
-																const initials = member.name
-																	.split(' ')
-																	.map(part => part.charAt(0).toUpperCase())
-																	.join('')
-																	.slice(0, 2);
+												return (
+													<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+														{/* Active Members Section */}
+														{activeMembers.length > 0 && (
+															<div>
+																<h4
+																	style={{
+																		margin: '0 0 12px 0',
+																		color: 'var(--vscode-foreground)',
+																		fontSize: '13px',
+																		fontWeight: '600',
+																		textTransform: 'uppercase',
+																		letterSpacing: '0.5px',
+																		opacity: 0.7
+																	}}
+																>
+																	Active in Sprint
+																</h4>
+																<div
+																	style={{
+																		display: 'grid',
+																		gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+																		gap: '12px'
+																	}}
+																>
+																	{activeMembers.map(member => {
+																		// Generate initials from name
+																		const initials = member.name
+																			.split(' ')
+																			.map(part => part.charAt(0).toUpperCase())
+																			.join('')
+																			.slice(0, 2);
 
-																const percentage = member.progress.percentage;
-																const progressColor = percentage >= 75 ? 'var(--vscode-charts-green, #4caf50)' : percentage >= 50 ? 'var(--vscode-charts-orange, #ff9800)' : percentage >= 25 ? 'var(--vscode-charts-yellow, #ffc107)' : 'var(--vscode-charts-red, #f44336)';
+																		const percentage = member.progress.percentage;
+																		const progressColor = percentage >= 75 ? 'var(--vscode-charts-green, #4caf50)' : percentage >= 50 ? 'var(--vscode-charts-orange, #ff9800)' : percentage >= 25 ? 'var(--vscode-charts-yellow, #ffc107)' : 'var(--vscode-charts-red, #f44336)';
 
-																return (
-																	<div
-																		key={member.name}
-																		style={{
-																			backgroundColor: '#1e1e1e',
-																			border: '1px solid var(--vscode-panel-border)',
-																			borderRadius: '8px',
-																			padding: '12px',
-																			display: 'flex',
-																			flexDirection: 'column',
-																			alignItems: 'center',
-																			textAlign: 'center',
-																			cursor: 'pointer',
-																			transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-																		}}
-																		onMouseEnter={e => {
-																			e.currentTarget.style.transform = 'translateY(-2px)';
-																			e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-																		}}
-																		onMouseLeave={e => {
-																			e.currentTarget.style.transform = 'translateY(0)';
-																			e.currentTarget.style.boxShadow = 'none';
-																		}}
-																	>
-																		{/* Avatar with Progress Ring */}
-																		<div role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`} style={{ position: 'relative' }}>
-																			<svg
-																				width="64"
-																				height="64"
-																				style={{
-																					position: 'absolute',
-																					top: '-8px',
-																					left: '-8px',
-																					transform: 'rotate(-90deg)'
-																				}}
-																			>
-																				<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-																				<circle
-																					cx="32"
-																					cy="32"
-																					r="28"
-																					stroke={progressColor}
-																					strokeWidth="3"
-																					fill="none"
-																					strokeDasharray={2 * Math.PI * 28}
-																					strokeDashoffset={2 * Math.PI * 28 * (1 - percentage / 100)}
-																					strokeLinecap="round"
-																					style={{
-																						transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
-																					}}
-																				/>
-																			</svg>
+																		return (
 																			<div
+																				key={member.name}
 																				style={{
-																					width: '48px',
-																					height: '48px',
-																					borderRadius: '50%',
-																					background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																					backgroundColor: '#1e1e1e',
+																					border: '1px solid var(--vscode-panel-border)',
+																					borderRadius: '8px',
+																					padding: '12px',
 																					display: 'flex',
+																					flexDirection: 'column',
 																					alignItems: 'center',
-																					justifyContent: 'center',
-																					color: 'white',
-																					fontWeight: 'bold',
-																					fontSize: '16px',
-																					marginBottom: '6px'
+																					textAlign: 'center',
+																					cursor: 'pointer',
+																					transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																				}}
+																				onMouseEnter={e => {
+																					e.currentTarget.style.transform = 'translateY(-2px)';
+																					e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																				}}
+																				onMouseLeave={e => {
+																					e.currentTarget.style.transform = 'translateY(0)';
+																					e.currentTarget.style.boxShadow = 'none';
 																				}}
 																			>
-																				{initials}
-																			</div>
-																		</div>
+																				{/* Avatar with Progress Ring */}
+																				<div role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`} style={{ position: 'relative' }}>
+																					<svg
+																						width="64"
+																						height="64"
+																						style={{
+																							position: 'absolute',
+																							top: '-8px',
+																							left: '-8px',
+																							transform: 'rotate(-90deg)'
+																						}}
+																					>
+																						<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
+																						<circle
+																							cx="32"
+																							cy="32"
+																							r="28"
+																							stroke={progressColor}
+																							strokeWidth="3"
+																							fill="none"
+																							strokeDasharray={2 * Math.PI * 28}
+																							strokeDashoffset={2 * Math.PI * 28 * (1 - percentage / 100)}
+																							strokeLinecap="round"
+																							style={{
+																								transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
+																							}}
+																						/>
+																					</svg>
+																					<div
+																						style={{
+																							width: '48px',
+																							height: '48px',
+																							borderRadius: '50%',
+																							background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																							display: 'flex',
+																							alignItems: 'center',
+																							justifyContent: 'center',
+																							color: 'white',
+																							fontWeight: 'bold',
+																							fontSize: '16px',
+																							marginBottom: '6px'
+																						}}
+																					>
+																						{initials}
+																					</div>
+																				</div>
 
-																		{/* Member Info */}
-																		<div style={{ width: '100%' }}>
-																			<div style={{ marginBottom: '6px' }}>
-																				<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
-																				<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
-																				<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
-																					{member.progress.completedHours}h / {member.progress.totalHours}h
+																				{/* Member Info */}
+																				<div style={{ width: '100%' }}>
+																					<div style={{ marginBottom: '6px' }}>
+																						<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
+																						<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
+																						<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
+																							{member.progress.completedHours}h / {member.progress.totalHours}h
+																						</div>
+																					</div>
 																				</div>
 																			</div>
-																		</div>
-																	</div>
-																);
-															})}
-														</div>
-													</div>
-												)}
+																		);
+																	})}
+																</div>
+															</div>
+														)}
 
-												{/* Inactive Members Section */}
-												{inactiveMembers.length > 0 && (
-													<div>
-														<h4
-															style={{
-																margin: '0 0 12px 0',
-																color: 'var(--vscode-foreground)',
-																fontSize: '13px',
-																fontWeight: '600',
-																textTransform: 'uppercase',
-																letterSpacing: '0.5px',
-																opacity: 0.7
-															}}
-														>
-															Other Team Members
-														</h4>
-														<div
-															style={{
-																display: 'grid',
-																gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-																gap: '12px'
-															}}
-														>
-															{inactiveMembers.map(member => {
-																// Generate initials from name
-																const initials = member.name
-																	.split(' ')
-																	.map(part => part.charAt(0).toUpperCase())
-																	.join('')
-																	.slice(0, 2);
+														{/* Inactive Members Section */}
+														{inactiveMembers.length > 0 && (
+															<div>
+																<h4
+																	style={{
+																		margin: '0 0 12px 0',
+																		color: 'var(--vscode-foreground)',
+																		fontSize: '13px',
+																		fontWeight: '600',
+																		textTransform: 'uppercase',
+																		letterSpacing: '0.5px',
+																		opacity: 0.7
+																	}}
+																>
+																	Other Team Members
+																</h4>
+																<div
+																	style={{
+																		display: 'grid',
+																		gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+																		gap: '12px'
+																	}}
+																>
+																	{inactiveMembers.map(member => {
+																		// Generate initials from name
+																		const initials = member.name
+																			.split(' ')
+																			.map(part => part.charAt(0).toUpperCase())
+																			.join('')
+																			.slice(0, 2);
 
-																return (
-																	<div
-																		key={member.name}
-																		style={{
-																			backgroundColor: '#1e1e1e',
-																			border: '1px solid var(--vscode-panel-border)',
-																			borderRadius: '8px',
-																			padding: '12px',
-																			display: 'flex',
-																			flexDirection: 'column',
-																			alignItems: 'center',
-																			textAlign: 'center',
-																			cursor: 'pointer',
-																			transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-																		}}
-																		onMouseEnter={e => {
-																			e.currentTarget.style.transform = 'translateY(-2px)';
-																			e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-																		}}
-																		onMouseLeave={e => {
-																			e.currentTarget.style.transform = 'translateY(0)';
-																			e.currentTarget.style.boxShadow = 'none';
-																		}}
-																	>
-																		{/* Avatar without Progress Ring */}
-																		<div style={{ position: 'relative' }}>
-																			<svg
-																				width="48"
-																				height="48"
-																				style={{
-																					position: 'absolute',
-																					top: '-6px',
-																					left: '-6px'
-																				}}
-																			>
-																				<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-																			</svg>
+																		return (
 																			<div
+																				key={member.name}
 																				style={{
-																					width: '36px',
-																					height: '36px',
-																					borderRadius: '50%',
-																					background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																					backgroundColor: '#1e1e1e',
+																					border: '1px solid var(--vscode-panel-border)',
+																					borderRadius: '8px',
+																					padding: '12px',
 																					display: 'flex',
+																					flexDirection: 'column',
 																					alignItems: 'center',
-																					justifyContent: 'center',
-																					color: 'white',
-																					fontWeight: 'bold',
-																					fontSize: '12px',
-																					marginBottom: '6px'
+																					textAlign: 'center',
+																					cursor: 'pointer',
+																					transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																				}}
+																				onMouseEnter={e => {
+																					e.currentTarget.style.transform = 'translateY(-2px)';
+																					e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																				}}
+																				onMouseLeave={e => {
+																					e.currentTarget.style.transform = 'translateY(0)';
+																					e.currentTarget.style.boxShadow = 'none';
 																				}}
 																			>
-																				{initials}
-																			</div>
-																		</div>
+																				{/* Avatar without Progress Ring */}
+																				<div style={{ position: 'relative' }}>
+																					<svg
+																						width="48"
+																						height="48"
+																						style={{
+																							position: 'absolute',
+																							top: '-6px',
+																							left: '-6px'
+																						}}
+																					>
+																						<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
+																					</svg>
+																					<div
+																						style={{
+																							width: '36px',
+																							height: '36px',
+																							borderRadius: '50%',
+																							background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																							display: 'flex',
+																							alignItems: 'center',
+																							justifyContent: 'center',
+																							color: 'white',
+																							fontWeight: 'bold',
+																							fontSize: '12px',
+																							marginBottom: '6px'
+																						}}
+																					>
+																						{initials}
+																					</div>
+																				</div>
 
-																		{/* Member Info */}
-																		<div style={{ width: '100%' }}>
-																			<div style={{ marginBottom: '6px' }}>
-																				<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
+																				{/* Member Info */}
+																				<div style={{ width: '100%' }}>
+																					<div style={{ marginBottom: '6px' }}>
+																						<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
+																					</div>
+																				</div>
 																			</div>
-																		</div>
-																	</div>
-																);
-															})}
-														</div>
+																		);
+																	})}
+																</div>
+															</div>
+														)}
 													</div>
-												)}
-											</div>
-										);
-									})()}
-							</div>
+												);
+											})()}
+									</div>
+								</>
+							)}
 						</div>
 					)}
 

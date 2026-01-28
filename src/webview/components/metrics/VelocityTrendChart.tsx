@@ -70,13 +70,13 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 					if (!Array.isArray(params)) return '';
 					let result = `<strong>${params[0].axisValue}</strong><br/>`;
 					params.forEach((param: any) => {
-						result += `${param.marker} ${param.seriesName}: ${param.value} pts<br/>`;
+						result += `${param.marker} ${param.seriesName}: ${param.value} h<br/>`;
 					});
 					return result;
 				}
 			},
 			legend: {
-				data: ['Story Points', 'Moving Average'],
+				data: ['Hours', 'Moving Average'],
 				bottom: 10,
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc'
@@ -104,7 +104,7 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 			},
 			yAxis: {
 				type: 'value',
-				name: 'Story Points',
+				name: 'Hours',
 				nameTextStyle: {
 					color: lightTheme ? '#666' : '#999'
 				},
@@ -124,7 +124,7 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 			},
 			series: [
 				{
-					name: 'Story Points',
+					name: 'Hours',
 					type: 'bar',
 					data: points,
 					itemStyle: {

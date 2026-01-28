@@ -153,45 +153,11 @@ Robert/
 - `robert.showOutput`: Mostrar canal sortida Robert
 - `robert.showPanelIfHidden`: Mostrar panell si està ocult
 
-### Comandaments Debug
-- `robert.debug.enable`: Habilitar mode debug
-- `robert.debug.disable`: Deshabilitar mode debug
-- `robert.debug.toggle`: Alternar mode debug
-- `robert.debug.info`: Mostrar informació debug
-
-### Comandaments d'Exemple
-- `robert.example.async`: Exemple maneig errors async
-- `robert.example.sync`: Exemple maneig errors sync
-- `robert.example.manual`: Exemple maneig errors manual
-- `robert.example.logging`: Exemple logging
-- `robert.example.fallback`: Exemple valors fallback
-
-## 🔄 Flux de Dades
-
-### 1. **Activació Extensió**
-```
-extension.ts → ErrorHandler → OutputChannelManager → RobertWebviewProvider
-```
-
-### 2. **Càrrega Webview**
-```
-RobertWebviewProvider → TemplateManager → React Components → Rally Services
-```
-
-### 3. **Consulta Rally**
-```
-Webview → Message Listener → Rally Services → Rally API → Cache → Response
-```
-
-### 4. **Gestió Settings**
-```
-Webview → SettingsManager → VS Code Configuration API → Persistence
-```
 
 ## 🐛 Debugging i Logging
 
 ### Canal de Sortida "Robert"
-Totes les accions es registren al canal "Robert" amb format estructurat:
+Any action performed by our extension must be logged to the "Robert" Output channel. Any errors or warnings must also be registered in the "Robert" Output channel.
 ```
 [Robert] ℹ️ INFO in Context:
 [Robert] Time: 2024-01-15T10:30:00.000Z
@@ -269,49 +235,3 @@ Totes les accions es registren al canal "Robert" amb format estructurat:
 2. `npm run build:webview`: Construir webviews
 3. `npm run package`: Generar VSIX
 4. `vsce publish`: Publicar a marketplace
-
-## 📚 Recursos Adicionals
-
-### Documentació
-- **README.md**: Informació bàsica del projecte
-- **SETTINGS.md**: Guia detallada de configuració
-- **LICENSE.md**: Llicència del projecte
-
-## 🎯 Puntu Clau per Agents IA
-
-### Quan treballar amb aquest projecte:
-
-1. **Sempre utilitzar ErrorHandler** per logging i maneig d'errors
-2. **Respectar l'arquitectura singleton** (SettingsManager, ErrorHandler, OutputChannelManager)
-3. **Utilitzar templates separats** per HTML en lloc d'inline
-4. **Logging obligatori** al canal "Robert" per totes les accions
-5. **Validar configuració Rally** abans de fer crides API
-6. **Suportar múltiples contexts** de webview (activity bar, editor, panel)
-7. **Mantenir compatibilitat** amb VS Code Configuration API
-8. **Utilitzar cache intel·ligent** per optimitzar crides Rally API
-
-### Estructura de missatges webview:
-```typescript
-interface WebviewMessage {
-  command: string;
-  webviewId?: string;
-  context?: string;
-  timestamp?: string;
-  [key: string]: unknown;
-}
-```
-
-### Patrons d'error handling:
-```typescript
-// Async
-await errorHandler.executeWithErrorHandling(async () => {
-  // code
-}, 'context');
-
-// Sync
-errorHandler.executeWithErrorHandlingSync(() => {
-  // code
-}, 'context');
-```
-
-Aquest document proporciona tot el context necessari per entendre i treballar efectivament amb el projecte Robert. Qualsevol agent IA hauria de poder navegar i modificar el codi amb confiança després de revisar aquesta informació.

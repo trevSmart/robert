@@ -58,7 +58,7 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 				}}
 			>
 				<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{averageVelocity}</div>
-				<div style={{ fontSize: '10px', opacity: 0.9 }}>Avg Velocity (pts)</div>
+				<div style={{ fontSize: '10px', opacity: 0.9 }}>Avg Velocity (h)</div>
 			</div>
 
 			{/* Completed Points */}
@@ -72,7 +72,7 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 				}}
 			>
 				<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{completedPoints}</div>
-				<div style={{ fontSize: '10px', opacity: 0.9 }}>Points Completed</div>
+				<div style={{ fontSize: '10px', opacity: 0.9 }}>Hours Completed</div>
 			</div>
 
 			{/* Work In Progress */}

@@ -1751,57 +1751,61 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 										}}
 									>
 										{globalSearchResults.map((item, idx) => (
-											<button
+											<li
 												key={`${item.entityType}-${item.objectId}-${idx}`}
-												type="button"
-												className="search-result-button"
-												onClick={() => openSearchResult(item)}
-												style={{
-													padding: '10px 12px',
-													borderBottom: idx < globalSearchResults.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
-													fontSize: '13px',
-													display: 'flex',
-													alignItems: 'center',
-													gap: '8px',
-													flexWrap: 'wrap',
-													cursor: 'pointer',
-													backgroundColor: 'transparent',
-													border: 'none',
-													width: '100%',
-													textAlign: 'left',
-													color: 'inherit',
-													transition: 'background-color 0.15s ease'
-												}}
-												onMouseEnter={e => {
-													e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
-												}}
-												onMouseLeave={e => {
-													e.currentTarget.style.backgroundColor = 'transparent';
-												}}
+												style={{ margin: 0, padding: 0 }}
 											>
-												<span
+												<button
+													type="button"
+													className="search-result-button"
+													onClick={() => openSearchResult(item)}
 													style={{
-														fontSize: '10px',
-														fontWeight: 400,
-														padding: '2px 6px',
-														borderRadius: '4px',
-														backgroundColor: 'var(--vscode-badge-background)',
-														color: 'var(--vscode-badge-foreground)',
-														textTransform: 'capitalize',
-														display: 'inline-flex',
+														padding: '10px 12px',
+														borderBottom: idx < globalSearchResults.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
+														fontSize: '13px',
+														display: 'flex',
 														alignItems: 'center',
-														gap: '4px'
+														gap: '8px',
+														flexWrap: 'wrap',
+														cursor: 'pointer',
+														backgroundColor: 'transparent',
+														border: 'none',
+														width: '100%',
+														textAlign: 'left',
+														color: 'inherit',
+														transition: 'background-color 0.15s ease'
+													}}
+													onMouseEnter={e => {
+														e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+													}}
+													onMouseLeave={e => {
+														e.currentTarget.style.backgroundColor = 'transparent';
 													}}
 												>
-													{item.entityType === 'userstory' && <SearchResultUserStoryIcon />}
-													{item.entityType === 'task' && <SearchResultTaskIcon />}
-													{item.entityType === 'testcase' && <SearchResultTestCaseIcon />}
-													{item.entityType === 'defect' && <SearchResultDefectIcon />}
-													{item.entityType === 'userstory' ? 'User Story' : item.entityType}
-												</span>
-												<span style={{ fontWeight: 600, color: 'var(--vscode-foreground)' }}>{item.formattedId}</span>
-												<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{item.name || '—'}</span>
-											</button>
+													<span
+														style={{
+															fontSize: '10px',
+															fontWeight: 400,
+															padding: '2px 6px',
+															borderRadius: '4px',
+															backgroundColor: 'var(--vscode-badge-background)',
+															color: 'var(--vscode-badge-foreground)',
+															textTransform: 'capitalize',
+															display: 'inline-flex',
+															alignItems: 'center',
+															gap: '4px'
+														}}
+													>
+														{item.entityType === 'userstory' && <SearchResultUserStoryIcon />}
+														{item.entityType === 'task' && <SearchResultTaskIcon />}
+														{item.entityType === 'testcase' && <SearchResultTestCaseIcon />}
+														{item.entityType === 'defect' && <SearchResultDefectIcon />}
+														{item.entityType === 'userstory' ? 'User Story' : item.entityType}
+													</span>
+													<span style={{ fontWeight: 600, color: 'var(--vscode-foreground)' }}>{item.formattedId}</span>
+													<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{item.name || '—'}</span>
+												</button>
+											</li>
 										))}
 									</ul>
 								</div>

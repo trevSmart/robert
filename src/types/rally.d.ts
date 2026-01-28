@@ -201,6 +201,17 @@ export interface RallyIteration extends Iteration {}
 export interface RallyDefect extends Defect {
 }
 
+/** Single item returned by global search (any Rally artifact type) */
+export interface GlobalSearchResultItem {
+	entityType: 'userstory' | 'defect' | 'task' | 'testcase';
+	formattedId: string;
+	name: string;
+	objectId: string;
+	project?: string | null;
+	iteration?: string | null;
+	_ref?: string;
+}
+
 export interface RallyTask extends Task {
 	description?: string | null;
 	timeSpent?: number;

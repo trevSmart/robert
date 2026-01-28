@@ -550,7 +550,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _de
 
 // Portfolio Views Configuration
 // Icon components for portfolio tabs
-const SprintsIcon = ({ size = '16px' }: { size?: string }) => (
+const SprintsIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
@@ -560,7 +560,7 @@ const SprintsIcon = ({ size = '16px' }: { size?: string }) => (
 	</svg>
 );
 
-const UserStoriesIcon = ({ size = '16px' }: { size?: string }) => (
+const UserStoriesIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
@@ -570,7 +570,7 @@ const UserStoriesIcon = ({ size = '16px' }: { size?: string }) => (
 	</svg>
 );
 
-const DefectsIcon = ({ size = '16px' }: { size?: string }) => (
+const DefectsIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
@@ -1869,288 +1869,288 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 											<select
 												value={selectedTeamIteration}
 												onChange={e => setSelectedTeamIteration(e.target.value)}
-										style={{
-											padding: '4px 8px',
-											borderRadius: '4px',
-											backgroundColor: 'var(--vscode-dropdown-background)',
-											color: 'var(--vscode-dropdown-foreground)',
-											border: '1px solid var(--vscode-dropdown-border)',
-											cursor: 'pointer',
-											fontSize: '12px'
-										}}
-									>
-										<option value="current">{findCurrentIteration(iterations)?.name || 'Current Sprint'} (current)</option>
-										{iterations
-											.filter(it => {
-												// Exclude current iteration to avoid duplicates
-												const currentIteration = findCurrentIteration(iterations);
-												if (currentIteration && it.objectId === currentIteration.objectId) {
-													return false;
-												}
-												// Only include past iterations (end date before today)
-												const endDate = new Date(it.endDate);
-												const today = new Date();
-												today.setHours(0, 0, 0, 0);
-												endDate.setHours(0, 0, 0, 0);
-												return endDate < today;
-											})
-											.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
-											.slice(0, 12)
-											.map(it => (
-												<option key={it.objectId} value={it.objectId}>
-													{it.name}
-												</option>
-											))}
-									</select>
-								</div>
+												style={{
+													padding: '4px 8px',
+													borderRadius: '4px',
+													backgroundColor: 'var(--vscode-dropdown-background)',
+													color: 'var(--vscode-dropdown-foreground)',
+													border: '1px solid var(--vscode-dropdown-border)',
+													cursor: 'pointer',
+													fontSize: '12px'
+												}}
+											>
+												<option value="current">{findCurrentIteration(iterations)?.name || 'Current Sprint'} (current)</option>
+												{iterations
+													.filter(it => {
+														// Exclude current iteration to avoid duplicates
+														const currentIteration = findCurrentIteration(iterations);
+														if (currentIteration && it.objectId === currentIteration.objectId) {
+															return false;
+														}
+														// Only include past iterations (end date before today)
+														const endDate = new Date(it.endDate);
+														const today = new Date();
+														today.setHours(0, 0, 0, 0);
+														endDate.setHours(0, 0, 0, 0);
+														return endDate < today;
+													})
+													.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+													.slice(0, 12)
+													.map(it => (
+														<option key={it.objectId} value={it.objectId}>
+															{it.name}
+														</option>
+													))}
+											</select>
+										</div>
 
-								{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
+										{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
 
-								{!teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
+										{!teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
 
-								{!teamMembersError &&
-									teamMembers.length > 0 &&
-									(() => {
-										// Active members: those with user stories assigned (even if 0 hours) OR with totalHours > 0
-										// This ensures users with assigned work (even 0 hours) appear in ACTIVE IN SPRINT
-										const activeMembers = teamMembers.filter(m => {
-											const hasStories = (m.progress as any).userStoriesCount > 0;
-											const hasHours = m.progress.totalHours > 0;
-											return hasStories || hasHours;
-										});
-										const inactiveMembers = teamMembers.filter(m => {
-											const hasStories = (m.progress as any).userStoriesCount > 0;
-											const hasHours = m.progress.totalHours > 0;
-											return !hasStories && !hasHours;
-										});
+										{!teamMembersError &&
+											teamMembers.length > 0 &&
+											(() => {
+												// Active members: those with user stories assigned (even if 0 hours) OR with totalHours > 0
+												// This ensures users with assigned work (even 0 hours) appear in ACTIVE IN SPRINT
+												const activeMembers = teamMembers.filter(m => {
+													const hasStories = (m.progress as any).userStoriesCount > 0;
+													const hasHours = m.progress.totalHours > 0;
+													return hasStories || hasHours;
+												});
+												const inactiveMembers = teamMembers.filter(m => {
+													const hasStories = (m.progress as any).userStoriesCount > 0;
+													const hasHours = m.progress.totalHours > 0;
+													return !hasStories && !hasHours;
+												});
 
-										return (
-											<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-												{/* Active Members Section */}
-												{activeMembers.length > 0 && (
-													<div>
-														<h4
-															style={{
-																margin: '0 0 12px 0',
-																color: 'var(--vscode-foreground)',
-																fontSize: '13px',
-																fontWeight: '600',
-																textTransform: 'uppercase',
-																letterSpacing: '0.5px',
-																opacity: 0.7
-															}}
-														>
-															Active in Sprint
-														</h4>
-														<div
-															style={{
-																display: 'grid',
-																gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-																gap: '12px'
-															}}
-														>
-															{activeMembers.map(member => {
-																// Generate initials from name
-																const initials = member.name
-																	.split(' ')
-																	.map(part => part.charAt(0).toUpperCase())
-																	.join('')
-																	.slice(0, 2);
+												return (
+													<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+														{/* Active Members Section */}
+														{activeMembers.length > 0 && (
+															<div>
+																<h4
+																	style={{
+																		margin: '0 0 12px 0',
+																		color: 'var(--vscode-foreground)',
+																		fontSize: '13px',
+																		fontWeight: '600',
+																		textTransform: 'uppercase',
+																		letterSpacing: '0.5px',
+																		opacity: 0.7
+																	}}
+																>
+																	Active in Sprint
+																</h4>
+																<div
+																	style={{
+																		display: 'grid',
+																		gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+																		gap: '12px'
+																	}}
+																>
+																	{activeMembers.map(member => {
+																		// Generate initials from name
+																		const initials = member.name
+																			.split(' ')
+																			.map(part => part.charAt(0).toUpperCase())
+																			.join('')
+																			.slice(0, 2);
 
-																const percentage = member.progress.percentage;
-																const progressColor = percentage >= 75 ? 'var(--vscode-charts-green, #4caf50)' : percentage >= 50 ? 'var(--vscode-charts-orange, #ff9800)' : percentage >= 25 ? 'var(--vscode-charts-yellow, #ffc107)' : 'var(--vscode-charts-red, #f44336)';
+																		const percentage = member.progress.percentage;
+																		const progressColor = percentage >= 75 ? 'var(--vscode-charts-green, #4caf50)' : percentage >= 50 ? 'var(--vscode-charts-orange, #ff9800)' : percentage >= 25 ? 'var(--vscode-charts-yellow, #ffc107)' : 'var(--vscode-charts-red, #f44336)';
 
-																return (
-																	<div
-																		key={member.name}
-																		style={{
-																			backgroundColor: '#1e1e1e',
-																			border: '1px solid var(--vscode-panel-border)',
-																			borderRadius: '8px',
-																			padding: '12px',
-																			display: 'flex',
-																			flexDirection: 'column',
-																			alignItems: 'center',
-																			textAlign: 'center',
-																			cursor: 'pointer',
-																			transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-																		}}
-																		onMouseEnter={e => {
-																			e.currentTarget.style.transform = 'translateY(-2px)';
-																			e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-																		}}
-																		onMouseLeave={e => {
-																			e.currentTarget.style.transform = 'translateY(0)';
-																			e.currentTarget.style.boxShadow = 'none';
-																		}}
-																	>
-																		{/* Avatar with Progress Ring */}
-																		<div role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`} style={{ position: 'relative' }}>
-																			<svg
-																				width="64"
-																				height="64"
-																				style={{
-																					position: 'absolute',
-																					top: '-8px',
-																					left: '-8px',
-																					transform: 'rotate(-90deg)'
-																				}}
-																			>
-																				<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-																				<circle
-																					cx="32"
-																					cy="32"
-																					r="28"
-																					stroke={progressColor}
-																					strokeWidth="3"
-																					fill="none"
-																					strokeDasharray={2 * Math.PI * 28}
-																					strokeDashoffset={2 * Math.PI * 28 * (1 - percentage / 100)}
-																					strokeLinecap="round"
-																					style={{
-																						transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
-																					}}
-																				/>
-																			</svg>
+																		return (
 																			<div
+																				key={member.name}
 																				style={{
-																					width: '48px',
-																					height: '48px',
-																					borderRadius: '50%',
-																					background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																					backgroundColor: '#1e1e1e',
+																					border: '1px solid var(--vscode-panel-border)',
+																					borderRadius: '8px',
+																					padding: '12px',
 																					display: 'flex',
+																					flexDirection: 'column',
 																					alignItems: 'center',
-																					justifyContent: 'center',
-																					color: 'white',
-																					fontWeight: 'bold',
-																					fontSize: '16px',
-																					marginBottom: '6px'
+																					textAlign: 'center',
+																					cursor: 'pointer',
+																					transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																				}}
+																				onMouseEnter={e => {
+																					e.currentTarget.style.transform = 'translateY(-2px)';
+																					e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																				}}
+																				onMouseLeave={e => {
+																					e.currentTarget.style.transform = 'translateY(0)';
+																					e.currentTarget.style.boxShadow = 'none';
 																				}}
 																			>
-																				{initials}
-																			</div>
-																		</div>
+																				{/* Avatar with Progress Ring */}
+																				<div role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`} style={{ position: 'relative' }}>
+																					<svg
+																						width="64"
+																						height="64"
+																						style={{
+																							position: 'absolute',
+																							top: '-8px',
+																							left: '-8px',
+																							transform: 'rotate(-90deg)'
+																						}}
+																					>
+																						<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
+																						<circle
+																							cx="32"
+																							cy="32"
+																							r="28"
+																							stroke={progressColor}
+																							strokeWidth="3"
+																							fill="none"
+																							strokeDasharray={2 * Math.PI * 28}
+																							strokeDashoffset={2 * Math.PI * 28 * (1 - percentage / 100)}
+																							strokeLinecap="round"
+																							style={{
+																								transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
+																							}}
+																						/>
+																					</svg>
+																					<div
+																						style={{
+																							width: '48px',
+																							height: '48px',
+																							borderRadius: '50%',
+																							background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																							display: 'flex',
+																							alignItems: 'center',
+																							justifyContent: 'center',
+																							color: 'white',
+																							fontWeight: 'bold',
+																							fontSize: '16px',
+																							marginBottom: '6px'
+																						}}
+																					>
+																						{initials}
+																					</div>
+																				</div>
 
-																		{/* Member Info */}
-																		<div style={{ width: '100%' }}>
-																			<div style={{ marginBottom: '6px' }}>
-																				<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
-																				<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
-																				<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
-																					{member.progress.completedHours}h / {member.progress.totalHours}h
+																				{/* Member Info */}
+																				<div style={{ width: '100%' }}>
+																					<div style={{ marginBottom: '6px' }}>
+																						<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
+																						<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
+																						<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
+																							{member.progress.completedHours}h / {member.progress.totalHours}h
+																						</div>
+																					</div>
 																				</div>
 																			</div>
-																		</div>
-																	</div>
-																);
-															})}
-														</div>
-													</div>
-												)}
+																		);
+																	})}
+																</div>
+															</div>
+														)}
 
-												{/* Inactive Members Section */}
-												{inactiveMembers.length > 0 && (
-													<div>
-														<h4
-															style={{
-																margin: '0 0 12px 0',
-																color: 'var(--vscode-foreground)',
-																fontSize: '13px',
-																fontWeight: '600',
-																textTransform: 'uppercase',
-																letterSpacing: '0.5px',
-																opacity: 0.7
-															}}
-														>
-															Other Team Members
-														</h4>
-														<div
-															style={{
-																display: 'grid',
-																gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-																gap: '12px'
-															}}
-														>
-															{inactiveMembers.map(member => {
-																// Generate initials from name
-																const initials = member.name
-																	.split(' ')
-																	.map(part => part.charAt(0).toUpperCase())
-																	.join('')
-																	.slice(0, 2);
+														{/* Inactive Members Section */}
+														{inactiveMembers.length > 0 && (
+															<div>
+																<h4
+																	style={{
+																		margin: '0 0 12px 0',
+																		color: 'var(--vscode-foreground)',
+																		fontSize: '13px',
+																		fontWeight: '600',
+																		textTransform: 'uppercase',
+																		letterSpacing: '0.5px',
+																		opacity: 0.7
+																	}}
+																>
+																	Other Team Members
+																</h4>
+																<div
+																	style={{
+																		display: 'grid',
+																		gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+																		gap: '12px'
+																	}}
+																>
+																	{inactiveMembers.map(member => {
+																		// Generate initials from name
+																		const initials = member.name
+																			.split(' ')
+																			.map(part => part.charAt(0).toUpperCase())
+																			.join('')
+																			.slice(0, 2);
 
-																return (
-																	<div
-																		key={member.name}
-																		style={{
-																			backgroundColor: '#1e1e1e',
-																			border: '1px solid var(--vscode-panel-border)',
-																			borderRadius: '8px',
-																			padding: '12px',
-																			display: 'flex',
-																			flexDirection: 'column',
-																			alignItems: 'center',
-																			textAlign: 'center',
-																			cursor: 'pointer',
-																			transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-																		}}
-																		onMouseEnter={e => {
-																			e.currentTarget.style.transform = 'translateY(-2px)';
-																			e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-																		}}
-																		onMouseLeave={e => {
-																			e.currentTarget.style.transform = 'translateY(0)';
-																			e.currentTarget.style.boxShadow = 'none';
-																		}}
-																	>
-																		{/* Avatar without Progress Ring */}
-																		<div style={{ position: 'relative' }}>
-																			<svg
-																				width="48"
-																				height="48"
-																				style={{
-																					position: 'absolute',
-																					top: '-6px',
-																					left: '-6px'
-																				}}
-																			>
-																				<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-																			</svg>
+																		return (
 																			<div
+																				key={member.name}
 																				style={{
-																					width: '36px',
-																					height: '36px',
-																					borderRadius: '50%',
-																					background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																					backgroundColor: '#1e1e1e',
+																					border: '1px solid var(--vscode-panel-border)',
+																					borderRadius: '8px',
+																					padding: '12px',
 																					display: 'flex',
+																					flexDirection: 'column',
 																					alignItems: 'center',
-																					justifyContent: 'center',
-																					color: 'white',
-																					fontWeight: 'bold',
-																					fontSize: '12px',
-																					marginBottom: '6px'
+																					textAlign: 'center',
+																					cursor: 'pointer',
+																					transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																				}}
+																				onMouseEnter={e => {
+																					e.currentTarget.style.transform = 'translateY(-2px)';
+																					e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																				}}
+																				onMouseLeave={e => {
+																					e.currentTarget.style.transform = 'translateY(0)';
+																					e.currentTarget.style.boxShadow = 'none';
 																				}}
 																			>
-																				{initials}
-																			</div>
-																		</div>
+																				{/* Avatar without Progress Ring */}
+																				<div style={{ position: 'relative' }}>
+																					<svg
+																						width="48"
+																						height="48"
+																						style={{
+																							position: 'absolute',
+																							top: '-6px',
+																							left: '-6px'
+																						}}
+																					>
+																						<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
+																					</svg>
+																					<div
+																						style={{
+																							width: '36px',
+																							height: '36px',
+																							borderRadius: '50%',
+																							background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
+																							display: 'flex',
+																							alignItems: 'center',
+																							justifyContent: 'center',
+																							color: 'white',
+																							fontWeight: 'bold',
+																							fontSize: '12px',
+																							marginBottom: '6px'
+																						}}
+																					>
+																						{initials}
+																					</div>
+																				</div>
 
-																		{/* Member Info */}
-																		<div style={{ width: '100%' }}>
-																			<div style={{ marginBottom: '6px' }}>
-																				<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
+																				{/* Member Info */}
+																				<div style={{ width: '100%' }}>
+																					<div style={{ marginBottom: '6px' }}>
+																						<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
+																					</div>
+																				</div>
 																			</div>
-																		</div>
-																	</div>
-																);
-															})}
-														</div>
+																		);
+																	})}
+																</div>
+															</div>
+														)}
 													</div>
-												)}
-											</div>
-										);
-									})()}
-								</div>
+												);
+											})()}
+									</div>
 								</>
 							)}
 						</div>

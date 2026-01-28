@@ -686,9 +686,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 										}
 										allStories.push(...storiesPage);
 										hasMore = !!usResult?.hasMore;
-										if (!hasMore) {
-											break;
-										}
 										startIndex += storiesPage.length;
 									}
 									const points = allStories.reduce((sum: number, s: { taskEstimateTotal?: number }) => sum + (s.taskEstimateTotal ?? 0), 0);

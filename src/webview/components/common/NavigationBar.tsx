@@ -1,12 +1,15 @@
 import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { isLightTheme } from '../../utils/themeColors';
 
-type Section = 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
+type Section = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 
 interface NavigationBarProps {
 	activeSection: Section;
 	onSectionChange: (section: Section) => void;
 }
+
+// Search tab: codicon only (no label)
+const SearchIcon = () => <span className="codicon codicon-search" style={{ width: '16px', height: '16px', display: 'inline-block' }} aria-hidden />;
 
 // Icon components
 const CalendarIcon = () => (
@@ -68,12 +71,13 @@ const CollaborationIcon = () => (
 const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange }) => {
 	const tabs = useMemo(
 		() => [
-			{ id: 'calendar' as const, label: 'Plan', Icon: CalendarIcon },
-			{ id: 'portfolio' as const, label: 'Portfolio', Icon: PortfolioIcon },
-			{ id: 'team' as const, label: 'Team', Icon: TeamIcon },
-			{ id: 'library' as const, label: 'Library', Icon: LibraryIcon },
-			{ id: 'metrics' as const, label: 'Metrics', Icon: MetricsIcon },
-			{ id: 'collaboration' as const, label: 'Collaboration', Icon: CollaborationIcon }
+			{ id: 'search' as const, label: '', Icon: SearchIcon, iconOnly: true },
+			{ id: 'calendar' as const, label: 'Plan', Icon: CalendarIcon, iconOnly: false },
+			{ id: 'portfolio' as const, label: 'Portfolio', Icon: PortfolioIcon, iconOnly: false },
+			{ id: 'team' as const, label: 'Team', Icon: TeamIcon, iconOnly: false },
+			{ id: 'library' as const, label: 'Library', Icon: LibraryIcon, iconOnly: false },
+			{ id: 'metrics' as const, label: 'Metrics', Icon: MetricsIcon, iconOnly: false },
+			{ id: 'collaboration' as const, label: 'Collaboration', Icon: CollaborationIcon, iconOnly: false }
 		],
 		[]
 	);
@@ -227,10 +231,10 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				}}
 				ref={containerRef}
 			>
-				{visibleTabs.map(({ id, label, Icon }) => (
-					<button key={id} type="button" onClick={() => activeSection !== id && onSectionChange(id)} style={getTabStyles(activeSection === id)}>
+				{visibleTabs.map(({ id, label, Icon, iconOnly }) => (
+					<button key={id} type="button" onClick={() => activeSection !== id && onSectionChange(id)} style={getTabStyles(activeSection === id)} aria-label={iconOnly ? 'Search' : undefined} title={iconOnly ? 'Search' : undefined}>
 						<Icon />
-						<span>{label}</span>
+						{!iconOnly && <span>{label}</span>}
 					</button>
 				))}
 				{overflowTabs.length > 0 && (
@@ -265,7 +269,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 									padding: '6px 0'
 								}}
 							>
-								{overflowTabs.map(({ id, label, Icon }) => (
+								{overflowTabs.map(({ id, label, Icon, iconOnly }) => (
 									<button
 										key={id}
 										type="button"
@@ -288,9 +292,10 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 											fontSize: '12px',
 											textAlign: 'left'
 										}}
+										aria-label={iconOnly ? 'Search' : undefined}
 									>
 										<Icon />
-										<span>{label}</span>
+										{!iconOnly && <span>{label}</span>}
 									</button>
 								))}
 							</div>
@@ -307,10 +312,10 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 					}}
 				>
 					<div ref={measureTabsRef} style={{ display: 'inline-flex' }}>
-						{tabs.map(({ id, label, Icon }) => (
+						{tabs.map(({ id, label, Icon, iconOnly }) => (
 							<button key={id} type="button" style={getTabStyles(false)}>
 								<Icon />
-								<span>{label}</span>
+								{!iconOnly && <span>{label}</span>}
 							</button>
 						))}
 					</div>

@@ -49,3 +49,5 @@ test/
 tests/
 **/*.test.*
 **/*.spec.*
+
+.env

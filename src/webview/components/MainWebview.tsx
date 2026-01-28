@@ -198,7 +198,7 @@ import { CenteredContainer, Container, ContentArea, GlobalStyle } from './common
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
-type SectionType = 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
+type SectionType = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
 
@@ -791,10 +791,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [globalSearchResults, setGlobalSearchResults] = useState<GlobalSearchResultItem[]>([]);
 	const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
 	const [globalSearchError, setGlobalSearchError] = useState<string | null>(null);
-	const [globalSearchResultsVisible, setGlobalSearchResultsVisible] = useState(false);
+	// When opening a user story from a task/testcase search result, which tab to select
+	const pendingSearchUserStoryTabRef = useRef<'tasks' | 'tests' | null>(null);
 
 	// Navigation state
-	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
+	const [activeSection, setActiveSection] = useState<SectionType>('search');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
 	const [activeViewType, setActiveViewType] = useState<PortfolioViewType>('bySprints');
 	const [calendarDate, setCalendarDate] = useState(new Date());
@@ -841,12 +842,29 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			setGlobalSearchLoading(true);
 			setGlobalSearchError(null);
 			setGlobalSearchResults([]);
-			setGlobalSearchResultsVisible(true);
 			sendMessage({
 				command: 'globalSearch',
 				term: t,
 				limitPerType: 15
 			});
+		},
+		[sendMessage]
+	);
+
+	const openSearchResult = useCallback(
+		(item: GlobalSearchResultItem) => {
+			if (item.entityType === 'userstory') {
+				pendingSearchUserStoryTabRef.current = null;
+				sendMessage({ command: 'loadUserStoryByObjectId', objectId: item.objectId });
+			} else if (item.entityType === 'defect') {
+				sendMessage({ command: 'loadDefectByObjectId', objectId: item.objectId });
+			} else if (item.entityType === 'task') {
+				pendingSearchUserStoryTabRef.current = 'tasks';
+				sendMessage({ command: 'loadTaskWithParent', objectId: item.objectId });
+			} else if (item.entityType === 'testcase') {
+				pendingSearchUserStoryTabRef.current = 'tests';
+				sendMessage({ command: 'loadTestCaseWithParent', objectId: item.objectId });
+			}
 		},
 		[sendMessage]
 	);
@@ -1348,20 +1366,53 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setGlobalSearchLoading(false);
 					setGlobalSearchError(null);
 					setGlobalSearchResults(message.results || []);
-					setGlobalSearchResultsVisible(true);
 					break;
 				case 'globalSearchError':
 					setGlobalSearchLoading(false);
 					setGlobalSearchError(message.error || 'Search failed');
 					setGlobalSearchResults([]);
-					setGlobalSearchResultsVisible(true);
+					break;
+				case 'userStoryByObjectIdLoaded':
+					if (message.userStory) {
+						setSelectedUserStory(message.userStory);
+						setActiveSection('portfolio');
+						setCurrentScreen('userStoryDetail');
+						setActiveViewType('bySprints');
+						loadTasks(message.userStory.objectId);
+						const tab = pendingSearchUserStoryTabRef.current;
+						if (tab) {
+							setActiveUserStoryTab(tab);
+							pendingSearchUserStoryTabRef.current = null;
+						}
+						loadIterations();
+					}
+					break;
+				case 'defectByObjectIdLoaded':
+					if (message.defect) {
+						setSelectedDefect(message.defect);
+						setActiveSection('portfolio');
+						setActiveViewType('allDefects');
+						setCurrentScreen('defectDetail');
+						loadIterations();
+						loadAllDefects();
+					}
+					break;
+				case 'taskWithParentLoaded':
+					if (message.userStoryObjectId) {
+						sendMessage({ command: 'loadUserStoryByObjectId', objectId: message.userStoryObjectId });
+					}
+					break;
+				case 'testCaseWithParentLoaded':
+					if (message.userStoryObjectId) {
+						sendMessage({ command: 'loadUserStoryByObjectId', objectId: message.userStoryObjectId });
+					}
 					break;
 			}
 		};
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects]); // Only include dependencies needed by handleMessage
 
 	// Calculate metrics when data changes - load charts in parallel
 	useEffect(() => {
@@ -1582,133 +1633,118 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		<Container>
 			<GlobalStyle />
 			<CenteredContainer>
-				{/* Global search bar */}
-				<div
-					style={{
-						display: 'flex',
-						alignItems: 'center',
-						gap: '8px',
-						marginBottom: '12px',
-						padding: '8px 0',
-						borderBottom: '1px solid var(--vscode-panel-border)'
-					}}
-				>
-					<input
-						type="text"
-						placeholder="Search by code (e.g. US123) or title..."
-						value={globalSearchTerm}
-						onChange={e => setGlobalSearchTerm(e.target.value)}
-						onKeyDown={e => {
-							if (e.key === 'Enter') runGlobalSearch(globalSearchTerm);
-						}}
-						style={{
-							flex: 1,
-							padding: '6px 10px',
-							fontSize: '13px',
-							border: '1px solid var(--vscode-input-border)',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							borderRadius: '4px',
-							outline: 'none'
-						}}
-						aria-label="Global search by code or title"
-					/>
-					<button
-						type="button"
-						onClick={() => runGlobalSearch(globalSearchTerm)}
-						disabled={globalSearchLoading || !globalSearchTerm.trim()}
-						style={{
-							padding: '6px 12px',
-							fontSize: '13px',
-							backgroundColor: 'var(--vscode-button-background)',
-							color: 'var(--vscode-button-foreground)',
-							border: 'none',
-							borderRadius: '4px',
-							cursor: globalSearchLoading || !globalSearchTerm.trim() ? 'default' : 'pointer',
-							opacity: globalSearchLoading || !globalSearchTerm.trim() ? 0.6 : 1
-						}}
-					>
-						{globalSearchLoading ? 'Searching…' : 'Search'}
-					</button>
-					{globalSearchResultsVisible && (
-						<button
-							type="button"
-							onClick={() => {
-								setGlobalSearchResultsVisible(false);
-								setGlobalSearchResults([]);
-								setGlobalSearchError(null);
-							}}
-							style={{
-								padding: '6px 10px',
-								fontSize: '12px',
-								backgroundColor: 'transparent',
-								color: 'var(--vscode-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '4px',
-								cursor: 'pointer'
-							}}
-						>
-							Clear
-						</button>
-					)}
-				</div>
-				{globalSearchResultsVisible && (globalSearchResults.length > 0 || globalSearchError) && (
-					<div
-						style={{
-							marginBottom: '12px',
-							padding: '12px',
-							backgroundColor: 'var(--vscode-editor-background)',
-							border: '1px solid var(--vscode-panel-border)',
-							borderRadius: '6px',
-							maxHeight: '280px',
-							overflowY: 'auto'
-						}}
-					>
-						{globalSearchError ? (
-							<div style={{ color: 'var(--vscode-errorForeground)', fontSize: '13px' }}>{globalSearchError}</div>
-						) : (
-							<>
-								<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginBottom: '8px' }}>
-									{globalSearchResults.length} result{globalSearchResults.length !== 1 ? 's' : ''}
-								</div>
-								<ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
-									{globalSearchResults.map((item, idx) => (
-										<li
-											key={`${item.entityType}-${item.objectId}-${idx}`}
-											style={{
-												padding: '8px 0',
-												borderBottom: idx < globalSearchResults.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
-												fontSize: '13px',
-												display: 'flex',
-												alignItems: 'center',
-												gap: '8px',
-												flexWrap: 'wrap'
-											}}
-										>
-											<span
-												style={{
-													fontSize: '11px',
-													padding: '2px 6px',
-													borderRadius: '4px',
-													backgroundColor: 'var(--vscode-badge-background)',
-													color: 'var(--vscode-badge-foreground)',
-													textTransform: 'capitalize'
-												}}
-											>
-												{item.entityType === 'userstory' ? 'User Story' : item.entityType}
-											</span>
-											<span style={{ fontWeight: 600, color: 'var(--vscode-foreground)' }}>{item.formattedId}</span>
-											<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{item.name || '—'}</span>
-										</li>
-									))}
-								</ul>
-							</>
-						)}
-					</div>
-				)}
 				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} />
 
 				<ContentArea noPaddingTop={activeSection === 'portfolio'}>
+					{activeSection === 'search' && (
+						<div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: '200px' }}>
+							<div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+								<span className="codicon codicon-search" style={{ fontSize: '18px', color: 'var(--vscode-foreground)' }} aria-hidden />
+								<input
+									type="text"
+									placeholder="Search by code (e.g. US123) or title..."
+									value={globalSearchTerm}
+									onChange={e => setGlobalSearchTerm(e.target.value)}
+									onKeyDown={e => {
+										if (e.key === 'Enter') runGlobalSearch(globalSearchTerm);
+									}}
+									style={{
+										flex: 1,
+										padding: '8px 12px',
+										fontSize: '13px',
+										border: '1px solid var(--vscode-input-border)',
+										backgroundColor: 'var(--vscode-input-background)',
+										color: 'var(--vscode-input-foreground)',
+										borderRadius: '4px',
+										outline: 'none'
+									}}
+									aria-label="Global search by code or title"
+								/>
+								<button
+									type="button"
+									onClick={() => runGlobalSearch(globalSearchTerm)}
+									disabled={globalSearchLoading || !globalSearchTerm.trim()}
+									style={{
+										padding: '8px 14px',
+										fontSize: '13px',
+										backgroundColor: 'var(--vscode-button-background)',
+										color: 'var(--vscode-button-foreground)',
+										border: 'none',
+										borderRadius: '4px',
+										cursor: globalSearchLoading || !globalSearchTerm.trim() ? 'default' : 'pointer',
+										opacity: globalSearchLoading || !globalSearchTerm.trim() ? 0.6 : 1
+									}}
+								>
+									{globalSearchLoading ? 'Searching…' : 'Search'}
+								</button>
+							</div>
+							{globalSearchError && <div style={{ color: 'var(--vscode-errorForeground)', fontSize: '13px' }}>{globalSearchError}</div>}
+							{globalSearchResults.length > 0 && (
+								<div
+									style={{
+										flex: 1,
+										border: '1px solid var(--vscode-panel-border)',
+										borderRadius: '6px',
+										overflowY: 'auto',
+										maxHeight: '400px'
+									}}
+								>
+									<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', padding: '8px 12px', borderBottom: '1px solid var(--vscode-panel-border)' }}>
+										{globalSearchResults.length} result{globalSearchResults.length !== 1 ? 's' : ''}
+									</div>
+									<ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+										{globalSearchResults.map((item, idx) => (
+											<li
+												key={`${item.entityType}-${item.objectId}-${idx}`}
+												role="button"
+												tabIndex={0}
+												onClick={() => openSearchResult(item)}
+												onKeyDown={e => {
+													if (e.key === 'Enter' || e.key === ' ') {
+														e.preventDefault();
+														openSearchResult(item);
+													}
+												}}
+												style={{
+													padding: '10px 12px',
+													borderBottom: idx < globalSearchResults.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
+													fontSize: '13px',
+													display: 'flex',
+													alignItems: 'center',
+													gap: '8px',
+													flexWrap: 'wrap',
+													cursor: 'pointer',
+													backgroundColor: 'transparent',
+													transition: 'background-color 0.15s ease'
+												}}
+												onMouseEnter={e => {
+													e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+												}}
+												onMouseLeave={e => {
+													e.currentTarget.style.backgroundColor = 'transparent';
+												}}
+											>
+												<span
+													style={{
+														fontSize: '11px',
+														padding: '2px 6px',
+														borderRadius: '4px',
+														backgroundColor: 'var(--vscode-badge-background)',
+														color: 'var(--vscode-badge-foreground)',
+														textTransform: 'capitalize'
+													}}
+												>
+													{item.entityType === 'userstory' ? 'User Story' : item.entityType}
+												</span>
+												<span style={{ fontWeight: 600, color: 'var(--vscode-foreground)' }}>{item.formattedId}</span>
+												<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{item.name || '—'}</span>
+											</li>
+										))}
+									</ul>
+								</div>
+							)}
+						</div>
+					)}
 					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} onIterationClick={handleIterationClickFromCalendar} />}
 
 					{activeSection === 'team' && (

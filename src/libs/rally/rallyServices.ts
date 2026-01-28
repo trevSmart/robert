@@ -191,17 +191,17 @@ export async function getCurrentUser() {
 	const settingsManager = SettingsManager.getInstance();
 	const rallyInstance = settingsManager.getSetting('rallyInstance');
 	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
-	
+
 	const userEndpoint = `${rallyInstance}/slm/webservice/v2.0/user`;
 	const fetchFields = 'ObjectID,UserName,DisplayName,EmailAddress,FirstName,LastName,Disabled';
-	
+
 	errorHandler.logInfo(`Executing Rally REST call to get authenticated user: ${userEndpoint}`, 'getCurrentUser');
 
 	try {
 		const response = await fetch(`${userEndpoint}?fetch=${fetchFields}`, {
 			method: 'GET',
 			headers: {
-				'zsessionid': rallyApiKey,
+				zsessionid: rallyApiKey,
 				'Content-Type': 'application/json',
 				'X-RallyIntegrationName': 'IBM Robert Extension',
 				'X-RallyIntegrationVendor': 'IBM',
@@ -2363,4 +2363,93 @@ export async function globalSearch(term: string, options?: { limitPerType?: numb
 	errorHandler.logInfo(`Global search returned ${results.length} results`, 'rallyServices.globalSearch');
 
 	return { results, source: 'api' };
+}
+
+/**
+ * Fetch a single user story by ObjectID for opening from global search.
+ */
+export async function getUserStoryByObjectId(objectId: string): Promise<{ userStory: RallyUserStory | null }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+	const rallyApi = getRallyApi();
+	const projectId = await getProjectId();
+	const result = await rallyApi.query({
+		type: 'hierarchicalrequirement',
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	});
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) return { userStory: null };
+	const formatted = await formatUserStoriesAsync({ ...resultData, Results: results });
+	return { userStory: formatted[0] ?? null };
+}
+
+/**
+ * Fetch a single defect by ObjectID for opening from global search.
+ */
+export async function getDefectByObjectId(objectId: string): Promise<{ defect: RallyDefect | null }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+	const rallyApi = getRallyApi();
+	const result = await rallyApi.query({
+		type: 'defect',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	});
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) return { defect: null };
+	const formatted = await formatDefectsAsync(results);
+	return { defect: formatted[0] ?? null };
+}
+
+/**
+ * Fetch a single task by ObjectID and its parent user story ObjectID for opening from global search.
+ */
+export async function getTaskWithParent(objectId: string): Promise<{ task: any; userStoryObjectId: string | null }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+	const rallyApi = getRallyApi();
+	const result = await rallyApi.query({
+		type: 'task',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID', 'Rank'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	});
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) return { task: null, userStoryObjectId: null };
+	const raw = results[0] as any;
+	const userStoryObjectId = raw.WorkProduct?.ObjectID ?? raw.WorkProduct?.objectId ?? null;
+	const formatted = await formatTasksAsync(results);
+	return { task: formatted[0] ?? null, userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null };
+}
+
+/**
+ * Fetch a single test case by ObjectID and its parent user story ObjectID for opening from global search.
+ */
+export async function getTestCaseWithParent(objectId: string): Promise<{ testCase: any; userStoryObjectId: string | null }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+	const rallyApi = getRallyApi();
+	const result = await rallyApi.query({
+		type: 'testcase',
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Project', 'Type', 'Priority', 'TestFolder', 'ObjectID', 'WorkProduct'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	});
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	if (!results.length) return { testCase: null, userStoryObjectId: null };
+	const raw = results[0] as any;
+	const userStoryObjectId = raw.WorkProduct?.ObjectID ?? raw.WorkProduct?.objectId ?? null;
+	const formatted = await formatTestCasesAsync(results);
+	return { testCase: formatted[0] ?? null, userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null };
 }

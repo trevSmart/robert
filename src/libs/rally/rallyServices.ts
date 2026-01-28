@@ -2401,12 +2401,32 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 	if (!validation.isValid) {
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
+	
+	// Get project ID from cached rallyData if available, otherwise fetch it
+	let projectRef: string | undefined;
+	const settingsManager = SettingsManager.getInstance();
+	const rallyProjectName = settingsManager.getSetting('rallyProjectName')?.trim();
+	
+	if (rallyProjectName && rallyData.projects.length > 0) {
+		const currentProject = rallyData.projects.find((p: RallyProject) => p.name === rallyProjectName);
+		if (currentProject) {
+			projectRef = `/project/${currentProject.objectId}`;
+		}
+	}
+	
 	const rallyApi = getRallyApi();
-	const result = await rallyApi.query({
+	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
 		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],
 		query: queryUtils.where('ObjectID', '=', objectId)
-	});
+	};
+	
+	// Scope to project if available
+	if (projectRef) {
+		queryOptions.query = queryUtils.where('ObjectID', '=', objectId).and(queryUtils.where('Project', '=', projectRef));
+	}
+	
+	const result = await rallyApi.query(queryOptions);
 	const resultData = result as RallyApiResult;
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) return { userStory: null };

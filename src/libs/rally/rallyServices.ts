@@ -745,7 +745,7 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'iteration',
-		fetch: ['ObjectID', 'Name', 'StartDate', 'EndDate', 'State', 'Project', 'CreationDate', 'LastUpdateDate', 'PlannedVelocity', 'Theme', 'Notes', 'RevisionHistory']
+		fetch: ['ObjectID', 'Name', 'StartDate', 'EndDate', 'State', 'Project', 'CreationDate', 'LastUpdateDate', 'PlannedVelocity', 'Theme', 'Notes', 'RevisionHistory', 'TaskEstimateTotal']
 	};
 
 	if (limit) {

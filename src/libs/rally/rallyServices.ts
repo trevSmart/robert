@@ -1,5 +1,5 @@
 import { rallyData } from '../../extension.js';
-import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User } from '../../types/rally';
+import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User, GlobalSearchResultItem } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
 import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
@@ -2260,4 +2260,107 @@ export function clearAllRallyCaches(): void {
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.clearAllRallyCaches');
 	}
+}
+
+/** Default limit per entity type for global search */
+const GLOBAL_SEARCH_LIMIT_PER_TYPE = 15;
+
+/**
+ * Build a Rally query that matches term by FormattedID (exact or contains) or Name (contains).
+ * Combines with project filter.
+ */
+function buildGlobalSearchQuery(term: string, projectRef: string): RallyQueryBuilder {
+	const formIdExact = queryUtils.where('FormattedID', '=', term);
+	const formIdContains = queryUtils.where('FormattedID', 'contains', term);
+	const nameContains = queryUtils.where('Name', 'contains', term);
+	// @ts-expect-error - Rally query builder has or method
+	const searchOr = formIdExact.or(formIdContains).or(nameContains);
+	const projectFilter = queryUtils.where('Project', '=', projectRef);
+	return searchOr.and(projectFilter);
+}
+
+/**
+ * Global search across Rally entities (user stories, defects, tasks, test cases).
+ * Searches by FormattedID (exact or partial) and by Name (partial).
+ * There is no single "search" endpoint in the Rally Web Services API; this runs parallel queries per type.
+ *
+ * @param term - Search string (code like US12345 or text from title)
+ * @param options - Optional limit per entity type (default 15)
+ * @returns Combined results with entityType, formattedId, name, objectId
+ */
+export async function globalSearch(term: string, options?: { limitPerType?: number }): Promise<{ results: GlobalSearchResultItem[]; source: string }> {
+	const trimmed = (term || '').trim();
+	if (!trimmed) {
+		errorHandler.logDebug('Global search called with empty term', 'rallyServices.globalSearch');
+		return { results: [], source: 'api' };
+	}
+
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+
+	const projectId = await getProjectId();
+	const projectRef = `/project/${projectId}`;
+	const limitPerType = options?.limitPerType ?? GLOBAL_SEARCH_LIMIT_PER_TYPE;
+	const searchQuery = buildGlobalSearchQuery(trimmed, projectRef);
+
+	const rallyApi = getRallyApi();
+
+	const fetchOptions = [
+		{
+			type: 'hierarchicalrequirement' as const,
+			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', 'Iteration', '_ref'],
+			entityType: 'userstory' as const
+		},
+		{
+			type: 'defect' as const,
+			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', 'Iteration', '_ref'],
+			entityType: 'defect' as const
+		},
+		{
+			type: 'task' as const,
+			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', 'WorkProduct', '_ref'],
+			entityType: 'task' as const
+		},
+		{
+			type: 'testcase' as const,
+			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', '_ref'],
+			entityType: 'testcase' as const
+		}
+	];
+
+	const runOne = async (opts: (typeof fetchOptions)[0]): Promise<GlobalSearchResultItem[]> => {
+		try {
+			const result = await rallyApi.query({
+				type: opts.type,
+				fetch: opts.fetch,
+				query: searchQuery,
+				limit: limitPerType
+			});
+			const resultData = result as RallyApiResult;
+			const results = resultData.Results || resultData.QueryResult?.Results || [];
+			return results.map((r: any) => ({
+				entityType: opts.entityType,
+				formattedId: r.FormattedID ?? r.formattedId ?? '',
+				name: r.Name ?? r.name ?? '',
+				objectId: String(r.ObjectID ?? r.objectId ?? ''),
+				project: r.Project?._refObjectName ?? r.Project?.refObjectName ?? r.project?._refObjectName ?? r.project?.refObjectName ?? null,
+				iteration: r.Iteration?._refObjectName ?? r.Iteration?.refObjectName ?? r.iteration?._refObjectName ?? r.iteration?.refObjectName ?? null,
+				_ref: r._ref
+			}));
+		} catch (err) {
+			errorHandler.logWarning(`Global search failed for ${opts.type}: ${err instanceof Error ? err.message : String(err)}`, 'rallyServices.globalSearch');
+			return [];
+		}
+	};
+
+	errorHandler.logInfo(`Global search: "${trimmed}" (limit ${limitPerType} per type)`, 'rallyServices.globalSearch');
+
+	const arrays = await Promise.all(fetchOptions.map(runOne));
+	const results: GlobalSearchResultItem[] = arrays.flat();
+
+	errorHandler.logInfo(`Global search returned ${results.length} results`, 'rallyServices.globalSearch');
+
+	return { results, source: 'api' };
 }

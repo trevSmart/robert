@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from './ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress } from './libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress, globalSearch } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
@@ -1030,6 +1030,25 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'unsubscribeCollaborationUserStory':
 							if (this._websocketClient.isConnected()) {
 								this._websocketClient.unsubscribeUserStory(message.userStoryId);
+							}
+							break;
+						case 'globalSearch':
+							try {
+								this._errorHandler.logDebug(`Global search: "${message.term}"`, 'WebviewMessageListener');
+								const searchResult = await globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 15 });
+								webview.postMessage({
+									command: 'globalSearchResults',
+									results: searchResult.results,
+									term: message.term
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'globalSearch');
+								webview.postMessage({
+									command: 'globalSearchError',
+									error: errorMessage,
+									term: message.term
+								});
 							}
 							break;
 						default:

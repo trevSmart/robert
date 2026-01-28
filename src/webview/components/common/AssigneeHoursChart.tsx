@@ -52,7 +52,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		}
 
 		// Prepare data - sort by total hours descending (most hours first)
-		// Then reverse for display so highest bars appear at top of chart
+		// With yAxis.inverse enabled, this ordering shows the highest bars at the top of the chart
 		const sortedAssigneeData = [...assigneeData].sort((a, b) => b.totalHours - a.totalHours);
 		const totalHours = sortedAssigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
 		const lightTheme = isLightTheme();

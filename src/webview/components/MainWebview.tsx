@@ -1457,6 +1457,22 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						sendMessage({ command: 'loadUserStoryByObjectId', objectId: message.userStoryObjectId });
 					}
 					break;
+				case 'userStoryByObjectIdError':
+					setGlobalSearchError(message.error || 'Failed to load user story');
+					setGlobalSearchLoading(false);
+					break;
+				case 'defectByObjectIdError':
+					setGlobalSearchError(message.error || 'Failed to load defect');
+					setGlobalSearchLoading(false);
+					break;
+				case 'taskWithParentError':
+					setGlobalSearchError(message.error || 'Failed to load task');
+					setGlobalSearchLoading(false);
+					break;
+				case 'testCaseWithParentError':
+					setGlobalSearchError(message.error || 'Failed to load test case');
+					setGlobalSearchLoading(false);
+					break;
 			}
 		};
 

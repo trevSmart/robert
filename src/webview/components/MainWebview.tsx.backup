@@ -648,7 +648,7 @@ const SprintsIcon = ({ size = '16px' }: { size?: string }) => (
 	</svg>
 );
 
-const UserStoriesIcon = ({ size = '16px' }: { size?: string }) => (
+const UserStoriesIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
 		<path
 			strokeLinecap="round"
@@ -701,7 +701,7 @@ const PortfolioViewSelector: FC<{
 			case 'user-stories':
 				return <UserStoriesIcon />;
 			case 'bug':
-				return <div className="codicon codicon-bug" style={{ fontSize: '16px' }}></div>;
+				return <div className="codicon codicon-bug" style={{ fontSize: '18px' }}></div>;
 			default:
 				return null;
 		}

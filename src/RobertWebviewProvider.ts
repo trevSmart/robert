@@ -654,6 +654,49 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								}
 							}
 							break;
+						case 'loadVelocityData':
+							try {
+								this._errorHandler.logInfo('Loading velocity data (hours per sprint) from Rally API', 'WebviewMessageListener');
+								const iterationsResult = await getIterations();
+								const iterations = iterationsResult?.iterations ?? [];
+								const today = new Date();
+								today.setHours(23, 59, 59, 999);
+								const numberOfSprints = 12;
+								const sortedIterations = iterations
+									.filter((it: { startDate: string; endDate: string }) => {
+										const startDate = new Date(it.startDate);
+										const endDate = new Date(it.endDate);
+										return endDate <= today || (startDate <= today && endDate > today);
+									})
+									.sort((a: { endDate: string }, b: { endDate: string }) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+									.slice(0, numberOfSprints)
+									.reverse();
+								const velocityData: { sprintName: string; points: number; completedStories: number }[] = [];
+								for (const iteration of sortedIterations) {
+									const ref = `/iteration/${iteration.objectId}`;
+									const usResult = await getUserStories({ Iteration: ref }, 0);
+									const stories = usResult?.userStories ?? [];
+									const points = stories.reduce((sum: number, s: { taskEstimateTotal?: number }) => sum + (s.taskEstimateTotal ?? 0), 0);
+									const completedStories = stories.filter((s: { scheduleState?: string }) => s.scheduleState === 'Completed' || s.scheduleState === 'Accepted').length;
+									velocityData.push({
+										sprintName: iteration.name,
+										points: Math.round(points * 10) / 10,
+										completedStories
+									});
+								}
+								webview.postMessage({
+									command: 'velocityDataLoaded',
+									velocityData
+								});
+								this._errorHandler.logInfo(`Velocity data loaded: ${velocityData.length} sprints`, 'WebviewMessageListener');
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadVelocityData');
+								webview.postMessage({
+									command: 'velocityDataError',
+									error: 'Failed to load velocity data'
+								});
+							}
+							break;
 						case 'loadTasks':
 							try {
 								this._errorHandler.logInfo('Loading tasks from Rally API', 'WebviewMessageListener');

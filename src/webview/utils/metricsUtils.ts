@@ -29,21 +29,23 @@ export interface DefectsBySeverity {
 }
 
 /**
- * Calcula la velocitat (story points completats) per cada sprint
+ * Calcula la velocitat (hores totals planificades del sprint) per cada sprint
  * @param userStories - Llista de user stories
  * @param iterations - Llista d'iteracions
  * @param numberOfSprints - Nombre de sprints a incloure (per defecte 6)
- * @returns Array de VelocityData ordenat per sprint (més antic primer)
+ * @returns Array de VelocityData ordenat per sprint (més antic primer). points = suma TaskEstimateTotal de totes les US del sprint.
  */
 export function calculateVelocity(userStories: UserStory[], iterations: Iteration[], numberOfSprints: number = 6): VelocityData[] {
-	// Filtrar només sprints passats o actuals
+	// Filtrar sprints que han acabat o estem dins (sprint actual)
 	const today = new Date();
 	today.setHours(23, 59, 59, 999);
 
-	const pastIterations = iterations
+	const sortedIterations = iterations
 		.filter(iteration => {
+			const startDate = new Date(iteration.startDate);
 			const endDate = new Date(iteration.endDate);
-			return endDate <= today;
+			// Incloure: sprints completats (endDate <= today) O sprints en curs (startDate <= today <= endDate)
+			return endDate <= today || (startDate <= today && endDate > today);
 		})
 		.sort((a, b) => {
 			const dateA = new Date(a.endDate).getTime();
@@ -53,15 +55,17 @@ export function calculateVelocity(userStories: UserStory[], iterations: Iteratio
 		.slice(0, numberOfSprints)
 		.reverse(); // Invertir per tenir més antic primer
 
-	// Calcular punts completats per cada sprint
-	const velocityData: VelocityData[] = pastIterations.map(iteration => {
-		const completedStories = userStories.filter(story => story.iteration === iteration.name && (story.scheduleState === 'Completed' || story.scheduleState === 'Accepted'));
+	// Calcular hores totals del sprint (totes les US de la iteració) i completades
+	const velocityData: VelocityData[] = sortedIterations.map(iteration => {
+		const sprintStories = userStories.filter(story => story.iteration === iteration.name);
+		const completedStories = sprintStories.filter(story => story.scheduleState === 'Completed' || story.scheduleState === 'Accepted');
 
-		const points = completedStories.reduce((sum, story) => sum + (story.planEstimate || 0), 0);
+		// Barres: hores totals planificades del sprint (suma TaskEstimateTotal de totes les US)
+		const points = sprintStories.reduce((sum, story) => sum + (story.taskEstimateTotal || 0), 0);
 
 		return {
 			sprintName: iteration.name,
-			points: points,
+			points: Math.round(points * 10) / 10, // Mantenir un decimal (p.ex. 1925.6)
 			completedStories: completedStories.length
 		};
 	});
@@ -72,7 +76,7 @@ export function calculateVelocity(userStories: UserStory[], iterations: Iteratio
 /**
  * Calcula la mitjana de velocitat dels últims sprints
  * @param velocityData - Dades de velocitat per sprint
- * @returns Mitjana de story points per sprint
+ * @returns Mitjana de hores per sprint
  */
 export function calculateAverageVelocity(velocityData: VelocityData[]): number {
 	if (velocityData.length === 0) return 0;
@@ -196,10 +200,10 @@ export function aggregateDefectsBySeverity(defects: RallyDefect[], iterations: I
 }
 
 /**
- * Calcula story points completats del sprint actual
+ * Calcula hores completades del sprint actual
  * @param userStories - Llista de user stories
  * @param currentIterationName - Nom del sprint actual
- * @returns Nombre de story points completats
+ * @returns Nombre de hores completades
  */
 export function calculateCompletedPoints(userStories: UserStory[], currentIterationName?: string): number {
 	let filteredStories = userStories;
@@ -210,5 +214,5 @@ export function calculateCompletedPoints(userStories: UserStory[], currentIterat
 
 	const completedStories = filteredStories.filter(story => story.scheduleState === 'Completed' || story.scheduleState === 'Accepted');
 
-	return completedStories.reduce((sum, story) => sum + (story.planEstimate || 0), 0);
+	return completedStories.reduce((sum, story) => sum + (story.taskEstimateTotal || 0), 0);
 }

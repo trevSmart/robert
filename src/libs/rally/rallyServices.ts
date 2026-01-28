@@ -2411,7 +2411,12 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 		const currentProject = rallyData.projects.find((p: RallyProject) => p.name === rallyProjectName);
 		if (currentProject) {
 			projectRef = `/project/${currentProject.objectId}`;
+			errorHandler.logDebug(`Scoping user story query to project: ${rallyProjectName} (${currentProject.objectId})`, 'getUserStoryByObjectId');
+		} else {
+			errorHandler.logWarning(`Project "${rallyProjectName}" not found in cached rallyData, querying without project scope`, 'getUserStoryByObjectId');
 		}
+	} else {
+		errorHandler.logDebug('No project name configured or rallyData.projects empty, querying without project scope', 'getUserStoryByObjectId');
 	}
 	
 	const rallyApi = getRallyApi();

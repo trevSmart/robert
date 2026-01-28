@@ -5,6 +5,24 @@ import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
 import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
 
+// Polyfill for fetch in older VS Code versions (< 1.77, Node.js < 18)
+// Use dynamic import to avoid errors in environments where fetch is available
+const fetchPolyfill = async (url: string, options?: RequestInit): Promise<Response> => {
+	// Try to use native fetch if available (Node.js 18+ / VS Code 1.77+)
+	if (typeof globalThis.fetch === 'function') {
+		return globalThis.fetch(url, options);
+	}
+	
+	// Fallback to node-fetch for older environments
+	try {
+		// @ts-ignore - dynamic import for compatibility
+		const nodeFetch = await import('node-fetch');
+		return nodeFetch.default(url, options) as unknown as Response;
+	} catch (error) {
+		throw new Error('fetch is not available and node-fetch polyfill could not be loaded. Please upgrade VS Code to version 1.77 or later.');
+	}
+};
+
 // Error handler singleton instance
 const errorHandler = ErrorHandler.getInstance();
 
@@ -198,7 +216,7 @@ export async function getCurrentUser() {
 	errorHandler.logInfo(`Executing Rally REST call to get authenticated user: ${userEndpoint}`, 'getCurrentUser');
 
 	try {
-		const response = await fetch(`${userEndpoint}?fetch=${fetchFields}`, {
+		const response = await fetchPolyfill(`${userEndpoint}?fetch=${fetchFields}`, {
 			method: 'GET',
 			headers: {
 				zsessionid: rallyApiKey,
@@ -233,8 +251,18 @@ export async function getCurrentUser() {
 				}
 			}
 
+			// If we still don't have an ObjectID, treat this as an authentication failure
+			// A missing ObjectID means we can't properly identify the user for collaboration
+			if (!objectId) {
+				errorHandler.logError('Rally user data missing ObjectID - cannot authenticate user', 'getCurrentUser');
+				return {
+					user: null,
+					source: 'api'
+				};
+			}
+
 			const userData = {
-				objectId: String(objectId || 'unknown'),
+				objectId: String(objectId),
 				userName: user.UserName ?? user.userName,
 				displayName: user.DisplayName ?? user.displayName,
 				emailAddress: user.EmailAddress ?? user.emailAddress,
@@ -2374,7 +2402,6 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 	const rallyApi = getRallyApi();
-	const projectId = await getProjectId();
 	const result = await rallyApi.query({
 		type: 'hierarchicalrequirement',
 		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],

@@ -656,7 +656,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							break;
 						case 'loadVelocityData':
 							try {
-								this._errorHandler.logInfo('Loading velocity data (hours per sprint) from Rally API', 'WebviewMessageListener');
+								this._errorHandler.logInfo('Loading velocity data (hours per sprint) from Rally API using iteration TaskEstimateTotal', 'WebviewMessageListener');
 								const iterationsResult = await getIterations();
 								const iterations = iterationsResult?.iterations ?? [];
 								const today = new Date();
@@ -673,12 +673,16 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									.reverse();
 								const velocityData: { sprintName: string; points: number; completedStories: number }[] = [];
 								for (const iteration of sortedIterations) {
+									// Use taskEstimateTotal from iteration (sum of all user story hours) instead of fetching all stories
+									const points = iteration.taskEstimateTotal ?? 0;
+
+									// For completedStories count, we still need to fetch user stories
+									// but only to count completed items, not to sum hours
 									const ref = `/iteration/${iteration.objectId}`;
-									// Fetch all user stories for this iteration; rely on service to handle pagination/caching
 									const usResult = await getUserStories({ Iteration: ref });
-									const allStories: { taskEstimateTotal?: number; scheduleState?: string }[] = usResult?.userStories ?? [];
-									const points = allStories.reduce((sum: number, s: { taskEstimateTotal?: number }) => sum + (s.taskEstimateTotal ?? 0), 0);
+									const allStories: { scheduleState?: string }[] = usResult?.userStories ?? [];
 									const completedStories = allStories.filter((s: { scheduleState?: string }) => s.scheduleState === 'Completed' || s.scheduleState === 'Accepted').length;
+
 									velocityData.push({
 										sprintName: iteration.name,
 										points: Math.round(points * 10) / 10,

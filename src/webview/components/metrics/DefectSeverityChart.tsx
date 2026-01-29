@@ -26,17 +26,13 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 		// Extreure sprints únics
 		const sprints = [...new Set(data.map(d => d.sprint))];
 
-		// Agrupar dades per severitat i estat
-		const severities = ['Critical', 'Major', 'Minor', 'Cosmetic'];
+		// Agrupar dades per severitat
+		const severities = ['Cosmetic', 'Minor', 'Major', 'Critical'];
 		const seriesData: Record<string, number[]> = {
-			'Critical-Open': [],
-			'Critical-Closed': [],
-			'Major-Open': [],
-			'Major-Closed': [],
-			'Minor-Open': [],
-			'Minor-Closed': [],
-			'Cosmetic-Open': [],
-			'Cosmetic-Closed': []
+			Critical: [],
+			Major: [],
+			Minor: [],
+			Cosmetic: []
 		};
 
 		// Omplir dades per cada sprint
@@ -44,46 +40,30 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 			severities.forEach(severity => {
 				const openCount = data.find(d => d.sprint === sprint && d.severity === severity)?.open || 0;
 				const closedCount = data.find(d => d.sprint === sprint && d.severity === severity)?.closed || 0;
+				const totalCount = openCount + closedCount;
 
-				seriesData[`${severity}-Open`].push(openCount);
-				seriesData[`${severity}-Closed`].push(closedCount);
+				seriesData[`${severity}`].push(totalCount);
 			});
 		});
 
 		// Colors per severitat
-		const severityColors: Record<string, { open: string; closed: string }> = {
-			Critical: { open: '#d32f2f', closed: '#ffcdd2' },
-			Major: { open: '#f57c00', closed: '#ffe0b2' },
-			Minor: { open: '#fbc02d', closed: '#fff9c4' },
-			Cosmetic: { open: '#7e57c2', closed: '#d1c4e9' }
+		const severityColors: Record<string, string> = {
+			Critical: '#d32f2f',
+			Major: '#f57c00',
+			Minor: '#fbc02d',
+			Cosmetic: '#7e57c2'
 		};
 
 		// Crear sèries
 		const series: any[] = [];
 		severities.forEach(severity => {
-			// Open defects
 			series.push({
-				name: `${severity} (Open)`,
+				name: `${severity}`,
 				type: 'bar',
 				stack: 'total',
-				data: seriesData[`${severity}-Open`],
+				data: seriesData[`${severity}`],
 				itemStyle: {
-					color: severityColors[severity].open
-				},
-				emphasis: {
-					focus: 'series'
-				}
-			});
-
-			// Closed defects
-			series.push({
-				name: `${severity} (Closed)`,
-				type: 'bar',
-				stack: 'total',
-				data: seriesData[`${severity}-Closed`],
-				itemStyle: {
-					color: severityColors[severity].closed,
-					opacity: 0.6
+					color: severityColors[severity]
 				},
 				emphasis: {
 					focus: 'series'

@@ -3,14 +3,24 @@ import * as echarts from 'echarts';
 import { isLightTheme } from '../../utils/themeColors';
 import type { StateDistribution, BlockedDistribution } from '../../utils/metricsUtils';
 
+interface IterationOption {
+	objectId: string;
+	name: string;
+	startDate: string;
+}
+
 interface StateDistributionPieProps {
 	data: StateDistribution[];
 	blockedData?: BlockedDistribution[];
 	sprintName?: string;
 	loading?: boolean;
+	selectedSprint?: string;
+	onSprintChange?: (sprint: string) => void;
+	iterations?: IterationOption[];
+	showSelector?: boolean;
 }
 
-const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, blockedData = [], sprintName = 'Next Sprint', loading = false }) => {
+const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, blockedData = [], sprintName = 'Next Sprint', loading = false, selectedSprint = 'next', onSprintChange, iterations = [], showSelector = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
 	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
@@ -25,19 +35,19 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 		const chart = chartInstanceRef.current;
 		const lightTheme = isLightTheme();
 
-		// Colors per cada estat (alineats amb UserStoryForm.tsx)
+		// Colors per cada estat - Versió Viva
 		const stateColors: Record<string, string> = {
-			Defined: '#fd7e14', // Taronja
-			'In-Progress': '#ffc107', // Groc
-			Completed: '#0d6efd', // Blau
-			Accepted: '#198754', // Verd
+			Defined: '#ff8c00', // Taronja viu
+			'In-Progress': '#ffd700', // Groc viu
+			Completed: '#0d8bf9', // Blau viu
+			Accepted: '#20c997', // Verd viu
 			Unknown: '#6c757d' // Gris
 		};
 
-		// Colors per blocked status
+		// Colors per blocked status - Versió Viva
 		const blockedColors: Record<string, string> = {
-			Blocked: '#dc3545', // Roig
-			'Not Blocked': '#28a745' // Verd
+			Blocked: '#e74c3c', // Roig viu
+			'Not Blocked': '#27ae60' // Verd viu
 		};
 
 		// Preparar dades per echarts
@@ -63,6 +73,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 				text: `${sprintName} Readiness`,
 				subtext: sprintName,
 				left: 'center',
+				top: 10,
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc',
 					fontSize: 16,
@@ -87,19 +98,53 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 			},
 			legend: {
 				orient: 'horizontal',
-				bottom: 10,
+				bottom: 5,
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc'
 				},
 				data: [...data.map(d => d.state), ...(blockedData.length > 0 ? blockedData.map(d => d.status) : [])]
 			},
 			series: [
+				...(blockedData.length > 0
+					? [
+							{
+								name: 'Blocked Status',
+								type: 'pie',
+								radius: ['20%', '25%'],
+								avoidLabelOverlap: false,
+								center: ['50%', '55%'],
+								label: {
+									show: false
+								},
+								emphasis: {
+									label: {
+										show: true,
+										fontSize: 12,
+										fontWeight: 'bold'
+									},
+									itemStyle: {
+										shadowBlur: 10,
+										shadowOffsetX: 0,
+										shadowColor: 'rgba(0, 0, 0, 0.5)'
+									}
+								},
+								labelLine: {
+									show: false
+								},
+								itemStyle: {
+									borderColor: lightTheme ? '#fff' : '#1e1e1e',
+									borderWidth: 2
+								},
+								data: blockedChartData
+							}
+						]
+					: []),
 				{
 					name: 'State',
 					type: 'pie',
-					radius: ['35%', '55%'],
+					radius: ['28%', '42%'],
 					avoidLabelOverlap: false,
-					center: ['50%', '50%'],
+					center: ['50%', '55%'],
 					label: {
 						show: true,
 						position: 'outside',
@@ -124,38 +169,12 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 							color: lightTheme ? '#999' : '#666'
 						}
 					},
+					itemStyle: {
+						borderColor: lightTheme ? '#fff' : '#1e1e1e',
+						borderWidth: 2
+					},
 					data: chartData
-				},
-				...(blockedData.length > 0
-					? [
-							{
-								name: 'Blocked Status',
-								type: 'pie',
-								radius: ['58%', '75%'],
-								avoidLabelOverlap: false,
-								center: ['50%', '50%'],
-								label: {
-									show: false
-								},
-								emphasis: {
-									label: {
-										show: true,
-										fontSize: 12,
-										fontWeight: 'bold'
-									},
-									itemStyle: {
-										shadowBlur: 10,
-										shadowOffsetX: 0,
-										shadowColor: 'rgba(0, 0, 0, 0.5)'
-									}
-								},
-								labelLine: {
-									show: false
-								},
-								data: blockedChartData
-							}
-						]
-					: [])
+				}
 			]
 		};
 
@@ -172,15 +191,22 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 		};
 	}, [data, blockedData, sprintName, loading]);
 
-	// Cleanup on unmount
+	// Cleanup when data becomes empty or on unmount
 	useEffect(() => {
+		if (data.length === 0 || loading) {
+			if (chartInstanceRef.current) {
+				chartInstanceRef.current.dispose();
+				chartInstanceRef.current = null;
+			}
+		}
+
 		return () => {
 			if (chartInstanceRef.current) {
 				chartInstanceRef.current.dispose();
 				chartInstanceRef.current = null;
 			}
 		};
-	}, []);
+	}, [data.length, loading]);
 
 	if (loading) {
 		return (
@@ -231,7 +257,32 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 				padding: '20px'
 			}}
 		>
-			<div ref={chartRef} style={{ width: '100%', height: '400px' }} />
+			{showSelector && (
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+					<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Next Sprint Readiness</h3>
+					<select
+						value={selectedSprint}
+						onChange={e => onSprintChange?.(e.target.value)}
+						style={{
+							padding: '4px 8px',
+							borderRadius: '4px',
+							backgroundColor: 'var(--vscode-dropdown-background)',
+							color: 'var(--vscode-dropdown-foreground)',
+							border: '1px solid var(--vscode-dropdown-border)',
+							cursor: 'pointer',
+							fontSize: '12px'
+						}}
+					>
+						<option value="next">Next Sprint</option>
+						{iterations.map(it => (
+							<option key={it.objectId} value={it.name}>
+								{it.name}
+							</option>
+						))}
+					</select>
+				</div>
+			)}
+			<div ref={chartRef} style={{ width: '100%', height: '550px' }} />
 		</div>
 	);
 };

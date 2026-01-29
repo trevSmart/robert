@@ -218,3 +218,16 @@ export interface RallyTask extends Task {
 	timeSpent?: number;
 	workItem?: string | null;
 }
+
+// Holiday interface for public holidays
+export interface Holiday {
+	date: string; // ISO 8601 format (YYYY-MM-DD)
+	name: string;
+	localName?: string;
+	countryCode?: string;
+	global?: boolean;
+	counties?: string[] | null;
+	fixed?: boolean;
+	launchYear?: number | null;
+	types?: string[];
+}

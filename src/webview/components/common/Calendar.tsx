@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
+import type { Holiday } from '../../../types/rally';
 
 interface Iteration {
 	objectId: string;
@@ -16,6 +17,7 @@ interface DayInfo {
 	date: Date;
 	day: number;
 	iterations: Iteration[];
+	holiday?: Holiday;
 }
 
 interface CalendarProps {
@@ -24,10 +26,11 @@ interface CalendarProps {
 	onMonthChange?: (date: Date) => void;
 	debugMode?: boolean;
 	currentUser?: unknown;
+	holidays?: Holiday[];
 	onIterationClick?: (iteration: Iteration) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false, currentUser, onIterationClick }) => {
+const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false, currentUser, holidays = [], onIterationClick }) => {
 	const today = new Date();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
@@ -59,8 +62,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			content = `${Math.abs(diffDays)} days ago`;
 		}
 
+		// Add holiday info to tooltip
+		let title = `${dayInfo.day} ${getDayName(targetDate)}`;
+		if (dayInfo.holiday) {
+			title += ` - 🎉 ${dayInfo.holiday.localName || dayInfo.holiday.name}`;
+		}
+
 		return {
-			title: `${dayInfo.day} ${getDayName(targetDate)}`,
+			title: title,
 			content: content
 		};
 	};
@@ -210,6 +219,16 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		});
 	};
 
+	// Helper function to get the holiday for a specific day
+	const getHolidayForDay = (dayDate: Date): Holiday | undefined => {
+		// Build YYYY-MM-DD string without timezone conversion
+		const year = dayDate.getFullYear();
+		const month = (dayDate.getMonth() + 1).toString().padStart(2, '0');
+		const day = dayDate.getDate().toString().padStart(2, '0');
+		const dateStr = `${year}-${month}-${day}`;
+		return holidays.find(h => h.date === dateStr);
+	};
+
 	// Generate calendar days
 	const calendarDays = [];
 	let dayCounter = 1 - startDay; // Start from previous month
@@ -238,7 +257,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			date: currentDayDate,
 			isCurrentMonth,
 			isToday,
-			iterations: activeIterations
+			iterations: activeIterations,
+			holiday: getHolidayForDay(currentDayDate)
 		});
 
 		dayCounter++;
@@ -473,6 +493,47 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							>
 								{dayInfo.day}
 							</span>
+							{/* Show holiday overlay - dynamic transparency based on national (53%) vs regional (38%) */}
+							{dayInfo.holiday &&
+								(() => {
+									const holiday = dayInfo.holiday;
+									const isRegional = !holiday.global;
+									const transparency = isRegional ? 0.36 : 0.53; // 36% for regional, 53% for national
+									// Get region name from counties array (first autonomous community code)
+									const regionCode = isRegional && holiday.counties && holiday.counties.length > 0 ? holiday.counties[0] : null;
+									const regionName = regionCode ? regionCode.split('-')[1] : null; // Extract region from ES-XX format
+									const displayText = isRegional && regionName ? `${holiday.localName || holiday.name} (${regionName})` : holiday.localName || holiday.name;
+									return (
+										<div
+											style={{
+												position: 'absolute',
+												top: 0,
+												left: 0,
+												right: 0,
+												bottom: 0,
+												display: 'flex',
+												alignItems: 'center',
+												justifyContent: 'center',
+												padding: '8px',
+												borderRadius: 0,
+												backgroundColor: `rgba(76, 175, 160, ${transparency})`, // Turquoise: #4cafa0
+												color: 'white',
+												fontSize: '11px',
+												fontWeight: 'normal',
+												border: 'none',
+												zIndex: 2,
+												pointerEvents: 'none',
+												textAlign: 'center',
+												overflow: 'hidden',
+												whiteSpace: 'normal',
+												lineHeight: '1.2'
+											}}
+											title={`Holiday: ${holiday.localName || holiday.name}\n${holiday.global ? 'National' : 'Regional (Autonomous Community)'}`}
+										>
+											{displayText}
+										</div>
+									);
+								})()}
 							{/* Show iteration indicator lines */}
 							{dayInfo.iterations.length > 0 && (
 								<div

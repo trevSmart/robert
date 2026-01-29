@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.1.104",
+	"version": "0.1.117",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -11,7 +11,7 @@
 		"url": "https://github.com/trevSmart/robert.git"
 	},
 	"engines": {
-		"vscode": "^1.64.0"
+		"vscode": "^1.99.3"
 	},
 	"categories": [
 		"Other"
@@ -211,7 +211,7 @@
 		"@types/node": "^25.0.10",
 		"@types/react": "^19.2.3",
 		"@types/react-dom": "^19.2.3",
-		"@types/vscode": "^1.64.0",
+		"@types/vscode": "^1.99.3",
 		"@typescript-eslint/eslint-plugin": "^8.54.0",
 		"@typescript-eslint/parser": "^8.54.0",
 		"@vitejs/plugin-react": "^5.1.2",

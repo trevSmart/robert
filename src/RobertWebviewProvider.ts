@@ -239,7 +239,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				// Close any other Robert editor tabs that might be open from previous sessions
 				await this._closeOtherRobertEditors();
 
-				const panelTitle = this._isDebugMode ? 'Robert — DEBUG' : 'Robert';
+				const panelTitle = this._isDebugMode ? 'Robert — 🐞' : 'Robert';
 				const panel = vscode.window.createWebviewPanel('robert.mainPanel', panelTitle, vscode.ViewColumn.One, {
 					enableScripts: true,
 					localResourceRoots: [this._extensionUri]
@@ -271,7 +271,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				return panel;
 			}, 'createWebviewPanel')) ||
-			vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — DEBUG' : 'Robert', vscode.ViewColumn.One, {
+			vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — 🐞' : 'Robert', vscode.ViewColumn.One, {
 				enableScripts: true,
 				localResourceRoots: [this._extensionUri]
 			})
@@ -408,7 +408,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					return this._currentPanel;
 				}
 
-				const loadingTitle = this._isDebugMode ? 'Robert — Loading — DEBUG' : 'Robert — Loading';
+				const loadingTitle = this._isDebugMode ? 'Robert — Loading — 🐞' : 'Robert — Loading';
 				const panel = vscode.window.createWebviewPanel('robert.loading', loadingTitle, vscode.ViewColumn.One, {
 					enableScripts: true,
 					localResourceRoots: [this._extensionUri]
@@ -434,7 +434,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				return panel;
 			}, 'createLoadingPanel')) ||
-			vscode.window.createWebviewPanel('robert.loading', this._isDebugMode ? 'Robert — Loading — DEBUG' : 'Robert — Loading', vscode.ViewColumn.One, {
+			vscode.window.createWebviewPanel('robert.loading', this._isDebugMode ? 'Robert — Loading — 🐞' : 'Robert — Loading', vscode.ViewColumn.One, {
 				enableScripts: true,
 				localResourceRoots: [this._extensionUri]
 			})
@@ -450,7 +450,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					return this._currentPanel;
 				}
 
-				const logoTtitle = this._isDebugMode ? 'Robert — Logo — DEBUG' : 'Robert — Logo';
+				const logoTtitle = this._isDebugMode ? 'Robert — Logo — 🐞' : 'Robert — Logo';
 				const panel = vscode.window.createWebviewPanel('robert.logo', logoTtitle, vscode.ViewColumn.One, {
 					enableScripts: false,
 					localResourceRoots: [this._extensionUri]
@@ -473,7 +473,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				return panel;
 			}, 'createLogoPanel')) ||
-			vscode.window.createWebviewPanel('robert.logo', this._isDebugMode ? 'Robert — Logo — DEBUG' : 'Robert — Logo', vscode.ViewColumn.One, {
+			vscode.window.createWebviewPanel('robert.logo', this._isDebugMode ? 'Robert — Logo — 🐞' : 'Robert — Logo', vscode.ViewColumn.One, {
 				enableScripts: false,
 				localResourceRoots: [this._extensionUri]
 			})

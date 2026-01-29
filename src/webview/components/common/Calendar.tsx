@@ -150,6 +150,19 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		return newHex;
 	};
 
+	// Function to convert hex color to rgba with transparency
+	const hexToRgba = (hexColor: string, opacity: number = 1): string => {
+		// Remove # if present
+		const hex = hexColor.replace('#', '');
+
+		// Parse RGB values
+		const r = parseInt(hex.substring(0, 2), 16);
+		const g = parseInt(hex.substring(2, 4), 16);
+		const b = parseInt(hex.substring(4, 6), 16);
+
+		return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+	};
+
 	const getIterationProgress = (iteration: Iteration) => {
 		const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
 		const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
@@ -176,6 +189,26 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		// When start dates are equal, use objectId for deterministic ordering (no alphabetical fallback)
 		return a.objectId.localeCompare(b.objectId);
 	});
+
+	// Helper function to check if a day is an end date for any iteration in the month
+	const isSprintEndDay = (dayDate: Date) => {
+		return currentMonthIterations.some(iteration => {
+			const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
+			if (!endDate) return false;
+			// Compare dates without time
+			return dayDate.getFullYear() === endDate.getFullYear() && dayDate.getMonth() === endDate.getMonth() && dayDate.getDate() === endDate.getDate();
+		});
+	};
+
+	// Helper function to get the sprint that ends on a specific day
+	const getSprintEndingOnDay = (dayDate: Date) => {
+		return currentMonthIterations.find(iteration => {
+			const endDate = iteration.endDate ? new Date(iteration.endDate) : null;
+			if (!endDate) return false;
+			// Compare dates without time
+			return dayDate.getFullYear() === endDate.getFullYear() && dayDate.getMonth() === endDate.getMonth() && dayDate.getDate() === endDate.getDate();
+		});
+	};
 
 	// Generate calendar days
 	const calendarDays = [];
@@ -331,14 +364,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						backgroundColor: themeColors.panelBackground,
 						borderRadius: '8px',
 						border: `1px solid ${themeColors.panelBorder}`,
-						maxWidth: '800px',
+						maxWidth: '700px',
 						margin: '0 auto 16px auto'
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
-						Benvingut, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{currentUser.displayName || currentUser.userName || 'Usuari'}</span>! 👋
+						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{currentUser.displayName || currentUser.userName || 'User'}</span>! 👋
 					</div>
-					<div style={{ fontSize: '12px', color: themeColors.descriptionForeground, marginTop: '4px' }}>Bon treball amb les teves user stories i tasques</div>
+					<div style={{ fontSize: '12px', color: themeColors.descriptionForeground, marginTop: '4px' }}>Good luck with your user stories and tasks</div>
 				</div>
 			)}
 
@@ -389,11 +422,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								padding: '8px',
 								backgroundColor: dayInfo.isToday
 									? 'rgba(33, 150, 243, 0.3)' // More prominent blue background for today
-									: !dayInfo.isCurrentMonth || (isWeekend && dayInfo.isCurrentMonth)
+									: !dayInfo.isCurrentMonth
 										? lightTheme
-											? 'rgba(0, 0, 0, 0.04)'
-											: 'rgba(0, 0, 0, 0.18)' // lighter background for weekends and days outside current month in light theme
-										: 'transparent',
+											? 'rgba(230, 230, 230, 0.18)'
+											: 'rgba(0, 0, 0, 0.18)'
+										: isWeekend && dayInfo.isCurrentMonth
+											? lightTheme
+												? 'rgba(230, 230, 230, 0.16)'
+												: 'rgba(0, 0, 0, 0.18)'
+											: 'transparent',
 								color: dayInfo.isToday ? themeColors.listActiveSelectionForeground : dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
 								borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
 								display: 'flex',
@@ -410,7 +447,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								setHoveredDay(dayInfo);
 								setMousePosition({ x: e.clientX, y: e.clientY });
 								if (!dayInfo.isToday) {
-									e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
+									e.currentTarget.style.backgroundColor = lightTheme ? 'rgba(255, 255, 255, 0.25)' : themeColors.listHoverBackground;
 								}
 							}}
 							onMouseMove={e => {
@@ -421,7 +458,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								if (!dayInfo.isToday) {
 									const dayOfWeek = index % 7;
 									const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
-									e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth || (isWeekend && dayInfo.isCurrentMonth) ? (lightTheme ? 'rgba(0, 0, 0, 0.04)' : 'rgba(0, 0, 0, 0.18)') : 'transparent';
+									e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth ? (lightTheme ? 'rgba(230, 230, 230, 0.08)' : 'rgba(0, 0, 0, 0.18)') : isWeekend && dayInfo.isCurrentMonth ? (lightTheme ? 'rgba(230, 230, 230, 0.12)' : 'rgba(0, 0, 0, 0.18)') : 'transparent';
 								}
 							}}
 						>
@@ -488,52 +525,39 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							{/* Show debug indicators below day number */}
 							{debugMode && dayInfo.isCurrentMonth && (
 								<>
-									{/* IOP badge on 20th */}
-									{dayInfo.day === 20 && (
-										<div
-											style={{
-												position: 'absolute',
-												top: '50%',
-												left: '50%',
-												transform: 'translate(-50%, -50%)',
-												padding: '1px 4px',
-												borderRadius: '6px',
-												backgroundColor: '#ff6b35',
-												color: 'white',
-												fontSize: '11px',
-												fontWeight: 'normal',
-												border: 'none',
-												zIndex: 3,
-												pointerEvents: 'none'
-											}}
-											title="IOP - Debug indicator"
-										>
-											IOP
-										</div>
-									)}
-									{/* Pkg closed badge on 12th */}
-									{dayInfo.day === 12 && (
-										<div
-											style={{
-												position: 'absolute',
-												top: '50%',
-												left: '50%',
-												transform: 'translate(-50%, -50%)',
-												padding: '1px 4px',
-												borderRadius: '6px',
-												backgroundColor: '#8e44ad',
-												color: 'white',
-												fontSize: '11px',
-												fontWeight: 'normal',
-												border: 'none',
-												zIndex: 3,
-												pointerEvents: 'none'
-											}}
-											title="Package closed - Debug indicator"
-										>
-											Pkg closed
-										</div>
-									)}
+									{/* Pkg closed badge on sprint end days */}
+									{isSprintEndDay(dayInfo.date) &&
+										(() => {
+											const endingSprint = getSprintEndingOnDay(dayInfo.date);
+											const sprintColor = endingSprint ? iterationColorMap.get(endingSprint.objectId) || '#8e44ad' : '#8e44ad';
+											const sprintName = endingSprint ? endingSprint.name : 'Sprint';
+											return (
+												<div
+													style={{
+														position: 'absolute',
+														top: 0,
+														left: 0,
+														right: 0,
+														bottom: 0,
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														padding: '8px',
+														borderRadius: 0,
+														backgroundColor: hexToRgba(sprintColor, 0.75),
+														color: 'white',
+														fontSize: '11px',
+														fontWeight: 'normal',
+														border: 'none',
+														zIndex: 3,
+														pointerEvents: 'none'
+													}}
+													title="Sprint cutoff"
+												>
+													{sprintName} cutoff
+												</div>
+											);
+										})()}
 								</>
 							)}
 						</div>
@@ -545,80 +569,86 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			{orderedIterations.length > 0 && (
 				<div
 					style={{
-						display: 'grid',
-						gridTemplateColumns: 'minmax(0, 1fr) 140px',
-						columnGap: '10px',
-						rowGap: '9px', // increased spacing between legend rows by 1px
-						alignItems: 'center',
-						width: '100%',
-						marginTop: '24px', // moved legend slightly further from the calendar
-						fontSize: '12px',
-						color: themeColors.descriptionForeground
+						maxWidth: '800px',
+						margin: '24px auto 0 auto',
+						display: 'flex',
+						justifyContent: 'flex-end'
 					}}
 				>
-					{/* Show iteration legends dynamically for any month */}
-					{orderedIterations.map(iteration => (
-						<div key={iteration.objectId} style={{ display: 'contents' }}>
-							<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', minWidth: 0 }}>
+					<div
+						style={{
+							display: 'grid',
+							gridTemplateColumns: 'minmax(0, 1fr) 140px',
+							columnGap: '10px',
+							rowGap: '9px', // increased spacing between legend rows by 1px
+							alignItems: 'center',
+							width: '100%',
+							fontSize: '12px',
+							color: themeColors.descriptionForeground
+						}}
+					>
+						{/* Show iteration legends dynamically for any month */}
+						{orderedIterations.map(iteration => (
+							<div key={iteration.objectId} style={{ display: 'contents' }}>
+								<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', minWidth: 0 }}>
+									<div
+										style={{
+											width: '20px',
+											height: '5px',
+											backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+											opacity: 0.9,
+											flexShrink: 0
+										}}
+									></div>
+									<span
+										style={{
+											textAlign: 'right',
+											cursor: onIterationClick ? 'pointer' : 'default',
+											color: onIterationClick ? 'var(--vscode-textLink-foreground)' : 'var(--vscode-foreground)',
+											textDecoration: 'none',
+											fontSize: '12px',
+											whiteSpace: 'nowrap',
+											overflow: 'hidden',
+											textOverflow: 'ellipsis'
+										}}
+										onClick={() => onIterationClick?.(iteration)}
+										title={onIterationClick ? `Click to view user stories for ${iteration.name}` : undefined}
+									>
+										{iteration.name}
+									</span>
+								</div>
 								<div
 									style={{
-										width: '20px',
-										height: '5px',
-										backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-										opacity: 0.9,
+										position: 'relative',
+										width: '140px',
+										height: '6px',
+										borderRadius: '999px',
+										backgroundColor: lightTheme ? '#e0e0e0' : '#404040',
+										overflow: 'hidden',
 										flexShrink: 0
 									}}
-								></div>
-								<span
-									style={{
-										textAlign: 'right',
-										cursor: onIterationClick ? 'pointer' : 'default',
-										color: onIterationClick ? 'var(--vscode-textLink-foreground)' : 'var(--vscode-foreground)',
-										textDecoration: 'none',
-										fontSize: '12px',
-										whiteSpace: 'nowrap',
-										overflow: 'hidden',
-										textOverflow: 'ellipsis'
-									}}
-									onClick={() => onIterationClick?.(iteration)}
-									title={onIterationClick ? `Click to view user stories for ${iteration.name}` : undefined}
+									title="Iteration progress"
 								>
-									{iteration.name}
-								</span>
+									{(() => {
+										const baseColor = iterationColorMap.get(iteration.objectId) || '#2196f3';
+										const endColor = addRedToColor(baseColor, 120);
+										return (
+											<div
+												style={{
+													width: `${getIterationProgress(iteration)}%`,
+													height: '100%',
+													backgroundImage: `linear-gradient(90deg, ${baseColor}, ${endColor})`,
+													borderRadius: '999px'
+												}}
+											/>
+										);
+									})()}
+								</div>
 							</div>
-							<div
-								style={{
-									position: 'relative',
-									width: '140px',
-									height: '6px',
-									borderRadius: '999px',
-									backgroundColor: lightTheme ? '#e0e0e0' : '#404040',
-									overflow: 'hidden',
-									flexShrink: 0
-								}}
-								title="Iteration progress"
-							>
-								{(() => {
-									const baseColor = iterationColorMap.get(iteration.objectId) || '#2196f3';
-									const endColor = addRedToColor(baseColor, 120);
-									return (
-										<div
-											style={{
-												width: `${getIterationProgress(iteration)}%`,
-												height: '100%',
-												backgroundImage: `linear-gradient(90deg, ${baseColor}, ${endColor})`,
-												borderRadius: '999px'
-											}}
-										/>
-									);
-								})()}
-							</div>
-						</div>
-					))}
+						))}
+					</div>
 				</div>
 			)}
-
-			{/* Custom tooltip for day hover */}
 			{hoveredDay &&
 				(() => {
 					const tooltip = getDayTooltip(hoveredDay);

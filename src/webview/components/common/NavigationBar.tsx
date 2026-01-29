@@ -186,7 +186,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	const getTabStyles = (isActive: boolean): CSSProperties => {
 		const lightTheme = isLightTheme();
 		return {
-			padding: '12px 20px',
+			padding: '10px 20px',
 			border: 'none',
 			backgroundColor: isActive
 				? lightTheme
@@ -250,7 +250,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 							onClick={() => setOverflowOpen(open => !open)}
 							style={{
 								...getTabStyles(isOverflowActive),
-								padding: '12px 14px',
+								padding: '10px 14px',
 								minWidth: '44px',
 								justifyContent: 'center'
 							}}

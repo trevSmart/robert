@@ -116,7 +116,7 @@ export async function getProjectId(): Promise<string> {
 	const rallyProjectName = settingsManager.getSetting('rallyProjectName')?.trim();
 
 	if (!rallyProjectName) {
-		throw new Error("No s'ha trobat la configuració RALLY_PROJECT_NAME");
+		throw new Error('Rally project name configuration not found');
 	}
 
 	const rallyApi = getRallyApi();
@@ -129,7 +129,7 @@ export async function getProjectId(): Promise<string> {
 
 	const resultData = result as { Results?: Array<{ ObjectID: string; Name?: string }> };
 	if (!resultData.Results || resultData.Results.length === 0) {
-		throw new Error(`No s'ha trobat cap projecte amb el nom "${rallyProjectName}"`);
+		throw new Error(`No project found with name "${rallyProjectName}"`);
 	}
 
 	return resultData.Results[0].ObjectID;

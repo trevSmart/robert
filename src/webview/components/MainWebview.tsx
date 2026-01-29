@@ -20,6 +20,7 @@ import DefectSeverityChart from './metrics/DefectSeverityChart';
 import CollaborationView from './common/CollaborationView';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type GlobalSearchResultItem } from '../../types/rally';
+import type { Holiday } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 
@@ -747,6 +748,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const [debugMode, setDebugMode] = useState<boolean>(false);
 	const [currentUser, setCurrentUser] = useState<RallyUser | null>(null);
+	const [holidays, setHolidays] = useState<Holiday[]>([]);
 	const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
 	const [_showTutorial, setShowTutorial] = useState<boolean>(false);
 
@@ -1295,6 +1297,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						setIterationsError(null);
 						setDebugMode(message.debugMode || false);
 						setCurrentUser(message.currentUser || null);
+						setHolidays(message.holidays || []);
 
 						// Auto-select current iteration if available
 						const currentIteration = findCurrentIteration(message.iterations);
@@ -1311,6 +1314,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				case 'iterationsError':
 					setIterationsLoading(false);
 					setIterationsError(message.error || 'Error loading iterations');
+					break;
+				case 'holidaysLoaded':
+					// Merge holidays from the new year with existing holidays
+					if (message.holidays) {
+						setHolidays(prevHolidays => {
+							// Remove holidays from the same year to avoid duplicates
+							const otherYearHolidays = prevHolidays.filter(h => !h.date.startsWith(`${message.year}-`));
+							return [...otherYearHolidays, ...message.holidays];
+						});
+						logDebug(`Holidays loaded for year ${message.year}: ${message.holidays.length} holidays`);
+					}
+					break;
+				case 'holidaysError':
+					logDebug(`Failed to load holidays for year ${message.year}: ${message.error}`);
 					break;
 				case 'userStoriesLoaded':
 					// Determine context using iteration field from backend
@@ -1542,6 +1559,26 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		setVelocityLoading(true);
 		sendMessage({ command: 'loadVelocityData' });
 	}, [activeSection, iterations.length, sendMessage]);
+
+	// Track calendar year changes and load holidays for the new year
+	useEffect(() => {
+		const calendarYear = calendarDate.getFullYear();
+		const currentYear = new Date().getFullYear();
+
+		// Check if we already have holidays for this year
+		const hasHolidaysForYear = holidays.some(h => h.date.startsWith(`${calendarYear}-`));
+
+		// Load holidays if we don't have them for this year and it's different from current year
+		// (current year holidays are loaded with iterations)
+		if (!hasHolidaysForYear && calendarYear !== currentYear) {
+			logDebug(`Calendar navigated to year ${calendarYear}, loading holidays...`);
+			sendMessage({
+				command: 'loadHolidaysForYear',
+				year: calendarYear,
+				country: 'ES'
+			});
+		}
+	}, [calendarDate, holidays, sendMessage]);
 
 	// Calculate metrics when data changes - load charts in parallel (state distribution, defects, KPIs)
 	useEffect(() => {
@@ -1897,7 +1934,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							)}
 						</div>
 					)}
-					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} onIterationClick={handleIterationClickFromCalendar} />}
+					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromCalendar} />}
 
 					{activeSection === 'team' && (
 						<div style={{ padding: '20px' }}>

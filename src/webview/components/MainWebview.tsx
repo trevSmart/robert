@@ -2347,46 +2347,31 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							</div>
 
 							{/* State Distribution and Defect Severity Charts */}
-							<div>
-								{/* Readiness Sprint Selector */}
-								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingLeft: '20px' }}>
-									<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Next Sprint Readiness</h3>
-									<select
-										value={selectedReadinessSprint}
-										onChange={e => setSelectedReadinessSprint(e.target.value)}
-										style={{
-											padding: '4px 8px',
-											borderRadius: '4px',
-											backgroundColor: 'var(--vscode-dropdown-background)',
-											color: 'var(--vscode-dropdown-foreground)',
-											border: '1px solid var(--vscode-dropdown-border)',
-											cursor: 'pointer',
-											fontSize: '12px',
-											marginRight: '20px'
-										}}
-									>
-										<option value="next">Next Sprint</option>
-										{iterations
-											.filter(it => {
-												const nextIter = findNextIteration(iterations);
-												if (nextIter && it.name === nextIter.name) {
-													return false;
-												}
-												return true;
-											})
-											.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
-											.map(it => (
-												<option key={it.objectId} value={it.name}>
-													{it.name}
-												</option>
-											))}
-									</select>
-								</div>
-
-								<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-									<StateDistributionPie data={stateDistribution} blockedData={blockedDistribution} sprintName={nextSprintName} loading={stateDistributionLoading} />
-									<DefectSeverityChart data={defectsBySeverity} loading={defectsBySeverityLoading} />
-								</div>
+							<div style={{ display: 'grid', gridTemplateColumns: '2fr 3fr', gap: '20px' }}>
+								<StateDistributionPie
+									data={stateDistribution}
+									blockedData={blockedDistribution}
+									sprintName={nextSprintName}
+									loading={stateDistributionLoading}
+									selectedSprint={selectedReadinessSprint}
+									onSprintChange={setSelectedReadinessSprint}
+									iterations={iterations
+										.filter(it => {
+											const nextIter = findNextIteration(iterations);
+											if (nextIter && it.name === nextIter.name) {
+												return false;
+											}
+											return true;
+										})
+										.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+										.map(it => ({
+											objectId: it.objectId,
+											name: it.name,
+											startDate: it.startDate
+										}))}
+									showSelector={true}
+								/>
+								<DefectSeverityChart data={defectsBySeverity} loading={defectsBySeverityLoading} />
 							</div>
 						</div>
 					)}

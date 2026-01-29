@@ -19,7 +19,8 @@ import StateDistributionPie from './metrics/StateDistributionPie';
 import DefectSeverityChart from './metrics/DefectSeverityChart';
 import CollaborationView from './common/CollaborationView';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Defect, type Discussion, type GlobalSearchResultItem, type Holiday } from '../../types/rally';
+import { type UserStory, type Defect, type Discussion, type GlobalSearchResultItem } from '../../types/rally';
+import type { Holiday } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 

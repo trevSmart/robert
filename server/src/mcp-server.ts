@@ -29,10 +29,25 @@ const SERVER_VERSION = '0.1.0';
 const PROJECT_ROOT = path.resolve(__dirname, '../..');
 
 /**
+ * Validate that a path is within the project root (prevent path traversal)
+ */
+function validatePath(relativePath: string): string {
+  // Resolve the full path
+  const fullPath = path.resolve(PROJECT_ROOT, relativePath);
+  
+  // Ensure the resolved path is within PROJECT_ROOT
+  if (!fullPath.startsWith(PROJECT_ROOT)) {
+    throw new Error(`Access denied: Path is outside project root`);
+  }
+  
+  return fullPath;
+}
+
+/**
  * Read a file from the project
  */
 function readProjectFile(relativePath: string): string {
-  const fullPath = path.join(PROJECT_ROOT, relativePath);
+  const fullPath = validatePath(relativePath);
   
   if (!fs.existsSync(fullPath)) {
     throw new Error(`File not found: ${relativePath}`);
@@ -45,7 +60,7 @@ function readProjectFile(relativePath: string): string {
  * List files in a directory
  */
 function listDirectory(relativePath: string): string[] {
-  const fullPath = path.join(PROJECT_ROOT, relativePath);
+  const fullPath = validatePath(relativePath);
   
   if (!fs.existsSync(fullPath)) {
     throw new Error(`Directory not found: ${relativePath}`);
@@ -64,7 +79,7 @@ function listDirectory(relativePath: string): string[] {
 function getProjectStructure(relativePath: string = '', depth: number = 2): any {
   if (depth <= 0) return null;
   
-  const fullPath = path.join(PROJECT_ROOT, relativePath);
+  const fullPath = validatePath(relativePath);
   
   if (!fs.existsSync(fullPath)) {
     return null;
@@ -190,7 +205,10 @@ async function main() {
     try {
       switch (name) {
         case 'read_file': {
-          const content = readProjectFile(args.path as string);
+          if (typeof args.path !== 'string') {
+            throw new Error('Invalid argument: path must be a string');
+          }
+          const content = readProjectFile(args.path);
           return {
             content: [
               {
@@ -202,7 +220,10 @@ async function main() {
         }
 
         case 'list_directory': {
-          const items = listDirectory(args.path as string);
+          if (typeof args.path !== 'string') {
+            throw new Error('Invalid argument: path must be a string');
+          }
+          const items = listDirectory(args.path);
           return {
             content: [
               {
@@ -214,8 +235,9 @@ async function main() {
         }
 
         case 'get_project_structure': {
-          const depth = (args.depth as number) || 2;
-          const structure = getProjectStructure((args.path as string) || '', depth);
+          const depth = typeof args.depth === 'number' ? args.depth : 2;
+          const pathStr = typeof args.path === 'string' ? args.path : '';
+          const structure = getProjectStructure(pathStr, depth);
           return {
             content: [
               {

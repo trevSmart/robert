@@ -98,7 +98,7 @@ export class ErrorHandler {
 
 		const timestamp = new Date().toISOString();
 
-		this.outputManager.appendLine(`[Robert] 🐛 DEBUG in ${context}:`);
+		this.outputManager.appendLine(`[Robert] 🐞 DEBUG in ${context}:`);
 		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
 		this.outputManager.appendLine(`[Robert] Message: ${message}`);
 		this.outputManager.appendLine(`[Robert] ---`);

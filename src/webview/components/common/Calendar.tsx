@@ -41,6 +41,48 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const [hoveredDay, setHoveredDay] = useState<DayInfo | null>(null);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 	const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 800);
+	const [calendarGridWidth, setCalendarGridWidth] = useState(800);
+	const calendarGridRef = useRef<HTMLDivElement>(null);
+
+	// Calcula fontSize suau per números de dia
+	function getDayNumberFontSize(cellWidth: number) {
+		const min = 10; // px
+		const max = 16; // px
+		const minWidth = 50; // Cell width at which font is at min size
+		const maxWidth = 150; // Cell width at which font is at max size
+
+		// Mapeja el cellWidth al rang [min, max] amb una corba suau d'arrel quadrada
+		const normalized = Math.max(0, Math.min(1, (Math.sqrt(cellWidth) - Math.sqrt(minWidth)) / (Math.sqrt(maxWidth) - Math.sqrt(minWidth))));
+		const size = min + normalized * (max - min);
+
+		return size;
+	}
+
+	function getSprintBarHeight(cellWidth: number) {
+		const min = 3; // px
+		const max = 6; // px
+		const minWidth = 50; // Cell width at which bar is at min size
+		const maxWidth = 150; // Cell width at which bar is at max size
+
+		// Mapeja el cellWidth al rang [min, max] amb una corba suau d'arrel quadrada
+		const normalized = Math.max(0, Math.min(1, (Math.sqrt(cellWidth) - Math.sqrt(minWidth)) / (Math.sqrt(maxWidth) - Math.sqrt(minWidth))));
+		const size = min + normalized * (max - min);
+
+		return size;
+	}
+
+	function getEventTopMargin(cellWidth: number) {
+		const min = 23; // px
+		const max = 32; // px
+		const minWidth = 50; // Cell width at which margin is at min size
+		const maxWidth = 150; // Cell width at which margin is at max size
+
+		// Mapeja el cellWidth al rang [min, max] amb una corba suau d'arrel quadrada
+		const normalized = Math.max(0, Math.min(1, (Math.sqrt(cellWidth) - Math.sqrt(minWidth)) / (Math.sqrt(maxWidth) - Math.sqrt(minWidth))));
+		const size = min + normalized * (max - min);
+
+		return size;
+	}
 	const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 	const [messages, setMessages] = useState<string[]>([]);
 
@@ -52,6 +94,22 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		window.addEventListener('resize', handleResize);
 		return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
+	// Monitor calendar grid width changes
+	useEffect(() => {
+		if (!calendarGridRef.current) return;
+
+		const resizeObserver = new ResizeObserver(() => {
+			if (calendarGridRef.current) {
+				const gridWidth = calendarGridRef.current.offsetWidth;
+				const cellWidth = gridWidth / 7; // 7 columns
+				setCalendarGridWidth(cellWidth);
+			}
+		});
+
+		resizeObserver.observe(calendarGridRef.current);
+		return () => resizeObserver.disconnect();
 	}, []);
 
 	// Generate insight messages once and set up rotation timer
@@ -543,7 +601,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			style={{
 				padding: '20px',
 				backgroundColor: themeColors.background,
-				minHeight: '500px'
+				minHeight: '500px',
+				transition: 'all 100ms ease'
 			}}
 		>
 			{/* Welcome message */}
@@ -561,7 +620,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
-						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>! 👋
+						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>!
 					</div>
 					<div
 						onClick={rotateMessage}
@@ -658,6 +717,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 			{/* Calendar Grid */}
 			<div
+				ref={calendarGridRef}
 				style={{
 					display: 'grid',
 					gridTemplateColumns: 'repeat(7, 1fr)',
@@ -702,7 +762,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								aspectRatio: '1',
 								padding: '8px',
 								backgroundColor: dayInfo.isToday
-									? 'rgba(33, 150, 243, 0.3)' // More prominent blue background for today
+									? 'rgba(33, 150, 243, 0.3)'
 									: !dayInfo.isCurrentMonth
 										? lightTheme
 											? 'rgba(230, 230, 230, 0.18)'
@@ -757,7 +817,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						>
 							<span
 								style={{
-									fontSize: '13px',
+									fontSize: getDayNumberFontSize(calendarGridWidth) + 'px',
 									fontWeight: '200',
 									marginBottom: '4px',
 									opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
@@ -771,7 +831,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								<div
 									style={{
 										position: 'absolute',
-										top: '32px', // Below day number with more spacing
+										top: getEventTopMargin(calendarGridWidth) + 'px',
 										left: '0',
 										right: '0',
 										display: 'flex',
@@ -798,14 +858,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													color: 'white',
 													fontSize: '10px',
 													fontWeight: 'normal',
-													padding: '2px 4px',
+													padding: '3px 4px',
 													marginLeft: '2px',
 													marginRight: '2px',
 													overflow: 'hidden',
 													textOverflow: 'ellipsis',
 													whiteSpace: 'nowrap',
 													lineHeight: '1.2',
-													borderRadius: '2px'
+													borderRadius: '3px'
 												}}
 												title={event.tooltip}
 											>
@@ -861,9 +921,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 											<div
 												key={iteration.objectId}
 												style={{
-													height: '6px',
+													height: getSprintBarHeight(calendarGridWidth) + 'px',
 													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-													filter: 'saturate(68%) brightness(140%) contrast(85%)',
+													filter: lightTheme ? 'saturate(68%) brightness(140%) contrast(85%)' : 'saturate(38%) brightness(70%) contrast(85%)',
 													opacity: 1,
 													transition: 'opacity 0.2s ease',
 													borderTopLeftRadius: isFirstDay ? '4px' : '0',

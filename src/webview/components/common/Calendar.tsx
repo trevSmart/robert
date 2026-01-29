@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
 import type { Holiday, DayEvent } from '../../../types/utils';
 import type { UserStory } from '../../../types/rally';
@@ -102,8 +102,27 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		// Get active iteration IDs for this month
 		const activeIterationIds = new Set(activeIterations.map(iter => iter.objectId));
 
-		// Get user stories for active sprints
-		const usForActiveSprints = userStories.filter(us => us.iteration && activeIterationIds.has(us.iteration));
+		// Robust helper to extract iteration id from user story (handles string or object shapes)
+		const extractIterationId = (us: any) => {
+			if (!us || !us.iteration) return null;
+			const it = us.iteration;
+			if (typeof it === 'string') return it;
+			if (typeof it === 'object') {
+				if (it.objectId) return it.objectId;
+				if (it._ref) {
+					const m = (it._ref as string).match(/([^/]+)(?:\?.*)?$/);
+					if (m) return m[1];
+				}
+				if (it._refObjectName) return it._refObjectName;
+			}
+			return null;
+		};
+
+		// Get user stories for active sprints (robust id matching)
+		const usForActiveSprints = userStories.filter(us => {
+			const id = extractIterationId(us as any);
+			return id && activeIterationIds.has(id);
+		});
 
 		// Calculate total hours and counts
 		const totalHours = usForActiveSprints.reduce((sum, us) => sum + (us.taskEstimateTotal || 0), 0);
@@ -120,35 +139,92 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		// Create 4 different insight-based messages
 		const generatedMessages = [
-			daysUntilSprintEnd && daysUntilSprintEnd > 0 ? (daysUntilSprintEnd === 1 ? `You've got 1 day left before sprint cutoff! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`) : `Stay focused on your current sprint objectives! 💪`,
+			// 1) Sprint cutoff message (if applicable)
+			daysUntilSprintEnd && daysUntilSprintEnd > 0
+				? (daysUntilSprintEnd === 1 ? `You've got 1 day left before sprint cutoff! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`)
+				: `Stay focused on your current sprint objectives! 💪`,
 
+			// 2) Hours summary (use totalHours computed from user stories)
 			totalHours > 0 ? `${totalHours}h total this month. ${hoursCompletionPercentage}% done! ${remainingHours}h left. 💪` : `No work scheduled this month. That's rare! 🤔`,
 
+			// 3) Holidays summary
 			holidaysThisMonth > 0 ? (holidaysThisMonth === 1 ? `Fun fact: There's 1 holiday this month. Plan accordingly! 🎉` : `Heads up: ${holidaysThisMonth} holidays this month. Time management is key! 🎉`) : `No holidays scheduled this month—time to ship! 🎯`,
 
+			// 4) Progress / short-timers: prefer sprint-based remaining days; otherwise month-based message without implying sprint
 			blockedUS > 0
 				? `${blockedUS} blocked ${blockedUS === 1 ? 'story' : 'stories'} this month. Time to unblock! 🚨`
 				: completedUS > 0
 					? `You've completed ${completedUS} ${completedUS === 1 ? 'story' : 'stories'}! ${pendingUS} more to go. 🎯`
-					: daysRemainingInMonth > 0 && daysRemainingInMonth <= 7
-						? daysRemainingInMonth === 1
-							? `Only 1 day left in this month. Final push! ⏰`
-							: `Only ${daysRemainingInMonth} days remaining. Sprint to the finish! ⏰`
-						: avgSprintDuration > 0
-							? `Your average sprint duration is ${avgSprintDuration} days. Pace yourself! ⏱️`
-							: `Ready to break records this month? Let's go! 🏆`
+					: daysUntilSprintEnd && daysUntilSprintEnd > 0 && daysUntilSprintEnd <= 7
+						? (daysUntilSprintEnd === 1 ? `Only 1 day left in the sprint. Final push! ⏰` : `Only ${daysUntilSprintEnd} days left in the sprint. Final push! ⏰`)
+						: daysRemainingInMonth > 0 && daysRemainingInMonth <= 7
+							? (daysRemainingInMonth === 1 ? `Only 1 day left in the month.` : `Only ${daysRemainingInMonth} days left in the month.`)
+							: avgSprintDuration > 0
+								? `Your average sprint duration is ${avgSprintDuration} days. Pace yourself! ⏱️`
+								: `Ready to break records this month? Let's go! 🏆`
 		];
 
 		setMessages(generatedMessages);
-		setCurrentMessageIndex(0);
 
-		// Set up interval to rotate messages every 20 seconds
+		setMessages(generatedMessages);
+
+		// Set up interval to rotate messages every 20 seconds with a quick fade
+		let changeTimeout: ReturnType<typeof setTimeout> | null = null;
 		const interval = setInterval(() => {
-			setCurrentMessageIndex(prev => (prev + 1) % generatedMessages.length);
+			if (messageAnimatingRef.current) return; // avoid overlapping anims
+			messageAnimatingRef.current = true;
+			// fade out
+			setMessageVisible(false);
+			// after fade-out, advance the message and fade in
+			changeTimeout = setTimeout(() => {
+				setCurrentMessageIndex(prev => (prev + 1) % generatedMessages.length);
+				setMessageVisible(true);
+				// clear animating flag after fade-in completes
+				setTimeout(() => {
+					messageAnimatingRef.current = false;
+				}, 260);
+			}, 240);
 		}, 20000);
 
-		return () => clearInterval(interval);
-	}, [currentDate, iterations, userStories, holidays, todayStart]);
+		return () => {
+			clearInterval(interval);
+			if (changeTimeout) clearTimeout(changeTimeout);
+		};
+	}, [currentDate, iterations, userStories, holidays, todayStart.getTime()]);
+
+	// Visibility state for fade animation
+	const [messageVisible, setMessageVisible] = useState(true);
+	const messageAnimatingRef = useRef(false);
+
+	// Helper to extract iteration id from a user story (robust to shapes)
+	const getIterationId = (us: any) => {
+		if (!us || !us.iteration) return null;
+		const it = us.iteration;
+		if (typeof it === 'string') return it;
+		if (typeof it === 'object') {
+			if (it.objectId) return it.objectId;
+			if (it._ref) {
+				const m = (it._ref as string).match(/([^/]+)(?:\?.*)?$/);
+				if (m) return m[1];
+			}
+			if (it._refObjectName) return it._refObjectName;
+		}
+		return null;
+	};
+
+	// Rotate message on user click (with fade)
+	const rotateMessage = () => {
+		if (messageAnimatingRef.current || messages.length === 0) return;
+		messageAnimatingRef.current = true;
+		setMessageVisible(false);
+		setTimeout(() => {
+			setCurrentMessageIndex(prev => (prev + 1) % messages.length);
+			setMessageVisible(true);
+			setTimeout(() => {
+				messageAnimatingRef.current = false;
+			}, 260);
+		}, 240);
+	};
 
 	const isNarrowViewport = windowWidth < 465;
 
@@ -229,34 +305,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	// Excluded turquoise/green colors to avoid confusion with holiday events (#4cafa0)
 	const lightTheme = isLightTheme();
 	const iterationColors = lightTheme
-		? [
-				'#d9a500', // Orange
-				'#d97a3f', // Red-Orange
-				'#b868c9', // Purple
-				'#c9354b', // Red
-				'#1e7fa8', // Teal Blue
-				'#6a8c3a', // Olive Green
-				'#d97f3f', // Deep Orange
-				'#8b5fbf', // Violet
-				'#c77830', // Brown Orange
-				'#a35a8f', // Mauve
-				'#2d7a7f', // Dark Teal
-				'#8a684e' // Taupe
-			]
-		: [
-				'#f6cf71', // Yellow
-				'#f89c75', // Orange
-				'#dcb0f2', // Lilac
-				'#ff6b6b', // Red
-				'#4ecdc4', // Cyan
-				'#a8dadc', // Mint
-				'#ffb627', // Deep Orange
-				'#e0d1f7', // Light Purple
-				'#f9b384', // Peach
-				'#d4a5ff', // Lavender
-				'#6ec9d9', // Light Teal
-				'#f4a261' // Burnt Orange
-			];
+		? ['#d9a500', '#8b5fbf', '#6a8c3a', '#b868c9', '#c77830', '#1e7fa8', '#d97a3f', '#2d7a7f', '#c9354b', '#8a684e', '#a35a8f', '#d97f3f']
+		: ['#ffb627', '#d4a5ff', '#f6cf71', '#dcb0f2', '#f4a261', '#4ecdc4', '#ff6b6b', '#6ec9d9', '#f89c75', '#a8dadc', '#f9b384', '#e0d1f7'];
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {
@@ -393,12 +443,16 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			const regionName = regionCode ? regionCode.split('-')[1] : null;
 			const displayText = isRegional && regionName ? `${holiday.localName || holiday.name} (${regionName})` : holiday.localName || holiday.name;
 
+			// Make national holidays slightly more opaque (+4 percentage points)
+			const nationalBaseOpacity = 0.53;
+			const nationalOpacity = Math.min(1, nationalBaseOpacity + 0.04); // 0.57
+
 			events.push({
 				type: 'holiday',
 				displayText,
 				tooltip: `${holiday.localName || holiday.name}${isRegional ? ' (Regional)' : ' (National)'}`,
 				color: '#4cafa0', // Turquoise
-				opacity: isRegional ? 0.36 : 0.53,
+				opacity: isRegional ? 0.36 : nationalOpacity,
 				data: holiday
 			});
 		}
@@ -471,13 +525,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	// Icon components
 	const PreviousMonthIcon = () => (
-		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '20px', height: '20px' }}>
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '20px', height: '20px', pointerEvents: 'none' }} aria-hidden={true} focusable="false">
 			<path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
 		</svg>
 	);
 
 	const NextMonthIcon = () => (
-		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '20px', height: '20px' }}>
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '20px', height: '20px', pointerEvents: 'none' }} aria-hidden={true} focusable="false">
 			<path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
 		</svg>
 	);
@@ -507,7 +561,19 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
 						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>! 👋
 					</div>
-					<div style={{ fontSize: '12px', color: themeColors.descriptionForeground, marginTop: '4px' }}>{messages[currentMessageIndex] || 'Get ready for an amazing sprint!'}</div>
+					<div
+						onClick={rotateMessage}
+						style={{
+							fontSize: '12px',
+							color: themeColors.descriptionForeground,
+							marginTop: '4px',
+							opacity: messageVisible ? 1 : 0,
+							transition: 'opacity 240ms ease',
+							cursor: 'pointer'
+						}}
+					>
+						{messages[currentMessageIndex] || 'Get ready for an amazing sprint!'}
+					</div>
 				</div>
 			)}
 
@@ -795,6 +861,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												style={{
 													height: '6px',
 													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+													filter: 'saturate(68%) brightness(140%) contrast(85%)',
 													opacity: 1,
 													transition: 'opacity 0.2s ease',
 													borderTopLeftRadius: isFirstDay ? '4px' : '0',

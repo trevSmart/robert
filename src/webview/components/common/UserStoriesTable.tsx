@@ -162,7 +162,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Name</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '15%' }}>Assigned To</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '15%' }}>State</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '29px' }}>Est.</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '110px' }}>Total Hours</th>
 
 							<th style={{ padding: '10px 12px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '100px' }}>Items</th>
 						</tr>
@@ -196,7 +196,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{userStory.name}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.descriptionForeground }}>{userStory.assignee || 'Unassigned'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: getScheduleStateColor(userStory.scheduleState || 'new') }}>{userStory.scheduleState || 'N/A'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '29px', textAlign: 'center' }}>{userStory.planEstimate || 0}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '110px', textAlign: 'center' }}>{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}</td>
 
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center' }}>
 									<RelatedItemsIcons tasksCount={userStory.tasksCount} testCasesCount={userStory.testCasesCount} defectsCount={userStory.defectsCount} discussionCount={userStory.discussionCount} />

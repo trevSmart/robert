@@ -90,6 +90,35 @@ Configure Rally settings in VS Code:
 Or use the command palette:
 - `IBM Robert: Open Settings`
 
+## 🤖 MCP Server (AI Assistant Integration)
+
+Robert includes an MCP (Model Context Protocol) server that enables AI coding assistants to better understand the project structure, Rally integration, and collaboration features.
+
+### Setup MCP Server
+
+1. Install server dependencies:
+   ```bash
+   cd server
+   npm install
+   ```
+
+2. Build the MCP server:
+   ```bash
+   npm run build
+   ```
+
+3. The MCP server is now ready! AI assistants can discover it via `.mcp/config.json`
+
+### Using with AI Assistants
+
+Once configured, AI assistants can:
+- Understand the project architecture
+- Access Rally integration details
+- Learn about collaboration features
+- Read project documentation and code
+
+For detailed MCP server documentation, see [.mcp/README.md](.mcp/README.md).
+
 ## 🐛 Troubleshooting
 
 ### Blank View Issue

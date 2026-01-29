@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "robert": {
+      "command": "node",
+      "args": [
+        "server/dist/mcp-server.js"
+      ],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "description": "MCP server for Robert VS Code extension - provides context about Rally integration, collaboration features, and extension architecture"
+    }
+  }
+}

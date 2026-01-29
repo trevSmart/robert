@@ -25,6 +25,9 @@ README.md
 SETTINGS.md
 LICENSE
 
+# MCP Server (development tool only)
+.mcp/
+
 # IDE files
 *.swp
 *.swo

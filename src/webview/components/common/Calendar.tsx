@@ -493,7 +493,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							>
 								{dayInfo.day}
 							</span>
-							{/* Show holiday overlay - dynamic transparency based on national (53%) vs regional (38%) */}
+							{/* Show holiday overlay - dynamic transparency based on national (53%) vs regional (36%) */}
 							{dayInfo.holiday &&
 								(() => {
 									const holiday = dayInfo.holiday;

@@ -86,6 +86,9 @@ export function activate(context: vscode.ExtensionContext) {
 	const isDebugMode = detectDebugMode(context);
 	outputManager.appendLine(`[Robert] Debug mode detected: ${isDebugMode}`);
 
+	// Close any previously opened Robert editors to avoid accumulation
+	closeExistingRobertEditors(outputManager);
+
 	// Initialize error handler
 	outputManager.appendLine('[Robert] 🔧 Initializing ErrorHandler');
 	const errorHandler = ErrorHandler.getInstance();
@@ -278,6 +281,44 @@ function buildStatusTooltip(errorHandler: ErrorHandler): vscode.MarkdownString {
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'buildStatusTooltip');
 		return new vscode.MarkdownString('Error building tooltip');
+	}
+}
+
+/**
+ * Close any previously opened Robert editors to prevent accumulation on extension reload
+ * This ensures that when the extension is reloaded, old editor tabs don't pile up
+ */
+function closeExistingRobertEditors(outputManager: OutputChannelManager): void {
+	try {
+		// Get all open editor tabs
+		const allTabs = vscode.window.tabGroups.all.flatMap(group => group.tabs);
+
+		// Filter for Robert editor tabs (look for 'Robert' in the tab name)
+		const robertEditorTabs = allTabs.filter(tab => {
+			// Check if the tab is a Robert editor by looking at the tab label
+			const label = tab.label || '';
+			return label.includes('Robert') || label === 'robert';
+		});
+
+		if (robertEditorTabs.length > 0) {
+			outputManager.appendLine(`[Robert] Found ${robertEditorTabs.length} existing Robert editor tab(s). Closing them to prevent accumulation...`);
+
+			// Close each Robert editor tab
+			for (const tab of robertEditorTabs) {
+				vscode.window.tabGroups.close(tab).then(
+					() => {
+						outputManager.appendLine(`[Robert] ✅ Closed editor tab: ${tab.label}`);
+					},
+					error => {
+						outputManager.appendLine(`[Robert] ⚠️  Error closing editor tab ${tab.label}: ${error instanceof Error ? error.message : String(error)}`);
+					}
+				);
+			}
+		} else {
+			outputManager.appendLine('[Robert] No existing Robert editor tabs found. Clean slate!');
+		}
+	} catch (error) {
+		outputManager.appendLine(`[Robert] ⚠️  Error while checking for existing Robert editors: ${error instanceof Error ? error.message : String(error)}`);
 	}
 }
 

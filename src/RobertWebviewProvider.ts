@@ -231,9 +231,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				// If panel already exists and is visible, reveal it
 				if (this._currentPanel) {
+					this._errorHandler.logInfo('Webview panel already exists, revealing it', 'RobertWebviewProvider.createWebviewPanel');
 					this._currentPanel.reveal(vscode.ViewColumn.One);
 					return this._currentPanel;
 				}
+
+				// Close any other Robert editor tabs that might be open from previous sessions
+				await this._closeOtherRobertEditors();
 
 				const panelTitle = this._isDebugMode ? 'Robert — DEBUG' : 'Robert';
 				const panel = vscode.window.createWebviewPanel('robert.mainPanel', panelTitle, vscode.ViewColumn.One, {
@@ -262,6 +266,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					this._disposables
 				);
 
+				// Hide Robert from activity bar and show File Explorer instead
+				await this._switchFromActivityBarToFileExplorer();
+
 				return panel;
 			}, 'createWebviewPanel')) ||
 			vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — DEBUG' : 'Robert', vscode.ViewColumn.One, {
@@ -269,6 +276,61 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				localResourceRoots: [this._extensionUri]
 			})
 		);
+	}
+
+	/**
+	 * Hide the Robert activity bar view and switch to the File Explorer
+	 * This provides a cleaner UX when opening the editor in a separate panel
+	 */
+	private async _switchFromActivityBarToFileExplorer(): Promise<void> {
+		try {
+			// Hide the Robert activity bar by switching to File Explorer
+			this._errorHandler.logInfo('Switching from Robert Activity Bar to File Explorer', 'RobertWebviewProvider._switchFromActivityBarToFileExplorer');
+
+			// Focus on the File Explorer view
+			await vscode.commands.executeCommand('workbench.view.explorer');
+			this._errorHandler.logInfo('✅ File Explorer is now visible in the activity bar', 'RobertWebviewProvider._switchFromActivityBarToFileExplorer');
+		} catch (error) {
+			// Log warning but don't fail the operation
+			this._errorHandler.logWarning(`Failed to switch to File Explorer: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider._switchFromActivityBarToFileExplorer');
+		}
+	}
+
+	/**
+	 * Close any other Robert editor tabs that might be open (excluding the current panel)
+	 * This prevents accumulation of editor tabs when the extension reloads
+	 */
+	private async _closeOtherRobertEditors(): Promise<void> {
+		try {
+			// Get all open editor tabs from all tab groups
+			const allTabs = vscode.window.tabGroups.all.flatMap(group => group.tabs);
+
+			// Filter for Robert editor tabs that are not the current panel
+			const robertEditorTabs = allTabs.filter(tab => {
+				// Check if it's a Robert panel/editor by checking the tab input
+				const isRobertEditor = tab.input instanceof vscode.WebviewPanel || (tab.label && (tab.label.includes('Robert') || tab.label === 'robert'));
+
+				// Only close if it's not the current panel
+				const isDifferentFromCurrent = !(tab.input === this._currentPanel?.webview);
+
+				return isRobertEditor && isDifferentFromCurrent;
+			});
+
+			if (robertEditorTabs.length > 0) {
+				this._errorHandler.logInfo(`Found ${robertEditorTabs.length} other Robert editor tab(s). Closing them...`, 'RobertWebviewProvider._closeOtherRobertEditors');
+
+				// Close each tab
+				for (const tab of robertEditorTabs) {
+					const result = await vscode.window.tabGroups.close(tab);
+					if (result) {
+						this._errorHandler.logInfo(`Closed editor tab: ${tab.label}`, 'RobertWebviewProvider._closeOtherRobertEditors');
+					}
+				}
+			}
+		} catch (error) {
+			// Log warning but don't fail the operation
+			this._errorHandler.logWarning(`Error closing other Robert editors: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider._closeOtherRobertEditors');
+		}
 	}
 
 	/**

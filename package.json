@@ -11,7 +11,7 @@
 		"url": "https://github.com/trevSmart/robert.git"
 	},
 	"engines": {
-		"vscode": "^1.99.3"
+		"vscode": "^1.74.0"
 	},
 	"categories": [
 		"Other"

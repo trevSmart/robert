@@ -21,6 +21,7 @@ import {
 	getTestCaseWithParent
 } from './libs/rally/rallyServices';
 import { validateRallyConfiguration } from './libs/rally/utils';
+import type { Iteration } from './types/rally';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
 import { WebSocketClient } from './libs/collaboration/websocketClient';
@@ -658,23 +659,23 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							try {
 								this._errorHandler.logInfo('Loading velocity data (hours per sprint) from Rally API', 'WebviewMessageListener');
 								const iterationsResult = await getIterations();
-								const iterations = iterationsResult?.iterations ?? [];
+								const iterations: Iteration[] = iterationsResult?.iterations ?? [];
 								const today = new Date();
 								today.setHours(23, 59, 59, 999);
 								const numberOfSprints = 12;
 								const sortedIterations = iterations
-									.filter((it: { startDate: string; endDate: string }) => {
+									.filter((it: Iteration) => {
 										const startDate = new Date(it.startDate);
 										const endDate = new Date(it.endDate);
 										return endDate <= today || (startDate <= today && endDate > today);
 									})
-									.sort((a: { endDate: string }, b: { endDate: string }) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+									.sort((a: Iteration, b: Iteration) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
 									.slice(0, numberOfSprints)
 									.reverse();
 								const velocityData: { sprintName: string; points: number; completedStories: number }[] = [];
 								for (const iteration of sortedIterations) {
 									// Use the aggregate TaskEstimateTotal from Iteration instead of traversing all user stories
-									const points = (iteration as any).taskEstimateTotal ?? 0;
+									const points = iteration.taskEstimateTotal;
 
 									// Still need to fetch user stories to count completed ones
 									const ref = `/iteration/${iteration.objectId}`;
@@ -682,7 +683,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									const allStories: { scheduleState?: string }[] = usResult?.userStories ?? [];
 									const completedStories = allStories.filter((s: { scheduleState?: string }) => s.scheduleState === 'Completed' || s.scheduleState === 'Accepted').length;
 									velocityData.push({
-										sprintName: (iteration as any).name,
+										sprintName: iteration.name,
 										points: Math.round(points * 10) / 10,
 										completedStories
 									});

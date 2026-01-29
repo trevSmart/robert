@@ -100,10 +100,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	// Iteration colors - cycle through these colors in order
 	// Darker colors for light theme, brighter for dark theme
+	// Excluded turquoise/green colors to avoid confusion with holiday events (#4cafa0)
 	const lightTheme = isLightTheme();
 	const iterationColors = lightTheme
-		? ['#3a9ca3', '#d9a500', '#d97a3f', '#b868c9', '#5fa85f'] // Darker for light theme
-		: ['#66c5cc', '#f6cf71', '#f89c75', '#dcb0f2', '#a8d5a8']; // Original bright colors for dark theme
+		? ['#d9a500', '#d97a3f', '#b868c9'] // Orange, Red-Orange, Purple for light theme
+		: ['#f6cf71', '#f89c75', '#dcb0f2']; // Yellow, Orange, Lilac for dark theme
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {
@@ -538,7 +539,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								<div
 									style={{
 										position: 'absolute',
-										top: '24px', // Below day number (13px + 4px margin + 7px buffer)
+										top: '32px', // Below day number with more spacing
 										left: '0',
 										right: '0',
 										display: 'flex',

@@ -1,7 +1,8 @@
 import * as React from 'react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
 import type { Holiday, DayEvent } from '../../../types/utils';
+import type { UserStory } from '../../../types/rally';
 
 interface Iteration {
 	objectId: string;
@@ -16,6 +17,8 @@ interface Iteration {
 interface DayInfo {
 	date: Date;
 	day: number;
+	isCurrentMonth: boolean;
+	isToday: boolean;
 	iterations: Iteration[];
 	events: DayEvent[];
 }
@@ -23,6 +26,7 @@ interface DayInfo {
 interface CalendarProps {
 	currentDate?: Date;
 	iterations?: Iteration[];
+	userStories?: UserStory[];
 	onMonthChange?: (date: Date) => void;
 	debugMode?: boolean;
 	currentUser?: unknown;
@@ -30,12 +34,134 @@ interface CalendarProps {
 	onIterationClick?: (iteration: Iteration) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], onMonthChange, debugMode = false, currentUser, holidays = [], onIterationClick }) => {
+const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], userStories = [], onMonthChange, debugMode = false, currentUser, holidays = [], onIterationClick }) => {
 	const today = new Date();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 	const [hoveredDay, setHoveredDay] = useState<DayInfo | null>(null);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+	const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 800);
+	const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
+	const [messages, setMessages] = useState<string[]>([]);
+
+	// Monitor window width to hide events on narrow viewports
+	useEffect(() => {
+		const handleResize = () => {
+			setWindowWidth(window.innerWidth);
+		};
+
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
+
+	// Generate insight messages once and set up rotation timer
+	useEffect(() => {
+		const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+		const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+		// Count holidays this month
+		const holidaysThisMonth = holidays.filter(h => {
+			const hDate = new Date(h.date);
+			return hDate >= monthStart && hDate <= monthEnd;
+		}).length;
+
+		// Get active iterations this month
+		const activeIterations = iterations.filter(iter => {
+			const startDate = iter.startDate ? new Date(iter.startDate) : null;
+			const endDate = iter.endDate ? new Date(iter.endDate) : null;
+			if (!startDate || !endDate) return false;
+			return startDate <= monthEnd && endDate >= monthStart;
+		});
+
+		// Calculate days until next sprint end
+		let daysUntilSprintEnd = null;
+		const upcomingSprints = activeIterations.filter(s => {
+			const endDate = s.endDate ? new Date(s.endDate) : null;
+			if (!endDate) return false;
+			endDate.setHours(23, 59, 59, 999);
+			return endDate >= todayStart;
+		});
+		if (upcomingSprints.length > 0) {
+			const nextSprint = upcomingSprints.sort((a, b) => new Date(a.endDate).getTime() - new Date(b.endDate).getTime())[0];
+			const endDate = new Date(nextSprint.endDate);
+			endDate.setHours(0, 0, 0, 0);
+			const diffTime = endDate.getTime() - todayStart.getTime();
+			daysUntilSprintEnd = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+		}
+
+		// Calculate average sprint duration
+		const sprintDurations = activeIterations
+			.map(s => {
+				const start = new Date(s.startDate).getTime();
+				const end = new Date(s.endDate).getTime();
+				return Math.ceil((end - start) / (1000 * 60 * 60 * 24));
+			})
+			.filter(d => d > 0);
+		const avgSprintDuration = sprintDurations.length > 0 ? Math.round(sprintDurations.reduce((a, b) => a + b, 0) / sprintDurations.length) : 0;
+
+		// Get active iteration IDs for this month
+		const activeIterationIds = new Set(activeIterations.map(iter => iter.objectId));
+
+		// Get user stories for active sprints
+		const usForActiveSprints = userStories.filter(us => us.iteration && activeIterationIds.has(us.iteration));
+
+		// Calculate total hours and counts
+		const totalHours = usForActiveSprints.reduce((sum, us) => sum + (us.taskEstimateTotal || 0), 0);
+		const remainingHours = usForActiveSprints.reduce((sum, us) => sum + (us.toDo || 0), 0);
+		const completedHours = totalHours - remainingHours;
+		const completedUS = usForActiveSprints.filter(us => us.scheduleState === 'Completed').length;
+		const pendingUS = usForActiveSprints.length - completedUS;
+		const blockedUS = usForActiveSprints.filter(us => us.blocked).length;
+
+		// Calculate completion percentage
+		const hoursCompletionPercentage = totalHours > 0 ? Math.round((completedHours / totalHours) * 100) : 0;
+
+		const daysRemainingInMonth = Math.ceil((monthEnd.getTime() - todayStart.getTime()) / (1000 * 60 * 60 * 24));
+
+		// Create 4 different insight-based messages
+		const generatedMessages = [
+			daysUntilSprintEnd && daysUntilSprintEnd > 0 ? (daysUntilSprintEnd === 1 ? `You've got 1 day left before sprint cutoff! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`) : `Stay focused on your current sprint objectives! 💪`,
+
+			totalHours > 0 ? `${totalHours}h total this month. ${hoursCompletionPercentage}% done! ${remainingHours}h left. 💪` : `No work scheduled this month. That's rare! 🤔`,
+
+			holidaysThisMonth > 0 ? (holidaysThisMonth === 1 ? `Fun fact: There's 1 holiday this month. Plan accordingly! 🎉` : `Heads up: ${holidaysThisMonth} holidays this month. Time management is key! 🎉`) : `No holidays scheduled this month—time to ship! 🎯`,
+
+			blockedUS > 0
+				? `${blockedUS} blocked ${blockedUS === 1 ? 'story' : 'stories'} this month. Time to unblock! 🚨`
+				: completedUS > 0
+					? `You've completed ${completedUS} ${completedUS === 1 ? 'story' : 'stories'}! ${pendingUS} more to go. 🎯`
+					: daysRemainingInMonth > 0 && daysRemainingInMonth <= 7
+						? daysRemainingInMonth === 1
+							? `Only 1 day left in this month. Final push! ⏰`
+							: `Only ${daysRemainingInMonth} days remaining. Sprint to the finish! ⏰`
+						: avgSprintDuration > 0
+							? `Your average sprint duration is ${avgSprintDuration} days. Pace yourself! ⏱️`
+							: `Ready to break records this month? Let's go! 🏆`
+		];
+
+		setMessages(generatedMessages);
+		setCurrentMessageIndex(0);
+
+		// Set up interval to rotate messages every 20 seconds
+		const interval = setInterval(() => {
+			setCurrentMessageIndex(prev => (prev + 1) % generatedMessages.length);
+		}, 20000);
+
+		return () => clearInterval(interval);
+	}, [currentDate, iterations, userStories, holidays, todayStart]);
+
+	const isNarrowViewport = windowWidth < 465;
+
+	// Extract first name from user, removing "Dr Lusuarri"
+	const getUserFirstName = (user: unknown) => {
+		if (!user) return 'User';
+		const userObj = user as any;
+		let displayName = userObj.displayName || userObj.userName || 'User';
+		// Remove title/surname if present
+		displayName = displayName.replace(/\s*(Dr\s+)?Lusuarri\s*/gi, '').trim();
+		const firstName = displayName.split(' ')[0];
+		return firstName || 'User';
+	};
 
 	// Function to get day name
 	const getDayName = (date: Date) => {
@@ -103,8 +229,34 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	// Excluded turquoise/green colors to avoid confusion with holiday events (#4cafa0)
 	const lightTheme = isLightTheme();
 	const iterationColors = lightTheme
-		? ['#d9a500', '#d97a3f', '#b868c9'] // Orange, Red-Orange, Purple for light theme
-		: ['#f6cf71', '#f89c75', '#dcb0f2']; // Yellow, Orange, Lilac for dark theme
+		? [
+				'#d9a500', // Orange
+				'#d97a3f', // Red-Orange
+				'#b868c9', // Purple
+				'#c9354b', // Red
+				'#1e7fa8', // Teal Blue
+				'#6a8c3a', // Olive Green
+				'#d97f3f', // Deep Orange
+				'#8b5fbf', // Violet
+				'#c77830', // Brown Orange
+				'#a35a8f', // Mauve
+				'#2d7a7f', // Dark Teal
+				'#8a684e' // Taupe
+			]
+		: [
+				'#f6cf71', // Yellow
+				'#f89c75', // Orange
+				'#dcb0f2', // Lilac
+				'#ff6b6b', // Red
+				'#4ecdc4', // Cyan
+				'#a8dadc', // Mint
+				'#ffb627', // Deep Orange
+				'#e0d1f7', // Light Purple
+				'#f9b384', // Peach
+				'#d4a5ff', // Lavender
+				'#6ec9d9', // Light Teal
+				'#f4a261' // Burnt Orange
+			];
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {
@@ -338,6 +490,27 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				minHeight: '500px'
 			}}
 		>
+			{/* Welcome message */}
+			{currentUser && (
+				<div
+					style={{
+						textAlign: 'center',
+						marginBottom: '16px',
+						padding: '12px',
+						backgroundColor: themeColors.panelBackground,
+						borderRadius: '8px',
+						border: `1px solid ${themeColors.panelBorder}`,
+						maxWidth: '700px',
+						margin: '0 auto 16px auto'
+					}}
+				>
+					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
+						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>! 👋
+					</div>
+					<div style={{ fontSize: '12px', color: themeColors.descriptionForeground, marginTop: '4px' }}>{messages[currentMessageIndex] || 'Get ready for an amazing sprint!'}</div>
+				</div>
+			)}
+
 			<div
 				style={{
 					marginBottom: '20px',
@@ -415,27 +588,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				</button>
 			</div>
 
-			{/* Welcome message */}
-			{currentUser && (
-				<div
-					style={{
-						textAlign: 'center',
-						marginBottom: '16px',
-						padding: '12px',
-						backgroundColor: themeColors.panelBackground,
-						borderRadius: '8px',
-						border: `1px solid ${themeColors.panelBorder}`,
-						maxWidth: '700px',
-						margin: '0 auto 16px auto'
-					}}
-				>
-					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
-						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{currentUser.displayName || currentUser.userName || 'User'}</span>! 👋
-					</div>
-					<div style={{ fontSize: '12px', color: themeColors.descriptionForeground, marginTop: '4px' }}>Good luck with your user stories and tasks</div>
-				</div>
-			)}
-
 			{/* Calendar Grid */}
 			<div
 				style={{
@@ -489,9 +641,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 											: 'rgba(0, 0, 0, 0.18)'
 										: isWeekend && dayInfo.isCurrentMonth
 											? lightTheme
-												? 'rgba(230, 230, 230, 0.16)'
+												? 'rgba(200, 200, 200, 0.12)'
 												: 'rgba(0, 0, 0, 0.18)'
-											: 'transparent',
+											: lightTheme
+												? 'rgba(250, 250, 250, 0.6)'
+												: 'transparent',
 								color: dayInfo.isToday ? themeColors.listActiveSelectionForeground : dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
 								borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
 								display: 'flex',
@@ -519,7 +673,17 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								if (!dayInfo.isToday) {
 									const dayOfWeek = index % 7;
 									const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
-									e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth ? (lightTheme ? 'rgba(230, 230, 230, 0.08)' : 'rgba(0, 0, 0, 0.18)') : isWeekend && dayInfo.isCurrentMonth ? (lightTheme ? 'rgba(230, 230, 230, 0.12)' : 'rgba(0, 0, 0, 0.18)') : 'transparent';
+									e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth
+										? lightTheme
+											? 'rgba(230, 230, 230, 0.08)'
+											: 'rgba(0, 0, 0, 0.18)'
+										: isWeekend && dayInfo.isCurrentMonth
+											? lightTheme
+												? 'rgba(200, 200, 200, 0.12)'
+												: 'rgba(0, 0, 0, 0.18)'
+											: lightTheme
+												? 'rgba(250, 250, 250, 0.6)'
+												: 'transparent';
 								}
 							}}
 						>
@@ -535,7 +699,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								{dayInfo.day}
 							</span>
 							{/* Show stacked day events (holidays, sprint cutoffs, etc) at top of cell */}
-							{dayInfo.isCurrentMonth && dayInfo.events.length > 0 && (
+							{!isNarrowViewport && dayInfo.isCurrentMonth && dayInfo.events.length > 0 && (
 								<div
 									style={{
 										position: 'absolute',
@@ -631,7 +795,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												style={{
 													height: '6px',
 													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-													opacity: isHoveredDay ? 1 : lightTheme ? 0.7 : 0.5,
+													opacity: 1,
 													transition: 'opacity 0.2s ease',
 													borderTopLeftRadius: isFirstDay ? '4px' : '0',
 													borderBottomLeftRadius: isFirstDay ? '4px' : '0',

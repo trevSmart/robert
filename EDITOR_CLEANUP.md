@@ -62,7 +62,7 @@ createWebviewPanel() s'executa:
   3. Tanca l'ActivityBar Robert
   4. Obri el FileExplorer en el seu lloc (_switchFromActivityBarToFileExplorer)
   ↓
-Resultat: 
+Resultat:
   - 1 editor Robert obert en una pestanya
   - FileExplorer visible a l'ActivityBar (no Robert)
 ```
@@ -94,7 +94,7 @@ O si no hi ha editors anteriors i s'obri el primer:
 
 ✅ **Automàtic**: No requereix accions del usuari
 ✅ **Transparent**: Els logs proporcionen visibilitat
-✅ **Doble protección**: 
+✅ **Doble protección**:
    - Tancat en activació (neteja editors antics)
    - Tancat en crear nou editor (evita duplicats)
    - Switch automàtic a FileExplorer (UX millor)
@@ -125,11 +125,11 @@ O si no hi ha editors anteriors i s'obri el primer:
 
 ## Ubicació dels Canvis
 
-- **`src/extension.ts`**: 
+- **`src/extension.ts`**:
   - Funció `closeExistingRobertEditors()` (nova)
   - Crida en `activate()` (nova)
 
-- **`src/RobertWebviewProvider.ts`**: 
+- **`src/RobertWebviewProvider.ts`**:
   - Funció `_closeOtherRobertEditors()` (nova)
   - Funció `_switchFromActivityBarToFileExplorer()` (nova)
   - Crida en `createWebviewPanel()` (modificada)
@@ -137,7 +137,7 @@ O si no hi ha editors anteriors i s'obri el primer:
 ## Compatibilitat
 
 - ✅ MacOS
-- ✅ Windows  
+- ✅ Windows
 - ✅ Linux
 - ✅ Compatible amb VS Code 1.60+
 

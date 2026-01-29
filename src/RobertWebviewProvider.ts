@@ -307,10 +307,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 			// Filter for Robert editor tabs that are not the current panel
 			const robertEditorTabs = allTabs.filter(tab => {
-				// Check if it's a Robert panel/editor by checking the tab input
-				const isRobertEditor = tab.input instanceof vscode.WebviewPanel || (tab.label && (tab.label.includes('Robert') || tab.label === 'robert'));
-
-				// Only close if it's not the current panel
+				// Check if it's a Robert panel/editor by checking the tab label
+				const isRobertEditor = tab.label && (tab.label.includes('Robert') || tab.label === 'robert');
 				const isDifferentFromCurrent = !(tab.input === this._currentPanel?.webview);
 
 				return isRobertEditor && isDifferentFromCurrent;

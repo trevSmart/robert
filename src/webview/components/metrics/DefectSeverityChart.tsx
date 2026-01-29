@@ -94,7 +94,7 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 		const option: echarts.EChartsOption = {
 			title: {
 				text: 'Defects trend',
-				subtext: 'Last 6 Sprints',
+				subtext: 'Last 12 Sprints',
 				left: 'center',
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc',

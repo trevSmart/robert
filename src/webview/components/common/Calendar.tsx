@@ -330,7 +330,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						padding: '12px',
 						backgroundColor: themeColors.panelBackground,
 						borderRadius: '8px',
-						border: `1px solid ${themeColors.panelBorder}`
+						border: `1px solid ${themeColors.panelBorder}`,
+						maxWidth: '800px',
+						margin: '0 auto 16px auto'
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>

@@ -671,20 +671,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									.sort((a: { endDate: string }, b: { endDate: string }) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
 									.slice(0, numberOfSprints)
 									.reverse();
-								const velocityData: { sprintName: string; points: number; completedStories: number }[] = [];
-								for (const iteration of sortedIterations) {
-									const ref = `/iteration/${iteration.objectId}`;
-									// Fetch all user stories for this iteration; rely on service to handle pagination/caching
-									const usResult = await getUserStories({ Iteration: ref });
-									const allStories: { taskEstimateTotal?: number; scheduleState?: string }[] = usResult?.userStories ?? [];
-									const points = allStories.reduce((sum: number, s: { taskEstimateTotal?: number }) => sum + (s.taskEstimateTotal ?? 0), 0);
-									const completedStories = allStories.filter((s: { scheduleState?: string }) => s.scheduleState === 'Completed' || s.scheduleState === 'Accepted').length;
-									velocityData.push({
-										sprintName: iteration.name,
-										points: Math.round(points * 10) / 10,
-										completedStories
-									});
-								}
+								// Use iteration.taskEstimateTotal from Rally API - no need to traverse user stories
+								const velocityData: { sprintName: string; points: number; completedStories: number }[] = sortedIterations.map((iteration: { name: string; taskEstimateTotal?: number | null }) => ({
+									sprintName: iteration.name,
+									points: Math.round((iteration.taskEstimateTotal ?? 0) * 10) / 10,
+									completedStories: 0 // Not used by VelocityTrendChart; iteration-level data only
+								}));
 								webview.postMessage({
 									command: 'velocityDataLoaded',
 									velocityData

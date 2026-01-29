@@ -19,6 +19,15 @@ export interface StateDistribution {
 }
 
 /**
+ * Interface per distribució blocked/not blocked
+ */
+export interface BlockedDistribution {
+	status: 'Blocked' | 'Not Blocked';
+	count: number;
+	percentage: number;
+}
+
+/**
  * Interface per defects agregats per severitat
  */
 export interface DefectsBySeverity {
@@ -30,10 +39,11 @@ export interface DefectsBySeverity {
 
 /**
  * Calcula la velocitat (hores totals planificades del sprint) per cada sprint
- * @param userStories - Llista de user stories
- * @param iterations - Llista d'iteracions
+ * Uses iteration.taskEstimateTotal when available (Rally API pre-calculates); otherwise sums from user stories.
+ * @param userStories - Llista de user stories (used for completedStories count and fallback when iteration.taskEstimateTotal is null)
+ * @param iterations - Llista d'iteracions (taskEstimateTotal preferred for points)
  * @param numberOfSprints - Nombre de sprints a incloure (per defecte 6)
- * @returns Array de VelocityData ordenat per sprint (més antic primer). points = suma TaskEstimateTotal de totes les US del sprint.
+ * @returns Array de VelocityData ordenat per sprint (més antic primer). points = iteration.taskEstimateTotal or sum of US TaskEstimateTotal.
  */
 export function calculateVelocity(userStories: UserStory[], iterations: Iteration[], numberOfSprints: number = 6): VelocityData[] {
 	// Filtrar sprints que han acabat o estem dins (sprint actual)
@@ -55,13 +65,12 @@ export function calculateVelocity(userStories: UserStory[], iterations: Iteratio
 		.slice(0, numberOfSprints)
 		.reverse(); // Invertir per tenir més antic primer
 
-	// Calcular hores totals del sprint (totes les US de la iteració) i completades
+	// Use iteration.taskEstimateTotal when available (Rally API pre-calculates); fallback to summing user stories
 	const velocityData: VelocityData[] = sortedIterations.map(iteration => {
 		const sprintStories = userStories.filter(story => story.iteration === iteration.name);
 		const completedStories = sprintStories.filter(story => story.scheduleState === 'Completed' || story.scheduleState === 'Accepted');
 
-		// Barres: hores totals planificades del sprint (suma TaskEstimateTotal de totes les US)
-		const points = sprintStories.reduce((sum, story) => sum + (story.taskEstimateTotal || 0), 0);
+		const points = iteration.taskEstimateTotal != null ? iteration.taskEstimateTotal : sprintStories.reduce((sum, story) => sum + (story.taskEstimateTotal || 0), 0);
 
 		return {
 			sprintName: iteration.name,
@@ -145,6 +154,51 @@ export function groupByState(userStories: UserStory[], iterationName?: string): 
 }
 
 /**
+ * Agrupa user stories per blocked status
+ * @param userStories - Llista de user stories
+ * @param iterationName - Nom de la iteració opcional per filtrar
+ * @returns Array de BlockedDistribution
+ */
+export function groupByBlockedStatus(userStories: UserStory[], iterationName?: string): BlockedDistribution[] {
+	// Filtrar per iteració si s'especifica
+	let filteredStories = userStories;
+	if (iterationName) {
+		filteredStories = userStories.filter(story => story.iteration === iterationName);
+	}
+
+	const total = filteredStories.length;
+	if (total === 0) {
+		return [];
+	}
+
+	// Agrupar per blocked status
+	const blockedCount = filteredStories.filter(story => story.blocked).length;
+	const notBlockedCount = total - blockedCount;
+
+	// Convertir a array amb percentatges
+	const distribution: BlockedDistribution[] = [];
+
+	if (blockedCount > 0) {
+		distribution.push({
+			status: 'Blocked',
+			count: blockedCount,
+			percentage: Math.round((blockedCount / total) * 100)
+		});
+	}
+
+	if (notBlockedCount > 0) {
+		distribution.push({
+			status: 'Not Blocked',
+			count: notBlockedCount,
+			percentage: Math.round((notBlockedCount / total) * 100)
+		});
+	}
+
+	// Ordenar per nombre (descendent)
+	return distribution.sort((a, b) => b.count - a.count);
+}
+
+/**
  * Agrupa defects per severitat i estat
  * @param defects - Llista de defects
  * @param iterations - Llista d'iteracions per agrupar per sprint
@@ -158,8 +212,10 @@ export function aggregateDefectsBySeverity(defects: RallyDefect[], iterations: I
 
 	const pastIterations = iterations
 		.filter(iteration => {
+			const startDate = new Date(iteration.startDate);
 			const endDate = new Date(iteration.endDate);
-			return endDate <= today;
+			// Incloure: sprints completats (endDate <= today) O sprints en curs (startDate <= today <= endDate)
+			return endDate <= today || (startDate <= today && endDate > today);
 		})
 		.sort((a, b) => {
 			const dateA = new Date(a.endDate).getTime();
@@ -184,15 +240,13 @@ export function aggregateDefectsBySeverity(defects: RallyDefect[], iterations: I
 
 			const closed = defectsWithSeverity.filter(defect => defect.state === 'Closed' || defect.state === 'Fixed').length;
 
-			// Només afegir si hi ha defects d'aquesta severitat
-			if (open > 0 || closed > 0) {
-				result.push({
-					sprint: iteration.name,
-					severity: severity,
-					open: open,
-					closed: closed
-				});
-			}
+			// Sempre afegir el registre, fins i tot si els contadors són zero
+			result.push({
+				sprint: iteration.name,
+				severity: severity,
+				open: open,
+				closed: closed
+			});
 		});
 	});
 

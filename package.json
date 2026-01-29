@@ -200,7 +200,8 @@
 		"install:cursor": "node scripts/installCursor.cjs",
 		"install:vscode-insiders": "node scripts/installVSCodeInsiders.cjs",
 		"publish": "vsce publish",
-		"publish:pre-release": "vsce publish --pre-release"
+		"publish:pre-release": "vsce publish --pre-release",
+		"test:mcp": "node .mcp/test-setup.js"
 	},
 	"devDependencies": {
 		"@types/node": "^25.0.10",

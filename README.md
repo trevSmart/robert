@@ -107,7 +107,12 @@ Robert includes an MCP (Model Context Protocol) server that enables AI coding as
    npm run build
    ```
 
-3. The MCP server is now ready! AI assistants can discover it via `.mcp/config.json`
+3. Verify the setup:
+   ```bash
+   node .mcp/test-setup.js
+   ```
+
+4. The MCP server is now ready! AI assistants can discover it via `.mcp/config.json`
 
 ### Using with AI Assistants
 
@@ -117,7 +122,8 @@ Once configured, AI assistants can:
 - Learn about collaboration features
 - Read project documentation and code
 
-For detailed MCP server documentation, see [.mcp/README.md](.mcp/README.md).
+For detailed setup instructions, see [.mcp/QUICKSTART.md](.mcp/QUICKSTART.md).
+For complete MCP server documentation, see [.mcp/README.md](.mcp/README.md).
 
 ## 🐛 Troubleshooting
 

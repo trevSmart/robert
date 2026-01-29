@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
-import type { Holiday } from '../../../types/rally';
+import type { Holiday } from '../../../types/utils';
 
 interface Iteration {
 	objectId: string;

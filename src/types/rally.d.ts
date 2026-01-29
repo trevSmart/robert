@@ -89,7 +89,7 @@ export interface Iteration {
 	endDate: string;
 	state: string;
 	project: string | null;
-	taskEstimateTotal?: number;
+	taskEstimateTotal: number; // Sum of all task estimates in this iteration (aggregate field from Rally)
 	_ref?: string;
 }
 

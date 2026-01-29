@@ -673,14 +673,16 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									.reverse();
 								const velocityData: { sprintName: string; points: number; completedStories: number }[] = [];
 								for (const iteration of sortedIterations) {
+									// Use the aggregate TaskEstimateTotal from Iteration instead of traversing all user stories
+									const points = (iteration as any).taskEstimateTotal ?? 0;
+
+									// Still need to fetch user stories to count completed ones
 									const ref = `/iteration/${iteration.objectId}`;
-									// Fetch all user stories for this iteration; rely on service to handle pagination/caching
 									const usResult = await getUserStories({ Iteration: ref });
-									const allStories: { taskEstimateTotal?: number; scheduleState?: string }[] = usResult?.userStories ?? [];
-									const points = allStories.reduce((sum: number, s: { taskEstimateTotal?: number }) => sum + (s.taskEstimateTotal ?? 0), 0);
+									const allStories: { scheduleState?: string }[] = usResult?.userStories ?? [];
 									const completedStories = allStories.filter((s: { scheduleState?: string }) => s.scheduleState === 'Completed' || s.scheduleState === 'Accepted').length;
 									velocityData.push({
-										sprintName: iteration.name,
+										sprintName: (iteration as any).name,
 										points: Math.round(points * 10) / 10,
 										completedStories
 									});

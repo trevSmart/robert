@@ -30,10 +30,10 @@ export interface DefectsBySeverity {
 
 /**
  * Calcula la velocitat (hores totals planificades del sprint) per cada sprint
- * @param userStories - Llista de user stories
+ * @param userStories - Llista de user stories (only used for completedStories count)
  * @param iterations - Llista d'iteracions
  * @param numberOfSprints - Nombre de sprints a incloure (per defecte 6)
- * @returns Array de VelocityData ordenat per sprint (més antic primer). points = suma TaskEstimateTotal de totes les US del sprint.
+ * @returns Array de VelocityData ordenat per sprint (més antic primer). points = TaskEstimateTotal from Iteration (aggregate field).
  */
 export function calculateVelocity(userStories: UserStory[], iterations: Iteration[], numberOfSprints: number = 6): VelocityData[] {
 	// Filtrar sprints que han acabat o estem dins (sprint actual)
@@ -55,13 +55,14 @@ export function calculateVelocity(userStories: UserStory[], iterations: Iteratio
 		.slice(0, numberOfSprints)
 		.reverse(); // Invertir per tenir més antic primer
 
-	// Calcular hores totals del sprint (totes les US de la iteració) i completades
+	// Calcular hores totals del sprint i completades
 	const velocityData: VelocityData[] = sortedIterations.map(iteration => {
+		// Use the aggregate TaskEstimateTotal from Iteration instead of traversing all user stories
+		const points = iteration.taskEstimateTotal;
+
+		// Still need to count completed stories for the metric
 		const sprintStories = userStories.filter(story => story.iteration === iteration.name);
 		const completedStories = sprintStories.filter(story => story.scheduleState === 'Completed' || story.scheduleState === 'Accepted');
-
-		// Barres: hores totals planificades del sprint (suma TaskEstimateTotal de totes les US)
-		const points = sprintStories.reduce((sum, story) => sum + (story.taskEstimateTotal || 0), 0);
 
 		return {
 			sprintName: iteration.name,

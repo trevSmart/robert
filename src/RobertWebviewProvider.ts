@@ -430,15 +430,27 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
+	private _getFontDataUrl(): string {
+		try {
+			const fontPath = path.join(this._extensionUri.fsPath, 'resources', 'fonts', 'Inter-Variable.woff2');
+			const buffer = fs.readFileSync(fontPath);
+			const base64 = buffer.toString('base64');
+			return `data:font/woff2;base64,${base64}`;
+		} catch (error) {
+			this._errorHandler.logWarning(`Failed to load font as data URL: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider._getFontDataUrl');
+			return '';
+		}
+	}
+
 	private async _getHtmlForLogo(webview: vscode.Webview): Promise<string> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
 				this._errorHandler.logInfo('Logo webview content rendered from build HTML', 'RobertWebviewProvider._getHtmlForLogo');
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo.png'));
-				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
+				const interFontDataUrl = this._getFontDataUrl();
 				return this._getHtmlFromBuild(webview, 'logo.html', {
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
-					__INTER_FONT_URI__: interFontUri.toString()
+					__INTER_FONT_URI__: interFontDataUrl
 				});
 			}, 'getHtmlForLogo')) || '<html><body><p>Error loading logo</p></body></html>'
 		);
@@ -452,13 +464,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
 
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo.png'));
-				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
+				const interFontDataUrl = this._getFontDataUrl();
 				return this._getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',
 					__CONTEXT__: context,
 					__TIMESTAMP__: new Date().toISOString(),
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
-					__INTER_FONT_URI__: interFontUri.toString()
+					__INTER_FONT_URI__: interFontDataUrl
 				});
 			}, 'getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);

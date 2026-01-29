@@ -1314,6 +1314,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setIterationsLoading(false);
 					setIterationsError(message.error || 'Error loading iterations');
 					break;
+				case 'holidaysLoaded':
+					// Merge holidays from the new year with existing holidays
+					if (message.holidays) {
+						setHolidays(prevHolidays => {
+							// Remove holidays from the same year to avoid duplicates
+							const otherYearHolidays = prevHolidays.filter(h => !h.date.startsWith(`${message.year}-`));
+							return [...otherYearHolidays, ...message.holidays];
+						});
+						logDebug(`Holidays loaded for year ${message.year}: ${message.holidays.length} holidays`);
+					}
+					break;
+				case 'holidaysError':
+					logDebug(`Failed to load holidays for year ${message.year}: ${message.error}`);
+					break;
 				case 'userStoriesLoaded':
 					// Determine context using iteration field from backend
 					const isSprintContext = message.iteration !== null && message.iteration !== undefined;
@@ -1544,6 +1558,26 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		setVelocityLoading(true);
 		sendMessage({ command: 'loadVelocityData' });
 	}, [activeSection, iterations.length, sendMessage]);
+
+	// Track calendar year changes and load holidays for the new year
+	useEffect(() => {
+		const calendarYear = calendarDate.getFullYear();
+		const currentYear = new Date().getFullYear();
+
+		// Check if we already have holidays for this year
+		const hasHolidaysForYear = holidays.some(h => h.date.startsWith(`${calendarYear}-`));
+
+		// Load holidays if we don't have them for this year and it's different from current year
+		// (current year holidays are loaded with iterations)
+		if (!hasHolidaysForYear && calendarYear !== currentYear) {
+			logDebug(`Calendar navigated to year ${calendarYear}, loading holidays...`);
+			sendMessage({
+				command: 'loadHolidaysForYear',
+				year: calendarYear,
+				country: 'ES'
+			});
+		}
+	}, [calendarDate, holidays, sendMessage]);
 
 	// Calculate metrics when data changes - load charts in parallel (state distribution, defects, KPIs)
 	useEffect(() => {

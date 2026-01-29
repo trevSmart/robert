@@ -16,25 +16,6 @@ export interface Holiday {
 }
 
 /**
- * Fetch polyfill for older VS Code versions
- */
-const fetchPolyfill = async (url: string, options?: RequestInit): Promise<Response> => {
-	// Try to use native fetch if available
-	if (typeof globalThis.fetch === 'function') {
-		return globalThis.fetch(url, options);
-	}
-
-	// Fallback to node-fetch for older environments
-	try {
-		// @ts-expect-error - dynamic import for compatibility
-		const nodeFetch = await import('node-fetch');
-		return nodeFetch.default(url, options) as unknown as Response;
-	} catch (error) {
-		throw new Error(`Fetch not available: ${error instanceof Error ? error.message : String(error)}`);
-	}
-};
-
-/**
  * Holiday Service for retrieving Spanish holidays
  * Uses the public Nager.Date API (https://date.nager.at/)
  * Alternative: holiday.date API
@@ -81,7 +62,7 @@ export class HolidayService {
 			this.errorHandler.logDebug(`Fetching holidays from API (${country} ${targetYear})`, 'HolidayService.getHolidays');
 
 			const url = `${this.API_BASE_URL}/${targetYear}/${country}`;
-			const response = await fetchPolyfill(url);
+			const response = await fetch(url);
 
 			if (!response.ok) {
 				throw new Error(`Holiday API returned ${response.status}: ${response.statusText}`);

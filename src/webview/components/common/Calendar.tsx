@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
-import type { Holiday } from '../../../types/utils';
+import type { Holiday, DayEvent } from '../../../types/utils';
 
 interface Iteration {
 	objectId: string;
@@ -17,7 +17,7 @@ interface DayInfo {
 	date: Date;
 	day: number;
 	iterations: Iteration[];
-	holiday?: Holiday;
+	events: DayEvent[];
 }
 
 interface CalendarProps {
@@ -64,8 +64,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		// Add holiday info to tooltip
 		let title = `${dayInfo.day} ${getDayName(targetDate)}`;
-		if (dayInfo.holiday) {
-			title += ` - 🎉 ${dayInfo.holiday.localName || dayInfo.holiday.name}`;
+		if (dayInfo.events.length > 0) {
+			const holidayEvents = dayInfo.events.filter(e => e.type === 'holiday');
+			if (holidayEvents.length > 0) {
+				title += ` - 🎉 ${holidayEvents.map(e => e.tooltip).join(', ')}`;
+			}
 		}
 
 		return {
@@ -219,14 +222,51 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		});
 	};
 
-	// Helper function to get the holiday for a specific day
-	const getHolidayForDay = (dayDate: Date): Holiday | undefined => {
+	// Helper function to get all events for a specific day
+	const getEventsForDay = (dayDate: Date): DayEvent[] => {
+		const events: DayEvent[] = [];
+
 		// Build YYYY-MM-DD string without timezone conversion
 		const year = dayDate.getFullYear();
 		const month = (dayDate.getMonth() + 1).toString().padStart(2, '0');
 		const day = dayDate.getDate().toString().padStart(2, '0');
 		const dateStr = `${year}-${month}-${day}`;
-		return holidays.find(h => h.date === dateStr);
+
+		// Add holiday events
+		const dayHolidays = holidays.filter(h => h.date === dateStr);
+		for (const holiday of dayHolidays) {
+			const isRegional = !holiday.global;
+			const regionCode = isRegional && holiday.counties && holiday.counties.length > 0 ? holiday.counties[0] : null;
+			const regionName = regionCode ? regionCode.split('-')[1] : null;
+			const displayText = isRegional && regionName ? `${holiday.localName || holiday.name} (${regionName})` : holiday.localName || holiday.name;
+
+			events.push({
+				type: 'holiday',
+				displayText,
+				tooltip: `${holiday.localName || holiday.name}${isRegional ? ' (Regional)' : ' (National)'}`,
+				color: '#4cafa0', // Turquoise
+				opacity: isRegional ? 0.36 : 0.53,
+				data: holiday
+			});
+		}
+
+		// Add sprint cutoff events (only in debug mode)
+		if (debugMode && isSprintEndDay(dayDate)) {
+			const endingSprint = getSprintEndingOnDay(dayDate);
+			if (endingSprint) {
+				const sprintColor = iterationColorMap.get(endingSprint.objectId) || '#8e44ad';
+				events.push({
+					type: 'sprintCutoff',
+					displayText: `${endingSprint.name} cutoff`,
+					tooltip: 'Sprint cutoff',
+					color: sprintColor,
+					opacity: 0.75,
+					data: endingSprint
+				});
+			}
+		}
+
+		return events;
 	};
 
 	// Generate calendar days
@@ -258,7 +298,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			isCurrentMonth,
 			isToday,
 			iterations: activeIterations,
-			holiday: getHolidayForDay(currentDayDate)
+			events: getEventsForDay(currentDayDate)
 		});
 
 		dayCounter++;
@@ -493,47 +533,68 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							>
 								{dayInfo.day}
 							</span>
-							{/* Show holiday overlay - dynamic transparency based on national (53%) vs regional (36%) */}
-							{dayInfo.holiday &&
-								(() => {
-									const holiday = dayInfo.holiday;
-									const isRegional = !holiday.global;
-									const transparency = isRegional ? 0.36 : 0.53; // 36% for regional, 53% for national
-									// Get region name from counties array (first autonomous community code)
-									const regionCode = isRegional && holiday.counties && holiday.counties.length > 0 ? holiday.counties[0] : null;
-									const regionName = regionCode ? regionCode.split('-')[1] : null; // Extract region from ES-XX format
-									const displayText = isRegional && regionName ? `${holiday.localName || holiday.name} (${regionName})` : holiday.localName || holiday.name;
-									return (
+							{/* Show stacked day events (holidays, sprint cutoffs, etc) at top of cell */}
+							{dayInfo.isCurrentMonth && dayInfo.events.length > 0 && (
+								<div
+									style={{
+										position: 'absolute',
+										top: '24px', // Below day number (13px + 4px margin + 7px buffer)
+										left: '0',
+										right: '0',
+										display: 'flex',
+										flexDirection: 'column',
+										gap: '1px',
+										pointerEvents: 'none',
+										zIndex: 2,
+										paddingBottom: '10px' // Leave space for sprint color bars
+									}}
+								>
+									{dayInfo.events.slice(0, 3).map((event, idx) => {
+										// Convert color to RGBA
+										const colorRgb = event.color.startsWith('#')
+											? event.color
+													.match(/[A-Za-z0-9]{2}/g)
+													?.map(x => parseInt(x, 16))
+													.join(',') || '76,175,160'
+											: event.color;
+										return (
+											<div
+												key={idx}
+												style={{
+													backgroundColor: `rgba(${colorRgb}, ${event.opacity})`,
+													color: 'white',
+													fontSize: '10px',
+													fontWeight: 'normal',
+													padding: '2px 4px',
+													marginLeft: '2px',
+													marginRight: '2px',
+													overflow: 'hidden',
+													textOverflow: 'ellipsis',
+													whiteSpace: 'nowrap',
+													lineHeight: '1.2',
+													borderRadius: '2px'
+												}}
+												title={event.tooltip}
+											>
+												{event.displayText}
+											</div>
+										);
+									})}
+									{dayInfo.events.length > 3 && (
 										<div
 											style={{
-												position: 'absolute',
-												top: 0,
-												left: 0,
-												right: 0,
-												bottom: 0,
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'center',
-												padding: '8px',
-												borderRadius: 0,
-												backgroundColor: `rgba(76, 175, 160, ${transparency})`, // Turquoise: #4cafa0
-												color: 'white',
-												fontSize: '11px',
-												fontWeight: 'normal',
-												border: 'none',
-												zIndex: 2,
-												pointerEvents: 'none',
-												textAlign: 'center',
-												overflow: 'hidden',
-												whiteSpace: 'normal',
-												lineHeight: '1.2'
+												fontSize: '9px',
+												color: 'rgba(100, 100, 100, 0.8)',
+												padding: '1px 4px',
+												marginLeft: '2px',
+												marginRight: '2px'
 											}}
-											title={`Holiday: ${holiday.localName || holiday.name}\n${holiday.global ? 'National' : 'Regional (Autonomous Community)'}`}
 										>
-											{displayText}
+											+{dayInfo.events.length - 3} más
 										</div>
-									);
-								})()}
+									)}
+								</div>
+							)}
 							{/* Show iteration indicator lines */}
 							{dayInfo.iterations.length > 0 && (
 								<div
@@ -582,44 +643,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										);
 									})}
 								</div>
-							)}
-							{/* Show debug indicators below day number */}
-							{debugMode && dayInfo.isCurrentMonth && (
-								<>
-									{/* Pkg closed badge on sprint end days */}
-									{isSprintEndDay(dayInfo.date) &&
-										(() => {
-											const endingSprint = getSprintEndingOnDay(dayInfo.date);
-											const sprintColor = endingSprint ? iterationColorMap.get(endingSprint.objectId) || '#8e44ad' : '#8e44ad';
-											const sprintName = endingSprint ? endingSprint.name : 'Sprint';
-											return (
-												<div
-													style={{
-														position: 'absolute',
-														top: 0,
-														left: 0,
-														right: 0,
-														bottom: 0,
-														display: 'flex',
-														alignItems: 'center',
-														justifyContent: 'center',
-														padding: '8px',
-														borderRadius: 0,
-														backgroundColor: hexToRgba(sprintColor, 0.75),
-														color: 'white',
-														fontSize: '11px',
-														fontWeight: 'normal',
-														border: 'none',
-														zIndex: 3,
-														pointerEvents: 'none'
-													}}
-													title="Sprint cutoff"
-												>
-													{sprintName} cutoff
-												</div>
-											);
-										})()}
-								</>
 							)}
 						</div>
 					);

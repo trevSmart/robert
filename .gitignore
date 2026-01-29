@@ -68,3 +68,5 @@ test-results/
 .vscode-test/
 
 .claude/settings.local.json
+
+tmp/

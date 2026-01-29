@@ -15,3 +15,16 @@ export interface Holiday {
 	launchYear?: number | null;
 	types?: string[];
 }
+
+/**
+ * Generic day event that can be displayed in the calendar
+ * Supports holidays, sprint cutoffs, and other event types
+ */
+export interface DayEvent {
+	type: 'holiday' | 'sprintCutoff' | 'other';
+	displayText: string;
+	tooltip: string;
+	color: string; // Hex color code
+	opacity: number; // 0-1 transparency level
+	data?: Holiday | Record<string, unknown>; // Original data object (Holiday, Iteration, etc)
+}

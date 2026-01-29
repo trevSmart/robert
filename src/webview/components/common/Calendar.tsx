@@ -140,9 +140,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		// Create 4 different insight-based messages
 		const generatedMessages = [
 			// 1) Sprint cutoff message (if applicable)
-			daysUntilSprintEnd && daysUntilSprintEnd > 0
-				? (daysUntilSprintEnd === 1 ? `You've got 1 day left before sprint cutoff! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`)
-				: `Stay focused on your current sprint objectives! 💪`,
+			daysUntilSprintEnd && daysUntilSprintEnd > 0 ? (daysUntilSprintEnd === 1 ? `You've got 1 day left before sprint cutoff! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`) : `Stay focused on your current sprint objectives! 💪`,
 
 			// 2) Hours summary (use totalHours computed from user stories)
 			totalHours > 0 ? `${totalHours}h total this month. ${hoursCompletionPercentage}% done! ${remainingHours}h left. 💪` : `No work scheduled this month. That's rare! 🤔`,
@@ -156,9 +154,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				: completedUS > 0
 					? `You've completed ${completedUS} ${completedUS === 1 ? 'story' : 'stories'}! ${pendingUS} more to go. 🎯`
 					: daysUntilSprintEnd && daysUntilSprintEnd > 0 && daysUntilSprintEnd <= 7
-						? (daysUntilSprintEnd === 1 ? `Only 1 day left in the sprint. Final push! ⏰` : `Only ${daysUntilSprintEnd} days left in the sprint. Final push! ⏰`)
+						? daysUntilSprintEnd === 1
+							? `Only 1 day left in the sprint. Final push! ⏰`
+							: `Only ${daysUntilSprintEnd} days left in the sprint. Final push! ⏰`
 						: daysRemainingInMonth > 0 && daysRemainingInMonth <= 7
-							? (daysRemainingInMonth === 1 ? `Only 1 day left in the month.` : `Only ${daysRemainingInMonth} days left in the month.`)
+							? daysRemainingInMonth === 1
+								? `Only 1 day left in the month.`
+								: `Only ${daysRemainingInMonth} days left in the month.`
 							: avgSprintDuration > 0
 								? `Your average sprint duration is ${avgSprintDuration} days. Pace yourself! ⏱️`
 								: `Ready to break records this month? Let's go! 🏆`

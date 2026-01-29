@@ -558,7 +558,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 											color: 'var(--vscode-input-foreground)',
 											fontSize: '12px',
 											resize: 'vertical',
-											fontFamily: 'inherit',
+
 											marginBottom: '8px'
 										}}
 									/>

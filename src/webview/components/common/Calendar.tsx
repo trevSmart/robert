@@ -60,7 +60,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	function getSprintBarHeight(cellWidth: number) {
 		const min = 3; // px
-		const max = 6; // px
+		const max = 9; // px
 		const minWidth = 50; // Cell width at which bar is at min size
 		const maxWidth = 150; // Cell width at which bar is at max size
 
@@ -616,7 +616,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						borderRadius: '8px',
 						border: `1px solid ${themeColors.panelBorder}`,
 						maxWidth: '700px',
-						margin: '0 auto 16px auto'
+						margin: '0 auto 20px auto'
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
@@ -640,11 +640,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 			<div
 				style={{
-					marginBottom: '20px',
+					marginBottom: '14px',
 					display: 'flex',
 					alignItems: 'center',
-					justifyContent: 'center',
-					gap: '20px'
+					justifyContent: 'center'
 				}}
 			>
 				<button
@@ -678,9 +677,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					style={{
 						margin: '0',
 						color: themeColors.foreground,
-						fontSize: '19px',
-						fontWeight: '500',
-						minWidth: '200px',
+						fontSize: '17.8px',
+						fontWeight: '400',
+						minWidth: '140px',
 						textAlign: 'center'
 					}}
 				>
@@ -739,7 +738,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							backgroundColor: themeColors.titleBarActiveBackground,
 							color: themeColors.titleBarActiveForeground,
 							textAlign: 'center',
-							fontSize: '11px',
+							fontSize: getDayNumberFontSize(calendarGridWidth) + 'px',
 							fontWeight: '600',
 							borderBottom: `1px solid ${themeColors.panelBorder}`
 						}}
@@ -784,7 +783,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								fontWeight: '400',
 								cursor: 'pointer',
 								transition: 'background-color 0.2s ease',
-								position: 'relative'
+								position: 'relative',
+								overflow: 'hidden'
 							}}
 							onMouseEnter={e => {
 								setHoveredDay(dayInfo);
@@ -862,10 +862,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													marginLeft: '2px',
 													marginRight: '2px',
 													overflow: 'hidden',
-													textOverflow: 'ellipsis',
-													whiteSpace: 'nowrap',
 													lineHeight: '1.2',
-													borderRadius: '3px'
+													borderRadius: '3px',
+													maxHeight: '2.4em', // allow up to 2 lines
+													display: '-webkit-box',
+													WebkitBoxOrient: 'vertical',
+													WebkitLineClamp: 2,
+													whiteSpace: 'normal',
+													wordBreak: 'break-word'
 												}}
 												title={event.tooltip}
 											>
@@ -923,7 +927,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												style={{
 													height: getSprintBarHeight(calendarGridWidth) + 'px',
 													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-													filter: lightTheme ? 'saturate(68%) brightness(140%) contrast(85%)' : 'saturate(38%) brightness(70%) contrast(85%)',
+													filter: lightTheme ? 'saturate(68%) brightness(140%) contrast(85%)' : 'saturate(58%) brightness(70%) contrast(85%)',
 													opacity: 1,
 													transition: 'opacity 0.2s ease',
 													borderTopLeftRadius: isFirstDay ? '4px' : '0',

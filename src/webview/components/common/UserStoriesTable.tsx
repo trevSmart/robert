@@ -250,7 +250,6 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 		const startDate = new Date(iteration.startDate);
 		const endDate = new Date(iteration.endDate);
 
-		// Reset time for date comparison
 		today.setHours(0, 0, 0, 0);
 		startDate.setHours(0, 0, 0, 0);
 		endDate.setHours(23, 59, 59, 999);
@@ -352,7 +351,29 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 										}
 									}}
 								>
-									<td style={{ padding: '10px 4px', textAlign: 'center', fontWeight: 'normal' }}>{isCurrentDayIteration(iteration) && <span style={{ display: 'inline-block', width: '6px', height: '6px', borderRadius: '50%', backgroundColor: themeColors.buttonBackground }}></span>}</td>
+									<td style={{ padding: '10px 4px', textAlign: 'center', fontWeight: 'normal' }}>
+										{isCurrentDayIteration(iteration) && (
+											<span
+												style={{
+													display: 'inline-block',
+													padding: '2px 10px',
+													borderRadius: '8px',
+													background: themeColors.buttonBackground,
+													color: themeColors.buttonForeground,
+													fontWeight: 600,
+													fontSize: '11px',
+													boxShadow: '0 0 6px 1.5px rgba(0, 122, 255, 0.25)',
+													filter: 'drop-shadow(0 0 2px #2196f3)',
+													letterSpacing: '0.5px',
+													textShadow: '0 0 2px #2196f3',
+													border: 'none',
+													transition: 'box-shadow 0.2s'
+												}}
+											>
+												Ongoing
+											</span>
+										)}
+									</td>
 									<td style={{ padding: '10px 12px', fontWeight: 'normal', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : themeColors.foreground, textDecoration: 'none' }}>{iteration.name}</td>
 									<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'right', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>
 										{iteration.taskEstimateTotal !== undefined && iteration.taskEstimateTotal !== null ? `${iteration.taskEstimateTotal}h` : ''}

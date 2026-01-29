@@ -21,7 +21,7 @@ import CollaborationView from './common/CollaborationView';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type GlobalSearchResultItem } from '../../types/rally';
 import { isLightTheme } from '../utils/themeColors';
-import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, type VelocityData, type StateDistribution, type DefectsBySeverity } from '../utils/metricsUtils';
+import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 
 // Icon components (copied from NavigationBar for now)
 const _TeamIcon = () => (
@@ -814,6 +814,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [velocityLoading, setVelocityLoading] = useState(false);
 	const [stateDistribution, setStateDistribution] = useState<StateDistribution[]>([]);
 	const [stateDistributionLoading, setStateDistributionLoading] = useState(false);
+	const [nextSprintName, setNextSprintName] = useState<string>('Next Sprint');
+	const [selectedReadinessSprint, setSelectedReadinessSprint] = useState<string>('next'); // 'next' or iteration name
+	const [blockedDistribution, setBlockedDistribution] = useState<BlockedDistribution[]>([]);
 	const [defectsBySeverity, setDefectsBySeverity] = useState<DefectsBySeverity[]>([]);
 	const [defectsBySeverityLoading, setDefectsBySeverityLoading] = useState(false);
 	const [averageVelocity, setAverageVelocity] = useState<number>(0);
@@ -1218,6 +1221,43 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		return sprintIterations.length > 0 ? sprintIterations[0] : activeIterations[0];
 	}, []);
 
+	const findNextIteration = useCallback(
+		(iterations: Iteration[]): Iteration | null => {
+			const currentIteration = findCurrentIteration(iterations);
+			if (!currentIteration) {
+				return null;
+			}
+
+			const currentEndDate = currentIteration.endDate ? new Date(currentIteration.endDate) : null;
+			if (!currentEndDate) {
+				return null;
+			}
+
+			currentEndDate.setHours(0, 0, 0, 0);
+
+			// Find the next iteration that starts after the current one ends
+			const futureIterations = iterations.filter(iteration => {
+				const startDate = iteration.startDate ? new Date(iteration.startDate) : null;
+				if (!startDate) return false;
+
+				startDate.setHours(0, 0, 0, 0);
+				return startDate > currentEndDate;
+			});
+
+			if (futureIterations.length === 0) {
+				return null;
+			}
+
+			// Sort by start date and return the earliest one
+			return futureIterations.sort((a, b) => {
+				const dateA = a.startDate ? new Date(a.startDate) : new Date(0);
+				const dateB = b.startDate ? new Date(b.startDate) : new Date(0);
+				return dateA.getTime() - dateB.getTime();
+			})[0];
+		},
+		[findCurrentIteration]
+	);
+
 	// Initialize webview on mount
 	useEffect(() => {
 		sendMessage({
@@ -1499,12 +1539,35 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 		setMetricsLoading(true);
 
-		// State distribution chart
+		// State distribution chart - Next sprint readiness
 		(async () => {
 			try {
 				setStateDistributionLoading(true);
-				const stateDistrib = groupByState(portfolioUserStories);
-				setStateDistribution(stateDistrib);
+				let targetIteration = null;
+				let displayName = 'Next Sprint';
+
+				if (selectedReadinessSprint === 'next') {
+					targetIteration = findNextIteration(iterations);
+				} else {
+					// Find the iteration by name
+					targetIteration = iterations.find(it => it.name === selectedReadinessSprint);
+				}
+
+				if (targetIteration) {
+					displayName = targetIteration.name;
+					setNextSprintName(targetIteration.name);
+					const nextSprintStories = portfolioUserStories.filter(story => story.iteration === targetIteration.name);
+					const stateDistrib = groupByState(nextSprintStories);
+					setStateDistribution(stateDistrib);
+
+					// Calculate blocked distribution for the same sprint
+					const blockedDistrib = groupByBlockedStatus(nextSprintStories);
+					setBlockedDistribution(blockedDistrib);
+				} else {
+					setNextSprintName('No Sprint');
+					setStateDistribution([]);
+					setBlockedDistribution([]);
+				}
 			} catch (error) {
 				console.error('Error calculating state distribution:', error);
 			} finally {
@@ -1512,11 +1575,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			}
 		})();
 
-		// Defects trend chart - last 6 sprints
+		// Defects trend chart - last 12 sprints
 		(async () => {
 			try {
 				setDefectsBySeverityLoading(true);
-				const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 6);
+				const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 12);
 				setDefectsBySeverity(defectsBySev);
 			} catch (error) {
 				console.error('Error calculating defects:', error);
@@ -1544,7 +1607,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			console.error('Error calculating metrics:', error);
 			setMetricsLoading(false);
 		}
-	}, [activeSection, iterations, portfolioUserStories, defects]);
+	}, [activeSection, iterations, portfolioUserStories, defects, findNextIteration, selectedReadinessSprint]);
 
 	// Load iterations when navigating to calendar section
 	useEffect(() => {
@@ -1857,28 +1920,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							{!teamMembersLoading && (
 								<>
 									{/* Team Stats */}
-									<div
-										style={{
-											display: 'grid',
-											gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-											gap: '12px',
-											marginBottom: '20px'
-										}}
-									>
-										<div
-											style={{
-												background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-												borderRadius: '8px',
-												padding: '12px',
-												textAlign: 'center',
-												color: 'white'
-											}}
-										>
-											<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{teamMembers.length}</div>
-											<div style={{ fontSize: '10px', opacity: 0.9 }}>Team Members (Last 6 Sprints)</div>
-										</div>
-									</div>
-
 									{/* Team Members */}
 									<div style={{ marginBottom: '20px' }}>
 										<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -2306,9 +2347,46 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							</div>
 
 							{/* State Distribution and Defect Severity Charts */}
-							<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-								<StateDistributionPie data={stateDistribution} loading={stateDistributionLoading} />
-								<DefectSeverityChart data={defectsBySeverity} loading={defectsBySeverityLoading} />
+							<div>
+								{/* Readiness Sprint Selector */}
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', paddingLeft: '20px' }}>
+									<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Next Sprint Readiness</h3>
+									<select
+										value={selectedReadinessSprint}
+										onChange={e => setSelectedReadinessSprint(e.target.value)}
+										style={{
+											padding: '4px 8px',
+											borderRadius: '4px',
+											backgroundColor: 'var(--vscode-dropdown-background)',
+											color: 'var(--vscode-dropdown-foreground)',
+											border: '1px solid var(--vscode-dropdown-border)',
+											cursor: 'pointer',
+											fontSize: '12px',
+											marginRight: '20px'
+										}}
+									>
+										<option value="next">Next Sprint</option>
+										{iterations
+											.filter(it => {
+												const nextIter = findNextIteration(iterations);
+												if (nextIter && it.name === nextIter.name) {
+													return false;
+												}
+												return true;
+											})
+											.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime())
+											.map(it => (
+												<option key={it.objectId} value={it.name}>
+													{it.name}
+												</option>
+											))}
+									</select>
+								</div>
+
+								<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+									<StateDistributionPie data={stateDistribution} blockedData={blockedDistribution} sprintName={nextSprintName} loading={stateDistributionLoading} />
+									<DefectSeverityChart data={defectsBySeverity} loading={defectsBySeverityLoading} />
+								</div>
 							</div>
 						</div>
 					)}

@@ -75,13 +75,7 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 					return result;
 				}
 			},
-			legend: {
-				data: ['Hours', 'Moving Average'],
-				bottom: 10,
-				textStyle: {
-					color: lightTheme ? '#333' : '#ccc'
-				}
-			},
+
 			grid: {
 				left: '3%',
 				right: '4%',

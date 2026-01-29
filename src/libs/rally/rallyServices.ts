@@ -511,6 +511,7 @@ async function formatIterationsAsync(results: any[]): Promise<RallyIteration[]> 
 			endDate: iteration.EndDate ?? iteration.endDate,
 			state: iteration.State ?? iteration.state,
 			project: iteration.Project ? (iteration.Project._refObjectName ?? iteration.Project.refObjectName) : iteration.project ? (iteration.project._refObjectName ?? iteration.project.refObjectName) : null,
+			taskEstimateTotal: iteration.TaskEstimateTotal ?? iteration.taskEstimateTotal ?? null,
 			_ref: iteration._ref
 		});
 

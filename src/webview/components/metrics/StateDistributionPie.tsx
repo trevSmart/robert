@@ -1,14 +1,16 @@
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
 import { isLightTheme } from '../../utils/themeColors';
-import type { StateDistribution } from '../../utils/metricsUtils';
+import type { StateDistribution, BlockedDistribution } from '../../utils/metricsUtils';
 
 interface StateDistributionPieProps {
 	data: StateDistribution[];
+	blockedData?: BlockedDistribution[];
+	sprintName?: string;
 	loading?: boolean;
 }
 
-const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loading = false }) => {
+const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, blockedData = [], sprintName = 'Next Sprint', loading = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
 	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
@@ -23,13 +25,19 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loadi
 		const chart = chartInstanceRef.current;
 		const lightTheme = isLightTheme();
 
-		// Colors per cada estat
+		// Colors per cada estat (alineats amb UserStoryForm.tsx)
 		const stateColors: Record<string, string> = {
-			Defined: '#9e9e9e',
-			'In-Progress': '#2196f3',
-			Completed: '#4caf50',
-			Accepted: '#66bb6a',
-			Unknown: '#757575'
+			Defined: '#fd7e14', // Taronja
+			'In-Progress': '#ffc107', // Groc
+			Completed: '#0d6efd', // Blau
+			Accepted: '#198754', // Verd
+			Unknown: '#6c757d' // Gris
+		};
+
+		// Colors per blocked status
+		const blockedColors: Record<string, string> = {
+			Blocked: '#dc3545', // Roig
+			'Not Blocked': '#28a745' // Verd
 		};
 
 		// Preparar dades per echarts
@@ -41,10 +49,19 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loadi
 			}
 		}));
 
+		// Preparar dades blocked/not blocked per echarts
+		const blockedChartData = blockedData.map(item => ({
+			value: item.count,
+			name: `${item.status} (${item.percentage}%)`,
+			itemStyle: {
+				color: blockedColors[item.status] || '#999'
+			}
+		}));
+
 		const option: echarts.EChartsOption = {
 			title: {
-				text: 'State Distribution',
-				subtext: 'Current Backlog',
+				text: `${sprintName} Readiness`,
+				subtext: sprintName,
 				left: 'center',
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc',
@@ -73,13 +90,14 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loadi
 				bottom: 10,
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc'
-				}
+				},
+				data: [...data.map(d => d.state), ...(blockedData.length > 0 ? blockedData.map(d => d.status) : [])]
 			},
 			series: [
 				{
 					name: 'State',
 					type: 'pie',
-					radius: ['40%', '70%'], // Donut chart
+					radius: ['35%', '55%'],
 					avoidLabelOverlap: false,
 					center: ['50%', '50%'],
 					label: {
@@ -107,7 +125,37 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loadi
 						}
 					},
 					data: chartData
-				}
+				},
+				...(blockedData.length > 0
+					? [
+							{
+								name: 'Blocked Status',
+								type: 'pie',
+								radius: ['58%', '75%'],
+								avoidLabelOverlap: false,
+								center: ['50%', '50%'],
+								label: {
+									show: false
+								},
+								emphasis: {
+									label: {
+										show: true,
+										fontSize: 12,
+										fontWeight: 'bold'
+									},
+									itemStyle: {
+										shadowBlur: 10,
+										shadowOffsetX: 0,
+										shadowColor: 'rgba(0, 0, 0, 0.5)'
+									}
+								},
+								labelLine: {
+									show: false
+								},
+								data: blockedChartData
+							}
+						]
+					: [])
 			]
 		};
 
@@ -122,7 +170,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loadi
 		return () => {
 			window.removeEventListener('resize', handleResize);
 		};
-	}, [data, loading]);
+	}, [data, blockedData, sprintName, loading]);
 
 	// Cleanup on unmount
 	useEffect(() => {
@@ -142,7 +190,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loadi
 					border: '1px solid var(--vscode-panel-border)',
 					borderRadius: '12px',
 					padding: '20px',
-					height: '350px',
+					height: '400px',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
@@ -162,7 +210,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loadi
 					border: '1px solid var(--vscode-panel-border)',
 					borderRadius: '12px',
 					padding: '20px',
-					height: '350px',
+					height: '400px',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
@@ -183,7 +231,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, loadi
 				padding: '20px'
 			}}
 		>
-			<div ref={chartRef} style={{ width: '100%', height: '350px' }} />
+			<div ref={chartRef} style={{ width: '100%', height: '400px' }} />
 		</div>
 	);
 };

@@ -23,7 +23,7 @@ async function inspectHolidayData() {
 			console.log(`  Date: ${holiday.date}`);
 			console.log(`  Name: ${holiday.name}`);
 			console.log(`  Type: ${holiday.type || 'N/A'}`);
-			console.log(`  County Code: ${holiday.countryCode || 'N/A'}`);
+			console.log(`  Country Code: ${holiday.countryCode || 'N/A'}`);
 			console.log(`  All properties: ${JSON.stringify(Object.keys(holiday))}`);
 			console.log(`  Full object: ${JSON.stringify(holiday, null, 2)}\n`);
 		});

@@ -711,6 +711,31 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								}
 							}
 							break;
+						case 'loadHolidaysForYear':
+							try {
+								const year = message.year || new Date().getFullYear();
+								const country = message.country || 'ES';
+								this._errorHandler.logInfo(`Loading holidays for year ${year} (${country})`, 'WebviewMessageListener');
+
+								const holidayService = HolidayService.getInstance();
+								const holidays = await holidayService.getHolidays(year, country);
+
+								webview.postMessage({
+									command: 'holidaysLoaded',
+									holidays: holidays || [],
+									year: year,
+									country: country
+								});
+								this._errorHandler.logDebug(`Holidays loaded for ${year}: ${(holidays || []).length} holidays`, 'WebviewMessageListener');
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadHolidaysForYear');
+								webview.postMessage({
+									command: 'holidaysError',
+									error: 'Failed to load holidays',
+									year: message.year
+								});
+							}
+							break;
 						case 'loadUserStories':
 							try {
 								this._errorHandler.logInfo('Loading user stories from Rally API', 'WebviewMessageListener');

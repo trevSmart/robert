@@ -20,6 +20,7 @@ import {
 	getTaskWithParent,
 	getTestCaseWithParent
 } from './libs/rally/rallyServices';
+import { HolidayService } from './libs/holidayService';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
@@ -662,20 +663,28 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 								this._errorHandler.logDebug('Webview received loadIterations command', 'RobertWebviewProvider');
 
-								// Load iterations and current user in parallel
-								const [iterationsResult, userResult] = await Promise.all([getIterations(), getCurrentUser()]);
+								// Load iterations, current user, and holidays (lazy) in parallel
+								const holidayService = HolidayService.getInstance();
+								const currentYear = new Date().getFullYear();
+								const [iterationsResult, userResult, holidays] = await Promise.all([
+									getIterations(),
+									getCurrentUser(),
+									holidayService.getHolidays(currentYear, 'ES') // Load Spanish holidays for current year
+								]);
 
 								if (iterationsResult?.iterations) {
 									webview.postMessage({
 										command: 'iterationsLoaded',
 										iterations: iterationsResult.iterations,
 										debugMode: this._isDebugMode,
-										currentUser: userResult?.user || null
+										currentUser: userResult?.user || null,
+										holidays: holidays || [] // Include holidays in the message
 									});
 									this._errorHandler.logInfo(`Iterations loaded successfully: ${iterationsResult.count} iterations`, 'WebviewMessageListener');
 									if (userResult?.user) {
 										this._errorHandler.logInfo(`Current user loaded: ${userResult.user.displayName || userResult.user.userName}`, 'WebviewMessageListener');
 									}
+									this._errorHandler.logDebug(`Holidays loaded: ${(holidays || []).length} holidays for ${currentYear}`, 'WebviewMessageListener');
 								} else {
 									webview.postMessage({
 										command: 'iterationsError',

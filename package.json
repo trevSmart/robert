@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.1.87",
+	"version": "0.1.104",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -110,6 +110,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Automatically connect to collaboration server on startup"
+				},
+				"robert.showOutputChannelOnStartup": {
+					"type": "boolean",
+					"default": false,
+					"description": "Show the Robert output channel when the extension starts up"
 				}
 			}
 		},

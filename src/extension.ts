@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
 import { RobertWebviewProvider } from './RobertWebviewProvider';
+import { SettingsManager } from './SettingsManager';
 import type { RallyData } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
 import { clearAllRallyCaches } from './libs/rally/rallyServices';
@@ -90,10 +91,16 @@ export function activate(context: vscode.ExtensionContext) {
 	const errorHandler = ErrorHandler.getInstance();
 	outputManager.appendLine('[Robert] ✅ ErrorHandler initialized successfully');
 
-	// Auto-show output channel if debug mode is enabled
-	if (isDebugMode) {
-		outputManager.appendLine('[Robert] 🐛 Debug mode enabled - showing output channel');
+	// Get settings manager to check if should show output channel on startup
+	const settingsManager = SettingsManager.getInstance();
+	const showOutputOnStartup = settingsManager.getSetting('showOutputChannelOnStartup');
+
+	// Auto-show output channel if setting is enabled
+	if (showOutputOnStartup) {
+		outputManager.appendLine('[Robert] 📺 Showing output channel on startup (showOutputChannelOnStartup setting enabled)');
 		outputManager.show();
+	} else if (isDebugMode) {
+		outputManager.appendLine('[Robert] 🐛 Debug mode enabled (output channel not shown - enable showOutputChannelOnStartup setting to change this)');
 	}
 
 	// Register the webview provider for activity bar

@@ -14,6 +14,7 @@ export interface RobertSettings {
 	collaborationServerUrl: string;
 	collaborationEnabled: boolean;
 	collaborationAutoConnect: boolean;
+	showOutputChannelOnStartup: boolean;
 }
 
 export class SettingsManager {
@@ -51,11 +52,9 @@ export class SettingsManager {
 					rallyProjectName: config.get<string>('rallyProjectName', ''),
 					collaborationServerUrl: config.get<string>('collaboration.serverUrl', 'http://localhost:3001'),
 					collaborationEnabled: config.get<boolean>('collaboration.enabled', false),
-					collaborationAutoConnect: config.get<boolean>('collaboration.autoConnect', true)
+					collaborationAutoConnect: config.get<boolean>('collaboration.autoConnect', true),
+					showOutputChannelOnStartup: config.get<boolean>('showOutputChannelOnStartup', false)
 				};
-
-				this._errorHandler.logInfo('Settings retrieved from VS Code configuration', 'SettingsManager.getSettings');
-				return settings;
 			}, 'SettingsManager.getSettings') || this.getDefaultSettings()
 		);
 	}
@@ -104,6 +103,9 @@ export class SettingsManager {
 			if (settings.collaborationAutoConnect !== undefined) {
 				await config.update('collaboration.autoConnect', settings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
 			}
+			if (settings.showOutputChannelOnStartup !== undefined) {
+				await config.update('showOutputChannelOnStartup', settings.showOutputChannelOnStartup, vscode.ConfigurationTarget.Global);
+			}
 
 			this._errorHandler.logInfo('Settings saved to VS Code configuration', 'SettingsManager.saveSettings');
 		}, 'SettingsManager.saveSettings');
@@ -130,7 +132,7 @@ export class SettingsManager {
 			await config.update('collaboration.serverUrl', defaultSettings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.enabled', defaultSettings.collaborationEnabled, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.autoConnect', defaultSettings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
-
+			await config.update('showOutputChannelOnStartup', defaultSettings.showOutputChannelOnStartup, vscode.ConfigurationTarget.Global);
 			this._errorHandler.logInfo('Settings reset to default values', 'SettingsManager.resetSettings');
 		}, 'SettingsManager.resetSettings');
 	}
@@ -176,7 +178,7 @@ export class SettingsManager {
 			} else if (key === 'collaborationAutoConnect') {
 				await config.update('collaboration.autoConnect', value, vscode.ConfigurationTarget.Global);
 			} else {
-				await config.update(key, value, vscode.ConfigurationTarget.Global);
+				await config.update(key as string, value, vscode.ConfigurationTarget.Global);
 			}
 
 			this._errorHandler.logInfo(`Setting ${key} updated to ${value}`, 'SettingsManager.updateSetting');
@@ -199,7 +201,8 @@ export class SettingsManager {
 			rallyProjectName: '',
 			collaborationServerUrl: 'http://localhost:3001',
 			collaborationEnabled: false,
-			collaborationAutoConnect: true
+			collaborationAutoConnect: true,
+			showOutputChannelOnStartup: false
 		};
 	}
 

@@ -632,9 +632,8 @@ const PortfolioViewSelector: FC<{
 	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number) => {
 		const lightTheme = isLightTheme();
 		return {
-			padding: '12px 20px',
+			padding: '10px 20px',
 			border: 'none',
-			borderRight: index < totalTabs - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
 			borderBottom: isActive
 				? lightTheme
 					? '2px solid #007acc' // Blau més fosc i visible per temes clars
@@ -1318,11 +1317,23 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					const isSprintContext = message.iteration !== null && message.iteration !== undefined;
 
 					if (isSprintContext) {
-						// Sprint Detail context - update sprint state
+						// Sprint Detail context - update sprint state (could be for readiness chart or table)
 						setSprintUserStoriesLoading(false);
 						if (message.userStories) {
 							setSprintUserStories(message.userStories);
 							setUserStoriesError(null);
+
+							// Also update readiness chart if this was loaded for the readiness chart
+							if (activeSection === 'metrics') {
+								const stateDistrib = groupByState(message.userStories);
+								setStateDistribution(stateDistrib);
+
+								// Calculate blocked distribution for the same sprint
+								const blockedDistrib = groupByBlockedStatus(message.userStories);
+								setBlockedDistribution(blockedDistrib);
+
+								setStateDistributionLoading(false);
+							}
 						}
 					} else {
 						// Portfolio All User Stories context - update portfolio state
@@ -1556,21 +1567,19 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				if (targetIteration) {
 					displayName = targetIteration.name;
 					setNextSprintName(targetIteration.name);
-					const nextSprintStories = portfolioUserStories.filter(story => story.iteration === targetIteration.name);
-					const stateDistrib = groupByState(nextSprintStories);
-					setStateDistribution(stateDistrib);
-
-					// Calculate blocked distribution for the same sprint
-					const blockedDistrib = groupByBlockedStatus(nextSprintStories);
-					setBlockedDistribution(blockedDistrib);
+					// Load stories specifically for this sprint to ensure we get all stories, not just cached ones
+					sendMessage({
+						command: 'loadUserStories',
+						iteration: targetIteration._ref
+					});
 				} else {
 					setNextSprintName('No Sprint');
 					setStateDistribution([]);
 					setBlockedDistribution([]);
+					setStateDistributionLoading(false);
 				}
 			} catch (error) {
 				console.error('Error calculating state distribution:', error);
-			} finally {
 				setStateDistributionLoading(false);
 			}
 		})();
@@ -2022,7 +2031,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 																			<div
 																				key={member.name}
 																				style={{
-																					backgroundColor: '#1e1e1e',
+																					backgroundColor: 'var(--vscode-editor-background)',
 																					border: '1px solid var(--vscode-panel-border)',
 																					borderRadius: '8px',
 																					padding: '12px',
@@ -2141,7 +2150,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 																			<div
 																				key={member.name}
 																				style={{
-																					backgroundColor: '#1e1e1e',
+																					backgroundColor: 'var(--vscode-editor-background)',
 																					border: '1px solid var(--vscode-panel-border)',
 																					borderRadius: '8px',
 																					padding: '12px',

@@ -338,6 +338,48 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		}, 'showMainViewInCurrentView');
 	}
 
+	public async createLoadingPanel(): Promise<vscode.WebviewPanel> {
+		return (
+			(await this._errorHandler.executeWithErrorHandling(async () => {
+				// If panel already exists and is visible, reveal it
+				if (this._currentPanel) {
+					this._currentPanel.reveal(vscode.ViewColumn.One);
+					return this._currentPanel;
+				}
+
+				const loadingTitle = this._isDebugMode ? 'Robert — Loading — DEBUG' : 'Robert — Loading';
+				const panel = vscode.window.createWebviewPanel('robert.loading', loadingTitle, vscode.ViewColumn.One, {
+					enableScripts: true,
+					localResourceRoots: [this._extensionUri]
+				});
+
+				this._currentPanel = panel;
+				this._errorHandler.logViewCreation('Loading Panel', 'RobertWebviewProvider.createLoadingPanel');
+
+				const loadingHtml = await this._getHtmlForLoading(panel.webview);
+				panel.webview.html = loadingHtml;
+
+				// Handle messages from loading screen
+				this._setLoadingScreenMessageListener(panel.webview);
+
+				panel.onDidDispose(
+					() => {
+						this._errorHandler.logViewDestruction('Loading Panel', 'RobertWebviewProvider.createLoadingPanel');
+						this._currentPanel = undefined;
+					},
+					undefined,
+					this._disposables
+				);
+
+				return panel;
+			}, 'createLoadingPanel')) ||
+			vscode.window.createWebviewPanel('robert.loading', this._isDebugMode ? 'Robert — Loading — DEBUG' : 'Robert — Loading', vscode.ViewColumn.One, {
+				enableScripts: true,
+				localResourceRoots: [this._extensionUri]
+			})
+		);
+	}
+
 	public async createLogoPanel(): Promise<vscode.WebviewPanel> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
@@ -374,6 +416,16 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				enableScripts: false,
 				localResourceRoots: [this._extensionUri]
 			})
+		);
+	}
+
+	private async _getHtmlForLoading(webview: vscode.Webview): Promise<string> {
+		return (
+			(await this._errorHandler.executeWithErrorHandling(async () => {
+				this._errorHandler.logInfo('Loading webview content rendered', 'RobertWebviewProvider._getHtmlForLoading');
+				const videoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'video.mp4'));
+				return fs.readFileSync(path.join(this._extensionUri.fsPath, 'src', 'webview', 'loading.html'), 'utf8').replace('__VIDEO_URI__', videoUri.toString());
+			}, 'getHtmlForLoading')) || '<html><body><p>Error loading loading screen</p></body></html>'
 		);
 	}
 
@@ -461,6 +513,48 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			"base-uri 'self'"
 		].join('; ');
 		return `<meta http-equiv="Content-Security-Policy" content="${csp}">`;
+	}
+
+	private _setLoadingScreenMessageListener(webview: vscode.Webview) {
+		this._errorHandler.logInfo('Setting up message listener for loading screen', 'LoadingScreenMessageListener');
+		webview.onDidReceiveMessage(
+			async message => {
+				await this._errorHandler.executeWithErrorHandling(async () => {
+					this._errorHandler.logDebug(`Loading screen message received: ${message.command}`, 'LoadingScreenMessageListener');
+
+					switch (message.command) {
+						case 'loadingScreenReady':
+							this._errorHandler.logInfo('Loading screen is ready', 'LoadingScreenMessageListener');
+							break;
+						case 'videoLoadingComplete':
+							this._errorHandler.logInfo('Video playback completed - dismissing loading screen', 'LoadingScreenMessageListener');
+							// Close loading panel and show main view
+							if (this._currentPanel) {
+								this._currentPanel.dispose();
+								this._currentPanel = undefined;
+							}
+							// Show the main view
+							await this.showMainPanelIfHidden();
+							break;
+						case 'videoLoadingError':
+						case 'videoPlaybackError':
+							this._errorHandler.logWarning(`Video playback failed: ${message.error || message.message}`, 'LoadingScreenMessageListener');
+							// Close loading panel and show main view anyway
+							if (this._currentPanel) {
+								this._currentPanel.dispose();
+								this._currentPanel = undefined;
+							}
+							await this.showMainPanelIfHidden();
+							break;
+						default:
+							this._errorHandler.logWarning(`Unknown loading screen message: ${message.command}`, 'LoadingScreenMessageListener');
+							break;
+					}
+				}, 'LoadingScreenMessageListener');
+			},
+			undefined,
+			this._disposables
+		);
 	}
 
 	private _setWebviewMessageListener(webview: vscode.Webview, webviewId?: string) {

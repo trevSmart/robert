@@ -542,7 +542,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>User Story</th>
 								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '200px', color: themeColors.foreground }}>Request</th>
 								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Requester</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '150px', color: themeColors.foreground }}>Qui l&apos;atén</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '150px', color: themeColors.foreground }}>Assignee</th>
 								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>Status</th>
 								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 600, minWidth: '140px', color: themeColors.foreground }}>Actions</th>
 							</tr>

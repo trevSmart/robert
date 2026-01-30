@@ -59,7 +59,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	// Calcula fontSize suau per números de dia
 	function getDayNumberFontSize(cellWidth: number) {
 		const min = 10; // px
-		const max = 15; // px
+		const max = 14; // px
 		const minWidth = 50; // Cell width at which font is at min size
 		const maxWidth = 150; // Cell width at which font is at max size
 
@@ -788,7 +788,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					overflow: 'hidden',
-					maxWidth: '96%',
+					maxWidth: '980px',
 					margin: '0 auto'
 				}}
 			>
@@ -997,7 +997,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												style={{
 													height: getSprintBarHeight(calendarGridWidth) + 'px',
 													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-													filter: lightTheme ? 'saturate(68%) brightness(140%) contrast(85%)' : 'saturate(58%) brightness(70%) contrast(85%)',
+													filter: lightTheme ? 'saturate(68%) brightness(170%) contrast(85%)' : 'saturate(58%) brightness(70%) contrast(85%)',
 													opacity: 1,
 													transition: 'opacity 0.2s ease',
 													borderTopLeftRadius: isFirstDay ? '4px' : '0',

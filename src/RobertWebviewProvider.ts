@@ -1197,9 +1197,26 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'requestUserStorySupport':
 							try {
 								this._errorHandler.logInfo(`Requesting support for user story: ${message.userStoryId}`, 'WebviewMessageListener');
+
+								// Build detailed help request message
+								const description = message.description ? message.description.substring(0, 200) : 'No description available';
+								const completedTasks = message.tasksCount > 0 ? `${message.tasksCount} task(s) defined` : 'No tasks yet';
+								const estimateInfo = message.planEstimate ? `${message.planEstimate} points` : 'Not estimated';
+								const hoursInfo = message.taskEstimateTotal ? `${message.taskEstimateTotal}h estimated` : '';
+
+								let messageContent = `🆘 **Support Request**\n\n`;
+								messageContent += `**User Story:** ${message.userStoryId} - ${message.userStoryName}\n`;
+								messageContent += `**Project:** ${message.project || 'N/A'}\n`;
+								messageContent += `**Sprint:** ${message.iteration || 'Unscheduled'}\n`;
+								messageContent += `**State:** ${message.scheduleState || 'New'}\n`;
+								messageContent += `**Estimate:** ${estimateInfo}${hoursInfo ? ` (${hoursInfo})` : ''}\n`;
+								messageContent += `**Tasks:** ${completedTasks}\n`;
+								messageContent += `**Description:** ${description}${message.description && message.description.length > 200 ? '...' : ''}\n\n`;
+								messageContent += `I need help with this user story. Can someone provide assistance or guidance?`;
+
 								const supportMessage = await this._collaborationClient.createMessage({
 									userStoryId: message.userStoryId,
-									content: `🆘 **Support Request**\n\n**User Story:** ${message.userStoryId} - ${message.userStoryName}\n\nI need help with this user story. Can someone provide assistance or guidance?`
+									content: messageContent
 								});
 								webview.postMessage({
 									command: 'supportRequestCreated',

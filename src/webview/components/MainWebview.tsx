@@ -792,6 +792,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoryDiscussionsLoading, setUserStoryDiscussionsLoading] = useState(false);
 	const [userStoryDiscussionsError, setUserStoryDiscussionsError] = useState<string | null>(null);
 
+	// Collaboration help requests count
+	const [collaborationHelpRequestsCount, setCollaborationHelpRequestsCount] = useState(0);
+
 	// Team members state
 	// Team members state
 	const [teamMembers, setTeamMembers] = useState<
@@ -1802,7 +1805,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		<Container>
 			<GlobalStyle />
 			<CenteredContainer>
-				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} />
+				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} />
 
 				<ContentArea noPaddingTop={activeSection === 'portfolio'}>
 					{activeSection === 'search' && (
@@ -2422,7 +2425,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						</div>
 					)}
 
-					{activeSection === 'collaboration' && <CollaborationView selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} />}
+					{activeSection === 'collaboration' && <CollaborationView selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />}
 
 					{/* Tutorial Content */}
 					{selectedTutorial && (

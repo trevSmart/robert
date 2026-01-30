@@ -2,6 +2,15 @@ import React, { FC, useState, useEffect, useCallback, useMemo } from 'react';
 import { getVsCodeApi } from '../../utils/vscodeApi';
 import { isLightTheme } from '../../utils/themeColors';
 
+interface MessageAttendee {
+	id: string;
+	messageId: string;
+	userId: string;
+	displayName: string;
+	rallyUserId: string;
+	createdAt: string;
+}
+
 interface Message {
 	id: string;
 	userId: string;
@@ -15,6 +24,7 @@ interface Message {
 		rallyUserId: string;
 	};
 	replies?: MessageReply[];
+	attendees?: MessageAttendee[];
 }
 
 interface MessageReply {
@@ -29,39 +39,18 @@ interface MessageReply {
 	};
 }
 
-interface Notification {
-	id: string;
-	userId: string;
-	messageId?: string;
-	type: 'new_message' | 'reply' | 'resolved';
-	read: boolean;
-	createdAt: string;
-	message?: {
-		id: string;
-		userStoryId: string;
-		content: string;
-		user?: {
-			displayName: string;
-		};
-	};
-}
-
 interface CollaborationViewProps {
 	selectedUserStoryId?: string | null;
+	onHelpRequestsCountChange?: (count: number) => void;
 }
 
-const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) => {
+const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, onHelpRequestsCountChange }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [messagesLoading, setMessagesLoading] = useState(false);
 	const [messagesError, setMessagesError] = useState<string | null>(null);
-	const [notifications, setNotifications] = useState<Notification[]>([]);
-	const [unreadCount, setUnreadCount] = useState(0);
-	const [selectedUserStoryFilter, setSelectedUserStoryFilter] = useState<string | null>(selectedUserStoryId || null);
-	const [newMessageContent, setNewMessageContent] = useState('');
-	const [newMessageUserStoryId, setNewMessageUserStoryId] = useState('');
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
-	const [replyContents, setReplyContents] = useState<Map<string, string>>(new Map());
+	const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
 	const sendMessage = useCallback(
 		(message: Record<string, unknown>) => {
@@ -71,118 +60,31 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 		[vscode]
 	);
 
-	// Send load messages command (does not set loading state - caller handles that)
-	const sendLoadMessagesCommand = useCallback(
-		(userStoryId: string) => {
-			sendMessage({
-				command: 'loadCollaborationMessages',
-				userStoryId
-			});
-		},
-		[sendMessage]
-	);
-
-	// Full load messages with loading state management (for user-triggered loads)
-	const loadMessages = useCallback(
-		(userStoryId: string | null) => {
-			if (!userStoryId) {
-				setMessages([]);
-				return;
-			}
-
-			setMessagesLoading(true);
-			setMessagesError(null);
-			sendLoadMessagesCommand(userStoryId);
-		},
-		[sendLoadMessagesCommand]
-	);
-
-	const loadNotifications = useCallback(() => {
+	// Load all messages on mount
+	const loadAllMessages = useCallback(() => {
+		setMessagesLoading(true);
+		setMessagesError(null);
 		sendMessage({
-			command: 'loadCollaborationNotifications'
+			command: 'loadCollaborationMessages'
 		});
 	}, [sendMessage]);
 
-	const createMessage = useCallback(() => {
-		if (!newMessageContent.trim() || !newMessageUserStoryId.trim()) {
-			return;
-		}
-
+	// Initial load
+	useEffect(() => {
+		// Send messages to load data
 		sendMessage({
-			command: 'createCollaborationMessage',
-			userStoryId: newMessageUserStoryId,
-			content: newMessageContent.trim()
+			command: 'loadCollaborationMessages'
 		});
-
-		setNewMessageContent('');
-		setNewMessageUserStoryId('');
-	}, [newMessageContent, newMessageUserStoryId, sendMessage]);
-
-	const createReply = useCallback(
-		(messageId: string) => {
-			const replyContent = replyContents.get(messageId);
-			if (!replyContent || !replyContent.trim()) {
-				return;
-			}
-
-			sendMessage({
-				command: 'createCollaborationMessageReply',
-				messageId,
-				content: replyContent.trim()
-			});
-
-			const newReplyContents = new Map(replyContents);
-			newReplyContents.delete(messageId);
-			setReplyContents(newReplyContents);
-		},
-		[replyContents, sendMessage]
-	);
-
-	const markNotificationAsRead = useCallback(
-		(notificationId: string) => {
-			sendMessage({
-				command: 'markCollaborationNotificationAsRead',
-				notificationId
-			});
-		},
-		[sendMessage]
-	);
-
-	const markAllNotificationsAsRead = useCallback(() => {
-		sendMessage({
-			command: 'markAllCollaborationNotificationsAsRead'
-		});
+		sendMessage({ command: 'getRallyCurrentUser' });
 	}, [sendMessage]);
 
-	const toggleMessageExpanded = useCallback((messageId: string) => {
-		setExpandedMessages(prev => {
-			const next = new Set(prev);
-			if (next.has(messageId)) {
-				next.delete(messageId);
-			} else {
-				next.add(messageId);
-			}
-			return next;
-		});
+	// Set loading state when component mounts
+	useEffect(() => {
+		setMessagesLoading(true);
+		setMessagesError(null);
 	}, []);
 
-	// Handle selectedUserStoryId prop changes by syncing filter state and loading messages
-	// This is a legitimate use case for setState in effect: syncing derived state from props
-
-	useEffect(() => {
-		if (selectedUserStoryId) {
-			// eslint-disable-next-line react-hooks/set-state-in-effect -- Syncing prop to local state is a valid pattern
-			setSelectedUserStoryFilter(selectedUserStoryId);
-			loadMessages(selectedUserStoryId);
-		}
-	}, [selectedUserStoryId, loadMessages]);
-
-	useEffect(() => {
-		loadNotifications();
-		const interval = setInterval(loadNotifications, 30000); // Refresh every 30 seconds
-		return () => clearInterval(interval);
-	}, [loadNotifications]);
-
+	// Handle messages from extension
 	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data;
@@ -194,50 +96,48 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 					break;
 
 				case 'collaborationMessagesError':
-					setMessagesError(message.error || 'Failed to load messages');
+					setMessagesError(message.error);
 					setMessagesLoading(false);
 					break;
 
-				case 'collaborationNotificationsLoaded':
-					setNotifications(message.notifications || []);
-					setUnreadCount(message.unreadCount || 0);
-					break;
-
 				case 'collaborationMessageCreated':
-					if (message.message) {
-						setMessages(prev => [message.message, ...prev]);
-						loadMessages(selectedUserStoryFilter);
+				case 'supportRequestCreated':
+					// Reload all messages when a new one is created
+					loadAllMessages();
+					break;
+
+				case 'supportRequestError':
+					// Handle support request error
+					setMessagesError(message.error);
+					break;
+
+				case 'collaborationMessageAttended':
+					// Update the specific message with new attendee
+					setMessages(prev => prev.map(msg => (msg.id === message.messageId ? { ...msg, attendees: [...(msg.attendees || []), message.attendee] } : msg)));
+					break;
+
+				case 'collaborationMessageUnattended':
+					// Remove attendee from the message
+					setMessages(prev => prev.map(msg => (msg.id === message.messageId ? { ...msg, attendees: (msg.attendees || []).filter(a => a.userId !== currentUserId) } : msg)));
+					break;
+
+				case 'rallyCurrentUser':
+					if (message.user && message.user.ObjectID) {
+						setCurrentUserId(message.user.ObjectID);
 					}
-					break;
-
-				case 'collaborationMessageReplyCreated':
-					if (message.reply) {
-						setMessages(prev => prev.map(msg => (msg.id === message.reply.messageId ? { ...msg, replies: [...(msg.replies || []), message.reply] } : msg)));
-					}
-					break;
-
-				case 'collaborationNotificationMarkedAsRead':
-					setNotifications(prev => prev.map(notif => (notif.id === message.notificationId ? { ...notif, read: true } : notif)));
-					setUnreadCount(prev => Math.max(0, prev - 1));
-					break;
-
-				case 'collaborationNotificationsMarkedAsRead':
-					setNotifications(prev => prev.map(notif => ({ ...notif, read: true })));
-					setUnreadCount(0);
 					break;
 
 				case 'collaborationNewMessage':
+					// Real-time message added via websocket
 					if (message.message) {
-						if (message.message.userStoryId === selectedUserStoryFilter) {
-							setMessages(prev => [message.message, ...prev]);
-						}
+						setMessages(prev => [message.message, ...prev]);
 					}
 					break;
 
-				case 'collaborationNewNotification':
-					if (message.notification) {
-						setNotifications(prev => [message.notification, ...prev]);
-						setUnreadCount(prev => prev + 1);
+				case 'collaborationMessageUpdate':
+					// Message updated via websocket
+					if (message.message) {
+						setMessages(prev => prev.map(msg => (msg.id === message.message.id ? message.message : msg)));
 					}
 					break;
 			}
@@ -245,16 +145,130 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [selectedUserStoryFilter, loadMessages]);
+	}, [currentUserId, loadAllMessages]);
 
-	const filteredMessages = useMemo(() => {
-		if (!selectedUserStoryFilter) {
-			return messages;
+	// Calculate help requests count and notify parent
+	const helpRequestsCount = useMemo(() => {
+		return messages.filter(msg => msg.content.includes('🆘') || msg.content.includes('Support Request')).length;
+	}, [messages]);
+
+	useEffect(() => {
+		if (onHelpRequestsCountChange) {
+			onHelpRequestsCountChange(helpRequestsCount);
 		}
-		return messages.filter(msg => msg.userStoryId === selectedUserStoryFilter);
-	}, [messages, selectedUserStoryFilter]);
+	}, [helpRequestsCount, onHelpRequestsCountChange]);
+
+	const toggleExpanded = useCallback((messageId: string) => {
+		setExpandedMessages(prev => {
+			const next = new Set(prev);
+			if (next.has(messageId)) {
+				next.delete(messageId);
+			} else {
+				next.add(messageId);
+			}
+			return next;
+		});
+	}, []);
+
+	const handleAttend = useCallback(
+		(messageId: string) => {
+			sendMessage({
+				command: 'attendCollaborationMessage',
+				messageId
+			});
+		},
+		[sendMessage]
+	);
+
+	const handleUnattend = useCallback(
+		(messageId: string) => {
+			sendMessage({
+				command: 'unattendCollaborationMessage',
+				messageId
+			});
+		},
+		[sendMessage]
+	);
+
+	const isUserAttending = useCallback(
+		(message: Message): boolean => {
+			if (!currentUserId || !message.attendees) return false;
+			return message.attendees.some(a => a.userId === currentUserId);
+		},
+		[currentUserId]
+	);
 
 	const lightTheme = isLightTheme();
+
+	// Extract summary from message content (first line or first 100 chars)
+	const getMessageSummary = (content: string): string => {
+		const firstLine = content.split('\n')[0];
+		if (firstLine.length > 100) {
+			return firstLine.substring(0, 100) + '...';
+		}
+		return firstLine;
+	};
+
+	const isHelpRequest = (msg: Message): boolean => {
+		return msg.content.includes('🆘') || msg.content.includes('Support Request');
+	};
+
+	/* SECURITY FIX - Commented out for now, to be enabled when image rendering is re-added
+	 * This function renders message content with secure image handling.
+	 * It only renders images from data: URIs to prevent tracking/data exfiltration risks.
+	 * Remote URLs (https:) are rendered as plain text instead of auto-loading images.
+	 */
+	/*
+	const renderMessageContentSecure = (content: string): (string | JSX.Element)[] => {
+		const parts: (string | JSX.Element)[] = [];
+		const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+		let lastIndex = 0;
+		let match: RegExpExecArray | null;
+
+		while ((match = imageRegex.exec(content)) !== null) {
+			// Add text before the image
+			if (match.index > lastIndex) {
+				parts.push(content.substring(lastIndex, match.index));
+			}
+
+			const imageUrl = match[2];
+			const trimmedUrl = imageUrl.trim();
+
+			// Only render images for safe URLs (restrict to data: URIs).
+			// For other URLs, fall back to rendering the original markdown text
+			// to avoid auto-loading remote images in the webview.
+			if (trimmedUrl.toLowerCase().startsWith('data:')) {
+				parts.push(
+					<img
+						key={`img-${match.index}`}
+						src={trimmedUrl}
+						alt={match[1] || 'Image'}
+						style={{
+							maxWidth: '100%',
+							maxHeight: '300px',
+							borderRadius: '4px',
+							marginTop: '8px',
+							marginBottom: '8px',
+							display: 'block'
+						}}
+					/>
+				);
+			} else {
+				// Unsafe image URL: render the original markdown text instead of an <img>.
+				parts.push(match[0]);
+			}
+
+			lastIndex = match.index + match[0].length;
+		}
+
+		// Add remaining text
+		if (lastIndex < content.length) {
+			parts.push(content.substring(lastIndex));
+		}
+
+		return parts.length > 0 ? parts : [content];
+	};
+	*/
 
 	return (
 		<div
@@ -272,161 +286,26 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 					marginBottom: '20px'
 				}}
 			>
-				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Collaboration</h2>
-				{unreadCount > 0 && (
-					<button
-						onClick={markAllNotificationsAsRead}
-						style={{
-							padding: '6px 12px',
-							borderRadius: '4px',
-							border: 'none',
-							backgroundColor: lightTheme ? '#007acc' : 'var(--vscode-button-background)',
-							color: lightTheme ? '#fff' : 'var(--vscode-button-foreground)',
-							cursor: 'pointer',
-							fontSize: '12px'
-						}}
-					>
-						Mark all as read ({unreadCount})
-					</button>
-				)}
-			</div>
-
-			{/* Notifications Section */}
-			{notifications.length > 0 && (
-				<div
+				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Sol·licituds de Col·laboració</h2>
+				<button
+					onClick={loadAllMessages}
+					disabled={messagesLoading}
 					style={{
-						marginBottom: '30px',
-						padding: '16px',
-						backgroundColor: lightTheme ? '#f5f5f5' : 'var(--vscode-editor-background)',
-						borderRadius: '6px',
-						border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`
+						padding: '6px 12px',
+						borderRadius: '4px',
+						border: 'none',
+						backgroundColor: lightTheme ? '#007acc' : 'var(--vscode-button-background)',
+						color: lightTheme ? '#fff' : 'var(--vscode-button-foreground)',
+						cursor: messagesLoading ? 'not-allowed' : 'pointer',
+						fontSize: '12px',
+						opacity: messagesLoading ? 0.6 : 1
 					}}
 				>
-					<h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600 }}>Notifications</h3>
-					<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-						{notifications.slice(0, 5).map(notif => (
-							<div
-								key={notif.id}
-								onClick={() => !notif.read && markNotificationAsRead(notif.id)}
-								style={{
-									padding: '10px',
-									backgroundColor: notif.read ? 'transparent' : lightTheme ? '#e3f2fd' : 'var(--vscode-list-activeSelectionBackground)',
-									borderRadius: '4px',
-									cursor: notif.read ? 'default' : 'pointer',
-									fontSize: '12px'
-								}}
-							>
-								<div style={{ fontWeight: notif.read ? 400 : 600 }}>
-									{notif.type === 'new_message' && 'New message'}
-									{notif.type === 'reply' && 'New reply'}
-									{notif.type === 'resolved' && 'Message resolved'}
-								</div>
-								{notif.message && (
-									<div style={{ marginTop: '4px', color: 'var(--vscode-descriptionForeground)' }}>
-										{notif.message.content.substring(0, 100)}
-										{notif.message.content.length > 100 ? '...' : ''}
-									</div>
-								)}
-							</div>
-						))}
-					</div>
-				</div>
-			)}
-
-			{/* Filter Section */}
-			<div
-				style={{
-					marginBottom: '20px',
-					padding: '12px',
-					backgroundColor: lightTheme ? '#f5f5f5' : 'var(--vscode-editor-background)',
-					borderRadius: '6px'
-				}}
-			>
-				<label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600 }}>Filter by User Story ID:</label>
-				<input
-					type="text"
-					value={selectedUserStoryFilter || ''}
-					onChange={e => {
-						const value = e.target.value.trim() || null;
-						setSelectedUserStoryFilter(value);
-						loadMessages(value);
-					}}
-					placeholder="Enter User Story ID (e.g., US123)"
-					style={{
-						width: '100%',
-						padding: '8px',
-						borderRadius: '4px',
-						border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-input-border)'}`,
-						backgroundColor: lightTheme ? '#fff' : 'var(--vscode-input-background)',
-						color: 'var(--vscode-input-foreground)',
-						fontSize: '12px'
-					}}
-				/>
+					{messagesLoading ? 'Carregant...' : 'Actualitzar'}
+				</button>
 			</div>
 
-			{/* Create New Message Section */}
-			<div
-				style={{
-					marginBottom: '30px',
-					padding: '16px',
-					backgroundColor: lightTheme ? '#f5f5f5' : 'var(--vscode-editor-background)',
-					borderRadius: '6px',
-					border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`
-				}}
-			>
-				<h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600 }}>New Message</h3>
-				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-					<input
-						type="text"
-						value={newMessageUserStoryId}
-						onChange={e => setNewMessageUserStoryId(e.target.value)}
-						placeholder="User Story ID (e.g., US123)"
-						style={{
-							padding: '8px',
-							borderRadius: '4px',
-							border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-input-border)'}`,
-							backgroundColor: lightTheme ? '#fff' : 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							fontSize: '12px'
-						}}
-					/>
-					<textarea
-						value={newMessageContent}
-						onChange={e => setNewMessageContent(e.target.value)}
-						placeholder="Enter your question or message..."
-						rows={4}
-						style={{
-							padding: '8px',
-							borderRadius: '4px',
-							border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-input-border)'}`,
-							backgroundColor: lightTheme ? '#fff' : 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							fontSize: '12px',
-							resize: 'vertical',
-							fontFamily: 'inherit'
-						}}
-					/>
-					<button
-						onClick={createMessage}
-						disabled={!newMessageContent.trim() || !newMessageUserStoryId.trim()}
-						style={{
-							padding: '8px 16px',
-							borderRadius: '4px',
-							border: 'none',
-							backgroundColor: newMessageContent.trim() && newMessageUserStoryId.trim() ? (lightTheme ? '#007acc' : 'var(--vscode-button-background)') : lightTheme ? '#ccc' : 'var(--vscode-button-secondaryBackground)',
-							color: newMessageContent.trim() && newMessageUserStoryId.trim() ? (lightTheme ? '#fff' : 'var(--vscode-button-foreground)') : lightTheme ? '#666' : 'var(--vscode-button-secondaryForeground)',
-							cursor: newMessageContent.trim() && newMessageUserStoryId.trim() ? 'pointer' : 'not-allowed',
-							fontSize: '12px',
-							fontWeight: 600
-						}}
-					>
-						Post Message
-					</button>
-				</div>
-			</div>
-
-			{/* Messages List */}
-			{messagesLoading && <div style={{ textAlign: 'center', padding: '20px', color: 'var(--vscode-descriptionForeground)' }}>Loading messages...</div>}
+			{messagesLoading && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--vscode-descriptionForeground)' }}>Carregant sol·licituds...</div>}
 
 			{messagesError && (
 				<div
@@ -435,152 +314,196 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 						backgroundColor: lightTheme ? '#ffebee' : 'var(--vscode-inputValidation-errorBackground)',
 						borderRadius: '4px',
 						color: lightTheme ? '#c62828' : 'var(--vscode-errorForeground)',
-						fontSize: '12px'
+						fontSize: '12px',
+						marginBottom: '20px'
 					}}
 				>
-					{messagesError}
+					Error: {messagesError}
 				</div>
 			)}
 
-			{!messagesLoading && !messagesError && filteredMessages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--vscode-descriptionForeground)' }}>No messages found. Create a new message to start a discussion!</div>}
+			{!messagesLoading && !messagesError && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--vscode-descriptionForeground)' }}>No hi ha sol·licituds de col·laboració.</div>}
 
-			{!messagesLoading && !messagesError && filteredMessages.length > 0 && (
-				<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-					{filteredMessages.map(message => {
-						const isExpanded = expandedMessages.has(message.id);
-						const replyContent = replyContents.get(message.id) || '';
-
-						return (
-							<div
-								key={message.id}
+			{!messagesLoading && !messagesError && messages.length > 0 && (
+				<div style={{ overflow: 'auto' }}>
+					<table
+						style={{
+							width: '100%',
+							borderCollapse: 'collapse',
+							fontSize: '13px'
+						}}
+					>
+						<thead>
+							<tr
 								style={{
-									padding: '16px',
-									backgroundColor: lightTheme ? '#fff' : 'var(--vscode-editor-background)',
-									borderRadius: '6px',
-									border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`
+									backgroundColor: lightTheme ? '#f5f5f5' : 'var(--vscode-editor-background)',
+									borderBottom: `2px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`,
+									position: 'sticky',
+									top: 0,
+									zIndex: 1
 								}}
 							>
-								<div
-									style={{
-										display: 'flex',
-										justifyContent: 'space-between',
-										alignItems: 'flex-start',
-										marginBottom: '8px'
-									}}
-								>
-									<div style={{ flex: 1 }}>
-										<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-											<span style={{ fontWeight: 600, fontSize: '13px' }}>{message.user?.displayName || 'Unknown User'}</span>
-											<span
-												style={{
-													padding: '2px 6px',
-													borderRadius: '3px',
-													backgroundColor: message.status === 'open' ? (lightTheme ? '#e3f2fd' : 'var(--vscode-badge-background)') : lightTheme ? '#e8f5e9' : 'var(--vscode-badge-background)',
-													color: 'var(--vscode-foreground)',
-													fontSize: '10px',
-													fontWeight: 600,
-													textTransform: 'uppercase'
-												}}
-											>
-												{message.status}
-											</span>
-										</div>
-										<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', marginBottom: '8px' }}>
-											User Story: {message.userStoryId} • {new Date(message.createdAt).toLocaleString()}
-										</div>
-										<div style={{ fontSize: '13px', lineHeight: '1.5', marginBottom: '12px' }}>{message.content}</div>
-									</div>
-								</div>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px' }}>Data</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px' }}>User Story</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '200px' }}>Sol·licitud</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px' }}>Sol·licitant</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '150px' }}>Qui l&apos;atén</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px' }}>Estat</th>
+								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 600, minWidth: '100px' }}>Accions</th>
+							</tr>
+						</thead>
+						<tbody>
+							{messages.map(message => {
+								const isExpanded = expandedMessages.has(message.id);
+								const attending = isUserAttending(message);
+								const isHelp = isHelpRequest(message);
 
-								{/* Replies Section */}
-								{message.replies && message.replies.length > 0 && (
-									<div
-										style={{
-											marginTop: '12px',
-											paddingTop: '12px',
-											borderTop: `1px solid ${lightTheme ? '#eee' : 'var(--vscode-panel-border)'}`
-										}}
-									>
-										<button
-											onClick={() => toggleMessageExpanded(message.id)}
+								return (
+									<React.Fragment key={message.id}>
+										<tr
 											style={{
-												padding: '4px 8px',
-												border: 'none',
-												backgroundColor: 'transparent',
-												color: 'var(--vscode-textLink-foreground)',
-												cursor: 'pointer',
-												fontSize: '11px',
-												marginBottom: '8px'
+												backgroundColor: isHelp ? (lightTheme ? 'rgba(255, 152, 0, 0.05)' : 'rgba(255, 152, 0, 0.1)') : 'transparent',
+												borderBottom: `1px solid ${lightTheme ? '#eee' : 'var(--vscode-panel-border)'}`
 											}}
 										>
-											{isExpanded ? 'Hide' : 'Show'} {message.replies.length} reply{message.replies.length !== 1 ? 'ies' : ''}
-										</button>
-
-										{isExpanded && (
-											<div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-												{message.replies.map(reply => (
-													<div
-														key={reply.id}
+											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
+												<div style={{ fontSize: '12px' }}>{new Date(message.createdAt).toLocaleDateString('ca-ES')}</div>
+												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{new Date(message.createdAt).toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+											</td>
+											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
+												<div style={{ fontWeight: 500 }}>{message.userStoryId}</div>
+											</td>
+											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
+												{isHelp && (
+													<span
 														style={{
-															padding: '10px',
-															backgroundColor: lightTheme ? '#f9f9f9' : 'var(--vscode-editor-background)',
-															borderRadius: '4px',
-															borderLeft: `3px solid ${lightTheme ? '#007acc' : 'var(--vscode-progressBar-background)'}`
+															display: 'inline-block',
+															padding: '2px 6px',
+															borderRadius: '3px',
+															backgroundColor: lightTheme ? '#ff9800' : 'rgba(255, 152, 0, 0.2)',
+															color: lightTheme ? '#fff' : '#ffb74d',
+															fontSize: '10px',
+															fontWeight: 600,
+															marginRight: '6px'
 														}}
 													>
-														<div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>{reply.user?.displayName || 'Unknown User'}</div>
-														<div style={{ fontSize: '12px', lineHeight: '1.5' }}>{reply.content}</div>
-														<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{new Date(reply.createdAt).toLocaleString()}</div>
+														🆘 AJUDA
+													</span>
+												)}
+												<div style={{ marginTop: isHelp ? '4px' : 0 }}>{getMessageSummary(message.content)}</div>
+												{message.replies && message.replies.length > 0 && (
+													<div
+														style={{
+															marginTop: '4px',
+															fontSize: '11px',
+															color: 'var(--vscode-textLink-foreground)',
+															cursor: 'pointer'
+														}}
+														onClick={() => toggleExpanded(message.id)}
+													>
+														{isExpanded ? '▼' : '▶'} {message.replies.length} resposta{message.replies.length !== 1 ? 's' : ''}
 													</div>
-												))}
-											</div>
+												)}
+											</td>
+											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
+												<div style={{ fontSize: '12px' }}>{message.user?.displayName || 'Unknown'}</div>
+											</td>
+											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
+												{message.attendees && message.attendees.length > 0 ? (
+													<div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+														{message.attendees.map(attendee => (
+															<div
+																key={attendee.id}
+																style={{
+																	fontSize: '11px',
+																	padding: '2px 6px',
+																	backgroundColor: lightTheme ? '#e3f2fd' : 'rgba(100, 149, 237, 0.2)',
+																	borderRadius: '3px',
+																	display: 'inline-block',
+																	maxWidth: 'fit-content'
+																}}
+															>
+																{attendee.displayName}
+															</div>
+														))}
+													</div>
+												) : (
+													<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', fontStyle: 'italic' }}>Ningú</div>
+												)}
+											</td>
+											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
+												<span
+													style={{
+														padding: '2px 8px',
+														borderRadius: '3px',
+														backgroundColor: message.status === 'open' ? (lightTheme ? '#e3f2fd' : 'rgba(100, 149, 237, 0.2)') : lightTheme ? '#e8f5e9' : 'rgba(76, 175, 80, 0.2)',
+														fontSize: '11px',
+														fontWeight: 500,
+														textTransform: 'uppercase'
+													}}
+												>
+													{message.status === 'open' ? 'Obert' : message.status === 'resolved' ? 'Resolt' : 'Arxivat'}
+												</span>
+											</td>
+											<td style={{ padding: '12px 8px', verticalAlign: 'top', textAlign: 'center' }}>
+												<button
+													onClick={() => (attending ? handleUnattend(message.id) : handleAttend(message.id))}
+													style={{
+														padding: '4px 10px',
+														borderRadius: '3px',
+														border: 'none',
+														backgroundColor: attending ? (lightTheme ? '#4caf50' : 'rgba(76, 175, 80, 0.3)') : lightTheme ? '#007acc' : 'var(--vscode-button-background)',
+														color: attending ? '#fff' : lightTheme ? '#fff' : 'var(--vscode-button-foreground)',
+														cursor: 'pointer',
+														fontSize: '11px',
+														fontWeight: 500
+													}}
+												>
+													{attending ? '✓ Atenent' : 'Atendre'}
+												</button>
+											</td>
+										</tr>
+										{isExpanded && (
+											<tr>
+												<td colSpan={7} style={{ padding: '0', backgroundColor: lightTheme ? '#fafafa' : 'rgba(0, 0, 0, 0.2)' }}>
+													<div style={{ padding: '16px', borderLeft: `4px solid ${lightTheme ? '#007acc' : 'var(--vscode-progressBar-background)'}` }}>
+														<div style={{ marginBottom: '16px' }}>
+															<strong>Missatge complet:</strong>
+															<div style={{ marginTop: '8px', whiteSpace: 'pre-wrap', fontSize: '12px' }}>{message.content}</div>
+														</div>
+														{message.replies && message.replies.length > 0 && (
+															<div>
+																<strong>Respostes:</strong>
+																<div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+																	{message.replies.map(reply => (
+																		<div
+																			key={reply.id}
+																			style={{
+																				padding: '10px',
+																				backgroundColor: lightTheme ? '#fff' : 'var(--vscode-editor-background)',
+																				borderRadius: '4px',
+																				borderLeft: `3px solid ${lightTheme ? '#4caf50' : 'rgba(76, 175, 80, 0.5)'}`,
+																				fontSize: '12px'
+																			}}
+																		>
+																			<div style={{ fontWeight: 600, marginBottom: '4px', fontSize: '11px' }}>
+																				{reply.user?.displayName || 'Unknown'} • {new Date(reply.createdAt).toLocaleString('ca-ES')}
+																			</div>
+																			<div style={{ whiteSpace: 'pre-wrap' }}>{reply.content}</div>
+																		</div>
+																	))}
+																</div>
+															</div>
+														)}
+													</div>
+												</td>
+											</tr>
 										)}
-									</div>
-								)}
-
-								{/* Reply Input */}
-								<div style={{ marginTop: '12px', paddingTop: '12px', borderTop: `1px solid ${lightTheme ? '#eee' : 'var(--vscode-panel-border)'}` }}>
-									<textarea
-										value={replyContent}
-										onChange={e => {
-											const newReplyContents = new Map(replyContents);
-											newReplyContents.set(message.id, e.target.value);
-											setReplyContents(newReplyContents);
-										}}
-										placeholder="Write a reply..."
-										rows={2}
-										style={{
-											width: '100%',
-											padding: '8px',
-											borderRadius: '4px',
-											border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-input-border)'}`,
-											backgroundColor: lightTheme ? '#fff' : 'var(--vscode-input-background)',
-											color: 'var(--vscode-input-foreground)',
-											fontSize: '12px',
-											resize: 'vertical',
-
-											marginBottom: '8px'
-										}}
-									/>
-									<button
-										onClick={() => createReply(message.id)}
-										disabled={!replyContent.trim()}
-										style={{
-											padding: '6px 12px',
-											borderRadius: '4px',
-											border: 'none',
-											backgroundColor: replyContent.trim() ? (lightTheme ? '#007acc' : 'var(--vscode-button-background)') : lightTheme ? '#ccc' : 'var(--vscode-button-secondaryBackground)',
-											color: replyContent.trim() ? (lightTheme ? '#fff' : 'var(--vscode-button-foreground)') : lightTheme ? '#666' : 'var(--vscode-button-secondaryForeground)',
-											cursor: replyContent.trim() ? 'pointer' : 'not-allowed',
-											fontSize: '11px'
-										}}
-									>
-										Reply
-									</button>
-								</div>
-							</div>
-						);
-					})}
+									</React.Fragment>
+								);
+							})}
+						</tbody>
+					</table>
 				</div>
 			)}
 		</div>

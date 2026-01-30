@@ -1159,12 +1159,23 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							break;
 						case 'loadCollaborationMessages':
 							try {
-								this._errorHandler.logInfo(`Loading collaboration messages for user story: ${message.userStoryId}`, 'WebviewMessageListener');
-								const messages = await this._collaborationClient.getMessages(message.userStoryId);
-								webview.postMessage({
-									command: 'collaborationMessagesLoaded',
-									messages
-								});
+								if (message.userStoryId) {
+									// Load messages for specific user story
+									this._errorHandler.logInfo(`Loading collaboration messages for user story: ${message.userStoryId}`, 'WebviewMessageListener');
+									const messages = await this._collaborationClient.getMessages(message.userStoryId);
+									webview.postMessage({
+										command: 'collaborationMessagesLoaded',
+										messages
+									});
+								} else {
+									// Load all messages
+									this._errorHandler.logInfo('Loading all collaboration messages', 'WebviewMessageListener');
+									const messages = await this._collaborationClient.getAllMessages();
+									webview.postMessage({
+										command: 'collaborationMessagesLoaded',
+										messages
+									});
+								}
 							} catch (error) {
 								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadCollaborationMessages');
@@ -1192,6 +1203,45 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									command: 'collaborationMessagesError',
 									error: errorMessage
 								});
+							}
+							break;
+						case 'requestUserStorySupport':
+							try {
+								this._errorHandler.logInfo(`Requesting support for user story: ${message.userStoryId}`, 'WebviewMessageListener');
+
+								// Build detailed help request message
+								const description = message.description ? message.description.substring(0, 200) : 'No description available';
+								const completedTasks = message.tasksCount > 0 ? `${message.tasksCount} task(s) defined` : 'No tasks yet';
+								const estimateInfo = message.planEstimate ? `${message.planEstimate} points` : 'Not estimated';
+								const hoursInfo = message.taskEstimateTotal ? `${message.taskEstimateTotal}h estimated` : '';
+
+								let messageContent = `🆘 **Support Request**\n\n`;
+								messageContent += `**User Story:** ${message.userStoryId} - ${message.userStoryName}\n`;
+								messageContent += `**Project:** ${message.project || 'N/A'}\n`;
+								messageContent += `**Sprint:** ${message.iteration || 'Unscheduled'}\n`;
+								messageContent += `**State:** ${message.scheduleState || 'New'}\n`;
+								messageContent += `**Estimate:** ${estimateInfo}${hoursInfo ? ` (${hoursInfo})` : ''}\n`;
+								messageContent += `**Tasks:** ${completedTasks}\n`;
+								messageContent += `**Description:** ${description}${message.description && message.description.length > 200 ? '...' : ''}\n\n`;
+								messageContent += `I need help with this user story. Can someone provide assistance or guidance?`;
+
+								const supportMessage = await this._collaborationClient.createMessage({
+									userStoryId: message.userStoryId,
+									content: messageContent
+								});
+								webview.postMessage({
+									command: 'supportRequestCreated',
+									message: supportMessage
+								});
+								vscode.window.showInformationMessage(`Support request sent for ${message.userStoryId}`);
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'requestUserStorySupport');
+								webview.postMessage({
+									command: 'supportRequestError',
+									error: errorMessage
+								});
+								vscode.window.showErrorMessage(`Failed to send support request: ${errorMessage}`);
 							}
 							break;
 						case 'createCollaborationMessageReply':
@@ -1261,6 +1311,41 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markAllCollaborationNotificationsAsRead');
 								webview.postMessage({
 									command: 'collaborationNotificationsError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'attendCollaborationMessage':
+							try {
+								this._errorHandler.logInfo(`Attending message: ${message.messageId}`, 'WebviewMessageListener');
+								const attendee = await this._collaborationClient.attendMessage(message.messageId);
+								webview.postMessage({
+									command: 'collaborationMessageAttended',
+									messageId: message.messageId,
+									attendee
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'attendCollaborationMessage');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'unattendCollaborationMessage':
+							try {
+								this._errorHandler.logInfo(`Unattending message: ${message.messageId}`, 'WebviewMessageListener');
+								await this._collaborationClient.unattendMessage(message.messageId);
+								webview.postMessage({
+									command: 'collaborationMessageUnattended',
+									messageId: message.messageId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'unattendCollaborationMessage');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
 									error: errorMessage
 								});
 							}

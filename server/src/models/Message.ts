@@ -1,5 +1,14 @@
 export type MessageStatus = 'open' | 'resolved' | 'archived';
 
+export interface MessageAttendee {
+	id: string;
+	messageId: string;
+	userId: string;
+	displayName: string;
+	rallyUserId: string;
+	createdAt: Date;
+}
+
 export interface Message {
 	id: string;
 	userId: string;
@@ -13,6 +22,7 @@ export interface Message {
 		rallyUserId: string;
 	};
 	replies?: MessageReply[];
+	attendees?: MessageAttendee[];
 }
 
 export interface CreateMessageInput {

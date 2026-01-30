@@ -65,7 +65,7 @@ vi.mock('vscode', () => ({
 }));
 
 // Mock rally services to avoid actual Rally API calls
-vi.mock('../src/libs/rally/rallyServices.js', () => ({
+vi.mock('../src/libs/rally/rallyServices', () => ({
 	getProjects: vi.fn(async () => ({ projects: [] })),
 	getUsers: vi.fn(async () => ({ users: [] })),
 	getIterations: vi.fn(async () => ({ iterations: [] })),

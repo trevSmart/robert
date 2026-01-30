@@ -44,10 +44,22 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const [calendarGridWidth, setCalendarGridWidth] = useState(800);
 	const calendarGridRef = useRef<HTMLDivElement>(null);
 
+	// Refs for measuring available vertical space
+	const containerRef = useRef<HTMLDivElement>(null);
+	const welcomeRef = useRef<HTMLDivElement>(null);
+	const navRef = useRef<HTMLDivElement>(null);
+	const legendRef = useRef<HTMLDivElement>(null);
+	const [cellHeight, setCellHeight] = useState(80);
+
+	// Custom column widths: [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+	// Weekdays: 1.3fr, Weekends: 0.7fr
+	const calendarColumnFrs = [1.3, 1.3, 1.3, 1.3, 1.3, 0.7, 0.7];
+	const totalFr = calendarColumnFrs.reduce((a, b) => a + b, 0);
+
 	// Calcula fontSize suau per números de dia
 	function getDayNumberFontSize(cellWidth: number) {
 		const min = 10; // px
-		const max = 16; // px
+		const max = 15; // px
 		const minWidth = 50; // Cell width at which font is at min size
 		const maxWidth = 150; // Cell width at which font is at max size
 
@@ -103,14 +115,16 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const resizeObserver = new ResizeObserver(() => {
 			if (calendarGridRef.current) {
 				const gridWidth = calendarGridRef.current.offsetWidth;
-				const cellWidth = gridWidth / 7; // 7 columns
+				// Use average weekday cell width for font sizing
+				const weekdayFr = 1.3;
+				const cellWidth = gridWidth * (weekdayFr / totalFr);
 				setCalendarGridWidth(cellWidth);
 			}
 		});
 
 		resizeObserver.observe(calendarGridRef.current);
 		return () => resizeObserver.disconnect();
-	}, []);
+	}, [totalFr]);
 
 	// Generate insight messages once and set up rotation timer
 	useEffect(() => {
@@ -356,6 +370,52 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	// Calculate total days needed (including previous/next month days)
 	const totalDays = lastDay.getDate() + startDay + (6 - endDay);
 
+	// Compute cellHeight so calendar fills available vertical space in the view
+	// Use window.innerHeight (viewport) instead of container height to avoid
+	// a feedback loop where increasing cellHeight increases container height.
+	useEffect(() => {
+		const computeHeights = () => {
+			const viewportH = window.innerHeight || document.documentElement.clientHeight;
+			const gridTop = calendarGridRef.current ? calendarGridRef.current.getBoundingClientRect().top : 0;
+			const legendH = legendRef.current ? legendRef.current.offsetHeight : 0;
+			const paddingAndMargins = 40; // account for extra gaps and paddings
+
+			// Measure header (day names) height inside the grid so we don't allocate it to rows
+			let headerH = 0;
+			if (calendarGridRef.current) {
+				const firstChild = calendarGridRef.current.firstElementChild as HTMLElement | null;
+				if (firstChild) headerH = Math.ceil(firstChild.getBoundingClientRect().height);
+			}
+
+			// Available space below the calendar grid's top minus header and legend
+			const available = Math.max(0, viewportH - gridTop - headerH - legendH - paddingAndMargins);
+			const weeks = Math.ceil(totalDays / 7);
+			// Limit max height per cell to avoid runaway values
+			const maxCell = Math.max(48, Math.floor(viewportH * 0.6));
+			const h = weeks > 0 ? Math.floor(available / weeks) : 80;
+			setCellHeight(Math.max(40, Math.min(h, maxCell)));
+		};
+
+		computeHeights();
+
+		// Run a delayed recompute to catch elements that render shortly after mount
+		const delayed = setTimeout(() => computeHeights(), 120);
+
+		// Observe welcome/nav/legend (elements that can change layout above/below grid)
+		const ro = new ResizeObserver(() => computeHeights());
+		if (welcomeRef.current) ro.observe(welcomeRef.current);
+		if (navRef.current) ro.observe(navRef.current);
+		if (legendRef.current) ro.observe(legendRef.current);
+
+		window.addEventListener('resize', computeHeights);
+
+		return () => {
+			clearTimeout(delayed);
+			ro.disconnect();
+			window.removeEventListener('resize', computeHeights);
+		};
+	}, [totalDays]);
+
 	const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -598,6 +658,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	return (
 		<div
+			ref={containerRef}
 			style={{
 				padding: '20px',
 				backgroundColor: themeColors.background,
@@ -608,6 +669,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			{/* Welcome message */}
 			{currentUser && (
 				<div
+					ref={welcomeRef}
 					style={{
 						textAlign: 'center',
 						marginBottom: '16px',
@@ -616,7 +678,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						borderRadius: '8px',
 						border: `1px solid ${themeColors.panelBorder}`,
 						maxWidth: '700px',
-						margin: '0 auto 20px auto'
+						margin: '0 auto 23px auto'
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
@@ -639,6 +701,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			)}
 
 			<div
+				ref={navRef}
 				style={{
 					marginBottom: '14px',
 					display: 'flex',
@@ -677,9 +740,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					style={{
 						margin: '0',
 						color: themeColors.foreground,
-						fontSize: '17.8px',
-						fontWeight: '400',
-						minWidth: '140px',
+						fontSize: '17.4px',
+						fontWeight: '300',
+						minWidth: '14	0px',
 						textAlign: 'center'
 					}}
 				>
@@ -719,13 +782,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				ref={calendarGridRef}
 				style={{
 					display: 'grid',
-					gridTemplateColumns: 'repeat(7, 1fr)',
+					gridTemplateColumns: calendarColumnFrs.map(fr => `${fr}fr`).join(' '),
 					gap: '1px',
 					backgroundColor: themeColors.panelBorder,
 					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					overflow: 'hidden',
-					maxWidth: '800px',
+					maxWidth: '96%',
 					margin: '0 auto'
 				}}
 			>
@@ -754,11 +817,17 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
 					const isHoveredDay = hoveredDay?.date && hoveredDay.date.getTime() === dayInfo.date.getTime();
 
+					// Set gridColumn for narrower weekends
+					const gridColumn = `${dayOfWeek + 1}`;
+
 					return (
 						<div
 							key={index}
 							style={{
-								aspectRatio: '1',
+								// Use explicit height so all cells keep same vertical size
+								height: cellHeight + 'px',
+								minHeight: '46px',
+								maxHeight: '90px',
 								padding: '8px',
 								backgroundColor: dayInfo.isToday
 									? 'rgba(33, 150, 243, 0.3)'
@@ -784,7 +853,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								cursor: 'pointer',
 								transition: 'background-color 0.2s ease',
 								position: 'relative',
-								overflow: 'hidden'
+								overflow: 'hidden',
+								gridColumn: gridColumn
 							}}
 							onMouseEnter={e => {
 								setHoveredDay(dayInfo);
@@ -950,6 +1020,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			{/* Legend - show all iteration legends for any month */}
 			{orderedIterations.length > 0 && (
 				<div
+					ref={legendRef}
 					style={{
 						maxWidth: '800px',
 						margin: '24px auto 0 auto',

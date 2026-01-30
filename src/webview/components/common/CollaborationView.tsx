@@ -76,13 +76,13 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 			command: 'loadCollaborationMessages'
 		});
 		sendMessage({ command: 'getRallyCurrentUser' });
-
-		// Set loading state in a separate microtask to avoid the lint error
-		Promise.resolve().then(() => {
-			setMessagesLoading(true);
-			setMessagesError(null);
-		});
 	}, [sendMessage]);
+
+	// Set loading state when component mounts
+	useEffect(() => {
+		setMessagesLoading(true);
+		setMessagesError(null);
+	}, []);
 
 	// Handle messages from extension
 	useEffect(() => {

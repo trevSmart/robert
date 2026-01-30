@@ -1165,7 +1165,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									const messages = await this._collaborationClient.getMessages(message.userStoryId);
 									webview.postMessage({
 										command: 'collaborationMessagesLoaded',
-										messages
+										messages,
+										debugMode: this._isDebugMode
 									});
 								} else {
 									// Load all messages
@@ -1173,7 +1174,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									const messages = await this._collaborationClient.getAllMessages();
 									webview.postMessage({
 										command: 'collaborationMessagesLoaded',
-										messages
+										messages,
+										debugMode: this._isDebugMode
 									});
 								}
 							} catch (error) {
@@ -1378,6 +1380,23 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							} catch (error) {
 								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markCollaborationMessageAsUnread');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'deleteCollaborationMessage':
+							try {
+								this._errorHandler.logInfo(`Deleting message: ${message.messageId}`, 'WebviewMessageListener');
+								await this._collaborationClient.deleteMessage(message.messageId);
+								webview.postMessage({
+									command: 'collaborationMessageDeleted',
+									messageId: message.messageId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'deleteCollaborationMessage');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
 									error: errorMessage

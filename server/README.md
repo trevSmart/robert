@@ -2,6 +2,15 @@
 
 Backend server for the Robert VS Code extension collaboration features. This server provides REST API endpoints and WebSocket support for real-time messaging and notifications related to Rally user stories.
 
+## Deployed Server
+
+The production collaboration server is deployed at:
+- **URL**: `https://robert-8vdt.onrender.com`
+- **WebSocket**: `wss://robert-8vdt.onrender.com/ws`
+- **Health Check**: `https://robert-8vdt.onrender.com/health`
+
+The VS Code extension is pre-configured to use this server by default.
+
 ## Features
 
 - REST API for messages, notifications, and user management

@@ -222,6 +222,58 @@ export async function removeAttendee(messageId: string, userId: string): Promise
 	);
 }
 
+// Mark message as read by a user
+export async function markMessageAsRead(messageId: string, userId: string): Promise<void> {
+	await query(
+		`INSERT INTO message_reads (message_id, user_id)
+		 VALUES ($1, $2)
+		 ON CONFLICT (message_id, user_id) DO NOTHING`,
+		[messageId, userId]
+	);
+}
+
+// Mark message as unread by a user
+export async function markMessageAsUnread(messageId: string, userId: string): Promise<void> {
+	await query(
+		`DELETE FROM message_reads WHERE message_id = $1 AND user_id = $2`,
+		[messageId, userId]
+	);
+}
+
+// Check if a message is read by a user
+export async function isMessageReadByUser(messageId: string, userId: string): Promise<boolean> {
+	const result = await query(
+		`SELECT EXISTS(SELECT 1 FROM message_reads WHERE message_id = $1 AND user_id = $2) as is_read`,
+		[messageId, userId]
+	);
+	return result.rows[0].is_read;
+}
+
+// Get all messages with read status for a specific user
+export async function getMessagesWithReadStatus(userId: string): Promise<Message[]> {
+	const result = await query(
+		`SELECT m.*, u.display_name, u.rally_user_id,
+		        EXISTS(SELECT 1 FROM message_reads mr WHERE mr.message_id = m.id AND mr.user_id = $1) as is_read
+		 FROM messages m
+		 JOIN users u ON m.user_id = u.id
+		 ORDER BY m.created_at DESC`,
+		[userId]
+	);
+
+	const messages = result.rows.map((row: any) => ({
+		...mapRowToMessage(row),
+		isRead: row.is_read
+	}));
+
+	// Load replies and attendees for each message
+	for (const message of messages) {
+		message.replies = await getMessageReplies(message.id);
+		message.attendees = await getMessageAttendees(message.id);
+	}
+
+	return messages;
+}
+
 function mapRowToMessage(row: any): Message {
 	return {
 		id: row.id,

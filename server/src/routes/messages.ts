@@ -10,7 +10,10 @@ import {
 	deleteMessage,
 	createMessageReply,
 	addAttendee,
-	removeAttendee
+	removeAttendee,
+	markMessageAsRead,
+	markMessageAsUnread,
+	getMessagesWithReadStatus
 } from '../services/messageService';
 import { getOrCreateUser } from '../services/userService';
 import { createNotification } from '../services/notificationService';
@@ -22,18 +25,22 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/messages?userStoryId={id}
-// GET /api/messages (all messages)
+// GET /api/messages (all messages with read status)
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		const userStoryId = req.query.userStoryId as string;
+		const userId = req.user!.userId;
 
 		if (userStoryId) {
-			// Get messages for specific user story
-			const messages = await getMessagesByUserStory(userStoryId);
+			// Get messages for specific user story with read status for current user
+			const allMessages = await getMessagesWithReadStatus(userId);
+			const messages = (allMessages as any[]).filter(
+				(message: any) => message.userStoryId === userStoryId
+			);
 			res.json({ messages });
 		} else {
-			// Get all messages
-			const messages = await getAllMessages();
+			// Get all messages with read status for current user
+			const messages = await getMessagesWithReadStatus(userId);
 			res.json({ messages });
 		}
 	} catch (error) {
@@ -292,6 +299,62 @@ router.delete('/:id/attend', async (req: AuthenticatedRequest, res: Response) =>
 
 		// Broadcast message update to subscribed clients
 		await broadcastMessageUpdate(message.id, message.userStoryId);
+
+		res.status(204).send();
+	} catch (error) {
+		const err = error as Error;
+		if (err.message === 'Message not found') {
+			throw createError(err.message, 404);
+		}
+		throw createError(err.message, 500);
+	}
+});
+
+// POST /api/messages/:id/read
+router.post('/:id/read', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const message = await getMessageById(req.params.id);
+
+		if (!message) {
+			throw createError('Message not found', 404);
+		}
+
+		// Get or create user
+		const user = await getOrCreateUser(
+			req.user!.rallyUserId,
+			req.user!.displayName
+		);
+
+		// Mark message as read
+		await markMessageAsRead(req.params.id, user.id);
+
+		res.status(204).send();
+	} catch (error) {
+		const err = error as Error;
+		if (err.message === 'Message not found') {
+			throw createError(err.message, 404);
+		}
+		throw createError(err.message, 500);
+	}
+});
+
+// DELETE /api/messages/:id/read
+router.delete('/:id/read', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const message = await getMessageById(req.params.id);
+
+		if (!message) {
+			throw createError('Message not found', 404);
+		}
+
+		// Get or create user
+		const user = await getOrCreateUser(
+			req.user!.rallyUserId,
+			req.user!.displayName
+		);
+
+		// Mark message as unread
+		await markMessageAsUnread(req.params.id, user.id);
 
 		res.status(204).send();
 	} catch (error) {

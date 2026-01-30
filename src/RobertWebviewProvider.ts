@@ -63,12 +63,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			const settings = this._settingsManager.getSettings();
 
-			if (!settings.collaborationEnabled) {
-				this._errorHandler.logInfo('Collaboration features disabled', 'RobertWebviewProvider.initializeCollaboration');
-				return;
-			}
-
-			// Set server URL
+			// Always set server URL and user info, even if collaboration is disabled
+			// This ensures they're available if the user enables collaboration later
 			this._collaborationClient.setServerUrl(settings.collaborationServerUrl);
 			this._websocketClient.setServerUrl(settings.collaborationServerUrl);
 
@@ -102,6 +98,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			// Set user info for collaboration clients
 			this._collaborationClient.setUserInfo(rallyUserId, displayName);
 			this._websocketClient.setUserInfo(rallyUserId, displayName);
+
+			// Only connect WebSocket if collaboration is enabled
+			if (!settings.collaborationEnabled) {
+				this._errorHandler.logInfo('Collaboration features disabled, user info configured but not connecting', 'RobertWebviewProvider.initializeCollaboration');
+				return;
+			}
 
 			// Connect WebSocket if auto-connect is enabled
 			if (settings.collaborationAutoConnect) {

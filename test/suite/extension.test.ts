@@ -21,8 +21,10 @@ suite('Extension Integration Test Suite', () => {
 		const ext = vscode.extensions.getExtension('trevSmart.robert');
 		assert.ok(ext);
 		
-		await ext.activate();
-		assert.strictEqual(ext.isActive, true);
+		if (ext) {
+			await ext.activate();
+			assert.strictEqual(ext.isActive, true);
+		}
 	});
 
 	test('Commands should be registered', async () => {

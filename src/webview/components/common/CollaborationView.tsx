@@ -40,12 +40,6 @@ interface MessageReply {
 	};
 }
 
-interface NotificationData {
-	id: string;
-	messageId?: string;
-	read: boolean;
-}
-
 interface CollaborationViewProps {
 	selectedUserStoryId?: string | null;
 	onHelpRequestsCountChange?: (count: number) => void;
@@ -71,8 +65,6 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 	const [showGeneralMessageForm, setShowGeneralMessageForm] = useState(false);
 	const [generalMessageContent, setGeneralMessageContent] = useState('');
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
-	const [unreadNotifications, setUnreadNotifications] = useState<Set<string>>(new Set());
-	const [messageToNotificationMap, setMessageToNotificationMap] = useState<Map<string, string[]>>(new Map());
 
 	const sendMessage = useCallback(
 		(message: Record<string, unknown>) => {
@@ -87,10 +79,6 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 		sendMessage({
 			command: 'loadCollaborationMessages'
 		});
-		sendMessage({
-			command: 'loadCollaborationNotifications',
-			unreadOnly: false
-		});
 	}, [sendMessage]);
 
 	// Initial load
@@ -103,10 +91,6 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 			command: 'loadCollaborationMessages'
 		});
 		sendMessage({ command: 'getRallyCurrentUser' });
-		sendMessage({
-			command: 'loadCollaborationNotifications',
-			unreadOnly: false
-		});
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -167,36 +151,14 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 					}
 					break;
 
-				case 'collaborationNotificationsLoaded':
-					// Store unread notification message IDs and build map
-					const unreadMessageIds = new Set<string>();
-					const msgToNotifMap = new Map<string, string[]>();
-
-					message.notifications.forEach((n: NotificationData) => {
-						if (n.messageId) {
-							if (!n.read) {
-								unreadMessageIds.add(n.messageId);
-							}
-							// Build map of messageId to notification IDs
-							const existing = msgToNotifMap.get(n.messageId) || [];
-							existing.push(n.id);
-							msgToNotifMap.set(n.messageId, existing);
-						}
-					});
-
-					setUnreadNotifications(unreadMessageIds);
-					setMessageToNotificationMap(msgToNotifMap);
+				case 'collaborationMessageMarkedAsRead':
+					// Update message read status
+					setMessages(prev => prev.map(msg => (msg.id === message.messageId ? { ...msg, isRead: true } : msg)));
 					break;
 
-				case 'collaborationNotificationMarkedAsRead':
-					// Remove from unread set using messageId directly
-					if (message.messageId) {
-						setUnreadNotifications(prev => {
-							const next = new Set(prev);
-							next.delete(message.messageId);
-							return next;
-						});
-					}
+				case 'collaborationMessageMarkedAsUnread':
+					// Update message read status
+					setMessages(prev => prev.map(msg => (msg.id === message.messageId ? { ...msg, isRead: false } : msg)));
 					break;
 			}
 		};
@@ -207,8 +169,8 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 
 	// Calculate help requests count and notify parent (only count unread)
 	const helpRequestsCount = useMemo(() => {
-		return messages.filter(msg => unreadNotifications.has(msg.id) && (msg.content.includes('🆘') || msg.content.includes('Support Request'))).length;
-	}, [messages, unreadNotifications]);
+		return messages.filter(msg => !msg.isRead && (msg.content.includes('🆘') || msg.content.includes('Support Request'))).length;
+	}, [messages]);
 
 	useEffect(() => {
 		if (onHelpRequestsCountChange) {
@@ -250,31 +212,28 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 
 	const handleMarkAsRead = useCallback(
 		(messageId: string) => {
-			// Get all notification IDs for this message
-			const notificationIds = messageToNotificationMap.get(messageId) || [];
-
-			// Only mark as read if there are notifications
-			if (notificationIds.length === 0) {
-				return;
-			}
-
-			// Mark each notification as read
-			notificationIds.forEach(notificationId => {
-				sendMessage({
-					command: 'markCollaborationNotificationAsRead',
-					notificationId,
-					messageId // Pass messageId for optimistic update
-				});
+			sendMessage({
+				command: 'markCollaborationMessageAsRead',
+				messageId
 			});
 
 			// Optimistically update the UI
-			setUnreadNotifications(prev => {
-				const next = new Set(prev);
-				next.delete(messageId);
-				return next;
-			});
+			setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, isRead: true } : msg)));
 		},
-		[sendMessage, messageToNotificationMap]
+		[sendMessage]
+	);
+
+	const handleMarkAsUnread = useCallback(
+		(messageId: string) => {
+			sendMessage({
+				command: 'markCollaborationMessageAsUnread',
+				messageId
+			});
+
+			// Optimistically update the UI
+			setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, isRead: false } : msg)));
+		},
+		[sendMessage]
 	);
 
 	const handlePaste = useCallback((event: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -340,12 +299,10 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 		return msg.content.includes('🆘') || msg.content.includes('Support Request');
 	};
 
-	/* SECURITY FIX - Commented out for now, to be enabled when image rendering is re-added
-	 * This function renders message content with secure image handling.
-	 * It only renders images from data: URIs to prevent tracking/data exfiltration risks.
-	 * Remote URLs (https:) are rendered as plain text instead of auto-loading images.
-	 */
-	/*
+	// Render message content with secure image handling
+	// This function renders message content with secure image handling.
+	// It only renders images from data: URIs to prevent tracking/data exfiltration risks.
+	// Remote URLs (https:) are rendered as plain text instead of auto-loading images.
 	const renderMessageContentSecure = (content: string): (string | JSX.Element)[] => {
 		const parts: (string | JSX.Element)[] = [];
 		const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
@@ -395,7 +352,6 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 
 		return parts.length > 0 ? parts : [content];
 	};
-	*/
 
 	return (
 		<div
@@ -414,7 +370,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 					marginBottom: '20px'
 				}}
 			>
-				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>Sol·licituds de Col·laboració</h2>
+				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>Collaboration Requests</h2>
 				<div style={{ display: 'flex', gap: '8px' }}>
 					<button
 						onClick={() => setShowGeneralMessageForm(!showGeneralMessageForm)}
@@ -429,7 +385,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 							fontWeight: 500
 						}}
 					>
-						{showGeneralMessageForm ? 'Cancel·lar' : '+ Nou Missatge General'}
+						{showGeneralMessageForm ? 'Cancel' : '+ New General Message'}
 					</button>
 					<button
 						onClick={loadAllMessages}
@@ -445,7 +401,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 							opacity: messagesLoading ? 0.6 : 1
 						}}
 					>
-						{messagesLoading ? 'Carregant...' : 'Actualitzar'}
+						{messagesLoading ? 'Loading...' : 'Refresh'}
 					</button>
 				</div>
 			</div>
@@ -461,13 +417,13 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 						borderRadius: '6px'
 					}}
 				>
-					<h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: themeColors.foreground }}>Nou Missatge General</h3>
+					<h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: themeColors.foreground }}>New General Message</h3>
 					<textarea
 						ref={textareaRef}
 						value={generalMessageContent}
 						onChange={e => setGeneralMessageContent(e.target.value)}
 						onPaste={handlePaste}
-						placeholder="Escriu el teu missatge... (pots enganxar imatges directament)"
+						placeholder="Write your message... (you can paste images directly)"
 						style={{
 							width: '100%',
 							minHeight: '100px',
@@ -497,7 +453,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 								fontSize: '12px'
 							}}
 						>
-							Cancel·lar
+							Cancel
 						</button>
 						<button
 							onClick={handleSendGeneralMessage}
@@ -514,13 +470,13 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 								opacity: generalMessageContent.trim() ? 1 : 0.5
 							}}
 						>
-							Enviar
+							Send
 						</button>
 					</div>
 				</div>
 			)}
 
-			{messagesLoading && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: themeColors.descriptionForeground }}>Carregant sol·licituds...</div>}
+			{messagesLoading && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: themeColors.descriptionForeground }}>Loading requests...</div>}
 
 			{messagesError && (
 				<div
@@ -538,7 +494,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 				</div>
 			)}
 
-			{!messagesLoading && !messagesError && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: themeColors.descriptionForeground }}>No hi ha sol·licituds de col·laboració.</div>}
+			{!messagesLoading && !messagesError && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: themeColors.descriptionForeground }}>No collaboration requests.</div>}
 
 			{!messagesLoading && !messagesError && messages.length > 0 && (
 				<div style={{ overflow: 'auto' }}>
@@ -557,13 +513,13 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 									borderBottom: `2px solid ${themeColors.panelBorder}`
 								}}
 							>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Data</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Date</th>
 								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>User Story</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '200px', color: themeColors.foreground }}>Sol·licitud</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Sol·licitant</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '200px', color: themeColors.foreground }}>Request</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Requester</th>
 								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '150px', color: themeColors.foreground }}>Qui l&apos;atén</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>Estat</th>
-								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 600, minWidth: '140px', color: themeColors.foreground }}>Accions</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>Status</th>
+								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 600, minWidth: '140px', color: themeColors.foreground }}>Actions</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -571,7 +527,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 								const isExpanded = expandedMessages.has(message.id);
 								const attending = isUserAttending(message);
 								const isHelp = isHelpRequest(message);
-								const isUnread = unreadNotifications.has(message.id);
+								const isUnread = !message.isRead;
 
 								return (
 									<React.Fragment key={message.id}>
@@ -632,7 +588,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																fontWeight: 600
 															}}
 														>
-															🆘 AJUDA
+															🆘 HELP
 														</span>
 													)}
 												</div>
@@ -648,7 +604,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 														}}
 														onClick={() => toggleExpanded(message.id)}
 													>
-														{isExpanded ? '▼' : '▶'} {message.replies.length} resposta{message.replies.length !== 1 ? 's' : ''}
+														{isExpanded ? '▼' : '▶'} {message.replies.length} reply{message.replies.length !== 1 ? 's' : ''}
 													</div>
 												)}
 											</td>
@@ -676,7 +632,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 														))}
 													</div>
 												) : (
-													<div style={{ fontSize: '11px', color: themeColors.descriptionForeground, fontStyle: 'italic' }}>Ningú</div>
+													<div style={{ fontSize: '11px', color: themeColors.descriptionForeground, fontStyle: 'italic' }}>Nobody</div>
 												)}
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
@@ -702,7 +658,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 														textTransform: 'uppercase'
 													}}
 												>
-													{message.status === 'open' ? 'Obert' : message.status === 'resolved' ? 'Resolt' : 'Arxivat'}
+													{message.status === 'open' ? 'Open' : message.status === 'resolved' ? 'Resolved' : 'Archived'}
 												</span>
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
@@ -720,9 +676,9 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 															fontWeight: 500
 														}}
 													>
-														{attending ? '✓ Atenent' : 'Atendre'}
+														{attending ? 'Leave' : 'Participate'}
 													</button>
-													{isUnread && (
+													{isUnread ? (
 														<button
 															onClick={() => handleMarkAsRead(message.id)}
 															style={{
@@ -735,9 +691,26 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																fontSize: '11px',
 																fontWeight: 500
 															}}
-															title="Marcar com a llegit"
+															title="Mark this message as read"
 														>
-															✓ Llegit
+															Mark as Read
+														</button>
+													) : (
+														<button
+															onClick={() => handleMarkAsUnread(message.id)}
+															style={{
+																padding: '4px 10px',
+																borderRadius: '3px',
+																border: `1px solid ${themeColors.inputBorder}`,
+																backgroundColor: themeColors.buttonSecondaryBackground,
+																color: themeColors.buttonSecondaryForeground,
+																cursor: 'pointer',
+																fontSize: '11px',
+																fontWeight: 500
+															}}
+															title="Mark this message as unread"
+														>
+															Mark as Unread
 														</button>
 													)}
 												</div>
@@ -748,12 +721,12 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 												<td colSpan={7} style={{ padding: '0', backgroundColor: themeColors.background }}>
 													<div style={{ padding: '16px', borderLeft: `4px solid ${ACCENT_COLORS.blue}` }}>
 														<div style={{ marginBottom: '16px' }}>
-															<strong style={{ color: themeColors.foreground }}>Missatge complet:</strong>
-															<div style={{ marginTop: '8px', whiteSpace: 'pre-wrap', fontSize: '12px', color: themeColors.foreground }}>{message.content}</div>
+															<strong style={{ color: themeColors.foreground }}>Full message:</strong>
+															<div style={{ marginTop: '8px', whiteSpace: 'pre-wrap', fontSize: '12px', color: themeColors.foreground }}>{renderMessageContentSecure(message.content)}</div>
 														</div>
 														{message.replies && message.replies.length > 0 && (
 															<div>
-																<strong style={{ color: themeColors.foreground }}>Respostes:</strong>
+																<strong style={{ color: themeColors.foreground }}>Replies:</strong>
 																<div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 																	{message.replies.map(reply => (
 																		<div
@@ -767,9 +740,9 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																			}}
 																		>
 																			<div style={{ fontWeight: 600, marginBottom: '4px', fontSize: '11px', color: themeColors.descriptionForeground }}>
-																				{reply.user?.displayName || 'Unknown'} • {new Date(reply.createdAt).toLocaleString('ca-ES')}
+																				{reply.user?.displayName || 'Unknown'} • {new Date(reply.createdAt).toLocaleString('en-US')}
 																			</div>
-																			<div style={{ whiteSpace: 'pre-wrap', color: themeColors.foreground }}>{reply.content}</div>
+																			<div style={{ whiteSpace: 'pre-wrap', color: themeColors.foreground }}>{renderMessageContentSecure(reply.content)}</div>
 																		</div>
 																	))}
 																</div>

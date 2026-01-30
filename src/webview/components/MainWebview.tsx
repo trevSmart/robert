@@ -2426,10 +2426,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					)}
 
 					<div style={{ display: activeSection === 'collaboration' ? 'block' : 'none' }}>
-						<CollaborationView
-							selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null}
-							onHelpRequestsCountChange={setCollaborationHelpRequestsCount}
-						/>
+						<CollaborationView selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />
 					</div>
 
 					{/* Tutorial Content */}

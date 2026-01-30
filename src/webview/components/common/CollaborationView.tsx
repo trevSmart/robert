@@ -106,6 +106,11 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 					loadAllMessages();
 					break;
 
+				case 'supportRequestError':
+					// Handle support request error
+					setMessagesError(message.error);
+					break;
+
 				case 'collaborationMessageAttended':
 					// Update the specific message with new attendee
 					setMessages(prev => prev.map(msg => (msg.id === message.messageId ? { ...msg, attendees: [...(msg.attendees || []), message.attendee] } : msg)));

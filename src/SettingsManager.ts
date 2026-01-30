@@ -50,11 +50,13 @@ export class SettingsManager {
 					rallyInstance: config.get<string>('rallyInstance', 'https://rally1.rallydev.com'),
 					rallyApiKey: config.get<string>('rallyApiKey', ''),
 					rallyProjectName: config.get<string>('rallyProjectName', ''),
-					collaborationServerUrl: config.get<string>('collaboration.serverUrl', 'http://localhost:3001'),
+					collaborationServerUrl: config.get<string>('collaboration.serverUrl', 'https://robert-8vdt.onrender.com'),
 					collaborationEnabled: config.get<boolean>('collaboration.enabled', false),
 					collaborationAutoConnect: config.get<boolean>('collaboration.autoConnect', true),
 					showOutputChannelOnStartup: config.get<boolean>('showOutputChannelOnStartup', false)
 				};
+
+				return settings;
 			}, 'SettingsManager.getSettings') || this.getDefaultSettings()
 		);
 	}
@@ -199,7 +201,7 @@ export class SettingsManager {
 			rallyInstance: 'https://rally1.rallydev.com',
 			rallyApiKey: '',
 			rallyProjectName: '',
-			collaborationServerUrl: 'http://localhost:3001',
+			collaborationServerUrl: 'https://robert-8vdt.onrender.com',
 			collaborationEnabled: false,
 			collaborationAutoConnect: true,
 			showOutputChannelOnStartup: false

@@ -2,7 +2,7 @@ const { defineConfig } = require('@vscode/test-cli');
 
 module.exports = defineConfig([
 	{
-		label: 'unitTests',
+		label: 'integrationTests',
 		files: 'out/test/suite/**/*.test.js',
 		version: 'stable',
 		workspaceFolder: './test-workspace',

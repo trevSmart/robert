@@ -67,15 +67,11 @@ suite('Extension Integration Test Suite', () => {
 	});
 
 	test('Output channel should be created', async () => {
-		// Execute a command to ensure the extension is activated
-		await vscode.commands.executeCommand('robert.showOutput');
-		
-		// Give it a moment to create the output channel
-		await new Promise(resolve => setTimeout(resolve, 100));
-		
-		// The output channel should exist (we can't directly test this,
-		// but executing the command should not throw)
-		assert.ok(true);
+		// Executing the command should complete without throwing,
+		// which implies the extension activated and handled the request.
+		await assert.doesNotReject(async () => {
+			await vscode.commands.executeCommand('robert.showOutput');
+		});
 	});
 });
 

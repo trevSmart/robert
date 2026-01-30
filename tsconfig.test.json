@@ -1,0 +1,9 @@
+{
+	"extends": "./tsconfig.json",
+	"compilerOptions": {
+		"outDir": "out",
+		"types": ["mocha", "node", "vscode"]
+	},
+	"include": ["test/suite/**/*.test.ts"],
+	"exclude": ["node_modules"]
+}

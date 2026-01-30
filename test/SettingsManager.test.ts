@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { SettingsManager, RobertSettings } from '../src/SettingsManager.js';
+import { SettingsManager } from '../src/SettingsManager.js';
 
 // Mock vscode module
 vi.mock('vscode', () => ({

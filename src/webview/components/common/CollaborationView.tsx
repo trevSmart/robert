@@ -40,6 +40,12 @@ interface MessageReply {
 	};
 }
 
+interface NotificationData {
+	id: string;
+	messageId?: string;
+	read: boolean;
+}
+
 interface CollaborationViewProps {
 	selectedUserStoryId?: string | null;
 	onHelpRequestsCountChange?: (count: number) => void;
@@ -166,7 +172,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 					const unreadMessageIds = new Set<string>();
 					const msgToNotifMap = new Map<string, string[]>();
 
-					message.notifications.forEach((n: any) => {
+					message.notifications.forEach((n: NotificationData) => {
 						if (n.messageId) {
 							if (!n.read) {
 								unreadMessageIds.add(n.messageId);
@@ -183,24 +189,21 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 					break;
 
 				case 'collaborationNotificationMarkedAsRead':
-					// Remove from unread set
-					setUnreadNotifications(prev => {
-						const next = new Set(prev);
-						// Find and remove the notification for this message
-						messages.forEach(msg => {
-							if (msg.id === message.messageId) {
-								next.delete(msg.id);
-							}
+					// Remove from unread set using messageId directly
+					if (message.messageId) {
+						setUnreadNotifications(prev => {
+							const next = new Set(prev);
+							next.delete(message.messageId);
+							return next;
 						});
-						return next;
-					});
+					}
 					break;
 			}
 		};
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [currentUserId, loadAllMessages, messages]);
+	}, [currentUserId, loadAllMessages]);
 
 	// Calculate help requests count and notify parent (only count unread)
 	const helpRequestsCount = useMemo(() => {
@@ -250,6 +253,11 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 			// Get all notification IDs for this message
 			const notificationIds = messageToNotificationMap.get(messageId) || [];
 
+			// Only mark as read if there are notifications
+			if (notificationIds.length === 0) {
+				return;
+			}
+
 			// Mark each notification as read
 			notificationIds.forEach(notificationId => {
 				sendMessage({
@@ -269,32 +277,32 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 		[sendMessage, messageToNotificationMap]
 	);
 
-	const handlePaste = useCallback(
-		(event: React.ClipboardEvent<HTMLTextAreaElement>) => {
-			const items = event.clipboardData.items;
-			for (let i = 0; i < items.length; i++) {
-				const item = items[i];
-				if (item.type.indexOf('image') !== -1) {
-					event.preventDefault();
-					const blob = item.getAsFile();
-					if (blob) {
-						const reader = new FileReader();
-						reader.onload = e => {
-							const base64Image = e.target?.result as string;
-							const currentContent = generalMessageContent;
-							const cursorPosition = textareaRef.current?.selectionStart || currentContent.length;
-							const markdown = `![image](${base64Image})`;
-							const newContent = currentContent.substring(0, cursorPosition) + '\n' + markdown + '\n' + currentContent.substring(cursorPosition);
-							setGeneralMessageContent(newContent);
-						};
-						reader.readAsDataURL(blob);
-					}
-					break;
+	const handlePaste = useCallback((event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+		const items = event.clipboardData.items;
+		for (let i = 0; i < items.length; i++) {
+			const item = items[i];
+			if (item.type.indexOf('image') !== -1) {
+				event.preventDefault();
+				const blob = item.getAsFile();
+				if (blob) {
+					const reader = new FileReader();
+					reader.onload = e => {
+						const base64Image = e.target?.result as string;
+						const markdown = `![image](${base64Image})`;
+
+						// Use functional update to avoid race condition with async FileReader
+						setGeneralMessageContent(prev => {
+							const textarea = textareaRef.current;
+							const cursorPosition = textarea?.selectionStart ?? prev.length;
+							return prev.substring(0, cursorPosition) + '\n' + markdown + '\n' + prev.substring(cursorPosition);
+						});
+					};
+					reader.readAsDataURL(blob);
 				}
+				break;
 			}
-		},
-		[generalMessageContent]
-	);
+		}
+	}, []);
 
 	const handleSendGeneralMessage = useCallback(() => {
 		if (!generalMessageContent.trim()) return;
@@ -448,7 +456,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 					style={{
 						marginBottom: '20px',
 						padding: '16px',
-						backgroundColor: themeColors.editorBackground,
+						backgroundColor: themeColors.background,
 						border: `1px solid ${themeColors.panelBorder}`,
 						borderRadius: '6px'
 					}}
@@ -545,7 +553,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 						<thead>
 							<tr
 								style={{
-									backgroundColor: themeColors.editorBackground,
+									backgroundColor: themeColors.background,
 									borderBottom: `2px solid ${themeColors.panelBorder}`
 								}}
 							>
@@ -737,7 +745,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 										</tr>
 										{isExpanded && (
 											<tr>
-												<td colSpan={7} style={{ padding: '0', backgroundColor: themeColors.editorBackground }}>
+												<td colSpan={7} style={{ padding: '0', backgroundColor: themeColors.background }}>
 													<div style={{ padding: '16px', borderLeft: `4px solid ${ACCENT_COLORS.blue}` }}>
 														<div style={{ marginBottom: '16px' }}>
 															<strong style={{ color: themeColors.foreground }}>Missatge complet:</strong>

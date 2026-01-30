@@ -219,39 +219,45 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						</span>
 					)}
 				</div>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+				<div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
 					<button
 						onClick={handleRequestSupport}
 						disabled={requestSupportLoading}
-						title="Request help from team members"
+						title="Sol·licitar ajuda dels companys d'equip"
 						style={{
-							display: 'flex',
+							display: 'inline-flex',
 							alignItems: 'center',
 							gap: '6px',
-							padding: '8px 12px',
-							backgroundColor: requestSupportLoading ? 'var(--vscode-button-secondaryBackground)' : 'var(--vscode-button-background)',
-							color: requestSupportLoading ? 'var(--vscode-button-secondaryForeground)' : 'var(--vscode-button-foreground)',
-							border: 'none',
-							borderRadius: '4px',
-							fontSize: '12px',
-							fontWeight: '500',
+							padding: '8px 16px',
+							backgroundColor: requestSupportLoading ? '#888' : '#ff9800',
+							color: '#fff',
+							border: `1px solid ${requestSupportLoading ? '#666' : '#f57c00'}`,
+							borderRadius: '6px',
+							fontSize: '13px',
+							fontWeight: '600',
 							cursor: requestSupportLoading ? 'not-allowed' : 'pointer',
 							transition: 'all 0.15s ease',
-							opacity: requestSupportLoading ? 0.7 : 1
+							opacity: requestSupportLoading ? 0.7 : 1,
+							boxShadow: requestSupportLoading ? 'none' : '0 2px 4px rgba(255, 152, 0, 0.3)',
+							whiteSpace: 'nowrap'
 						}}
 						onMouseEnter={e => {
 							if (!requestSupportLoading) {
-								e.currentTarget.style.backgroundColor = 'var(--vscode-button-hoverBackground)';
+								e.currentTarget.style.backgroundColor = '#f57c00';
+								e.currentTarget.style.boxShadow = '0 3px 6px rgba(255, 152, 0, 0.4)';
+								e.currentTarget.style.transform = 'translateY(-1px)';
 							}
 						}}
 						onMouseLeave={e => {
 							if (!requestSupportLoading) {
-								e.currentTarget.style.backgroundColor = 'var(--vscode-button-background)';
+								e.currentTarget.style.backgroundColor = '#ff9800';
+								e.currentTarget.style.boxShadow = '0 2px 4px rgba(255, 152, 0, 0.3)';
+								e.currentTarget.style.transform = 'translateY(0)';
 							}
 						}}
 					>
-						<HelpIcon size="14px" />
-						{requestSupportLoading ? 'Requesting...' : 'Request Support'}
+						<HelpIcon size="16px" />
+						{requestSupportLoading ? 'Sol·licitant...' : '🆘 Sol·licitar Ajuda'}
 					</button>
 					{userStory.scheduleState && (
 						<div

@@ -62,6 +62,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 	const [newMessageUserStoryId, setNewMessageUserStoryId] = useState('');
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
 	const [replyContents, setReplyContents] = useState<Map<string, string>>(new Map());
+	const [showHelpRequestsOnly, setShowHelpRequestsOnly] = useState(false);
 
 	const sendMessage = useCallback(
 		(message: Record<string, unknown>) => {
@@ -248,11 +249,24 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 	}, [selectedUserStoryFilter, loadMessages]);
 
 	const filteredMessages = useMemo(() => {
-		if (!selectedUserStoryFilter) {
-			return messages;
+		let result = messages;
+
+		// Filter by user story if specified
+		if (selectedUserStoryFilter) {
+			result = result.filter(msg => msg.userStoryId === selectedUserStoryFilter);
 		}
-		return messages.filter(msg => msg.userStoryId === selectedUserStoryFilter);
-	}, [messages, selectedUserStoryFilter]);
+
+		// Filter to show only help requests if enabled
+		if (showHelpRequestsOnly) {
+			result = result.filter(msg => msg.content.includes('🆘') || msg.content.includes('Support Request'));
+		}
+
+		return result;
+	}, [messages, selectedUserStoryFilter, showHelpRequestsOnly]);
+
+	const helpRequestsCount = useMemo(() => {
+		return messages.filter(msg => msg.content.includes('🆘') || msg.content.includes('Support Request')).length;
+	}, [messages]);
 
 	const lightTheme = isLightTheme();
 
@@ -272,7 +286,24 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 					marginBottom: '20px'
 				}}
 			>
-				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Collaboration</h2>
+				<div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+					<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Collaboration</h2>
+					{helpRequestsCount > 0 && (
+						<span
+							style={{
+								padding: '4px 8px',
+								borderRadius: '12px',
+								backgroundColor: lightTheme ? '#ff9800' : 'rgba(255, 152, 0, 0.2)',
+								color: lightTheme ? '#fff' : '#ffb74d',
+								fontSize: '11px',
+								fontWeight: 600
+							}}
+							title={`${helpRequestsCount} help request(s)`}
+						>
+							🆘 {helpRequestsCount}
+						</span>
+					)}
+				</div>
 				{unreadCount > 0 && (
 					<button
 						onClick={markAllNotificationsAsRead}
@@ -342,6 +373,23 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 					borderRadius: '6px'
 				}}
 			>
+				<div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+					<button
+						onClick={() => setShowHelpRequestsOnly(!showHelpRequestsOnly)}
+						style={{
+							padding: '6px 12px',
+							borderRadius: '4px',
+							border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`,
+							backgroundColor: showHelpRequestsOnly ? (lightTheme ? '#ff9800' : 'rgba(255, 152, 0, 0.2)') : 'transparent',
+							color: showHelpRequestsOnly ? (lightTheme ? '#fff' : '#ffb74d') : 'var(--vscode-foreground)',
+							cursor: 'pointer',
+							fontSize: '11px',
+							fontWeight: 600
+						}}
+					>
+						🆘 Help Requests Only {showHelpRequestsOnly ? '✓' : ''}
+					</button>
+				</div>
 				<label style={{ display: 'block', marginBottom: '8px', fontSize: '12px', fontWeight: 600 }}>Filter by User Story ID:</label>
 				<input
 					type="text"
@@ -449,6 +497,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 					{filteredMessages.map(message => {
 						const isExpanded = expandedMessages.has(message.id);
 						const replyContent = replyContents.get(message.id) || '';
+						const isHelpRequest = message.content.includes('🆘') || message.content.includes('Support Request');
 
 						return (
 							<div
@@ -457,7 +506,8 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 									padding: '16px',
 									backgroundColor: lightTheme ? '#fff' : 'var(--vscode-editor-background)',
 									borderRadius: '6px',
-									border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`
+									border: isHelpRequest ? `2px solid ${lightTheme ? '#ff9800' : 'rgba(255, 152, 0, 0.5)'}` : `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`,
+									boxShadow: isHelpRequest ? `0 0 8px ${lightTheme ? 'rgba(255, 152, 0, 0.2)' : 'rgba(255, 152, 0, 0.1)'}` : 'none'
 								}}
 							>
 								<div
@@ -471,6 +521,21 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 									<div style={{ flex: 1 }}>
 										<div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
 											<span style={{ fontWeight: 600, fontSize: '13px' }}>{message.user?.displayName || 'Unknown User'}</span>
+											{isHelpRequest && (
+												<span
+													style={{
+														padding: '2px 8px',
+														borderRadius: '3px',
+														backgroundColor: lightTheme ? '#ff9800' : 'rgba(255, 152, 0, 0.2)',
+														color: lightTheme ? '#fff' : '#ffb74d',
+														fontSize: '10px',
+														fontWeight: 600,
+														textTransform: 'uppercase'
+													}}
+												>
+													🆘 HELP REQUEST
+												</span>
+											)}
 											<span
 												style={{
 													padding: '2px 6px',
@@ -488,7 +553,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 										<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', marginBottom: '8px' }}>
 											User Story: {message.userStoryId} • {new Date(message.createdAt).toLocaleString()}
 										</div>
-										<div style={{ fontSize: '13px', lineHeight: '1.5', marginBottom: '12px' }}>{message.content}</div>
+										<div style={{ fontSize: '13px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>{message.content}</div>
 									</div>
 								</div>
 

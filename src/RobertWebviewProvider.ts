@@ -1350,6 +1350,40 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								});
 							}
 							break;
+						case 'markCollaborationMessageAsRead':
+							try {
+								this._errorHandler.logInfo(`Marking message as read: ${message.messageId}`, 'WebviewMessageListener');
+								await this._collaborationClient.markMessageAsRead(message.messageId);
+								webview.postMessage({
+									command: 'collaborationMessageMarkedAsRead',
+									messageId: message.messageId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markCollaborationMessageAsRead');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'markCollaborationMessageAsUnread':
+							try {
+								this._errorHandler.logInfo(`Marking message as unread: ${message.messageId}`, 'WebviewMessageListener');
+								await this._collaborationClient.markMessageAsUnread(message.messageId);
+								webview.postMessage({
+									command: 'collaborationMessageMarkedAsUnread',
+									messageId: message.messageId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markCollaborationMessageAsUnread');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: errorMessage
+								});
+							}
+							break;
 						case 'subscribeCollaborationUserStory':
 							if (this._websocketClient.isConnected()) {
 								this._websocketClient.subscribeUserStory(message.userStoryId);

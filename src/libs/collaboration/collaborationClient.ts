@@ -234,6 +234,24 @@ export class CollaborationClient {
 		}, 'CollaborationClient.unattendMessage');
 	}
 
+	// Mark message as read
+	public async markMessageAsRead(messageId: string): Promise<void> {
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			await this.makeRequest(`/api/messages/${messageId}/read`, {
+				method: 'POST'
+			});
+		}, 'CollaborationClient.markMessageAsRead');
+	}
+
+	// Mark message as unread
+	public async markMessageAsUnread(messageId: string): Promise<void> {
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			await this.makeRequest(`/api/messages/${messageId}/read`, {
+				method: 'DELETE'
+			});
+		}, 'CollaborationClient.markMessageAsUnread');
+	}
+
 	// Notifications API
 	public async getNotifications(unreadOnly: boolean = false): Promise<{ notifications: Notification[]; unreadCount: number }> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {

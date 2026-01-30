@@ -109,6 +109,17 @@ async function runMigrations(): Promise<void> {
 			)
 		`);
 
+		// Create message_reads table for tracking who has read which messages
+		await client.query(`
+			CREATE TABLE IF NOT EXISTS message_reads (
+				id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+				message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+				user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				created_at TIMESTAMP DEFAULT NOW(),
+				UNIQUE(message_id, user_id)
+			)
+		`);
+
 		// Create indexes for better performance
 		await client.query(`
 			CREATE INDEX IF NOT EXISTS idx_messages_user_story_id ON messages(user_story_id)
@@ -130,6 +141,12 @@ async function runMigrations(): Promise<void> {
 		`);
 		await client.query(`
 			CREATE INDEX IF NOT EXISTS idx_message_attendees_user_id ON message_attendees(user_id)
+		`);
+		await client.query(`
+			CREATE INDEX IF NOT EXISTS idx_message_reads_message_id ON message_reads(message_id)
+		`);
+		await client.query(`
+			CREATE INDEX IF NOT EXISTS idx_message_reads_user_id ON message_reads(user_id)
 		`);
 
 		await client.query('COMMIT');

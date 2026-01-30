@@ -598,7 +598,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																backgroundColor: ACCENT_COLORS.blue,
 																flexShrink: 0
 															}}
-															title="Nou"
+															title="New"
 														/>
 													)}
 													{isHelp && (

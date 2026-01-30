@@ -159,7 +159,14 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			command: 'requestUserStorySupport',
 			userStoryId: userStory.formattedId,
 			userStoryName: userStory.name,
-			userStoryObjectId: userStory.objectId
+			userStoryObjectId: userStory.objectId,
+			project: userStory.project,
+			iteration: userStory.iteration,
+			description: userStory.description,
+			scheduleState: userStory.scheduleState,
+			tasksCount: userStory.tasksCount,
+			planEstimate: userStory.planEstimate,
+			taskEstimateTotal: userStory.taskEstimateTotal
 		});
 
 		// Simulate success after a short delay
@@ -228,36 +235,30 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							display: 'inline-flex',
 							alignItems: 'center',
 							gap: '6px',
-							padding: '8px 16px',
-							backgroundColor: requestSupportLoading ? '#888' : '#ff9800',
-							color: '#fff',
-							border: `1px solid ${requestSupportLoading ? '#666' : '#f57c00'}`,
-							borderRadius: '6px',
-							fontSize: '13px',
-							fontWeight: '600',
+							padding: '6px 12px',
+							backgroundColor: requestSupportLoading ? 'var(--vscode-button-secondaryBackground)' : 'var(--vscode-button-background)',
+							color: requestSupportLoading ? 'var(--vscode-button-secondaryForeground)' : 'var(--vscode-button-foreground)',
+							border: 'none',
+							borderRadius: '3px',
+							fontSize: '12px',
+							fontWeight: '500',
 							cursor: requestSupportLoading ? 'not-allowed' : 'pointer',
-							transition: 'all 0.15s ease',
-							opacity: requestSupportLoading ? 0.7 : 1,
-							boxShadow: requestSupportLoading ? 'none' : '0 2px 4px rgba(255, 152, 0, 0.3)',
+							opacity: requestSupportLoading ? 0.6 : 1,
 							whiteSpace: 'nowrap'
 						}}
 						onMouseEnter={e => {
 							if (!requestSupportLoading) {
-								e.currentTarget.style.backgroundColor = '#f57c00';
-								e.currentTarget.style.boxShadow = '0 3px 6px rgba(255, 152, 0, 0.4)';
-								e.currentTarget.style.transform = 'translateY(-1px)';
+								e.currentTarget.style.backgroundColor = 'var(--vscode-button-hoverBackground)';
 							}
 						}}
 						onMouseLeave={e => {
 							if (!requestSupportLoading) {
-								e.currentTarget.style.backgroundColor = '#ff9800';
-								e.currentTarget.style.boxShadow = '0 2px 4px rgba(255, 152, 0, 0.3)';
-								e.currentTarget.style.transform = 'translateY(0)';
+								e.currentTarget.style.backgroundColor = 'var(--vscode-button-background)';
 							}
 						}}
 					>
-						<HelpIcon size="16px" />
-						{requestSupportLoading ? 'Sol·licitant...' : '🆘 Sol·licitar Ajuda'}
+						<HelpIcon size="14px" />
+						{requestSupportLoading ? 'Sol·licitant...' : 'Sol·licitar Ajuda'}
 					</button>
 					{userStory.scheduleState && (
 						<div

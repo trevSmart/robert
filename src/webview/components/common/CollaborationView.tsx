@@ -48,9 +48,10 @@ interface Notification {
 
 interface CollaborationViewProps {
 	selectedUserStoryId?: string | null;
+	onHelpRequestsCountChange?: (count: number) => void;
 }
 
-const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) => {
+const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, onHelpRequestsCountChange }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [messagesLoading, setMessagesLoading] = useState(false);
@@ -338,6 +339,13 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 	const helpRequestsCount = useMemo(() => {
 		return messages.filter(msg => msg.content.includes('🆘') || msg.content.includes('Support Request')).length;
 	}, [messages]);
+
+	// Notify parent of help requests count changes
+	useEffect(() => {
+		if (onHelpRequestsCountChange) {
+			onHelpRequestsCountChange(helpRequestsCount);
+		}
+	}, [helpRequestsCount, onHelpRequestsCountChange]);
 
 	// Function to render message content with images
 	const renderMessageContent = (content: string) => {

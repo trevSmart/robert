@@ -6,6 +6,7 @@ type Section = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metri
 interface NavigationBarProps {
 	activeSection: Section;
 	onSectionChange: (section: Section) => void;
+	collaborationBadgeCount?: number;
 }
 
 // Search tab: magnifying glass SVG only (no label)
@@ -72,7 +73,7 @@ const CollaborationIcon = () => (
 	</svg>
 );
 
-const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange }) => {
+const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange, collaborationBadgeCount = 0 }) => {
 	const tabs = useMemo(
 		() => [
 			{ id: 'search' as const, label: '', Icon: SearchIcon, iconOnly: true },
@@ -239,6 +240,26 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 					<button key={id} type="button" onClick={() => activeSection !== id && onSectionChange(id)} style={getTabStyles(activeSection === id)} aria-label={iconOnly ? 'Search' : undefined} title={iconOnly ? 'Search' : undefined}>
 						<Icon />
 						{!iconOnly && <span>{label}</span>}
+						{id === 'collaboration' && collaborationBadgeCount > 0 && (
+							<span
+								style={{
+									display: 'inline-flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									minWidth: '18px',
+									height: '18px',
+									padding: '0 5px',
+									borderRadius: '9px',
+									backgroundColor: '#ff5252',
+									color: '#fff',
+									fontSize: '10px',
+									fontWeight: '600',
+									lineHeight: '1'
+								}}
+							>
+								{collaborationBadgeCount > 99 ? '99+' : collaborationBadgeCount}
+							</span>
+						)}
 					</button>
 				))}
 				{overflowTabs.length > 0 && (
@@ -300,6 +321,27 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 									>
 										<Icon />
 										{!iconOnly && <span>{label}</span>}
+										{id === 'collaboration' && collaborationBadgeCount > 0 && (
+											<span
+												style={{
+													display: 'inline-flex',
+													alignItems: 'center',
+													justifyContent: 'center',
+													minWidth: '18px',
+													height: '18px',
+													padding: '0 5px',
+													borderRadius: '9px',
+													backgroundColor: '#ff5252',
+													color: '#fff',
+													fontSize: '10px',
+													fontWeight: '600',
+													lineHeight: '1',
+													marginLeft: 'auto'
+												}}
+											>
+												{collaborationBadgeCount > 99 ? '99+' : collaborationBadgeCount}
+											</span>
+										)}
 									</button>
 								))}
 							</div>

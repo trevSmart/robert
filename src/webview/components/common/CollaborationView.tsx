@@ -1,6 +1,6 @@
-import React, { FC, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { FC, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { getVsCodeApi } from '../../utils/vscodeApi';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, themeColors } from '../../utils/themeColors';
 
 interface MessageAttendee {
 	id: string;
@@ -19,6 +19,7 @@ interface Message {
 	status: 'open' | 'resolved' | 'archived';
 	createdAt: string;
 	updatedAt: string;
+	isRead?: boolean;
 	user?: {
 		displayName: string;
 		rallyUserId: string;
@@ -44,13 +45,28 @@ interface CollaborationViewProps {
 	onHelpRequestsCountChange?: (count: number) => void;
 }
 
-const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, onHelpRequestsCountChange }) => {
+// EChart color palette from StateDistributionPie
+const ACCENT_COLORS = {
+	orange: '#ff8c00',
+	yellow: '#ffd700',
+	blue: '#0d8bf9',
+	green: '#20c997',
+	red: '#e74c3c',
+	grey: '#6c757d'
+};
+
+const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _selectedUserStoryId, onHelpRequestsCountChange }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [messagesLoading, setMessagesLoading] = useState(false);
 	const [messagesError, setMessagesError] = useState<string | null>(null);
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
 	const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+	const [showGeneralMessageForm, setShowGeneralMessageForm] = useState(false);
+	const [generalMessageContent, setGeneralMessageContent] = useState('');
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const [unreadNotifications, setUnreadNotifications] = useState<Set<string>>(new Set());
+	const [messageToNotificationMap, setMessageToNotificationMap] = useState<Map<string, string[]>>(new Map());
 
 	const sendMessage = useCallback(
 		(message: Record<string, unknown>) => {
@@ -60,28 +76,32 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 		[vscode]
 	);
 
-	// Load all messages on mount
+	// Load all messages
 	const loadAllMessages = useCallback(() => {
-		setMessagesLoading(true);
-		setMessagesError(null);
 		sendMessage({
 			command: 'loadCollaborationMessages'
+		});
+		sendMessage({
+			command: 'loadCollaborationNotifications',
+			unreadOnly: false
 		});
 	}, [sendMessage]);
 
 	// Initial load
 	useEffect(() => {
+		setMessagesLoading(true);
+		setMessagesError(null);
+
 		// Send messages to load data
 		sendMessage({
 			command: 'loadCollaborationMessages'
 		});
 		sendMessage({ command: 'getRallyCurrentUser' });
-	}, [sendMessage]);
-
-	// Set loading state when component mounts
-	useEffect(() => {
-		setMessagesLoading(true);
-		setMessagesError(null);
+		sendMessage({
+			command: 'loadCollaborationNotifications',
+			unreadOnly: false
+		});
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
 	// Handle messages from extension
@@ -140,17 +160,52 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 						setMessages(prev => prev.map(msg => (msg.id === message.message.id ? message.message : msg)));
 					}
 					break;
+
+				case 'collaborationNotificationsLoaded':
+					// Store unread notification message IDs and build map
+					const unreadMessageIds = new Set<string>();
+					const msgToNotifMap = new Map<string, string[]>();
+
+					message.notifications.forEach((n: any) => {
+						if (n.messageId) {
+							if (!n.read) {
+								unreadMessageIds.add(n.messageId);
+							}
+							// Build map of messageId to notification IDs
+							const existing = msgToNotifMap.get(n.messageId) || [];
+							existing.push(n.id);
+							msgToNotifMap.set(n.messageId, existing);
+						}
+					});
+
+					setUnreadNotifications(unreadMessageIds);
+					setMessageToNotificationMap(msgToNotifMap);
+					break;
+
+				case 'collaborationNotificationMarkedAsRead':
+					// Remove from unread set
+					setUnreadNotifications(prev => {
+						const next = new Set(prev);
+						// Find and remove the notification for this message
+						messages.forEach(msg => {
+							if (msg.id === message.messageId) {
+								next.delete(msg.id);
+							}
+						});
+						return next;
+					});
+					break;
 			}
 		};
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [currentUserId, loadAllMessages]);
+	}, [currentUserId, loadAllMessages, messages]);
 
-	// Calculate help requests count and notify parent
+	// Calculate help requests count and notify parent (only count unread)
 	const helpRequestsCount = useMemo(() => {
-		return messages.filter(msg => msg.content.includes('🆘') || msg.content.includes('Support Request')).length;
-	}, [messages]);
+		return messages.filter(msg => unreadNotifications.has(msg.id) && (msg.content.includes('🆘') || msg.content.includes('Support Request'))).length;
+	}, [messages, unreadNotifications]);
 
 	useEffect(() => {
 		if (onHelpRequestsCountChange) {
@@ -189,6 +244,70 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 		},
 		[sendMessage]
 	);
+
+	const handleMarkAsRead = useCallback(
+		(messageId: string) => {
+			// Get all notification IDs for this message
+			const notificationIds = messageToNotificationMap.get(messageId) || [];
+
+			// Mark each notification as read
+			notificationIds.forEach(notificationId => {
+				sendMessage({
+					command: 'markCollaborationNotificationAsRead',
+					notificationId,
+					messageId // Pass messageId for optimistic update
+				});
+			});
+
+			// Optimistically update the UI
+			setUnreadNotifications(prev => {
+				const next = new Set(prev);
+				next.delete(messageId);
+				return next;
+			});
+		},
+		[sendMessage, messageToNotificationMap]
+	);
+
+	const handlePaste = useCallback(
+		(event: React.ClipboardEvent<HTMLTextAreaElement>) => {
+			const items = event.clipboardData.items;
+			for (let i = 0; i < items.length; i++) {
+				const item = items[i];
+				if (item.type.indexOf('image') !== -1) {
+					event.preventDefault();
+					const blob = item.getAsFile();
+					if (blob) {
+						const reader = new FileReader();
+						reader.onload = e => {
+							const base64Image = e.target?.result as string;
+							const currentContent = generalMessageContent;
+							const cursorPosition = textareaRef.current?.selectionStart || currentContent.length;
+							const markdown = `![image](${base64Image})`;
+							const newContent = currentContent.substring(0, cursorPosition) + '\n' + markdown + '\n' + currentContent.substring(cursorPosition);
+							setGeneralMessageContent(newContent);
+						};
+						reader.readAsDataURL(blob);
+					}
+					break;
+				}
+			}
+		},
+		[generalMessageContent]
+	);
+
+	const handleSendGeneralMessage = useCallback(() => {
+		if (!generalMessageContent.trim()) return;
+
+		sendMessage({
+			command: 'createCollaborationMessage',
+			userStoryId: 'GENERAL',
+			content: generalMessageContent.trim()
+		});
+
+		setGeneralMessageContent('');
+		setShowGeneralMessageForm(false);
+	}, [generalMessageContent, sendMessage]);
 
 	const isUserAttending = useCallback(
 		(message: Message): boolean => {
@@ -275,7 +394,8 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 			style={{
 				padding: '20px',
 				height: '100%',
-				overflow: 'auto'
+				overflow: 'auto',
+				backgroundColor: themeColors.background
 			}}
 		>
 			<div
@@ -286,43 +406,131 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 					marginBottom: '20px'
 				}}
 			>
-				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600 }}>Sol·licituds de Col·laboració</h2>
-				<button
-					onClick={loadAllMessages}
-					disabled={messagesLoading}
-					style={{
-						padding: '6px 12px',
-						borderRadius: '4px',
-						border: 'none',
-						backgroundColor: lightTheme ? '#007acc' : 'var(--vscode-button-background)',
-						color: lightTheme ? '#fff' : 'var(--vscode-button-foreground)',
-						cursor: messagesLoading ? 'not-allowed' : 'pointer',
-						fontSize: '12px',
-						opacity: messagesLoading ? 0.6 : 1
-					}}
-				>
-					{messagesLoading ? 'Carregant...' : 'Actualitzar'}
-				</button>
+				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>Sol·licituds de Col·laboració</h2>
+				<div style={{ display: 'flex', gap: '8px' }}>
+					<button
+						onClick={() => setShowGeneralMessageForm(!showGeneralMessageForm)}
+						style={{
+							padding: '6px 12px',
+							borderRadius: '4px',
+							border: `1px solid ${themeColors.inputBorder}`,
+							backgroundColor: ACCENT_COLORS.blue,
+							color: '#fff',
+							cursor: 'pointer',
+							fontSize: '12px',
+							fontWeight: 500
+						}}
+					>
+						{showGeneralMessageForm ? 'Cancel·lar' : '+ Nou Missatge General'}
+					</button>
+					<button
+						onClick={loadAllMessages}
+						disabled={messagesLoading}
+						style={{
+							padding: '6px 12px',
+							borderRadius: '4px',
+							border: `1px solid ${themeColors.inputBorder}`,
+							backgroundColor: themeColors.buttonBackground,
+							color: themeColors.buttonForeground,
+							cursor: messagesLoading ? 'not-allowed' : 'pointer',
+							fontSize: '12px',
+							opacity: messagesLoading ? 0.6 : 1
+						}}
+					>
+						{messagesLoading ? 'Carregant...' : 'Actualitzar'}
+					</button>
+				</div>
 			</div>
 
-			{messagesLoading && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--vscode-descriptionForeground)' }}>Carregant sol·licituds...</div>}
+			{/* General Message Form */}
+			{showGeneralMessageForm && (
+				<div
+					style={{
+						marginBottom: '20px',
+						padding: '16px',
+						backgroundColor: themeColors.editorBackground,
+						border: `1px solid ${themeColors.panelBorder}`,
+						borderRadius: '6px'
+					}}
+				>
+					<h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: themeColors.foreground }}>Nou Missatge General</h3>
+					<textarea
+						ref={textareaRef}
+						value={generalMessageContent}
+						onChange={e => setGeneralMessageContent(e.target.value)}
+						onPaste={handlePaste}
+						placeholder="Escriu el teu missatge... (pots enganxar imatges directament)"
+						style={{
+							width: '100%',
+							minHeight: '100px',
+							padding: '8px',
+							borderRadius: '4px',
+							border: `1px solid ${themeColors.inputBorder}`,
+							backgroundColor: themeColors.inputBackground,
+							color: themeColors.inputForeground,
+							fontSize: '13px',
+							fontFamily: 'inherit',
+							resize: 'vertical'
+						}}
+					/>
+					<div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+						<button
+							onClick={() => {
+								setShowGeneralMessageForm(false);
+								setGeneralMessageContent('');
+							}}
+							style={{
+								padding: '6px 12px',
+								borderRadius: '4px',
+								border: `1px solid ${themeColors.inputBorder}`,
+								backgroundColor: themeColors.buttonSecondaryBackground,
+								color: themeColors.buttonSecondaryForeground,
+								cursor: 'pointer',
+								fontSize: '12px'
+							}}
+						>
+							Cancel·lar
+						</button>
+						<button
+							onClick={handleSendGeneralMessage}
+							disabled={!generalMessageContent.trim()}
+							style={{
+								padding: '6px 12px',
+								borderRadius: '4px',
+								border: 'none',
+								backgroundColor: ACCENT_COLORS.green,
+								color: '#fff',
+								cursor: generalMessageContent.trim() ? 'pointer' : 'not-allowed',
+								fontSize: '12px',
+								fontWeight: 500,
+								opacity: generalMessageContent.trim() ? 1 : 0.5
+							}}
+						>
+							Enviar
+						</button>
+					</div>
+				</div>
+			)}
+
+			{messagesLoading && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: themeColors.descriptionForeground }}>Carregant sol·licituds...</div>}
 
 			{messagesError && (
 				<div
 					style={{
 						padding: '12px',
-						backgroundColor: lightTheme ? '#ffebee' : 'var(--vscode-inputValidation-errorBackground)',
+						backgroundColor: lightTheme ? '#ffebee' : 'rgba(231, 76, 60, 0.15)',
 						borderRadius: '4px',
-						color: lightTheme ? '#c62828' : 'var(--vscode-errorForeground)',
+						color: ACCENT_COLORS.red,
 						fontSize: '12px',
-						marginBottom: '20px'
+						marginBottom: '20px',
+						border: `1px solid ${ACCENT_COLORS.red}`
 					}}
 				>
 					Error: {messagesError}
 				</div>
 			)}
 
-			{!messagesLoading && !messagesError && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: 'var(--vscode-descriptionForeground)' }}>No hi ha sol·licituds de col·laboració.</div>}
+			{!messagesLoading && !messagesError && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: themeColors.descriptionForeground }}>No hi ha sol·licituds de col·laboració.</div>}
 
 			{!messagesLoading && !messagesError && messages.length > 0 && (
 				<div style={{ overflow: 'auto' }}>
@@ -330,26 +538,24 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 						style={{
 							width: '100%',
 							borderCollapse: 'collapse',
-							fontSize: '13px'
+							fontSize: '13px',
+							border: `1px solid ${themeColors.panelBorder}`
 						}}
 					>
 						<thead>
 							<tr
 								style={{
-									backgroundColor: lightTheme ? '#f5f5f5' : 'var(--vscode-editor-background)',
-									borderBottom: `2px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`,
-									position: 'sticky',
-									top: 0,
-									zIndex: 1
+									backgroundColor: themeColors.editorBackground,
+									borderBottom: `2px solid ${themeColors.panelBorder}`
 								}}
 							>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px' }}>Data</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px' }}>User Story</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '200px' }}>Sol·licitud</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px' }}>Sol·licitant</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '150px' }}>Qui l&apos;atén</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px' }}>Estat</th>
-								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 600, minWidth: '100px' }}>Accions</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Data</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>User Story</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '200px', color: themeColors.foreground }}>Sol·licitud</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Sol·licitant</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '150px', color: themeColors.foreground }}>Qui l&apos;atén</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>Estat</th>
+								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 600, minWidth: '140px', color: themeColors.foreground }}>Accions</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -357,47 +563,80 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 								const isExpanded = expandedMessages.has(message.id);
 								const attending = isUserAttending(message);
 								const isHelp = isHelpRequest(message);
+								const isUnread = unreadNotifications.has(message.id);
 
 								return (
 									<React.Fragment key={message.id}>
 										<tr
 											style={{
-												backgroundColor: isHelp ? (lightTheme ? 'rgba(255, 152, 0, 0.05)' : 'rgba(255, 152, 0, 0.1)') : 'transparent',
-												borderBottom: `1px solid ${lightTheme ? '#eee' : 'var(--vscode-panel-border)'}`
+												backgroundColor: isUnread ? (lightTheme ? 'rgba(13, 139, 249, 0.05)' : 'rgba(13, 139, 249, 0.08)') : isHelp ? (lightTheme ? 'rgba(255, 140, 0, 0.05)' : 'rgba(255, 140, 0, 0.08)') : 'transparent',
+												borderBottom: `1px solid ${themeColors.panelBorder}`,
+												transition: 'background-color 0.2s'
 											}}
 										>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ fontSize: '12px' }}>{new Date(message.createdAt).toLocaleDateString('ca-ES')}</div>
-												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{new Date(message.createdAt).toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+												<div style={{ fontSize: '12px', color: themeColors.foreground }}>{new Date(message.createdAt).toLocaleDateString('ca-ES')}</div>
+												<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{new Date(message.createdAt).toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' })}</div>
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ fontWeight: 500 }}>{message.userStoryId}</div>
-											</td>
-											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												{isHelp && (
+												<div style={{ fontWeight: 500, color: themeColors.foreground }}>{message.userStoryId === 'GENERAL' ? '—' : message.userStoryId}</div>
+												{message.userStoryId === 'GENERAL' && (
 													<span
 														style={{
 															display: 'inline-block',
 															padding: '2px 6px',
+															marginTop: '4px',
 															borderRadius: '3px',
-															backgroundColor: lightTheme ? '#ff9800' : 'rgba(255, 152, 0, 0.2)',
-															color: lightTheme ? '#fff' : '#ffb74d',
+															backgroundColor: lightTheme ? ACCENT_COLORS.grey : 'rgba(108, 117, 125, 0.3)',
+															color: lightTheme ? '#fff' : '#aaa',
 															fontSize: '10px',
-															fontWeight: 600,
-															marginRight: '6px'
+															fontWeight: 600
 														}}
 													>
-														🆘 AJUDA
+														GENERAL
 													</span>
 												)}
-												<div style={{ marginTop: isHelp ? '4px' : 0 }}>{getMessageSummary(message.content)}</div>
+											</td>
+											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
+												<div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+													{isUnread && (
+														<span
+															style={{
+																display: 'inline-block',
+																width: '8px',
+																height: '8px',
+																borderRadius: '50%',
+																backgroundColor: ACCENT_COLORS.blue,
+																flexShrink: 0
+															}}
+															title="Nou"
+														/>
+													)}
+													{isHelp && (
+														<span
+															style={{
+																display: 'inline-block',
+																padding: '2px 6px',
+																borderRadius: '3px',
+																backgroundColor: lightTheme ? ACCENT_COLORS.orange : 'rgba(255, 140, 0, 0.3)',
+																color: lightTheme ? '#fff' : '#ffb74d',
+																fontSize: '10px',
+																fontWeight: 600
+															}}
+														>
+															🆘 AJUDA
+														</span>
+													)}
+												</div>
+												<div style={{ marginTop: '4px', color: themeColors.foreground }}>{getMessageSummary(message.content)}</div>
 												{message.replies && message.replies.length > 0 && (
 													<div
 														style={{
 															marginTop: '4px',
 															fontSize: '11px',
-															color: 'var(--vscode-textLink-foreground)',
-															cursor: 'pointer'
+															color: ACCENT_COLORS.blue,
+															cursor: 'pointer',
+															fontWeight: 500
 														}}
 														onClick={() => toggleExpanded(message.id)}
 													>
@@ -406,7 +645,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 												)}
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ fontSize: '12px' }}>{message.user?.displayName || 'Unknown'}</div>
+												<div style={{ fontSize: '12px', color: themeColors.foreground }}>{message.user?.displayName || 'Unknown'}</div>
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
 												{message.attendees && message.attendees.length > 0 ? (
@@ -417,10 +656,11 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 																style={{
 																	fontSize: '11px',
 																	padding: '2px 6px',
-																	backgroundColor: lightTheme ? '#e3f2fd' : 'rgba(100, 149, 237, 0.2)',
+																	backgroundColor: lightTheme ? 'rgba(32, 201, 151, 0.15)' : 'rgba(32, 201, 151, 0.2)',
 																	borderRadius: '3px',
 																	display: 'inline-block',
-																	maxWidth: 'fit-content'
+																	maxWidth: 'fit-content',
+																	color: lightTheme ? ACCENT_COLORS.green : '#6ae7c0'
 																}}
 															>
 																{attendee.displayName}
@@ -428,7 +668,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 														))}
 													</div>
 												) : (
-													<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', fontStyle: 'italic' }}>Ningú</div>
+													<div style={{ fontSize: '11px', color: themeColors.descriptionForeground, fontStyle: 'italic' }}>Ningú</div>
 												)}
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
@@ -436,7 +676,19 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 													style={{
 														padding: '2px 8px',
 														borderRadius: '3px',
-														backgroundColor: message.status === 'open' ? (lightTheme ? '#e3f2fd' : 'rgba(100, 149, 237, 0.2)') : lightTheme ? '#e8f5e9' : 'rgba(76, 175, 80, 0.2)',
+														backgroundColor:
+															message.status === 'open'
+																? lightTheme
+																	? 'rgba(13, 139, 249, 0.15)'
+																	: 'rgba(13, 139, 249, 0.2)'
+																: message.status === 'resolved'
+																	? lightTheme
+																		? 'rgba(32, 201, 151, 0.15)'
+																		: 'rgba(32, 201, 151, 0.2)'
+																	: lightTheme
+																		? 'rgba(108, 117, 125, 0.15)'
+																		: 'rgba(108, 117, 125, 0.2)',
+														color: message.status === 'open' ? ACCENT_COLORS.blue : message.status === 'resolved' ? ACCENT_COLORS.green : ACCENT_COLORS.grey,
 														fontSize: '11px',
 														fontWeight: 500,
 														textTransform: 'uppercase'
@@ -445,51 +697,71 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 													{message.status === 'open' ? 'Obert' : message.status === 'resolved' ? 'Resolt' : 'Arxivat'}
 												</span>
 											</td>
-											<td style={{ padding: '12px 8px', verticalAlign: 'top', textAlign: 'center' }}>
-												<button
-													onClick={() => (attending ? handleUnattend(message.id) : handleAttend(message.id))}
-													style={{
-														padding: '4px 10px',
-														borderRadius: '3px',
-														border: 'none',
-														backgroundColor: attending ? (lightTheme ? '#4caf50' : 'rgba(76, 175, 80, 0.3)') : lightTheme ? '#007acc' : 'var(--vscode-button-background)',
-														color: attending ? '#fff' : lightTheme ? '#fff' : 'var(--vscode-button-foreground)',
-														cursor: 'pointer',
-														fontSize: '11px',
-														fontWeight: 500
-													}}
-												>
-													{attending ? '✓ Atenent' : 'Atendre'}
-												</button>
+											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
+												<div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+													<button
+														onClick={() => (attending ? handleUnattend(message.id) : handleAttend(message.id))}
+														style={{
+															padding: '4px 10px',
+															borderRadius: '3px',
+															border: 'none',
+															backgroundColor: attending ? (lightTheme ? ACCENT_COLORS.green : 'rgba(32, 201, 151, 0.3)') : lightTheme ? ACCENT_COLORS.blue : 'rgba(13, 139, 249, 0.3)',
+															color: '#fff',
+															cursor: 'pointer',
+															fontSize: '11px',
+															fontWeight: 500
+														}}
+													>
+														{attending ? '✓ Atenent' : 'Atendre'}
+													</button>
+													{isUnread && (
+														<button
+															onClick={() => handleMarkAsRead(message.id)}
+															style={{
+																padding: '4px 10px',
+																borderRadius: '3px',
+																border: `1px solid ${themeColors.inputBorder}`,
+																backgroundColor: themeColors.buttonSecondaryBackground,
+																color: themeColors.buttonSecondaryForeground,
+																cursor: 'pointer',
+																fontSize: '11px',
+																fontWeight: 500
+															}}
+															title="Marcar com a llegit"
+														>
+															✓ Llegit
+														</button>
+													)}
+												</div>
 											</td>
 										</tr>
 										{isExpanded && (
 											<tr>
-												<td colSpan={7} style={{ padding: '0', backgroundColor: lightTheme ? '#fafafa' : 'rgba(0, 0, 0, 0.2)' }}>
-													<div style={{ padding: '16px', borderLeft: `4px solid ${lightTheme ? '#007acc' : 'var(--vscode-progressBar-background)'}` }}>
+												<td colSpan={7} style={{ padding: '0', backgroundColor: themeColors.editorBackground }}>
+													<div style={{ padding: '16px', borderLeft: `4px solid ${ACCENT_COLORS.blue}` }}>
 														<div style={{ marginBottom: '16px' }}>
-															<strong>Missatge complet:</strong>
-															<div style={{ marginTop: '8px', whiteSpace: 'pre-wrap', fontSize: '12px' }}>{message.content}</div>
+															<strong style={{ color: themeColors.foreground }}>Missatge complet:</strong>
+															<div style={{ marginTop: '8px', whiteSpace: 'pre-wrap', fontSize: '12px', color: themeColors.foreground }}>{message.content}</div>
 														</div>
 														{message.replies && message.replies.length > 0 && (
 															<div>
-																<strong>Respostes:</strong>
+																<strong style={{ color: themeColors.foreground }}>Respostes:</strong>
 																<div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
 																	{message.replies.map(reply => (
 																		<div
 																			key={reply.id}
 																			style={{
 																				padding: '10px',
-																				backgroundColor: lightTheme ? '#fff' : 'var(--vscode-editor-background)',
+																				backgroundColor: themeColors.inputBackground,
 																				borderRadius: '4px',
-																				borderLeft: `3px solid ${lightTheme ? '#4caf50' : 'rgba(76, 175, 80, 0.5)'}`,
+																				borderLeft: `3px solid ${ACCENT_COLORS.green}`,
 																				fontSize: '12px'
 																			}}
 																		>
-																			<div style={{ fontWeight: 600, marginBottom: '4px', fontSize: '11px' }}>
+																			<div style={{ fontWeight: 600, marginBottom: '4px', fontSize: '11px', color: themeColors.descriptionForeground }}>
 																				{reply.user?.displayName || 'Unknown'} • {new Date(reply.createdAt).toLocaleString('ca-ES')}
 																			</div>
-																			<div style={{ whiteSpace: 'pre-wrap' }}>{reply.content}</div>
+																			<div style={{ whiteSpace: 'pre-wrap', color: themeColors.foreground }}>{reply.content}</div>
 																		</div>
 																	))}
 																</div>

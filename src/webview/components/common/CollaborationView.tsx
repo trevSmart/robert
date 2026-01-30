@@ -65,6 +65,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 	const [showGeneralMessageForm, setShowGeneralMessageForm] = useState(false);
 	const [generalMessageContent, setGeneralMessageContent] = useState('');
 	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	const [debugMode, setDebugMode] = useState(false);
 
 	const sendMessage = useCallback(
 		(message: Record<string, unknown>) => {
@@ -103,6 +104,10 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 				case 'collaborationMessagesLoaded':
 					setMessages(message.messages || []);
 					setMessagesLoading(false);
+					// Set debug mode if provided
+					if (message.debugMode !== undefined) {
+						setDebugMode(message.debugMode);
+					}
 					break;
 
 				case 'collaborationMessagesError':
@@ -159,6 +164,11 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 				case 'collaborationMessageMarkedAsUnread':
 					// Update message read status
 					setMessages(prev => prev.map(msg => (msg.id === message.messageId ? { ...msg, isRead: false } : msg)));
+					break;
+
+				case 'collaborationMessageDeleted':
+					// Remove deleted message from list
+					setMessages(prev => prev.filter(msg => msg.id !== message.messageId));
 					break;
 			}
 		};
@@ -232,6 +242,21 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 
 			// Optimistically update the UI
 			setMessages(prev => prev.map(msg => (msg.id === messageId ? { ...msg, isRead: false } : msg)));
+		},
+		[sendMessage]
+	);
+
+	const handleDeleteMessage = useCallback(
+		(messageId: string) => {
+			if (window.confirm('Are you sure you want to delete this message? This action cannot be undone.')) {
+				sendMessage({
+					command: 'deleteCollaborationMessage',
+					messageId
+				});
+
+				// Optimistically update the UI
+				setMessages(prev => prev.filter(msg => msg.id !== messageId));
+			}
 		},
 		[sendMessage]
 	);
@@ -711,6 +736,24 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 															title="Mark this message as unread"
 														>
 															Mark as Unread
+														</button>
+													)}
+													{debugMode && (
+														<button
+															onClick={() => handleDeleteMessage(message.id)}
+															style={{
+																padding: '4px 10px',
+																borderRadius: '3px',
+																border: `1px solid ${ACCENT_COLORS.red}`,
+																backgroundColor: 'transparent',
+																color: ACCENT_COLORS.red,
+																cursor: 'pointer',
+																fontSize: '11px',
+																fontWeight: 500
+															}}
+															title="Delete this message (debug mode only)"
+														>
+															Delete
 														</button>
 													)}
 												</div>

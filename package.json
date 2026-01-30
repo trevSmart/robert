@@ -198,7 +198,12 @@
 		"lint:fix": "node scripts/lint-fix.cjs",
 		"format": "prettier --write \"src/**/*.{ts,tsx,json,js,md}\"",
 		"format:check": "prettier --check \"src/**/*.{ts,tsx,json,js,md}\"",
-		"test": "vscode-test",
+		"test": "vitest run",
+		"test:watch": "vitest watch",
+		"test:ui": "vitest --ui",
+		"test:coverage": "vitest run --coverage",
+		"test:vscode": "vscode-test",
+		"pretest:vscode": "npm run compile",
 		"version:patch": "npm version patch --no-git-tag-version",
 		"package": "vsce package --out dist/",
 		"package:pre-release": "vsce package --pre-release --out dist/",
@@ -216,6 +221,7 @@
 		"@typescript-eslint/eslint-plugin": "^8.54.0",
 		"@typescript-eslint/parser": "^8.54.0",
 		"@vitejs/plugin-react": "^5.1.2",
+		"@vitest/ui": "^4.0.18",
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.7.1",
@@ -226,7 +232,8 @@
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^7.0.1",
 		"prettier": "^3.8.1",
-		"typescript": "^5.9.3"
+		"typescript": "^5.9.3",
+		"vitest": "^4.0.18"
 	},
 	"dependencies": {
 		"@types/react-dnd": "^3.0.2",

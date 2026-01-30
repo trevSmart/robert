@@ -564,8 +564,8 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 											}}
 										>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ fontSize: '12px', color: themeColors.foreground }}>{new Date(message.createdAt).toLocaleDateString('ca-ES')}</div>
-												<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{new Date(message.createdAt).toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' })}</div>
+												<div style={{ fontSize: '12px', color: themeColors.foreground }}>{new Date(message.createdAt).toLocaleDateString('en-US')}</div>
+												<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{new Date(message.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
 												<div style={{ fontWeight: 500, color: themeColors.foreground }}>{message.userStoryId === 'GENERAL' ? '—' : message.userStoryId}</div>

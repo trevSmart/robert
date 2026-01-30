@@ -1159,12 +1159,23 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							break;
 						case 'loadCollaborationMessages':
 							try {
-								this._errorHandler.logInfo(`Loading collaboration messages for user story: ${message.userStoryId}`, 'WebviewMessageListener');
-								const messages = await this._collaborationClient.getMessages(message.userStoryId);
-								webview.postMessage({
-									command: 'collaborationMessagesLoaded',
-									messages
-								});
+								if (message.userStoryId) {
+									// Load messages for specific user story
+									this._errorHandler.logInfo(`Loading collaboration messages for user story: ${message.userStoryId}`, 'WebviewMessageListener');
+									const messages = await this._collaborationClient.getMessages(message.userStoryId);
+									webview.postMessage({
+										command: 'collaborationMessagesLoaded',
+										messages
+									});
+								} else {
+									// Load all messages
+									this._errorHandler.logInfo('Loading all collaboration messages', 'WebviewMessageListener');
+									const messages = await this._collaborationClient.getAllMessages();
+									webview.postMessage({
+										command: 'collaborationMessagesLoaded',
+										messages
+									});
+								}
 							} catch (error) {
 								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadCollaborationMessages');
@@ -1300,6 +1311,41 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markAllCollaborationNotificationsAsRead');
 								webview.postMessage({
 									command: 'collaborationNotificationsError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'attendCollaborationMessage':
+							try {
+								this._errorHandler.logInfo(`Attending message: ${message.messageId}`, 'WebviewMessageListener');
+								const attendee = await this._collaborationClient.attendMessage(message.messageId);
+								webview.postMessage({
+									command: 'collaborationMessageAttended',
+									messageId: message.messageId,
+									attendee
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'attendCollaborationMessage');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: errorMessage
+								});
+							}
+							break;
+						case 'unattendCollaborationMessage':
+							try {
+								this._errorHandler.logInfo(`Unattending message: ${message.messageId}`, 'WebviewMessageListener');
+								await this._collaborationClient.unattendMessage(message.messageId);
+								webview.postMessage({
+									command: 'collaborationMessageUnattended',
+									messageId: message.messageId
+								});
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'unattendCollaborationMessage');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
 									error: errorMessage
 								});
 							}

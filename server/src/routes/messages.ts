@@ -3,11 +3,14 @@ import { authenticate, AuthenticatedRequest } from '../middleware/auth';
 import { createError } from '../middleware/errorHandler';
 import {
 	getMessagesByUserStory,
+	getAllMessages,
 	getMessageById,
 	createMessage,
 	updateMessage,
 	deleteMessage,
-	createMessageReply
+	createMessageReply,
+	addAttendee,
+	removeAttendee
 } from '../services/messageService';
 import { getOrCreateUser } from '../services/userService';
 import { createNotification } from '../services/notificationService';
@@ -19,16 +22,20 @@ const router = Router();
 router.use(authenticate);
 
 // GET /api/messages?userStoryId={id}
+// GET /api/messages (all messages)
 router.get('/', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		const userStoryId = req.query.userStoryId as string;
 
-		if (!userStoryId) {
-			throw createError('userStoryId query parameter is required', 400);
+		if (userStoryId) {
+			// Get messages for specific user story
+			const messages = await getMessagesByUserStory(userStoryId);
+			res.json({ messages });
+		} else {
+			// Get all messages
+			const messages = await getAllMessages();
+			res.json({ messages });
 		}
-
-		const messages = await getMessagesByUserStory(userStoryId);
-		res.json({ messages });
 	} catch (error) {
 		const err = error as Error;
 		throw createError(err.message, 500);
@@ -225,6 +232,68 @@ router.post('/:id/replies', async (req: AuthenticatedRequest, res: Response) => 
 		await broadcastMessageUpdate(message.id, message.userStoryId);
 
 		res.status(201).json({ reply });
+	} catch (error) {
+		const err = error as Error;
+		if (err.message === 'Message not found') {
+			throw createError(err.message, 404);
+		}
+		throw createError(err.message, 500);
+	}
+});
+
+// POST /api/messages/:id/attend
+router.post('/:id/attend', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const message = await getMessageById(req.params.id);
+
+		if (!message) {
+			throw createError('Message not found', 404);
+		}
+
+		// Get or create user
+		const user = await getOrCreateUser(
+			req.user!.rallyUserId,
+			req.user!.displayName
+		);
+
+		// Add user as attendee
+		const attendee = await addAttendee(req.params.id, user.id);
+
+		// Broadcast message update to subscribed clients
+		await broadcastMessageUpdate(message.id, message.userStoryId);
+
+		res.status(201).json({ attendee });
+	} catch (error) {
+		const err = error as Error;
+		if (err.message === 'Message not found') {
+			throw createError(err.message, 404);
+		}
+		throw createError(err.message, 500);
+	}
+});
+
+// DELETE /api/messages/:id/attend
+router.delete('/:id/attend', async (req: AuthenticatedRequest, res: Response) => {
+	try {
+		const message = await getMessageById(req.params.id);
+
+		if (!message) {
+			throw createError('Message not found', 404);
+		}
+
+		// Get or create user
+		const user = await getOrCreateUser(
+			req.user!.rallyUserId,
+			req.user!.displayName
+		);
+
+		// Remove user as attendee
+		await removeAttendee(req.params.id, user.id);
+
+		// Broadcast message update to subscribed clients
+		await broadcastMessageUpdate(message.id, message.userStoryId);
+
+		res.status(204).send();
 	} catch (error) {
 		const err = error as Error;
 		if (err.message === 'Message not found') {

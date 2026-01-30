@@ -1,6 +1,15 @@
 import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
 
+export interface MessageAttendee {
+	id: string;
+	messageId: string;
+	userId: string;
+	displayName: string;
+	rallyUserId: string;
+	createdAt: string;
+}
+
 export interface Message {
 	id: string;
 	userId: string;
@@ -14,6 +23,7 @@ export interface Message {
 		rallyUserId: string;
 	};
 	replies?: MessageReply[];
+	attendees?: MessageAttendee[];
 }
 
 export interface MessageReply {
@@ -141,6 +151,14 @@ export class CollaborationClient {
 	}
 
 	// Messages API
+	public async getAllMessages(): Promise<Message[]> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
+			const response = await this.makeRequest<{ messages: Message[] }>('/api/messages');
+			return response.messages;
+		}, 'CollaborationClient.getAllMessages');
+		return result ?? [];
+	}
+
 	public async getMessages(userStoryId: string): Promise<Message[]> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ messages: Message[] }>(`/api/messages?userStoryId=${encodeURIComponent(userStoryId)}`);
@@ -196,6 +214,24 @@ export class CollaborationClient {
 			return response.reply;
 		}, 'CollaborationClient.createMessageReply');
 		return result ?? null;
+	}
+
+	public async attendMessage(messageId: string): Promise<MessageAttendee | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
+			const response = await this.makeRequest<{ attendee: MessageAttendee }>(`/api/messages/${messageId}/attend`, {
+				method: 'POST'
+			});
+			return response.attendee;
+		}, 'CollaborationClient.attendMessage');
+		return result ?? null;
+	}
+
+	public async unattendMessage(messageId: string): Promise<void> {
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			await this.makeRequest(`/api/messages/${messageId}/attend`, {
+				method: 'DELETE'
+			});
+		}, 'CollaborationClient.unattendMessage');
 	}
 
 	// Notifications API

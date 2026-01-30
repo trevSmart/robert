@@ -98,7 +98,7 @@
 				},
 				"robert.collaboration.serverUrl": {
 					"type": "string",
-					"default": "http://localhost:3001",
+					"default": "https://robert-8vdt.onrender.com",
 					"description": "URL of the collaboration server"
 				},
 				"robert.collaboration.enabled": {

@@ -2,8 +2,8 @@
 	"extends": "./tsconfig.json",
 	"compilerOptions": {
 		"outDir": "out",
-		"types": ["mocha", "node"]
+		"types": ["mocha", "node", "vscode"]
 	},
-	"include": ["test/**/*"],
-	"exclude": ["node_modules", "test/**/*.test.ts"]
+	"include": ["test/suite/**/*.test.ts"],
+	"exclude": ["node_modules"]
 }

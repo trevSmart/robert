@@ -17,7 +17,7 @@ vi.mock('vscode', () => ({
 					rallyInstance: 'https://rally1.rallydev.com',
 					rallyApiKey: '',
 					rallyProjectName: '',
-					'collaboration.serverUrl': 'http://localhost:3001',
+					'collaboration.serverUrl': 'https://robert-8vdt.onrender.com',
 					'collaboration.enabled': false,
 					'collaboration.autoConnect': true,
 					showOutputChannelOnStartup: false
@@ -183,7 +183,7 @@ describe('SettingsManager', () => {
 				refreshInterval: 60,
 				maxResults: 200,
 				rallyInstance: 'https://rally1.rallydev.com',
-				collaborationServerUrl: 'http://localhost:3001'
+				collaborationServerUrl: 'https://robert-8vdt.onrender.com'
 			});
 			
 			expect(result.isValid).toBe(true);

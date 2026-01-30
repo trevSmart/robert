@@ -203,7 +203,7 @@
 		"test:ui": "vitest --ui",
 		"test:coverage": "vitest run --coverage",
 		"test:vscode": "vscode-test",
-		"pretest:vscode": "npm run compile",
+		"pretest:vscode": "npm run compile && tsc -p ./tsconfig.test.json",
 		"version:patch": "npm version patch --no-git-tag-version",
 		"package": "vsce package --out dist/",
 		"package:pre-release": "vsce package --pre-release --out dist/",
@@ -214,6 +214,7 @@
 		"publish:pre-release": "vsce publish --pre-release"
 	},
 	"devDependencies": {
+		"@types/mocha": "^10.0.10",
 		"@types/node": "^25.0.10",
 		"@types/react": "^19.2.3",
 		"@types/react-dom": "^19.2.3",
@@ -231,6 +232,8 @@
 		"eslint-plugin-prettier": "^5.5.5",
 		"eslint-plugin-react": "^7.37.5",
 		"eslint-plugin-react-hooks": "^7.0.1",
+		"glob": "^13.0.0",
+		"mocha": "^11.7.5",
 		"prettier": "^3.8.1",
 		"typescript": "^5.9.3",
 		"vitest": "^4.0.18"

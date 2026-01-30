@@ -168,17 +168,6 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			planEstimate: userStory.planEstimate,
 			taskEstimateTotal: userStory.taskEstimateTotal
 		});
-
-		// Simulate success after a short delay
-		// The actual success will be handled by a message from the extension
-		setTimeout(() => {
-			setRequestSupportLoading(false);
-			setRequestSupportSuccess(true);
-			// Reset success message after 3 seconds
-			setTimeout(() => {
-				setRequestSupportSuccess(false);
-			}, 3000);
-		}, 500);
 	}, [vscode, userStory]);
 
 	return (

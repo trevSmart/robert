@@ -1194,6 +1194,28 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								});
 							}
 							break;
+						case 'requestUserStorySupport':
+							try {
+								this._errorHandler.logInfo(`Requesting support for user story: ${message.userStoryId}`, 'WebviewMessageListener');
+								const supportMessage = await this._collaborationClient.createMessage({
+									userStoryId: message.userStoryId,
+									content: `🆘 **Support Request**\n\n**User Story:** ${message.userStoryId} - ${message.userStoryName}\n\nI need help with this user story. Can someone provide assistance or guidance?`
+								});
+								webview.postMessage({
+									command: 'supportRequestCreated',
+									message: supportMessage
+								});
+								vscode.window.showInformationMessage(`Support request sent for ${message.userStoryId}`);
+							} catch (error) {
+								const errorMessage = error instanceof Error ? error.message : String(error);
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'requestUserStorySupport');
+								webview.postMessage({
+									command: 'supportRequestError',
+									error: errorMessage
+								});
+								vscode.window.showErrorMessage(`Failed to send support request: ${errorMessage}`);
+							}
+							break;
 						case 'createCollaborationMessageReply':
 							try {
 								this._errorHandler.logInfo(`Creating reply for message: ${message.messageId}`, 'WebviewMessageListener');

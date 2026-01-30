@@ -17,5 +17,5 @@
 		"moduleResolution": "nodenext"
 	},
 	"include": ["src/**/*", "src/types/**/*", "test/**/*"],
-	"exclude": ["node_modules", ".vscode-test", "out", "**/*.test.*", "src/webview/**/*"]
+	"exclude": ["node_modules", ".vscode-test", "out", "src/webview/**/*"]
 }

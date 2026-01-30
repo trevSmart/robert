@@ -63,6 +63,8 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 	const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
 	const [replyContents, setReplyContents] = useState<Map<string, string>>(new Map());
 	const [showHelpRequestsOnly, setShowHelpRequestsOnly] = useState(false);
+	const [selectedImage, setSelectedImage] = useState<string | null>(null);
+	const [replyImages, setReplyImages] = useState<Map<string, string>>(new Map());
 
 	const sendMessage = useCallback(
 		(message: Record<string, unknown>) => {
@@ -109,15 +111,74 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 			return;
 		}
 
+		let finalContent = newMessageContent.trim();
+		if (selectedImage) {
+			finalContent += `\n\n![Image](${selectedImage})`;
+		}
+
 		sendMessage({
 			command: 'createCollaborationMessage',
 			userStoryId: newMessageUserStoryId,
-			content: newMessageContent.trim()
+			content: finalContent
 		});
 
 		setNewMessageContent('');
 		setNewMessageUserStoryId('');
-	}, [newMessageContent, newMessageUserStoryId, sendMessage]);
+		setSelectedImage(null);
+	}, [newMessageContent, newMessageUserStoryId, selectedImage, sendMessage]);
+
+	const handleImageSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (!file) return;
+
+		// Check file size (limit to 1MB for base64 encoding)
+		if (file.size > 1024 * 1024) {
+			alert('Image size must be less than 1MB');
+			return;
+		}
+
+		// Check file type
+		if (!file.type.startsWith('image/')) {
+			alert('Please select an image file');
+			return;
+		}
+
+		const reader = new FileReader();
+		reader.onload = e => {
+			const result = e.target?.result as string;
+			setSelectedImage(result);
+		};
+		reader.readAsDataURL(file);
+	}, []);
+
+	const handleReplyImageSelect = useCallback(
+		(messageId: string, event: React.ChangeEvent<HTMLInputElement>) => {
+			const file = event.target.files?.[0];
+			if (!file) return;
+
+			// Check file size (limit to 1MB for base64 encoding)
+			if (file.size > 1024 * 1024) {
+				alert('Image size must be less than 1MB');
+				return;
+			}
+
+			// Check file type
+			if (!file.type.startsWith('image/')) {
+				alert('Please select an image file');
+				return;
+			}
+
+			const reader = new FileReader();
+			reader.onload = e => {
+				const result = e.target?.result as string;
+				const newReplyImages = new Map(replyImages);
+				newReplyImages.set(messageId, result);
+				setReplyImages(newReplyImages);
+			};
+			reader.readAsDataURL(file);
+		},
+		[replyImages]
+	);
 
 	const createReply = useCallback(
 		(messageId: string) => {
@@ -126,17 +187,27 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 				return;
 			}
 
+			let finalContent = replyContent.trim();
+			const replyImage = replyImages.get(messageId);
+			if (replyImage) {
+				finalContent += `\n\n![Image](${replyImage})`;
+			}
+
 			sendMessage({
 				command: 'createCollaborationMessageReply',
 				messageId,
-				content: replyContent.trim()
+				content: finalContent
 			});
 
 			const newReplyContents = new Map(replyContents);
 			newReplyContents.delete(messageId);
 			setReplyContents(newReplyContents);
+
+			const newReplyImages = new Map(replyImages);
+			newReplyImages.delete(messageId);
+			setReplyImages(newReplyImages);
 		},
-		[replyContents, sendMessage]
+		[replyContents, replyImages, sendMessage]
 	);
 
 	const markNotificationAsRead = useCallback(
@@ -267,6 +338,49 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 	const helpRequestsCount = useMemo(() => {
 		return messages.filter(msg => msg.content.includes('🆘') || msg.content.includes('Support Request')).length;
 	}, [messages]);
+
+	// Function to render message content with images
+	const renderMessageContent = (content: string) => {
+		// Simple markdown image parser for ![alt](url) format
+		const parts: (string | JSX.Element)[] = [];
+		let lastIndex = 0;
+		const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+		let match;
+
+		while ((match = imageRegex.exec(content)) !== null) {
+			// Add text before the image
+			if (match.index > lastIndex) {
+				parts.push(content.substring(lastIndex, match.index));
+			}
+
+			// Add the image
+			const imageUrl = match[2];
+			parts.push(
+				<img
+					key={`img-${match.index}`}
+					src={imageUrl}
+					alt={match[1] || 'Image'}
+					style={{
+						maxWidth: '100%',
+						maxHeight: '300px',
+						borderRadius: '4px',
+						marginTop: '8px',
+						marginBottom: '8px',
+						display: 'block'
+					}}
+				/>
+			);
+
+			lastIndex = match.index + match[0].length;
+		}
+
+		// Add remaining text
+		if (lastIndex < content.length) {
+			parts.push(content.substring(lastIndex));
+		}
+
+		return parts.length > 0 ? parts : content;
+	};
 
 	const lightTheme = isLightTheme();
 
@@ -454,22 +568,73 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 							fontFamily: 'inherit'
 						}}
 					/>
-					<button
-						onClick={createMessage}
-						disabled={!newMessageContent.trim() || !newMessageUserStoryId.trim()}
-						style={{
-							padding: '8px 16px',
-							borderRadius: '4px',
-							border: 'none',
-							backgroundColor: newMessageContent.trim() && newMessageUserStoryId.trim() ? (lightTheme ? '#007acc' : 'var(--vscode-button-background)') : lightTheme ? '#ccc' : 'var(--vscode-button-secondaryBackground)',
-							color: newMessageContent.trim() && newMessageUserStoryId.trim() ? (lightTheme ? '#fff' : 'var(--vscode-button-foreground)') : lightTheme ? '#666' : 'var(--vscode-button-secondaryForeground)',
-							cursor: newMessageContent.trim() && newMessageUserStoryId.trim() ? 'pointer' : 'not-allowed',
-							fontSize: '12px',
-							fontWeight: 600
-						}}
-					>
-						Post Message
-					</button>
+					{selectedImage && (
+						<div style={{ position: 'relative', display: 'inline-block' }}>
+							<img
+								src={selectedImage}
+								alt="Selected"
+								style={{
+									maxWidth: '200px',
+									maxHeight: '150px',
+									borderRadius: '4px',
+									border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`
+								}}
+							/>
+							<button
+								onClick={() => setSelectedImage(null)}
+								style={{
+									position: 'absolute',
+									top: '4px',
+									right: '4px',
+									padding: '4px 8px',
+									backgroundColor: 'rgba(0, 0, 0, 0.6)',
+									color: '#fff',
+									border: 'none',
+									borderRadius: '3px',
+									cursor: 'pointer',
+									fontSize: '11px'
+								}}
+							>
+								✕
+							</button>
+						</div>
+					)}
+					<div style={{ display: 'flex', gap: '8px' }}>
+						<label
+							style={{
+								padding: '6px 12px',
+								borderRadius: '4px',
+								border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`,
+								backgroundColor: 'transparent',
+								color: 'var(--vscode-foreground)',
+								cursor: 'pointer',
+								fontSize: '11px',
+								display: 'inline-flex',
+								alignItems: 'center',
+								gap: '4px'
+							}}
+						>
+							📎 Attach Image
+							<input type="file" accept="image/*" onChange={handleImageSelect} style={{ display: 'none' }} />
+						</label>
+						<button
+							onClick={createMessage}
+							disabled={!newMessageContent.trim() || !newMessageUserStoryId.trim()}
+							style={{
+								flex: 1,
+								padding: '8px 16px',
+								borderRadius: '4px',
+								border: 'none',
+								backgroundColor: newMessageContent.trim() && newMessageUserStoryId.trim() ? (lightTheme ? '#007acc' : 'var(--vscode-button-background)') : lightTheme ? '#ccc' : 'var(--vscode-button-secondaryBackground)',
+								color: newMessageContent.trim() && newMessageUserStoryId.trim() ? (lightTheme ? '#fff' : 'var(--vscode-button-foreground)') : lightTheme ? '#666' : 'var(--vscode-button-secondaryForeground)',
+								cursor: newMessageContent.trim() && newMessageUserStoryId.trim() ? 'pointer' : 'not-allowed',
+								fontSize: '12px',
+								fontWeight: 600
+							}}
+						>
+							Post Message
+						</button>
+					</div>
 				</div>
 			</div>
 
@@ -553,7 +718,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 										<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', marginBottom: '8px' }}>
 											User Story: {message.userStoryId} • {new Date(message.createdAt).toLocaleString()}
 										</div>
-										<div style={{ fontSize: '13px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>{message.content}</div>
+										<div style={{ fontSize: '13px', lineHeight: '1.5', marginBottom: '12px', whiteSpace: 'pre-wrap' }}>{renderMessageContent(message.content)}</div>
 									</div>
 								</div>
 
@@ -594,7 +759,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 														}}
 													>
 														<div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '4px' }}>{reply.user?.displayName || 'Unknown User'}</div>
-														<div style={{ fontSize: '12px', lineHeight: '1.5' }}>{reply.content}</div>
+														<div style={{ fontSize: '12px', lineHeight: '1.5' }}>{renderMessageContent(reply.content)}</div>
 														<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{new Date(reply.createdAt).toLocaleString()}</div>
 													</div>
 												))}
@@ -627,21 +792,76 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId }) 
 											marginBottom: '8px'
 										}}
 									/>
-									<button
-										onClick={() => createReply(message.id)}
-										disabled={!replyContent.trim()}
-										style={{
-											padding: '6px 12px',
-											borderRadius: '4px',
-											border: 'none',
-											backgroundColor: replyContent.trim() ? (lightTheme ? '#007acc' : 'var(--vscode-button-background)') : lightTheme ? '#ccc' : 'var(--vscode-button-secondaryBackground)',
-											color: replyContent.trim() ? (lightTheme ? '#fff' : 'var(--vscode-button-foreground)') : lightTheme ? '#666' : 'var(--vscode-button-secondaryForeground)',
-											cursor: replyContent.trim() ? 'pointer' : 'not-allowed',
-											fontSize: '11px'
-										}}
-									>
-										Reply
-									</button>
+									{replyImages.get(message.id) && (
+										<div style={{ position: 'relative', display: 'inline-block', marginBottom: '8px' }}>
+											<img
+												src={replyImages.get(message.id)!}
+												alt="Selected"
+												style={{
+													maxWidth: '150px',
+													maxHeight: '100px',
+													borderRadius: '4px',
+													border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`
+												}}
+											/>
+											<button
+												onClick={() => {
+													const newReplyImages = new Map(replyImages);
+													newReplyImages.delete(message.id);
+													setReplyImages(newReplyImages);
+												}}
+												style={{
+													position: 'absolute',
+													top: '4px',
+													right: '4px',
+													padding: '2px 6px',
+													backgroundColor: 'rgba(0, 0, 0, 0.6)',
+													color: '#fff',
+													border: 'none',
+													borderRadius: '3px',
+													cursor: 'pointer',
+													fontSize: '10px'
+												}}
+											>
+												✕
+											</button>
+										</div>
+									)}
+									<div style={{ display: 'flex', gap: '8px' }}>
+										<label
+											style={{
+												padding: '4px 10px',
+												borderRadius: '4px',
+												border: `1px solid ${lightTheme ? '#ddd' : 'var(--vscode-panel-border)'}`,
+												backgroundColor: 'transparent',
+												color: 'var(--vscode-foreground)',
+												cursor: 'pointer',
+												fontSize: '10px',
+												display: 'inline-flex',
+												alignItems: 'center',
+												gap: '4px'
+											}}
+										>
+											📎
+											<input type="file" accept="image/*" onChange={e => handleReplyImageSelect(message.id, e)} style={{ display: 'none' }} />
+										</label>
+										<button
+											onClick={() => createReply(message.id)}
+											disabled={!replyContent.trim()}
+											style={{
+												flex: 1,
+												padding: '6px 12px',
+												borderRadius: '4px',
+												border: 'none',
+												backgroundColor: replyContent.trim() ? (lightTheme ? '#007acc' : 'var(--vscode-button-background)') : lightTheme ? '#ccc' : 'var(--vscode-button-secondaryBackground)',
+												color: replyContent.trim() ? (lightTheme ? '#fff' : 'var(--vscode-button-foreground)') : lightTheme ? '#666' : 'var(--vscode-button-secondaryForeground)',
+												cursor: replyContent.trim() ? 'pointer' : 'not-allowed',
+												fontSize: '11px'
+											}}
+										>
+											Reply
+										</button>
+									</div>
 								</div>
 							</div>
 						);

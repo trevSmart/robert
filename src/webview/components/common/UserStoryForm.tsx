@@ -1,7 +1,8 @@
-import { FC } from 'react';
+import { FC, useState, useCallback, useMemo } from 'react';
 import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme } from '../../utils/themeColors';
+import { getVsCodeApi } from '../../utils/vscodeApi';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -72,6 +73,13 @@ interface UserStoryFormProps {
 	onAdditionalTabChange?: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
 }
 
+// Help Request icon
+const HelpIcon = ({ size = '16px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
+	</svg>
+);
+
 // Icon components for cards
 const TasksIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
@@ -111,6 +119,10 @@ const DiscussionsIcon = ({ size = '18px' }: { size?: string }) => (
 );
 
 const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange }) => {
+	const vscode = useMemo(() => getVsCodeApi(), []);
+	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
+	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
+
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
 			case 'new':
@@ -136,6 +148,28 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		}
 	};
 
+	const handleRequestSupport = useCallback(() => {
+		if (!vscode) return;
+
+		setRequestSupportLoading(true);
+		setRequestSupportSuccess(false);
+
+		// Send message to extension to create a help request
+		vscode.postMessage({
+			command: 'requestUserStorySupport',
+			userStoryId: userStory.formattedId,
+			userStoryName: userStory.name,
+			userStoryObjectId: userStory.objectId,
+			project: userStory.project,
+			iteration: userStory.iteration,
+			description: userStory.description,
+			scheduleState: userStory.scheduleState,
+			tasksCount: userStory.tasksCount,
+			planEstimate: userStory.planEstimate,
+			taskEstimateTotal: userStory.taskEstimateTotal
+		});
+	}, [vscode, userStory]);
+
 	return (
 		<div
 			style={{
@@ -154,28 +188,79 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					marginBottom: '20px'
 				}}
 			>
-				<h2
-					style={{
-						fontSize: '18px',
-						fontWeight: '600',
-						color: 'var(--vscode-foreground)',
-						margin: '0',
-						letterSpacing: '0.5px'
-					}}
-				>
-					{userStory.formattedId}
-				</h2>
-				{userStory.scheduleState && (
-					<div
+				<div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+					<h2
 						style={{
-							fontSize: '14px',
-							fontWeight: '500',
-							color: getScheduleStateColor(userStory.scheduleState)
+							fontSize: '18px',
+							fontWeight: '600',
+							color: 'var(--vscode-foreground)',
+							margin: '0',
+							letterSpacing: '0.5px'
 						}}
 					>
-						{userStory.scheduleState}
-					</div>
-				)}
+						{userStory.formattedId}
+					</h2>
+					{requestSupportSuccess && (
+						<span
+							style={{
+								fontSize: '12px',
+								color: '#4caf50',
+								fontWeight: '500',
+								padding: '4px 8px',
+								backgroundColor: 'rgba(76, 175, 80, 0.1)',
+								borderRadius: '4px'
+							}}
+						>
+							✓ Support requested
+						</span>
+					)}
+				</div>
+				<div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+					<button
+						onClick={handleRequestSupport}
+						disabled={requestSupportLoading}
+						title="Sol·licitar ajuda dels companys d'equip"
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '6px',
+							padding: '6px 12px',
+							backgroundColor: requestSupportLoading ? 'var(--vscode-button-secondaryBackground)' : 'var(--vscode-button-background)',
+							color: requestSupportLoading ? 'var(--vscode-button-secondaryForeground)' : 'var(--vscode-button-foreground)',
+							border: 'none',
+							borderRadius: '3px',
+							fontSize: '12px',
+							fontWeight: '500',
+							cursor: requestSupportLoading ? 'not-allowed' : 'pointer',
+							opacity: requestSupportLoading ? 0.6 : 1,
+							whiteSpace: 'nowrap'
+						}}
+						onMouseEnter={e => {
+							if (!requestSupportLoading) {
+								e.currentTarget.style.backgroundColor = 'var(--vscode-button-hoverBackground)';
+							}
+						}}
+						onMouseLeave={e => {
+							if (!requestSupportLoading) {
+								e.currentTarget.style.backgroundColor = 'var(--vscode-button-background)';
+							}
+						}}
+					>
+						<HelpIcon size="14px" />
+						{requestSupportLoading ? 'Sol·licitant...' : 'Sol·licitar Ajuda'}
+					</button>
+					{userStory.scheduleState && (
+						<div
+							style={{
+								fontSize: '14px',
+								fontWeight: '500',
+								color: getScheduleStateColor(userStory.scheduleState)
+							}}
+						>
+							{userStory.scheduleState}
+						</div>
+					)}
+				</div>
 			</div>
 
 			<div style={{ marginBottom: '16px' }}>

@@ -1,5 +1,5 @@
 import { query } from '../config/database';
-import { Message, CreateMessageInput, UpdateMessageInput, MessageReply, CreateMessageReplyInput } from '../models/Message';
+import { Message, CreateMessageInput, UpdateMessageInput, MessageReply, CreateMessageReplyInput, MessageAttendee } from '../models/Message';
 import { findUserById } from './userService';
 
 export async function getMessagesByUserStory(userStoryId: string): Promise<Message[]> {
@@ -14,9 +14,29 @@ export async function getMessagesByUserStory(userStoryId: string): Promise<Messa
 
 	const messages = result.rows.map(mapRowToMessage);
 
-	// Load replies for each message
+	// Load replies and attendees for each message
 	for (const message of messages) {
 		message.replies = await getMessageReplies(message.id);
+		message.attendees = await getMessageAttendees(message.id);
+	}
+
+	return messages;
+}
+
+export async function getAllMessages(): Promise<Message[]> {
+	const result = await query(
+		`SELECT m.*, u.display_name, u.rally_user_id
+		 FROM messages m
+		 JOIN users u ON m.user_id = u.id
+		 ORDER BY m.created_at DESC`
+	);
+
+	const messages = result.rows.map(mapRowToMessage);
+
+	// Load replies and attendees for each message
+	for (const message of messages) {
+		message.replies = await getMessageReplies(message.id);
+		message.attendees = await getMessageAttendees(message.id);
 	}
 
 	return messages;
@@ -37,6 +57,7 @@ export async function getMessageById(id: string): Promise<Message | null> {
 
 	const message = mapRowToMessage(result.rows[0]);
 	message.replies = await getMessageReplies(message.id);
+	message.attendees = await getMessageAttendees(message.id);
 	return message;
 }
 
@@ -105,6 +126,7 @@ export async function updateMessage(id: string, input: UpdateMessageInput): Prom
 	}
 
 	message.replies = await getMessageReplies(message.id);
+	message.attendees = await getMessageAttendees(message.id);
 	return message;
 }
 
@@ -147,6 +169,59 @@ export async function createMessageReply(userId: string, input: CreateMessageRep
 	return reply;
 }
 
+export async function getMessageAttendees(messageId: string): Promise<MessageAttendee[]> {
+	const result = await query(
+		`SELECT ma.*, u.display_name, u.rally_user_id
+		 FROM message_attendees ma
+		 JOIN users u ON ma.user_id = u.id
+		 WHERE ma.message_id = $1
+		 ORDER BY ma.created_at ASC`,
+		[messageId]
+	);
+
+	return result.rows.map(mapRowToAttendee);
+}
+
+export async function addAttendee(messageId: string, userId: string): Promise<MessageAttendee> {
+	const result = await query(
+		`INSERT INTO message_attendees (message_id, user_id)
+		 VALUES ($1, $2)
+		 ON CONFLICT (message_id, user_id) DO NOTHING
+		 RETURNING *`,
+		[messageId, userId]
+	);
+
+	if (result.rows.length === 0) {
+		// Already exists, fetch it
+		const existing = await query(
+			`SELECT ma.*, u.display_name, u.rally_user_id
+			 FROM message_attendees ma
+			 JOIN users u ON ma.user_id = u.id
+			 WHERE ma.message_id = $1 AND ma.user_id = $2`,
+			[messageId, userId]
+		);
+		return mapRowToAttendee(existing.rows[0]);
+	}
+
+	const attendee = mapRowToAttendee(result.rows[0]);
+	
+	// Load user info
+	const user = await findUserById(userId);
+	if (user) {
+		attendee.displayName = user.displayName;
+		attendee.rallyUserId = user.rallyUserId;
+	}
+
+	return attendee;
+}
+
+export async function removeAttendee(messageId: string, userId: string): Promise<void> {
+	await query(
+		`DELETE FROM message_attendees WHERE message_id = $1 AND user_id = $2`,
+		[messageId, userId]
+	);
+}
+
 function mapRowToMessage(row: any): Message {
 	return {
 		id: row.id,
@@ -174,5 +249,16 @@ function mapRowToReply(row: any): MessageReply {
 			displayName: row.display_name,
 			rallyUserId: row.rally_user_id
 		} : undefined
+	};
+}
+
+function mapRowToAttendee(row: any): MessageAttendee {
+	return {
+		id: row.id,
+		messageId: row.message_id,
+		userId: row.user_id,
+		displayName: row.display_name || '',
+		rallyUserId: row.rally_user_id || '',
+		createdAt: row.created_at
 	};
 }

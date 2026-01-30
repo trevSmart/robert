@@ -213,6 +213,63 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId, on
 		return msg.content.includes('🆘') || msg.content.includes('Support Request');
 	};
 
+	/* SECURITY FIX - Commented out for now, to be enabled when image rendering is re-added
+	 * This function renders message content with secure image handling.
+	 * It only renders images from data: URIs to prevent tracking/data exfiltration risks.
+	 * Remote URLs (https:) are rendered as plain text instead of auto-loading images.
+	 */
+	/*
+	const renderMessageContentSecure = (content: string): (string | JSX.Element)[] => {
+		const parts: (string | JSX.Element)[] = [];
+		const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+		let lastIndex = 0;
+		let match: RegExpExecArray | null;
+
+		while ((match = imageRegex.exec(content)) !== null) {
+			// Add text before the image
+			if (match.index > lastIndex) {
+				parts.push(content.substring(lastIndex, match.index));
+			}
+
+			const imageUrl = match[2];
+			const trimmedUrl = imageUrl.trim();
+
+			// Only render images for safe URLs (restrict to data: URIs).
+			// For other URLs, fall back to rendering the original markdown text
+			// to avoid auto-loading remote images in the webview.
+			if (trimmedUrl.toLowerCase().startsWith('data:')) {
+				parts.push(
+					<img
+						key={`img-${match.index}`}
+						src={trimmedUrl}
+						alt={match[1] || 'Image'}
+						style={{
+							maxWidth: '100%',
+							maxHeight: '300px',
+							borderRadius: '4px',
+							marginTop: '8px',
+							marginBottom: '8px',
+							display: 'block'
+						}}
+					/>
+				);
+			} else {
+				// Unsafe image URL: render the original markdown text instead of an <img>.
+				parts.push(match[0]);
+			}
+
+			lastIndex = match.index + match[0].length;
+		}
+
+		// Add remaining text
+		if (lastIndex < content.length) {
+			parts.push(content.substring(lastIndex));
+		}
+
+		return parts.length > 0 ? parts : [content];
+	};
+	*/
+
 	return (
 		<div
 			style={{

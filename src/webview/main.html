@@ -1,28 +1,31 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Robert</title>
-		<style>
-			@font-face {
-				font-family: 'Inter';
-				font-style: normal;
-				font-weight: 100 900;
-				font-display: swap;
-				src: url('__INTER_FONT_URI__') format('woff2-variations');
-			}
-		</style>
-	</head>
-	<body>
-		<div id="root"></div>
-		<script>
-			window.webviewId = "__WEBVIEW_ID__";
-			window.context = "__CONTEXT__";
-			window.timestamp = "__TIMESTAMP__";
-			window.rebusLogoUri = "__REBUS_LOGO_URI__";
-			window.interFontUri = "__INTER_FONT_URI__";
-		</script>
-		<script type="module" src="/src/webview/main.tsx"></script>
-	</body>
+
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Robert</title>
+	<style>
+		@font-face {
+			font-family: 'Inter';
+			font-style: normal;
+			font-weight: 100 900;
+			font-display: swap;
+			src: url('__INTER_FONT_URI__') format('woff2-variations');
+		}
+	</style>
+</head>
+
+<body>
+	<div id="root"></div>
+	<script>
+		window.webviewId = "__WEBVIEW_ID__";
+		window.context = "__CONTEXT__";
+		window.timestamp = "__TIMESTAMP__";
+		window.rebusLogoUri = "__REBUS_LOGO_URI__";
+		window.interFontUri = "__INTER_FONT_URI__";
+	</script>
+	<script type="module" src="/src/webview/main.tsx"></script>
+</body>
+
 </html>

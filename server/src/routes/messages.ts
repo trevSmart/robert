@@ -32,8 +32,11 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
 		const userId = req.user!.userId;
 
 		if (userStoryId) {
-			// Get messages for specific user story
-			const messages = await getMessagesByUserStory(userStoryId);
+			// Get messages for specific user story with read status for current user
+			const allMessages = await getMessagesWithReadStatus(userId);
+			const messages = (allMessages as any[]).filter(
+				(message: any) => message.userStoryId === userStoryId
+			);
 			res.json({ messages });
 		} else {
 			// Get all messages with read status for current user

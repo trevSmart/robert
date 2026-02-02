@@ -4,34 +4,34 @@
 	"actionButtons": {
 		"commands": [
 			{
-                "name": "|",
-                "color": "#000000FF",
-                "command": ""
-            },
-            {
-                "name": "$(github-inverted)",
-                "useVsCodeApi": true,
-                "command": "workbench.action.tasks.runTask",
-                "args": [
-                    "Open remote Github Repository"
-                ],
-                "color": "#b0b0b0"
-            },
-            {
-                "name": "$(terminal)",
-                "useVsCodeApi": true,
-                "command": "workbench.action.terminal.toggleTerminal",
-                "color": "#e5e5e5"
-            },
-            {
-                "name": "$(lightbulb-autofix) Lint",
-                "useVsCodeApi": true,
-                "command": "workbench.action.tasks.runTask",
-                "args": [
-                    "Lint and fix with ESLint"
-                ],
-                "color": "#8c7ce8"
-            },
+				"name": "|",
+				"color": "#000000FF",
+				"command": ""
+			},
+			{
+				"name": "$(github-inverted)",
+				"useVsCodeApi": true,
+				"command": "workbench.action.tasks.runTask",
+				"args": [
+					"Open remote Github Repository"
+				],
+				"color": "#b0b0b0"
+			},
+			{
+				"name": "$(terminal)",
+				"useVsCodeApi": true,
+				"command": "workbench.action.terminal.toggleTerminal",
+				"color": "#e5e5e5"
+			},
+			{
+				"name": "$(lightbulb-autofix) Lint",
+				"useVsCodeApi": true,
+				"command": "workbench.action.tasks.runTask",
+				"args": [
+					"Lint and fix with ESLint"
+				],
+				"color": "#8c7ce8"
+			},
 			{
 				"name": "$(edit) Compile",
 				"useVsCodeApi": true,
@@ -48,7 +48,7 @@
 				"color": "#bb9955"
 			},
 			{
-				"name": "$(testing-debug-icon) Install Cursor",
+				"name": "$(extensions) Cursor",
 				"useVsCodeApi": true,
 				"command": "workbench.action.tasks.runTask",
 				"args": [
@@ -57,7 +57,7 @@
 				"color": "#aa4455"
 			}
 			{
-				"name": "$(testing-debug-icon) Install VSCode",
+				"name": "$(extensions) Insiders",
 				"useVsCodeApi": false,
 				"command": "npm run install:vscode-insiders",
 				"color": "#aa4455"

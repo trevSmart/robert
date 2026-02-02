@@ -1,0 +1,177 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Open remote Github Repository",
+			"type": "shell",
+			"command": "gh repo view --web",
+			"presentation": {
+				"showReuseMessage": false,
+				"reveal": "silent",
+				"close": true,
+				"panel": "new",
+				"focus": false
+			}
+		},
+		{
+			"label": "Lint and fix with ESLint",
+			"detail": "Check and fix all files with ESLint",
+			"type": "process",
+			"command": "npm",
+			"args": [
+				"run",
+				"lint:fix"
+			],
+			"presentation": {
+				"showReuseMessage": false,
+				"panel": "shared",
+				"revealProblems": "onProblem",
+				"clear": true,
+				"focus": false,
+				"close": true
+			},
+			"problemMatcher": [
+				"$eslint-stylish"
+			]
+		},
+		{
+			"label": "compile",
+			"type": "npm",
+			"script": "compile",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false
+			},
+			"problemMatcher": [
+				"$tsc"
+			]
+		},
+		{
+			"type": "npm",
+			"script": "watch",
+			"group": "build",
+			"presentation": {
+				"panel": "shared",
+				"showReuseMessage": false
+			},
+			"isBackground": true,
+			"problemMatcher": [
+				"$tsc-watch"
+			]
+		},
+		{
+			"type": "npm",
+			"script": "lint",
+			"problemMatcher": [
+				"$eslint-stylish"
+			],
+			"label": "npm: lint",
+			"detail": "eslint src/**/*.{ts,tsx} --ext .ts,.tsx",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"type": "npm",
+			"script": "format",
+			"problemMatcher": [],
+			"label": "npm: format",
+			"detail": "prettier --write \"src/**/*.{ts,tsx,json,js,md}\"",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			}
+		},
+		{
+			"label": "debug-compile",
+			"type": "npm",
+			"script": "compile:fast",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "silent",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": ["$tsc"]
+		},
+		{
+			"label": "package",
+			"type": "npm",
+			"script": "package",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "package:vsix-pre-release",
+			"type": "npm",
+			"script": "package:pre-release",
+			"group": "build",
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "install:cursor",
+			"type": "shell",
+			"command": "npm run install:cursor",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"presentation": {
+				"echo": true,
+				"reveal": "always",
+				"focus": false,
+				"panel": "shared",
+				"showReuseMessage": false,
+				"clear": true
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "install:cursor:pre-release",
+			"type": "shell",
+			"command": "npm run install:cursor:pre-release"
+		},
+		{
+			"label": "install:vscode-insiders",
+			"type": "shell",
+			"command": "npm run install:vscode-insiders"
+		},
+		{
+			"label": "publish:vscode-insiders:pre-release",
+			"type": "shell",
+			"command": "npm run publish:vscode-insiders:pre-release"
+		}
+	]
+}

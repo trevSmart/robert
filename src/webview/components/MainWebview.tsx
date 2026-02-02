@@ -633,7 +633,7 @@ const PortfolioViewSelector: FC<{
 	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number) => {
 		const lightTheme = isLightTheme();
 		return {
-			padding: '10px 20px',
+			padding: '9px 18px',
 			border: 'none',
 			borderBottom: isActive
 				? lightTheme
@@ -657,7 +657,7 @@ const PortfolioViewSelector: FC<{
 			display: 'flex',
 			alignItems: 'center',
 			gap: '8px',
-			fontSize: '13px',
+			fontSize: '12px',
 			fontWeight: isActive ? 600 : 400,
 			transition: 'all 0.15s ease',
 			position: 'relative' as const,

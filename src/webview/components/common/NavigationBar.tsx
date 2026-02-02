@@ -187,7 +187,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	const getTabStyles = (isActive: boolean): CSSProperties => {
 		const lightTheme = isLightTheme();
 		return {
-			padding: '10px 20px',
+			padding: '9px 18px',
 			border: 'none',
 			backgroundColor: isActive
 				? lightTheme
@@ -207,7 +207,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
 				: 'none',
 			cursor: isActive ? 'default' : 'pointer',
-			fontSize: '13px',
+			fontSize: '12px',
 			fontWeight: isActive ? '600' : '400',
 			transition: 'all 0.2s ease',
 			display: 'flex',

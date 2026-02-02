@@ -1,3 +1,4 @@
+/// <reference path="./common/CollapsibleCard.d.ts" />
 import React, { FC, ComponentType } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'vscrui/dist/codicon.css';
@@ -13,6 +14,7 @@ import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
+import './common/CollapsibleCard';
 import SprintKPIs from './metrics/SprintKPIs';
 import VelocityTrendChart from './metrics/VelocityTrendChart';
 import StateDistributionPie from './metrics/StateDistributionPie';
@@ -359,7 +361,9 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 				<>
 					<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
 					<SprintDetailsForm iteration={selectedIteration} />
-					<AssigneeHoursChart userStories={sprintUserStories} />
+					<collapsible-card title="User stories assignment">
+						<AssigneeHoursChart userStories={sprintUserStories} />
+					</collapsible-card>
 					<UserStoriesTable
 						userStories={sprintUserStories}
 						loading={sprintUserStoriesLoading}
@@ -617,6 +621,7 @@ const PortfolioViewSelector: FC<{
 	activeView: PortfolioViewType;
 	onViewChange: (viewId: PortfolioViewType) => void;
 }> = ({ views, activeView, onViewChange }) => {
+	const lightTheme = isLightTheme();
 	const renderIcon = (icon?: string) => {
 		switch (icon) {
 			case 'sprints':
@@ -631,9 +636,8 @@ const PortfolioViewSelector: FC<{
 	};
 
 	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number) => {
-		const lightTheme = isLightTheme();
 		return {
-			padding: '9px 18px',
+			padding: '10px 16px 6px',
 			border: 'none',
 			borderBottom: isActive
 				? lightTheme
@@ -657,7 +661,7 @@ const PortfolioViewSelector: FC<{
 			display: 'flex',
 			alignItems: 'center',
 			gap: '8px',
-			fontSize: '12px',
+			fontSize: '12.4px',
 			fontWeight: isActive ? 600 : 400,
 			transition: 'all 0.15s ease',
 			position: 'relative' as const,
@@ -675,8 +679,15 @@ const PortfolioViewSelector: FC<{
 				borderRadius: '6px 6px 0 0'
 			}}
 		>
+			<style>
+				{`
+					.portfolio-sub-tab:not(.portfolio-sub-tab-active):hover {
+						background-color: ${lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'} !important;
+					}
+				`}
+			</style>
 			{views.map((view, index) => (
-				<button key={view.id} onClick={() => activeView !== view.id && onViewChange(view.id)} style={getSubTabStyles(activeView === view.id, index, views.length)} title={view.description}>
+				<button key={view.id} className={`portfolio-sub-tab ${activeView === view.id ? 'portfolio-sub-tab-active' : ''}`} onClick={() => activeView !== view.id && onViewChange(view.id)} style={getSubTabStyles(activeView === view.id, index, views.length)} title={view.description}>
 					{renderIcon(view.icon)}
 					<span>{view.label}</span>
 				</button>

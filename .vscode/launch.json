@@ -1,0 +1,25 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Debug",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/src/**/*.js"
+			],
+			"preLaunchTask": "debug-compile",
+			"sourceMaps": true,
+			"smartStep": true,
+			"presentation": {
+				"hidden": false,
+				"group": "",
+				"order": 1,
+				"panel": "dedicated"
+			}
+		}
+	]
+}

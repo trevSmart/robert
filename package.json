@@ -244,7 +244,7 @@
 		"@vitejs/plugin-react": "^5.1.2",
 		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",
-		"ibm-rally-node": "^0.0.16",
+		"ibm-rally-node": "^0.0.17",
 		"node-fetch": "^2.7.0",
 		"react": "^19.2.4",
 		"react-dnd": "^16.0.1",

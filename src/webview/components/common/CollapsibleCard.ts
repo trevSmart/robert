@@ -20,6 +20,7 @@ class CollapsibleCard extends HTMLElement {
 	connectedCallback() {
 		this.render();
 		this.attachEventListeners();
+		this.updateCollapsedState();
 	}
 
 	attributeChangedCallback(name: string, oldValue: string, newValue: string) {

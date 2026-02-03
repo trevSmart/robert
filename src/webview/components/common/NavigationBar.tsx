@@ -1,5 +1,59 @@
-import { type CSSProperties, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import styled, { css } from 'styled-components';
 import { isLightTheme } from '../../utils/themeColors';
+
+// Base styles shared between NavTab and NavOverflowBtn
+const baseNavButtonStyles = css<{ $isActive: boolean; $lightTheme: boolean }>`
+	padding: 10px 16px 6px;
+	border: none;
+	background-color: transparent;
+	color: ${props => (props.$isActive ? (props.$lightTheme ? '#1e1e1e' : 'var(--vscode-tab-activeForeground)') : props.$lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)')};
+	border-bottom: ${props => (props.$isActive ? (props.$lightTheme ? '2px solid #007acc' : '2px solid var(--vscode-progressBar-background)') : 'none')};
+	font-size: 12.4px;
+	font-weight: ${props => (props.$isActive ? '600' : '400')};
+	transition: all 0.2s ease;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	white-space: nowrap;
+`;
+
+// Styled components for navigation elements
+const NavTab = styled.button<{ $isActive: boolean; $lightTheme: boolean }>`
+	${baseNavButtonStyles}
+	cursor: ${props => (props.$isActive ? 'default' : 'pointer')};
+
+	&:not(.nav-tab-active):hover {
+		background-color: ${props => (props.$lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)')};
+	}
+`;
+
+const NavOverflowBtn = styled.button<{ $isActive: boolean; $lightTheme: boolean }>`
+	${baseNavButtonStyles}
+	cursor: pointer;
+
+	&:hover {
+		background-color: ${props => (props.$lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)')};
+	}
+`;
+
+const NavOverflowItem = styled.button<{ $isActive: boolean }>`
+	width: 100%;
+	padding: 8px 14px;
+	border: none;
+	background-color: ${props => (props.$isActive ? 'var(--vscode-list-activeSelectionBackground)' : 'transparent')};
+	color: ${props => (props.$isActive ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)')};
+	cursor: pointer;
+	text-align: left;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 12px;
+
+	&:hover {
+		background-color: var(--vscode-list-hoverBackground);
+	}
+`;
 
 type Section = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 
@@ -185,34 +239,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	const overflowTabs = tabs.slice(visibleCount);
 	const isOverflowActive = overflowTabs.some(tab => tab.id === activeSection);
 
-	const getTabStyles = (isActive: boolean): CSSProperties => {
-		return {
-			padding: '10px 16px 6px',
-			border: 'none',
-			backgroundColor: 'transparent',
-			color: isActive
-				? lightTheme
-					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars
-					: 'var(--vscode-tab-activeForeground)' // Color estàndard per temes foscos
-				: lightTheme
-					? '#333333'
-					: 'var(--vscode-tab-inactiveForeground)',
-			borderBottom: isActive
-				? lightTheme
-					? '2px solid #007acc' // Blau més fosc i visible per temes clars
-					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
-				: 'none',
-			cursor: isActive ? 'default' : 'pointer',
-			fontSize: '12.4px',
-			fontWeight: isActive ? '600' : '400',
-			transition: 'all 0.2s ease',
-			display: 'flex',
-			alignItems: 'center',
-			gap: '8px',
-			whiteSpace: 'nowrap'
-		};
-	};
-
 	return (
 		<div
 			style={{
@@ -220,19 +246,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				borderBottom: '1px solid var(--vscode-panel-border)'
 			}}
 		>
-			<style>
-				{`
-					.nav-tab:not(.nav-tab-active):hover {
-						background-color: ${lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'} !important;
-					}
-					.nav-overflow-btn:hover {
-						background-color: ${lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'} !important;
-					}
-					.nav-overflow-item:hover {
-						background-color: var(--vscode-list-hoverBackground) !important;
-					}
-				`}
-			</style>
 			<div
 				style={{
 					display: 'flex',
@@ -244,7 +257,16 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				ref={containerRef}
 			>
 				{visibleTabs.map(({ id, label, Icon, iconOnly }) => (
-					<button key={id} type="button" className={`nav-tab ${activeSection === id ? 'nav-tab-active' : ''}`} onClick={() => activeSection !== id && onSectionChange(id)} style={getTabStyles(activeSection === id)} aria-label={iconOnly ? 'Search' : undefined} title={iconOnly ? 'Search' : undefined}>
+					<NavTab
+						key={id}
+						type="button"
+						className={`nav-tab ${activeSection === id ? 'nav-tab-active' : ''}`}
+						onClick={() => activeSection !== id && onSectionChange(id)}
+						$isActive={activeSection === id}
+						$lightTheme={lightTheme}
+						aria-label={iconOnly ? 'Search' : undefined}
+						title={iconOnly ? 'Search' : undefined}
+					>
 						<Icon />
 						{!iconOnly && <span>{label}</span>}
 						{id === 'collaboration' && collaborationBadgeCount > 0 && (
@@ -267,25 +289,26 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 								{collaborationBadgeCount > 99 ? '99+' : collaborationBadgeCount}
 							</span>
 						)}
-					</button>
+					</NavTab>
 				))}
 				{overflowTabs.length > 0 && (
 					<div style={{ position: 'relative', display: 'flex' }}>
-						<button
+						<NavOverflowBtn
 							ref={realOverflowButtonRef}
 							type="button"
 							className="nav-overflow-btn"
 							aria-label="More tabs"
 							onClick={() => setOverflowOpen(open => !open)}
+							$isActive={isOverflowActive}
+							$lightTheme={lightTheme}
 							style={{
-								...getTabStyles(isOverflowActive),
 								padding: '10px 14px',
 								minWidth: '44px',
 								justifyContent: 'center'
 							}}
 						>
 							<span style={{ fontSize: '18px', lineHeight: 1 }}>…</span>
-						</button>
+						</NavOverflowBtn>
 						{overflowOpen && (
 							<div
 								style={{
@@ -303,7 +326,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 								}}
 							>
 								{overflowTabs.map(({ id, label, Icon, iconOnly }) => (
-									<button
+									<NavOverflowItem
 										key={id}
 										type="button"
 										className="nav-overflow-item"
@@ -313,19 +336,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 											}
 											setOverflowOpen(false);
 										}}
-										style={{
-											width: '100%',
-											border: 'none',
-											backgroundColor: activeSection === id ? 'var(--vscode-list-activeSelectionBackground)' : 'transparent',
-											color: activeSection === id ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)',
-											padding: '8px 14px',
-											display: 'flex',
-											alignItems: 'center',
-											gap: '8px',
-											cursor: 'pointer',
-											fontSize: '12px',
-											textAlign: 'left'
-										}}
+										$isActive={activeSection === id}
 										aria-label={iconOnly ? 'Search' : undefined}
 									>
 										<Icon />
@@ -351,7 +362,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 												{collaborationBadgeCount > 99 ? '99+' : collaborationBadgeCount}
 											</span>
 										)}
-									</button>
+									</NavOverflowItem>
 								))}
 							</div>
 						)}

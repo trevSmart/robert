@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme } from '../../utils/themeColors';
 import { getVsCodeApi } from '../../utils/vscodeApi';
+import './CollapsibleCard';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -171,14 +172,11 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	}, [vscode, userStory]);
 
 	return (
-		<div
+		<collapsible-card
+			title={userStory.formattedId}
 			style={{
-				margin: '20px 0',
-				padding: '20px 40px 20px 20px',
-				backgroundColor: 'var(--vscode-editor-background)',
-				border: '1px solid var(--vscode-panel-border)',
-				borderRadius: '6px'
-			}}
+				margin: '20px 0'
+			} as React.CSSProperties}
 		>
 			<div
 				style={{
@@ -188,18 +186,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					marginBottom: '20px'
 				}}
 			>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-					<h2
-						style={{
-							fontSize: '18px',
-							fontWeight: '600',
-							color: 'var(--vscode-foreground)',
-							margin: '0',
-							letterSpacing: '0.5px'
-						}}
-					>
-						{userStory.formattedId}
-					</h2>
+				<div>
 					{requestSupportSuccess && (
 						<span
 							style={{
@@ -394,7 +381,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					</div>
 				</div>
 			</div>
-		</div>
+		</collapsible-card>
 	);
 };
 

@@ -189,11 +189,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		return {
 			padding: '10px 16px 6px',
 			border: 'none',
-			backgroundColor: isActive
-				? lightTheme
-					? 'rgba(0, 123, 255, 0.1)' // Blau clar subtil per temes clars
-					: 'var(--vscode-tab-activeBackground)' // Color estàndard per temes foscos
-				: 'transparent',
+			backgroundColor: 'transparent',
 			color: isActive
 				? lightTheme
 					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars
@@ -222,8 +218,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 			style={{
 				display: 'flex',
 				borderBottom: '1px solid var(--vscode-panel-border)',
-				backgroundColor: 'var(--vscode-editor-background)',
-				padding: '0 20px'
+				// padding: '0 20px'
 			}}
 		>
 			<style>

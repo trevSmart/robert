@@ -116,15 +116,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 	};
 
 	return (
-		<div
-			style={{
-				margin: '20px 0',
-				padding: '20px',
-				backgroundColor: themeColors.panelBackground,
-				border: `1px solid ${themeColors.panelBorder}`,
-				borderRadius: '6px'
-			}}
-		>
+		<>
 			{loading && (
 				<div style={{ textAlign: 'center', padding: '20px' }}>
 					<div
@@ -228,7 +220,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 					</button>
 				</div>
 			)}
-		</div>
+		</>
 	);
 };
 

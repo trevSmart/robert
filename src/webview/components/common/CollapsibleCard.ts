@@ -36,6 +36,9 @@ class CollapsibleCard extends HTMLElement {
 			} else if (name === 'background-color') {
 				this.updateBackgroundColor();
 			}
+			this.render();
+			this.attachEventListeners();
+			this.updateCollapsedState();
 		}
 	}
 

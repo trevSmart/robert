@@ -49,7 +49,7 @@ class CollapsibleCard extends HTMLElement {
 				this.contentDiv.style.paddingBottom = '0';
 				this.chevronDiv.style.transform = 'rotate(-90deg)';
 			} else {
-				this.contentDiv.style.maxHeight = '2000px';
+				this.contentDiv.style.maxHeight = '2000px'; //TODO necessari?
 				this.contentDiv.style.opacity = '1';
 				this.contentDiv.style.paddingTop = '16px';
 				this.contentDiv.style.paddingBottom = '16px';

@@ -629,10 +629,7 @@ const PortfolioViewSelector: FC<{
 	const [hoveredTab, setHoveredTab] = useState<PortfolioViewType | null>(null);
 
 	// Memoize hover background color based on theme
-	const hoverBackgroundColor = useMemo(
-		() => (lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'),
-		[lightTheme]
-	);
+	const hoverBackgroundColor = useMemo(() => (lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'), [lightTheme]);
 
 	const renderIcon = (icon?: string) => {
 		switch (icon) {

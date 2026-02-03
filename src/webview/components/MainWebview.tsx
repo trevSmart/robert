@@ -121,7 +121,7 @@ const DocumentTextIcon = () => (
 
 // Small icons for global search result entity type badges (match UserStoryForm tab icons)
 const SearchResultUserStoryIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -130,7 +130,7 @@ const SearchResultUserStoryIcon = () => (
 	</svg>
 );
 const SearchResultTaskIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -140,12 +140,12 @@ const SearchResultTaskIcon = () => (
 	</svg>
 );
 const SearchResultTestCaseIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
 		<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
 	</svg>
 );
 const SearchResultDefectIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '10px', height: '10px', flexShrink: 0 }}>
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -851,6 +851,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [globalSearchError, setGlobalSearchError] = useState<string | null>(null);
 	// When opening a user story from a task/testcase search result, which tab to select
 	const pendingSearchUserStoryTabRef = useRef<'tasks' | 'tests' | null>(null);
+	// Ref for search input to focus when search tab is selected
+	const searchInputRef = useRef<HTMLInputElement>(null);
 
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
@@ -1318,13 +1320,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						setCurrentUser(message.currentUser || null);
 						setHolidays(message.holidays || []);
 
-						// Auto-select current iteration if available
+						// Auto-select current iteration if available (but don't override detail screens)
 						const currentIteration = findCurrentIteration(message.iterations);
 						if (currentIteration) {
 							setSelectedIteration(currentIteration);
 							loadUserStories(currentIteration);
-							setCurrentScreen('userStories');
-						} else {
+							// Only navigate to userStories if we're on the iterations list screen
+							// Don't override userStoryDetail when coming from search
+							if (currentScreen === 'iterations') {
+								setCurrentScreen('userStories');
+							}
 						}
 					} else {
 						setIterationsError('Failed to load iterations');
@@ -1449,7 +1454,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						// Update offset to the NEXT offset to request
 						setDefectsOffset((message.offset || 0) + (message.defects?.length || 0));
 						setDefectsError(null);
-						if (activeViewType === 'allDefects' && currentScreen !== 'defects') {
+						// Only navigate to defects list if we're not in detail view
+						// Don't override defectDetail when coming from search
+						if (activeViewType === 'allDefects' && currentScreen !== 'defects' && currentScreen !== 'defectDetail') {
 							setCurrentScreen('defects');
 						}
 					} else {
@@ -1560,12 +1567,61 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setGlobalSearchError(message.error || 'Failed to load test case');
 					setGlobalSearchLoading(false);
 					break;
+				case 'restoreState':
+					// Restore navigation state from another webview (e.g., when opening in editor from activity bar)
+					if (message.state) {
+						const state = message.state as {
+							activeSection?: SectionType;
+							currentScreen?: ScreenType;
+							activeViewType?: PortfolioViewType;
+							selectedIterationId?: string;
+							selectedUserStoryId?: string;
+							selectedDefectId?: string;
+							activeUserStoryTab?: 'tasks' | 'tests' | 'defects' | 'discussions';
+							globalSearchTerm?: string;
+							calendarDate?: string;
+						};
+						logDebug(`Restoring navigation state: ${JSON.stringify(state)}`);
+
+						// Restore basic navigation state
+						if (state.activeSection) setActiveSection(state.activeSection);
+						if (state.currentScreen) setCurrentScreen(state.currentScreen);
+						if (state.activeViewType) setActiveViewType(state.activeViewType);
+						if (state.activeUserStoryTab) setActiveUserStoryTab(state.activeUserStoryTab);
+						if (state.globalSearchTerm) setGlobalSearchTerm(state.globalSearchTerm);
+						if (state.calendarDate) setCalendarDate(new Date(state.calendarDate));
+
+						// Restore selected iteration - need to find it in loaded iterations
+						if (state.selectedIterationId && iterations.length > 0) {
+							const iteration = iterations.find(i => i.objectId === state.selectedIterationId);
+							if (iteration) {
+								setSelectedIteration(iteration);
+								// Only load user stories if we're on a screen that needs them
+								if (state.currentScreen === 'userStories' || state.currentScreen === 'userStoryDetail') {
+									loadUserStories(iteration);
+								}
+							}
+						}
+
+						// Restore selected user story - only load if we're on the detail screen
+						// (otherwise the handler will auto-navigate to detail, overriding our state)
+						if (state.selectedUserStoryId && state.currentScreen === 'userStoryDetail') {
+							sendMessage({ command: 'loadUserStoryByObjectId', objectId: state.selectedUserStoryId });
+						}
+
+						// Restore selected defect - only load if we're on the detail screen
+						// (otherwise the handler will auto-navigate to detail, overriding our state)
+						if (state.selectedDefectId && state.currentScreen === 'defectDetail') {
+							sendMessage({ command: 'loadDefectByObjectId', objectId: state.selectedDefectId });
+						}
+					}
+					break;
 			}
 		};
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, iterations]); // Only include dependencies needed by handleMessage
 
 	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
 	useEffect(() => {
@@ -1578,6 +1634,37 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		setVelocityLoading(true);
 		sendMessage({ command: 'loadVelocityData' });
 	}, [activeSection, iterations.length, sendMessage]);
+
+	// Focus search input when search tab is selected
+	useEffect(() => {
+		if (activeSection === 'search' && searchInputRef.current) {
+			searchInputRef.current.focus();
+			searchInputRef.current.select();
+		}
+	}, [activeSection]);
+
+	// Save navigation state to backend whenever it changes (syncs across webviews)
+	useEffect(() => {
+		// Debounce state saves to avoid excessive messages
+		const timeoutId = setTimeout(() => {
+			const navigationState = {
+				activeSection,
+				currentScreen,
+				activeViewType,
+				selectedIterationId: selectedIteration?.objectId,
+				selectedUserStoryId: selectedUserStory?.objectId,
+				selectedDefectId: selectedDefect?.objectId,
+				activeUserStoryTab,
+				globalSearchTerm,
+				calendarDate: calendarDate.toISOString()
+			};
+			sendMessage({
+				command: 'saveState',
+				state: navigationState
+			});
+		}, 100);
+		return () => clearTimeout(timeoutId);
+	}, [activeSection, currentScreen, activeViewType, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, activeUserStoryTab, globalSearchTerm, calendarDate, sendMessage]);
 
 	// Track calendar year changes and load holidays for the new year
 	useEffect(() => {
@@ -1831,6 +1918,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 									<path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
 								</svg>
 								<input
+									ref={searchInputRef}
 									type="text"
 									placeholder="Search by code (e.g. US123) or title..."
 									value={globalSearchTerm}
@@ -1895,14 +1983,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 										}}
 									>
 										{globalSearchResults.map((item, idx) => (
-											<li key={`${item.entityType}-${item.objectId}-${idx}`} style={{ margin: 0, padding: 0 }}>
+											<li key={`${item.entityType}-${item.objectId}-${idx}`} style={{ margin: 0, padding: 0, borderBottom: '1px solid var(--vscode-panel-border)' }}>
 												<button
 													type="button"
 													className="search-result-button"
 													onClick={() => openSearchResult(item)}
 													style={{
 														padding: '10px 12px',
-														borderBottom: idx < globalSearchResults.length - 1 ? '1px solid var(--vscode-panel-border)' : 'none',
 														fontSize: '13px',
 														display: 'flex',
 														alignItems: 'center',
@@ -1925,16 +2012,17 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 												>
 													<span
 														style={{
-															fontSize: '10px',
+															fontSize: '11.5px',
 															fontWeight: 400,
-															padding: '2px 6px',
-															borderRadius: '4px',
-															backgroundColor: 'var(--vscode-badge-background)',
-															color: 'var(--vscode-badge-foreground)',
+															padding: '5px 6px',
+															borderRadius: '8px',
+															backgroundColor: 'rgba(128, 128, 128, 0.1)',
+															color: 'var(--vscode-descriptionForeground)',
+															border: '1px solid var(--vscode-panel-border)',
 															textTransform: 'capitalize',
 															display: 'inline-flex',
 															alignItems: 'center',
-															gap: '4px'
+															gap: '7px'
 														}}
 													>
 														{item.entityType === 'userstory' && <SearchResultUserStoryIcon />}

@@ -38,10 +38,28 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	}, []);
 
 	const barHeight = 20; // Height per bar in pixels
-	const userStoriesWithAssignees = userStories.filter(story => story.assignee) as Array<UserStory & { assignee: string }>;
-	const assigneeData = aggregateUserStoriesByAssignee(userStoriesWithAssignees);
+	const separatorHeight = 15; // Extra space for visual separator after Unassigned
+
+	// Include all stories (with and without assignees)
+	const allAssigneeData = aggregateUserStoriesByAssignee(
+		userStories.map(story => ({
+			...story,
+			assignee: story.assignee || 'Unassigned'
+		})) as Array<UserStory & { assignee: string }>
+	);
+
+	// Separate Unassigned from the rest and reorder: Unassigned first, then others sorted by hours
+	const unassignedData = allAssigneeData.filter(item => item.name === 'Unassigned');
+	const assignedData = allAssigneeData.filter(item => item.name !== 'Unassigned');
+	const hasUnassigned = unassignedData.length > 0;
+
+	// Combine: Unassigned first (if exists), then separator placeholder, then assigned
+	const assigneeData = hasUnassigned
+		? [...unassignedData, { name: '', userStories: [], totalHours: 0 }, ...assignedData] // Empty item as separator
+		: assignedData;
+
 	const numBars = assigneeData.length;
-	const chartHeight = Math.max(300, numBars * barHeight + 70); // Min 300px, add 70px for title and margins
+	const chartHeight = Math.max(300, numBars * barHeight + (hasUnassigned ? separatorHeight : 0) + 70); // Min 300px, add 70px for title and margins
 
 	useEffect(() => {
 		if (!chartRef.current) return;
@@ -51,16 +69,29 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			chartInstanceRef.current = echarts.init(chartRef.current);
 		}
 
-		// Prepare data - sort by total hours descending (most hours first)
-		// With yAxis.inverse enabled, this ordering shows the highest bars at the top of the chart
-		const sortedAssigneeData = [...assigneeData].sort((a, b) => b.totalHours - a.totalHours);
-		const totalHours = sortedAssigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
+		// Data is already ordered: Unassigned first (if exists), separator, then assigned sorted by hours
+		// We don't re-sort here to preserve that ordering
+		const totalHours = assigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
+
+		// Slightly muted colors for Unassigned stories - still colorful but softer
+		const unassignedColors = [
+			'#8bb8d4', // blau suau
+			'#9cc9a0', // verd suau
+			'#d4b88b', // taronja suau
+			'#c9a0a0', // vermell suau
+			'#a0c4d4', // cian suau
+			'#d4c08b', // groc suau
+			'#bfa0c9', // lila suau
+			'#d4a0b8', // rosa suau
+			'#a8b0d4', // índigo suau
+			'#b8d4a0' // llima suau
+		];
 		const lightTheme = isLightTheme();
 
 		// Create series data for stacked bars
 		// First, collect all unique user stories across assignees
 		const allUserStories = new Set<string>();
-		sortedAssigneeData.forEach(assignee => {
+		assigneeData.forEach(assignee => {
 			assignee.userStories.forEach(story => {
 				allUserStories.add(story.id);
 			});
@@ -68,7 +99,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 		// Create a map of story ID to story details for easy lookup
 		const storyDetailsMap = new Map<string, { formattedId: string; name: string }>();
-		sortedAssigneeData.forEach(assignee => {
+		assigneeData.forEach(assignee => {
 			assignee.userStories.forEach(story => {
 				storyDetailsMap.set(story.id, { formattedId: story.formattedId, name: story.name });
 			});
@@ -77,9 +108,40 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		// Create series for each user story
 		const series = Array.from(allUserStories).map(storyId => {
 			const storyDetails = storyDetailsMap.get(storyId);
-			const storyData = sortedAssigneeData.map(assignee => {
+
+			// Get the normal color for this story
+			const normalColor =
+				getColorPalette()[
+					Math.abs(
+						String(storyId)
+							.split('')
+							.reduce((a, b) => a + b.charCodeAt(0), 0)
+					) % 24
+				];
+
+			// Get muted color for Unassigned (gray variant based on story hash)
+			const grayIndex =
+				Math.abs(
+					String(storyId)
+						.split('')
+						.reduce((a, b) => a + b.charCodeAt(0), 0)
+				) % unassignedColors.length;
+			const mutedColor = unassignedColors[grayIndex];
+
+			// Create data points with individual colors for Unassigned vs assigned
+			const storyData = assigneeData.map((assignee, index) => {
 				const story = assignee.userStories.find(s => s.id === storyId);
-				return story ? story.hours : 0;
+				const hours = story ? story.hours : 0;
+
+				// Index 0 is Unassigned (if hasUnassigned), use muted color
+				const isUnassignedBar = hasUnassigned && index === 0;
+
+				return {
+					value: hours,
+					itemStyle: {
+						color: isUnassignedBar ? mutedColor : normalColor
+					}
+				};
 			});
 
 			// Format the series name as "code: title"
@@ -90,16 +152,6 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 				type: 'bar' as const,
 				stack: 'hours',
 				data: storyData,
-				itemStyle: {
-					color:
-						getColorPalette()[
-							Math.abs(
-								String(storyId)
-									.split('')
-									.reduce((a, b) => a + b.charCodeAt(0), 0)
-							) % 24
-						]
-				},
 				emphasis: {
 					itemStyle: {
 						shadowBlur: 10,
@@ -165,7 +217,12 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					params.forEach(param => {
 						const value = typeof param.value === 'number' ? param.value : Array.isArray(param.value) ? (typeof param.value[0] === 'number' ? param.value[0] : 0) : 0;
 						if (value > 0) {
-							content += `<div style="display: flex; align-items: baseline; gap: 4px;"><span style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${param.seriesName}</span><span>: <strong>${value}h</strong></span></div>`;
+							const color = param.color || '#999999';
+							content += `<div style="display: flex; align-items: baseline; gap: 6px;">
+								<span style="width: 10px; height: 10px; background-color: ${color}; border-radius: 2px; display: inline-block; flex-shrink: 0; margin-top: 2px;"></span>
+								<span style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${param.seriesName}</span>
+								<span style="white-space: nowrap;">: <strong>${value}h</strong></span>
+							</div>`;
 							total += value;
 						}
 					});
@@ -211,7 +268,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			},
 			yAxis: {
 				type: 'category',
-				data: sortedAssigneeData.map(item => item.name),
+				data: assigneeData.map(item => item.name),
 				inverse: true, // Display from top to bottom (highest bars at top)
 				nameTextStyle: {
 					color: themeColors.foreground

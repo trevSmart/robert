@@ -13,14 +13,14 @@ type FetchOptions = RequestInit | import('node-fetch').RequestInit;
 const fetchPolyfill = async (url: string, options?: FetchOptions): Promise<Response> => {
 	// Try to use native fetch if available (Node.js 18+ / VS Code 1.77+)
 	if (typeof globalThis.fetch === 'function') {
-		return globalThis.fetch(url, options);
+		return globalThis.fetch(url, options as RequestInit);
 	}
 
 	// Fallback to node-fetch for older environments
 	try {
 		// @ts-ignore - dynamic import for compatibility
 		const nodeFetch = await import('node-fetch');
-		return nodeFetch.default(url, options) as unknown as Response;
+		return nodeFetch.default(url, options as import('node-fetch').RequestInit) as unknown as Response;
 	} catch (error) {
 		throw new Error('fetch is not available and node-fetch polyfill could not be loaded. Please upgrade VS Code to version 1.77 or later.');
 	}

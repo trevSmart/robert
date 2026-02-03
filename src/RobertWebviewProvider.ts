@@ -46,6 +46,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	// State persistence for webview
 	private _webviewState: Map<string, unknown> = new Map();
 
+	// Shared navigation state that syncs across all webviews (activity bar and editor panel)
+	private _sharedNavigationState: Record<string, unknown> | null = null;
+
 	// Debug mode state
 	private _isDebugMode: boolean = false;
 
@@ -244,6 +247,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				const panelTitle = this._isDebugMode ? 'Robert — 🐞' : 'Robert';
 				const panel = vscode.window.createWebviewPanel('robert.mainPanel', panelTitle, vscode.ViewColumn.One, {
 					enableScripts: true,
+					retainContextWhenHidden: true,
 					localResourceRoots: [this._extensionUri]
 				});
 
@@ -275,6 +279,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			}, 'createWebviewPanel')) ||
 			vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — 🐞' : 'Robert', vscode.ViewColumn.One, {
 				enableScripts: true,
+				retainContextWhenHidden: true,
 				localResourceRoots: [this._extensionUri]
 			})
 		);
@@ -413,6 +418,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				const loadingTitle = this._isDebugMode ? 'Robert — Loading — 🐞' : 'Robert — Loading';
 				const panel = vscode.window.createWebviewPanel('robert.loading', loadingTitle, vscode.ViewColumn.One, {
 					enableScripts: true,
+					retainContextWhenHidden: true,
 					localResourceRoots: [this._extensionUri]
 				});
 
@@ -438,6 +444,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			}, 'createLoadingPanel')) ||
 			vscode.window.createWebviewPanel('robert.loading', this._isDebugMode ? 'Robert — Loading — 🐞' : 'Robert — Loading', vscode.ViewColumn.One, {
 				enableScripts: true,
+				retainContextWhenHidden: true,
 				localResourceRoots: [this._extensionUri]
 			})
 		);
@@ -455,6 +462,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				const logoTtitle = this._isDebugMode ? 'Robert — Logo — 🐞' : 'Robert — Logo';
 				const panel = vscode.window.createWebviewPanel('robert.logo', logoTtitle, vscode.ViewColumn.One, {
 					enableScripts: false,
+					retainContextWhenHidden: true,
 					localResourceRoots: [this._extensionUri]
 				});
 
@@ -477,6 +485,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			}, 'createLogoPanel')) ||
 			vscode.window.createWebviewPanel('robert.logo', this._isDebugMode ? 'Robert — Logo — 🐞' : 'Robert — Logo', vscode.ViewColumn.One, {
 				enableScripts: false,
+				retainContextWhenHidden: true,
 				localResourceRoots: [this._extensionUri]
 			})
 		);
@@ -649,21 +658,20 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							this._errorHandler.logInfo(`Message received: showDemo — demoType=${message.demoType}`, 'WebviewMessageListener');
 							break;
 						case 'saveState':
-							if (message.webviewId && message.state) {
-								this._saveWebviewState(message.webviewId, message.state);
-								this._errorHandler.logInfo(`State saved for webview: ${message.webviewId}`, 'WebviewMessageListener');
+							// Save navigation state to shared state (syncs across all webviews)
+							if (message.state) {
+								this._sharedNavigationState = message.state as Record<string, unknown>;
+								this._errorHandler.logInfo(`Shared navigation state saved`, 'WebviewMessageListener');
 							}
 							break;
 						case 'getState':
-							if (message.webviewId) {
-								const savedState = this._getWebviewState(message.webviewId);
-								if (savedState) {
-									webview.postMessage({
-										command: 'restoreState',
-										state: savedState
-									});
-									this._errorHandler.logInfo(`State restored for webview: ${message.webviewId}`, 'WebviewMessageListener');
-								}
+							// Return shared navigation state to any webview that requests it
+							if (this._sharedNavigationState) {
+								webview.postMessage({
+									command: 'restoreState',
+									state: this._sharedNavigationState
+								});
+								this._errorHandler.logInfo(`Shared navigation state restored`, 'WebviewMessageListener');
 							}
 							break;
 						case 'openTutorialInEditor':

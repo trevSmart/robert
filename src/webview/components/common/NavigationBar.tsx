@@ -55,6 +55,19 @@ const NavOverflowItem = styled.button<{ $isActive: boolean }>`
 	}
 `;
 
+// Inline styles for measurement (mirrors baseNavButtonStyles)
+const getTabStyles = (isActive: boolean): React.CSSProperties => ({
+	padding: '10px 16px 6px',
+	border: 'none',
+	backgroundColor: 'transparent',
+	fontSize: '12.4px',
+	fontWeight: isActive ? '600' : '400',
+	display: 'flex',
+	alignItems: 'center',
+	gap: '8px',
+	whiteSpace: 'nowrap'
+});
+
 type Section = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 
 interface NavigationBarProps {

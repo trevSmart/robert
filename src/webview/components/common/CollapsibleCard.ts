@@ -28,17 +28,19 @@ class CollapsibleCard extends HTMLElement {
 
 	attributeChangedCallback(name: string, oldValue: string, newValue: string) {
 		if (oldValue !== newValue && this.isInitialized) {
-			if (name === 'default-collapsed') {
-				this.collapsed = this.hasAttribute('default-collapsed');
-				this.updateCollapsedState();
-			} else if (name === 'title') {
-				this.updateTitle();
-			} else if (name === 'background-color') {
-				this.updateBackgroundColor();
+			// Update only the affected elements instead of re-rendering entire DOM
+			switch (name) {
+				case 'title':
+					this.updateTitle();
+					break;
+				case 'background-color':
+					this.updateBackgroundColor();
+					break;
+				case 'default-collapsed':
+					this.collapsed = this.hasAttribute('default-collapsed');
+					this.updateCollapsedState();
+					break;
 			}
-			this.render();
-			this.attachEventListeners();
-			this.updateCollapsedState();
 		}
 	}
 

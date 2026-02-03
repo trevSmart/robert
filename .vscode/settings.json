@@ -55,7 +55,7 @@
 					"install:cursor"
 				],
 				"color": "#aa4455"
-			}
+			},
 			{
 				"name": "$(extensions) Insiders",
 				"useVsCodeApi": false,

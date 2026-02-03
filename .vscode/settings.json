@@ -1,0 +1,125 @@
+{
+	"typescript.preferences.includePackageJsonAutoImports": "off",
+	"typescript.suggest.autoImports": false,
+	"actionButtons": {
+		"commands": [
+			{
+				"name": "|",
+				"color": "#000000FF",
+				"command": ""
+			},
+			{
+				"name": "$(github-inverted)",
+				"useVsCodeApi": true,
+				"command": "workbench.action.tasks.runTask",
+				"args": [
+					"Open remote Github Repository"
+				],
+				"color": "#b0b0b0"
+			},
+			{
+				"name": "$(terminal)",
+				"useVsCodeApi": true,
+				"command": "workbench.action.terminal.toggleTerminal",
+				"color": "#e5e5e5"
+			},
+			{
+				"name": "$(lightbulb-autofix) Lint",
+				"useVsCodeApi": true,
+				"command": "workbench.action.tasks.runTask",
+				"args": [
+					"Lint and fix with ESLint"
+				],
+				"color": "#8c7ce8"
+			},
+			{
+				"name": "$(edit) Compile",
+				"useVsCodeApi": true,
+				"command": "workbench.action.tasks.runTask",
+				"args": [
+					"compile"
+				],
+				"color": "#2886b2"
+			},
+			{
+				"name": "$(testing-debug-icon) Debug",
+				"useVsCodeApi": true,
+				"command": "workbench.action.debug.start",
+				"color": "#bb9955"
+			},
+			{
+				"name": "$(extensions) Cursor",
+				"useVsCodeApi": true,
+				"command": "workbench.action.tasks.runTask",
+				"args": [
+					"install:cursor"
+				],
+				"color": "#aa4455"
+			},
+			{
+				"name": "$(extensions) Insiders",
+				"useVsCodeApi": false,
+				"command": "npm run install:vscode-insiders",
+				"color": "#aa4455"
+			}
+		],
+		"defaultColor": "white",
+		"reloadButton": null,
+		"loadNpmCommands": false
+	},
+	"editor.defaultFormatter": "dbaeumer.vscode-eslint",
+	"chat.checkpoints.showFileChanges": true,
+	"chat.tools.terminal.autoApprove": {
+		"npm run compile": true,
+		"npm run lint": true,
+		"npx biome": true,
+		"ls": true,
+		"mkdir": true,
+		"touch": true,
+		"rm": false,
+		"rmdir": false,
+		"del": false,
+		"kill": false,
+		"curl": false,
+		"wget": false,
+		"eval": false,
+		"chmod": false,
+		"chown": false,
+		"/^Remove-Item\\b/i": false
+	},
+	"github.copilot.chat.editor.temporalContext.enabled": true,
+	"squarl.bookmarks": [
+		{
+			"name": "VSCode Extension API",
+			"path": "https://code.visualstudio.com/api",
+			"description": "",
+			"type": "link",
+			"groupId": "vscode"
+		},
+		{
+			"name": "VSCode Product icon reference",
+			"path": "https://code.visualstudio.com/api/references/icons-in-labels",
+			"description": "",
+			"type": "link",
+			"groupId": "vscode"
+		},
+		{
+			"name": "Open VSX Registry",
+			"path": "https://open-vsx.org/extension/trevSmart/robert",
+			"description": "",
+			"type": "link"
+		}
+	],
+	"debug.enableStatusBarColor": false,
+	"squarl.groups": [
+		{
+			"id": "vscode",
+			"name": "VSCode"
+		}
+	],
+	"biome.configurationPath": "./biome.json",
+	"biome.requireConfiguration": true,
+	"editor.codeActionsOnSave": {
+		"source.fixAll": "explicit"
+	}
+}

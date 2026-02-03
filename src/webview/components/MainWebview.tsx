@@ -1,3 +1,4 @@
+/// <reference path="./common/CollapsibleCard.d.ts" />
 import React, { FC, ComponentType } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'vscrui/dist/codicon.css';
@@ -13,6 +14,7 @@ import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
+import './common/CollapsibleCard';
 import SprintKPIs from './metrics/SprintKPIs';
 import VelocityTrendChart from './metrics/VelocityTrendChart';
 import StateDistributionPie from './metrics/StateDistributionPie';
@@ -358,17 +360,23 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStories' && selectedIteration && (
 				<>
 					<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
-					<SprintDetailsForm iteration={selectedIteration} />
-					<AssigneeHoursChart userStories={sprintUserStories} />
-					<UserStoriesTable
-						userStories={sprintUserStories}
-						loading={sprintUserStoriesLoading}
-						error={userStoriesError}
-						onLoadUserStories={() => onLoadUserStories(selectedIteration)}
-						onClearUserStories={onClearUserStories}
-						onUserStorySelected={onUserStorySelected}
-						selectedUserStory={selectedUserStory}
-					/>
+					<collapsible-card title="Details">
+						<SprintDetailsForm iteration={selectedIteration} />
+					</collapsible-card>
+					<collapsible-card title="User stories assignment">
+						<AssigneeHoursChart userStories={sprintUserStories} />
+					</collapsible-card>
+					<collapsible-card title="User stories" background-color="inherit">
+						<UserStoriesTable
+							userStories={sprintUserStories}
+							loading={sprintUserStoriesLoading}
+							error={userStoriesError}
+							onLoadUserStories={() => onLoadUserStories(selectedIteration)}
+							onClearUserStories={onClearUserStories}
+							onUserStorySelected={onUserStorySelected}
+							selectedUserStory={selectedUserStory}
+						/>
+					</collapsible-card>
 				</>
 			)}
 
@@ -617,6 +625,12 @@ const PortfolioViewSelector: FC<{
 	activeView: PortfolioViewType;
 	onViewChange: (viewId: PortfolioViewType) => void;
 }> = ({ views, activeView, onViewChange }) => {
+	const lightTheme = isLightTheme();
+	const [hoveredTab, setHoveredTab] = useState<PortfolioViewType | null>(null);
+
+	// Memoize hover background color based on theme
+	const hoverBackgroundColor = useMemo(() => (lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'), [lightTheme]);
+
 	const renderIcon = (icon?: string) => {
 		switch (icon) {
 			case 'sprints':
@@ -630,26 +644,21 @@ const PortfolioViewSelector: FC<{
 		}
 	};
 
-	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number) => {
-		const lightTheme = isLightTheme();
+	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number, isHovered: boolean) => {
 		return {
-			padding: '10px 20px',
+			padding: '10px 16px 6px',
 			border: 'none',
 			borderBottom: isActive
 				? lightTheme
-					? '2px solid #007acc' // Blau més fosc i visible per temes clars
-					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
+					? '2px solid #007acc' // Darker blue for better visibility in light themes
+					: '2px solid var(--vscode-progressBar-background)' // Standard color for dark themes
 				: '2px solid transparent',
 			borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
-			backgroundColor: isActive
-				? lightTheme
-					? 'rgba(0, 123, 255, 0.1)' // Blau clar subtil per temes clars
-					: 'var(--vscode-tab-activeBackground)' // Color estàndard per temes foscos
-				: 'transparent',
+			backgroundColor: !isActive && isHovered ? hoverBackgroundColor : 'transparent',
 			color: isActive
 				? lightTheme
-					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars
-					: 'var(--vscode-tab-activeForeground)' // Color estàndard per temes foscos
+					? '#1e1e1e' // Dark color to ensure contrast in light themes
+					: 'var(--vscode-tab-activeForeground)' // Standard color for dark themes
 				: lightTheme
 					? '#333333'
 					: 'var(--vscode-tab-inactiveForeground)',
@@ -657,7 +666,7 @@ const PortfolioViewSelector: FC<{
 			display: 'flex',
 			alignItems: 'center',
 			gap: '8px',
-			fontSize: '13px',
+			fontSize: '12.4px',
 			fontWeight: isActive ? 600 : 400,
 			transition: 'all 0.15s ease',
 			position: 'relative' as const,
@@ -671,12 +680,19 @@ const PortfolioViewSelector: FC<{
 				marginBottom: '20px',
 				display: 'flex',
 				borderBottom: '1px solid var(--vscode-panel-border)',
-				backgroundColor: 'var(--vscode-editor-background)',
 				borderRadius: '6px 6px 0 0'
 			}}
 		>
 			{views.map((view, index) => (
-				<button key={view.id} onClick={() => activeView !== view.id && onViewChange(view.id)} style={getSubTabStyles(activeView === view.id, index, views.length)} title={view.description}>
+				<button
+					key={view.id}
+					className={`portfolio-sub-tab ${activeView === view.id ? 'portfolio-sub-tab-active' : ''}`}
+					onClick={() => activeView !== view.id && onViewChange(view.id)}
+					onMouseEnter={() => setHoveredTab(view.id)}
+					onMouseLeave={() => setHoveredTab(null)}
+					style={getSubTabStyles(activeView === view.id, index, views.length, hoveredTab === view.id)}
+					title={view.description}
+				>
 					{renderIcon(view.icon)}
 					<span>{view.label}</span>
 				</button>

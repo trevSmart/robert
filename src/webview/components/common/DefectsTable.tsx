@@ -91,15 +91,7 @@ const getScheduleStateColor = (scheduleState: string) => {
 const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects: _onLoadDefects, onDefectSelected, selectedDefect, hasMore = false, onLoadMore, loadingMore = false }) => {
 	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, defects.length: ${defects.length}`, 'DefectsTable');
 	return (
-		<div
-			style={{
-				margin: '20px 0',
-				padding: '20px',
-				backgroundColor: themeColors.panelBackground,
-				border: `1px solid ${themeColors.panelBorder}`,
-				borderRadius: '6px'
-			}}
-		>
+		<>
 			{loading && (
 				<div style={{ textAlign: 'center', padding: '20px' }}>
 					<div
@@ -238,7 +230,7 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 					</button>
 				</div>
 			)}
-		</div>
+		</>
 	);
 };
 

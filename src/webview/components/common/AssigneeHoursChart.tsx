@@ -112,6 +112,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 		// Configure chart options
 		const option: echarts.EChartsOption = {
+			backgroundColor: 'transparent',
 			title: {
 				text: `Hours by Assignee (${totalHours}h total)`,
 				subtext: 'Horizontal Bar Chart',
@@ -158,13 +159,13 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 						return '';
 					}
 					const assignee = params[0].name;
-					let content = `<div style="font-size: 12px;"><strong style="font-size: 13px;">${assignee}</strong><br/><br/>`;
+					let content = `<div style="font-size: 11.5px;"><strong style="font-size: 12.5px;">${assignee}</strong><br/><br/>`;
 					let total = 0;
 
 					params.forEach(param => {
 						const value = typeof param.value === 'number' ? param.value : Array.isArray(param.value) ? (typeof param.value[0] === 'number' ? param.value[0] : 0) : 0;
 						if (value > 0) {
-							content += `${param.seriesName}: <strong>${value}h</strong><br/>`;
+							content += `<div style="display: flex; align-items: baseline; gap: 4px;"><span style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${param.seriesName}</span><span>: <strong>${value}h</strong></span></div>`;
 							total += value;
 						}
 					});
@@ -172,12 +173,13 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					content += `<br/><strong>Total: ${total}h</strong></div>`;
 					return content;
 				},
-				backgroundColor: themeColors.background,
+				backgroundColor: `color-mix(in srgb, ${themeColors.background} 85%, transparent)`,
 				borderColor: themeColors.panelBorder,
 				textStyle: {
 					color: themeColors.foreground,
-					fontSize: 12
-				}
+					fontSize: 11.5
+				},
+				extraCssText: 'backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);'
 			},
 			grid: {
 				left: '3%',
@@ -254,11 +256,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		<div
 			ref={chartRef}
 			style={{
-				margin: '20px 0',
-				padding: '5px 10px 10px 10px',
-				backgroundColor: themeColors.panelBackground,
-				border: `1px solid ${themeColors.panelBorder}`,
-				borderRadius: '6px',
+				padding: '0 10px',
 				height: `${chartHeight}px`
 			}}
 		/>

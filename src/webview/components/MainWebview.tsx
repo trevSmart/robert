@@ -368,16 +368,16 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						<AssigneeHoursChart userStories={sprintUserStories} />
 					</collapsible-card>
 					<collapsible-card title="User stories" background-color="inherit">
-					<UserStoriesTable
-						userStories={sprintUserStories}
-						loading={sprintUserStoriesLoading}
-						error={userStoriesError}
-						onLoadUserStories={() => onLoadUserStories(selectedIteration)}
-						onClearUserStories={onClearUserStories}
-						onUserStorySelected={onUserStorySelected}
-						selectedUserStory={selectedUserStory}
-					/>
-				</collapsible-card>
+						<UserStoriesTable
+							userStories={sprintUserStories}
+							loading={sprintUserStoriesLoading}
+							error={userStoriesError}
+							onLoadUserStories={() => onLoadUserStories(selectedIteration)}
+							onClearUserStories={onClearUserStories}
+							onUserStorySelected={onUserStorySelected}
+							selectedUserStory={selectedUserStory}
+						/>
+					</collapsible-card>
 				</>
 			)}
 
@@ -627,6 +627,14 @@ const PortfolioViewSelector: FC<{
 	onViewChange: (viewId: PortfolioViewType) => void;
 }> = ({ views, activeView, onViewChange }) => {
 	const lightTheme = isLightTheme();
+	const [hoveredTab, setHoveredTab] = useState<PortfolioViewType | null>(null);
+
+	// Memoize hover background color based on theme
+	const hoverBackgroundColor = useMemo(
+		() => (lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'),
+		[lightTheme]
+	);
+
 	const renderIcon = (icon?: string) => {
 		switch (icon) {
 			case 'sprints':
@@ -640,21 +648,21 @@ const PortfolioViewSelector: FC<{
 		}
 	};
 
-	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number) => {
+	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number, isHovered: boolean) => {
 		return {
 			padding: '10px 16px 6px',
 			border: 'none',
 			borderBottom: isActive
 				? lightTheme
-					? '2px solid #007acc' // Blau més fosc i visible per temes clars
-					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
+					? '2px solid #007acc' // Darker blue for better visibility in light themes
+					: '2px solid var(--vscode-progressBar-background)' // Standard color for dark themes
 				: '2px solid transparent',
 			borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
-			backgroundColor: 'transparent',
+			backgroundColor: !isActive && isHovered ? hoverBackgroundColor : 'transparent',
 			color: isActive
 				? lightTheme
-					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars
-					: 'var(--vscode-tab-activeForeground)' // Color estàndard per temes foscos
+					? '#1e1e1e' // Dark color to ensure contrast in light themes
+					: 'var(--vscode-tab-activeForeground)' // Standard color for dark themes
 				: lightTheme
 					? '#333333'
 					: 'var(--vscode-tab-inactiveForeground)',
@@ -679,15 +687,16 @@ const PortfolioViewSelector: FC<{
 				borderRadius: '6px 6px 0 0'
 			}}
 		>
-			<style>
-				{`
-					.portfolio-sub-tab:not(.portfolio-sub-tab-active):hover {
-						background-color: ${lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'} !important;
-					}
-				`}
-			</style>
 			{views.map((view, index) => (
-				<button key={view.id} className={`portfolio-sub-tab ${activeView === view.id ? 'portfolio-sub-tab-active' : ''}`} onClick={() => activeView !== view.id && onViewChange(view.id)} style={getSubTabStyles(activeView === view.id, index, views.length)} title={view.description}>
+				<button
+					key={view.id}
+					className={`portfolio-sub-tab ${activeView === view.id ? 'portfolio-sub-tab-active' : ''}`}
+					onClick={() => activeView !== view.id && onViewChange(view.id)}
+					onMouseEnter={() => setHoveredTab(view.id)}
+					onMouseLeave={() => setHoveredTab(null)}
+					style={getSubTabStyles(activeView === view.id, index, views.length, hoveredTab === view.id)}
+					title={view.description}
+				>
 					{renderIcon(view.icon)}
 					<span>{view.label}</span>
 				</button>

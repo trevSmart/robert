@@ -174,9 +174,11 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	return (
 		<collapsible-card
 			title={userStory.formattedId}
-			style={{
-				margin: '20px 0'
-			} as React.CSSProperties}
+			style={
+				{
+					margin: '20px 0'
+				} as React.CSSProperties
+			}
 		>
 			<div
 				style={{

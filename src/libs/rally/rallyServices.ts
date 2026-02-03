@@ -7,10 +7,10 @@ import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCache
 
 // Polyfill for fetch in older VS Code versions (< 1.77, Node.js < 18)
 // Use dynamic import to avoid errors in environments where fetch is available
-// `options` is typed as `any` here to avoid incompatibilities between
-// DOM `RequestInit` and `node-fetch`'s RequestInit types in different
-// environments/TS configurations.
-const fetchPolyfill = async (url: string, options?: any): Promise<Response> => {
+// `options` is typed as a union here to support both DOM and node-fetch
+// RequestInit types in different environments/TS configurations.
+type FetchOptions = RequestInit | import('node-fetch').RequestInit;
+const fetchPolyfill = async (url: string, options?: FetchOptions): Promise<Response> => {
 	// Try to use native fetch if available (Node.js 18+ / VS Code 1.77+)
 	if (typeof globalThis.fetch === 'function') {
 		return globalThis.fetch(url, options);

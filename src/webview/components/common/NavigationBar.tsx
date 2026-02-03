@@ -217,8 +217,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		<div
 			style={{
 				display: 'flex',
-				borderBottom: '1px solid var(--vscode-panel-border)',
-				// padding: '0 20px'
+				borderBottom: '1px solid var(--vscode-panel-border)'
 			}}
 		>
 			<style>

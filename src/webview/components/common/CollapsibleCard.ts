@@ -6,6 +6,8 @@ class CollapsibleCard extends HTMLElement {
 	private contentDiv: HTMLDivElement | null = null;
 	private chevronDiv: HTMLDivElement | null = null;
 	private headerDiv: HTMLDivElement | null = null;
+	private titleElement: HTMLElement | null = null;
+	private isInitialized: boolean = false;
 
 	static get observedAttributes() {
 		return ['title', 'default-collapsed', 'background-color'];
@@ -21,12 +23,18 @@ class CollapsibleCard extends HTMLElement {
 		this.render();
 		this.attachEventListeners();
 		this.updateCollapsedState();
+		this.isInitialized = true;
 	}
 
 	attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-		if (oldValue !== newValue) {
+		if (oldValue !== newValue && this.isInitialized) {
 			if (name === 'default-collapsed') {
 				this.collapsed = this.hasAttribute('default-collapsed');
+				this.updateCollapsedState();
+			} else if (name === 'title') {
+				this.updateTitle();
+			} else if (name === 'background-color') {
+				this.updateBackgroundColor();
 			}
 			this.render();
 			this.attachEventListeners();
@@ -36,6 +44,20 @@ class CollapsibleCard extends HTMLElement {
 
 	private getBackgroundColor(): string {
 		return this.getAttribute('background-color') || 'rgba(0, 0, 0, 0.1)';
+	}
+
+	private updateTitle() {
+		if (this.titleElement) {
+			const title = this.getAttribute('title') || 'Collapsible Card';
+			this.titleElement.textContent = title;
+		}
+	}
+
+	private updateBackgroundColor() {
+		if (this.shadow?.host) {
+			const bgColor = this.getBackgroundColor();
+			this.shadow.host.style.setProperty('--collapsible-card-bg', bgColor);
+		}
 	}
 
 	private toggleCollapsed() {
@@ -159,6 +181,7 @@ class CollapsibleCard extends HTMLElement {
 		this.contentDiv = this.shadow.querySelector('.content');
 		this.chevronDiv = this.shadow.querySelector('.chevron');
 		this.headerDiv = this.shadow.querySelector('.header');
+		this.titleElement = this.shadow.querySelector('.title');
 	}
 }
 

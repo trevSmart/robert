@@ -644,10 +644,12 @@ const PortfolioViewSelector: FC<{
 
 	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number, isHovered: boolean) => {
 		// Determine background color based on hover and theme
-		let backgroundColor = 'transparent';
-		if (!isActive && isHovered) {
-			backgroundColor = lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)';
-		}
+		const getBackgroundColor = () => {
+			if (!isActive && isHovered) {
+				return lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+			}
+			return 'transparent';
+		};
 
 		return {
 			padding: '10px 16px 6px',
@@ -658,7 +660,7 @@ const PortfolioViewSelector: FC<{
 					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
 				: '2px solid transparent',
 			borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
-			backgroundColor,
+			backgroundColor: getBackgroundColor(),
 			color: isActive
 				? lightTheme
 					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars

@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.2.9",
+	"version": "0.2.12",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -191,7 +191,7 @@
 	"scripts": {
 		"vscode:prepublish": "npm run compile && npm run build:webview",
 		"compile": "npm run format && npm run lint:fix && tsc -p ./",
-		"compile:fast": "tsc -p ./",
+		"compile:fast": "tsc -p ./ && npm run build:webview",
 		"watch": "tsc -p ./ -w",
 		"build:webview": "vite build",
 		"lint": "eslint src/**/*.{ts,tsx} --ext .ts,.tsx",

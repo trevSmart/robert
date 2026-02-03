@@ -14,6 +14,7 @@ import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
+import CollapsibleCard from './common/CollapsibleCard.tsx';
 import './common/CollapsibleCard';
 import SprintKPIs from './metrics/SprintKPIs';
 import VelocityTrendChart from './metrics/VelocityTrendChart';
@@ -360,10 +361,13 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStories' && selectedIteration && (
 				<>
 					<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
-					<SprintDetailsForm iteration={selectedIteration} />
+					<collapsible-card title="Details">
+						<SprintDetailsForm iteration={selectedIteration} />
+					</collapsible-card>
 					<collapsible-card title="User stories assignment">
 						<AssigneeHoursChart userStories={sprintUserStories} />
 					</collapsible-card>
+					<collapsible-card title="User stories" background-color="inherit">
 					<UserStoriesTable
 						userStories={sprintUserStories}
 						loading={sprintUserStoriesLoading}
@@ -373,6 +377,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						onUserStorySelected={onUserStorySelected}
 						selectedUserStory={selectedUserStory}
 					/>
+				</collapsible-card>
 				</>
 			)}
 
@@ -645,11 +650,7 @@ const PortfolioViewSelector: FC<{
 					: '2px solid var(--vscode-progressBar-background)' // Color estàndard per temes foscos
 				: '2px solid transparent',
 			borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
-			backgroundColor: isActive
-				? lightTheme
-					? 'rgba(0, 123, 255, 0.1)' // Blau clar subtil per temes clars
-					: 'var(--vscode-tab-activeBackground)' // Color estàndard per temes foscos
-				: 'transparent',
+			backgroundColor: 'transparent',
 			color: isActive
 				? lightTheme
 					? '#1e1e1e' // Color fosc per assegurar contrast en temes clars
@@ -675,7 +676,6 @@ const PortfolioViewSelector: FC<{
 				marginBottom: '20px',
 				display: 'flex',
 				borderBottom: '1px solid var(--vscode-panel-border)',
-				backgroundColor: 'var(--vscode-editor-background)',
 				borderRadius: '6px 6px 0 0'
 			}}
 		>

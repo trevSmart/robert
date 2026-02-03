@@ -8,7 +8,7 @@ class CollapsibleCard extends HTMLElement {
 	private headerDiv: HTMLDivElement | null = null;
 
 	static get observedAttributes() {
-		return ['title', 'default-collapsed'];
+		return ['title', 'default-collapsed', 'background-color'];
 	}
 
 	constructor() {
@@ -31,25 +31,29 @@ class CollapsibleCard extends HTMLElement {
 		}
 	}
 
+	private getBackgroundColor(): string {
+		return this.getAttribute('background-color') || 'rgba(0, 0, 0, 0.1)';
+	}
+
 	private toggleCollapsed() {
 		this.collapsed = !this.collapsed;
 		this.updateCollapsedState();
 	}
 
 	private updateCollapsedState() {
-		if (this.contentDiv && this.chevronDiv && this.headerDiv) {
+		if (this.contentDiv && this.chevronDiv) {
 			if (this.collapsed) {
-				this.contentDiv.style.padding = '0';
 				this.contentDiv.style.maxHeight = '0';
-				this.contentDiv.style.overflow = 'hidden';
+				this.contentDiv.style.opacity = '0';
+				this.contentDiv.style.paddingTop = '0';
+				this.contentDiv.style.paddingBottom = '0';
 				this.chevronDiv.style.transform = 'rotate(-90deg)';
-				this.headerDiv.style.borderBottom = 'none';
 			} else {
-				this.contentDiv.style.padding = '16px';
-				this.contentDiv.style.maxHeight = '100%';
-				this.contentDiv.style.overflow = 'visible';
+				this.contentDiv.style.maxHeight = '2000px';
+				this.contentDiv.style.opacity = '1';
+				this.contentDiv.style.paddingTop = '16px';
+				this.contentDiv.style.paddingBottom = '16px';
 				this.chevronDiv.style.transform = 'rotate(0deg)';
-				this.headerDiv.style.borderBottom = `1px solid ${themeColors.border}`;
 			}
 		}
 	}
@@ -69,13 +73,15 @@ class CollapsibleCard extends HTMLElement {
 				:host {
 					display: block;
 					margin-bottom: 16px;
+					--collapsible-card-bg: ${this.getBackgroundColor()};
 				}
 
 				.container {
-					background-color: ${themeColors.background};
-					border: 1px solid ${themeColors.border};
-					border-radius: 4px;
+					background-color: var(--collapsible-card-bg);
+					border: 1px solid var(--vscode-panel-border);
+					border-radius: 6px;
 					overflow: hidden;
+					backdrop-filter: blur(4px);
 				}
 
 				.header {
@@ -83,18 +89,19 @@ class CollapsibleCard extends HTMLElement {
 					align-items: center;
 					padding: 12px 16px;
 					background-color: ${themeColors.backgroundHover};
-					border-bottom: ${this.collapsed ? 'none' : `1px solid ${themeColors.border}`};
 					cursor: pointer;
 					user-select: none;
+					border-bottom: 1px solid ${themeColors.border};
 				}
 
 				.header:hover {
-					opacity: 0.9;
+					background-color: ${themeColors.backgroundHover};
+					opacity: 0.95;
 				}
 
 				.chevron {
-					margin-right: 8px;
-					transition: transform 0.2s ease;
+					margin-right: 10px;
+					transition: transform 0.25s ease;
 					transform: ${this.collapsed ? 'rotate(-90deg)' : 'rotate(0deg)'};
 					display: flex;
 					align-items: center;
@@ -102,20 +109,26 @@ class CollapsibleCard extends HTMLElement {
 					width: 16px;
 					height: 16px;
 					color: ${themeColors.text};
+					flex-shrink: 0;
 				}
 
 				.title {
-					font-size: 14px;
-					font-weight: 600;
+					font-size: 13.2px;
+					font-weight: 300;
 					color: ${themeColors.text};
 					margin: 0;
+					flex: 1;
 				}
 
 				.content {
-					padding: ${this.collapsed ? '0' : '16px'};
-					max-height: ${this.collapsed ? '0' : '100%'};
-					overflow: ${this.collapsed ? 'hidden' : 'visible'};
-					transition: max-height 0.3s ease, padding 0.3s ease;
+					padding-left: 16px;
+					padding-right: 16px;
+					padding-top: ${this.collapsed ? '0' : '16px'};
+					padding-bottom: ${this.collapsed ? '0' : '16px'};
+					max-height: ${this.collapsed ? '0' : '2000px'};
+					opacity: ${this.collapsed ? '0' : '1'};
+					overflow: hidden;
+					transition: max-height 0.3s ease, opacity 0.25s ease, padding-top 0.3s ease, padding-bottom 0.3s ease;
 				}
 
 				svg {

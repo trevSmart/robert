@@ -660,8 +660,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		<div
 			ref={containerRef}
 			style={{
-				padding: '20px',
-				backgroundColor: themeColors.background,
+				padding: '16px 0',
+				// backgroundColor: themeColors.background,
 				minHeight: '500px',
 				transition: 'all 100ms ease'
 			}}
@@ -789,7 +789,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					borderRadius: '12px',
 					overflow: 'hidden',
 					maxWidth: '980px',
-					margin: '0 auto'
+					margin: '0 auto',
+					padding: '0 14px'
 				}}
 			>
 				{/* Day headers */}

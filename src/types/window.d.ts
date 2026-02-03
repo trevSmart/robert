@@ -20,6 +20,18 @@ declare global {
 
 	// Web API globals
 	var ResizeObserver: typeof ResizeObserver;
+
+	namespace JSX {
+		interface IntrinsicElements {
+			'collapsible-card': {
+				title: string;
+				'default-collapsed'?: boolean;
+				'background-color'?: string;
+				children?: React.ReactNode;
+				[key: string]: any;
+			};
+		}
+	}
 }
 
 export {};

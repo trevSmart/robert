@@ -45,14 +45,14 @@ const CollapsibleCard: React.FC<CollapsibleCardProps> = ({ title, children, defa
 	};
 
 	const titleStyle: React.CSSProperties = {
-		fontSize: '14px',
-		fontWeight: 600,
+		fontSize: '13px',
+		fontWeight: 400,
 		color: themeColors.text,
 		margin: 0
 	};
 
 	const contentStyle: React.CSSProperties = {
-		padding: collapsed ? '0' : '16px',
+		padding: collapsed ? '0' : '0 16px 16px',
 		maxHeight: collapsed ? '0' : '100%',
 		overflow: collapsed ? 'hidden' : 'visible',
 		transition: 'max-height 0.3s ease, padding 0.3s ease'

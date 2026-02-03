@@ -29,6 +29,8 @@ class CollapsibleCard extends HTMLElement {
 				this.collapsed = this.hasAttribute('default-collapsed');
 			}
 			this.render();
+			this.attachEventListeners();
+			this.updateCollapsedState();
 		}
 	}
 

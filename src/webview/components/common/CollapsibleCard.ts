@@ -6,6 +6,8 @@ class CollapsibleCard extends HTMLElement {
 	private contentDiv: HTMLDivElement | null = null;
 	private chevronDiv: HTMLDivElement | null = null;
 	private headerDiv: HTMLDivElement | null = null;
+	private titleElement: HTMLElement | null = null;
+	private isInitialized: boolean = false;
 
 	static get observedAttributes() {
 		return ['title', 'default-collapsed', 'background-color'];
@@ -21,19 +23,15 @@ class CollapsibleCard extends HTMLElement {
 		this.render();
 		this.attachEventListeners();
 		this.updateCollapsedState();
+		this.isInitialized = true;
 	}
 
 	attributeChangedCallback(name: string, oldValue: string, newValue: string) {
-		if (oldValue !== newValue) {
-			// If shadow DOM hasn't been rendered yet, render() will be called in connectedCallback
-			if (!this.shadow.firstChild) {
-				return;
-			}
-
+		if (oldValue !== newValue && this.isInitialized) {
 			// Update only the affected elements instead of re-rendering entire DOM
 			switch (name) {
 				case 'title':
-					this.updateTitle(newValue);
+					this.updateTitle();
 					break;
 				case 'background-color':
 					this.updateBackgroundColor();
@@ -50,18 +48,17 @@ class CollapsibleCard extends HTMLElement {
 		return this.getAttribute('background-color') || 'rgba(0, 0, 0, 0.1)';
 	}
 
-	private updateTitle(title: string) {
-		const titleElement = this.shadow.querySelector('.title');
-		if (titleElement) {
-			titleElement.textContent = title || 'Collapsible Card';
+	private updateTitle() {
+		if (this.titleElement) {
+			const title = this.getAttribute('title') || 'Collapsible Card';
+			this.titleElement.textContent = title;
 		}
 	}
 
 	private updateBackgroundColor() {
-		const backgroundColor = this.getBackgroundColor();
-		const host = this.shadow.host as HTMLElement;
-		if (host) {
-			host.style.setProperty('--collapsible-card-bg', backgroundColor);
+		if (this.shadow?.host) {
+			const bgColor = this.getBackgroundColor();
+			this.shadow.host.style.setProperty('--collapsible-card-bg', bgColor);
 		}
 	}
 
@@ -186,6 +183,7 @@ class CollapsibleCard extends HTMLElement {
 		this.contentDiv = this.shadow.querySelector('.content');
 		this.chevronDiv = this.shadow.querySelector('.chevron');
 		this.headerDiv = this.shadow.querySelector('.header');
+		this.titleElement = this.shadow.querySelector('.title');
 	}
 }
 

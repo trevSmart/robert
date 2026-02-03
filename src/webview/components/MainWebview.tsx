@@ -14,7 +14,7 @@ import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
-import CollapsibleCard from './common/CollapsibleCard.tsx';
+import CollapsibleCard from './common/CollapsibleCard';
 import './common/CollapsibleCard';
 import SprintKPIs from './metrics/SprintKPIs';
 import VelocityTrendChart from './metrics/VelocityTrendChart';

@@ -661,7 +661,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			ref={containerRef}
 			style={{
 				padding: '16px 0',
-				// backgroundColor: themeColors.background,
 				minHeight: '500px',
 				transition: 'all 100ms ease'
 			}}

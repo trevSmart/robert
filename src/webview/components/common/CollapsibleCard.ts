@@ -25,15 +25,39 @@ class CollapsibleCard extends HTMLElement {
 
 	attributeChangedCallback(name: string, oldValue: string, newValue: string) {
 		if (oldValue !== newValue) {
-			if (name === 'default-collapsed') {
-				this.collapsed = this.hasAttribute('default-collapsed');
+			// Update only the affected elements instead of re-rendering entire DOM
+			switch (name) {
+				case 'title':
+					this.updateTitle(newValue);
+					break;
+				case 'background-color':
+					this.updateBackgroundColor();
+					break;
+				case 'default-collapsed':
+					this.collapsed = this.hasAttribute('default-collapsed');
+					this.updateCollapsedState();
+					break;
 			}
-			this.render();
 		}
 	}
 
 	private getBackgroundColor(): string {
 		return this.getAttribute('background-color') || 'rgba(0, 0, 0, 0.1)';
+	}
+
+	private updateTitle(title: string) {
+		const titleElement = this.shadow.querySelector('.title');
+		if (titleElement) {
+			titleElement.textContent = title || 'Collapsible Card';
+		}
+	}
+
+	private updateBackgroundColor() {
+		const backgroundColor = this.getBackgroundColor();
+		const host = this.shadow.host as HTMLElement;
+		if (host) {
+			host.style.setProperty('--collapsible-card-bg', backgroundColor);
+		}
 	}
 
 	private toggleCollapsed() {

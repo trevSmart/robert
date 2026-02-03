@@ -37,12 +37,12 @@ const NavOverflowBtn = styled.button<{ $isActive: boolean; $lightTheme: boolean 
 	}
 `;
 
-const NavOverflowItem = styled.button`
+const NavOverflowItem = styled.button<{ $isActive: boolean }>`
 	width: 100%;
 	padding: 8px 14px;
 	border: none;
-	background-color: transparent;
-	color: var(--vscode-foreground);
+	background-color: ${props => (props.$isActive ? 'var(--vscode-list-activeSelectionBackground)' : 'transparent')};
+	color: ${props => (props.$isActive ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)')};
 	cursor: pointer;
 	text-align: left;
 	display: flex;
@@ -336,10 +336,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 											}
 											setOverflowOpen(false);
 										}}
-										style={{
-											backgroundColor: activeSection === id ? 'var(--vscode-list-activeSelectionBackground)' : 'transparent',
-											color: activeSection === id ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)'
-										}}
+										$isActive={activeSection === id}
 										aria-label={iconOnly ? 'Search' : undefined}
 									>
 										<Icon />

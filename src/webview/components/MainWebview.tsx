@@ -368,16 +368,16 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						<AssigneeHoursChart userStories={sprintUserStories} />
 					</collapsible-card>
 					<collapsible-card title="User stories" background-color="inherit">
-					<UserStoriesTable
-						userStories={sprintUserStories}
-						loading={sprintUserStoriesLoading}
-						error={userStoriesError}
-						onLoadUserStories={() => onLoadUserStories(selectedIteration)}
-						onClearUserStories={onClearUserStories}
-						onUserStorySelected={onUserStorySelected}
-						selectedUserStory={selectedUserStory}
-					/>
-				</collapsible-card>
+						<UserStoriesTable
+							userStories={sprintUserStories}
+							loading={sprintUserStoriesLoading}
+							error={userStoriesError}
+							onLoadUserStories={() => onLoadUserStories(selectedIteration)}
+							onClearUserStories={onClearUserStories}
+							onUserStorySelected={onUserStorySelected}
+							selectedUserStory={selectedUserStory}
+						/>
+					</collapsible-card>
 				</>
 			)}
 

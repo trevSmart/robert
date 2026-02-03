@@ -1,15 +1,14 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { isLightTheme } from '../../utils/themeColors';
 
-// Styled components for navigation elements
-const NavTab = styled.button<{ $isActive: boolean; $lightTheme: boolean }>`
+// Base styles shared between NavTab and NavOverflowBtn
+const baseNavButtonStyles = css<{ $isActive: boolean; $lightTheme: boolean }>`
 	padding: 10px 16px 6px;
 	border: none;
 	background-color: transparent;
 	color: ${props => (props.$isActive ? (props.$lightTheme ? '#1e1e1e' : 'var(--vscode-tab-activeForeground)') : props.$lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)')};
 	border-bottom: ${props => (props.$isActive ? (props.$lightTheme ? '2px solid #007acc' : '2px solid var(--vscode-progressBar-background)') : 'none')};
-	cursor: ${props => (props.$isActive ? 'default' : 'pointer')};
 	font-size: 12.4px;
 	font-weight: ${props => (props.$isActive ? '600' : '400')};
 	transition: all 0.2s ease;
@@ -17,29 +16,24 @@ const NavTab = styled.button<{ $isActive: boolean; $lightTheme: boolean }>`
 	align-items: center;
 	gap: 8px;
 	white-space: nowrap;
+`;
+
+// Styled components for navigation elements
+const NavTab = styled.button<{ $isActive: boolean; $lightTheme: boolean }>`
+	${baseNavButtonStyles}
+	cursor: ${props => (props.$isActive ? 'default' : 'pointer')};
 
 	&:not(.nav-tab-active):hover {
-		background-color: ${props => (props.$lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)')} !important;
+		background-color: ${props => (props.$lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)')};
 	}
 `;
 
 const NavOverflowBtn = styled.button<{ $isActive: boolean; $lightTheme: boolean }>`
-	padding: 10px 16px 6px;
-	border: none;
-	background-color: transparent;
-	color: ${props => (props.$isActive ? (props.$lightTheme ? '#1e1e1e' : 'var(--vscode-tab-activeForeground)') : props.$lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)')};
-	border-bottom: ${props => (props.$isActive ? (props.$lightTheme ? '2px solid #007acc' : '2px solid var(--vscode-progressBar-background)') : 'none')};
+	${baseNavButtonStyles}
 	cursor: pointer;
-	font-size: 12.4px;
-	font-weight: ${props => (props.$isActive ? '600' : '400')};
-	transition: all 0.2s ease;
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	white-space: nowrap;
 
 	&:hover {
-		background-color: ${props => (props.$lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)')} !important;
+		background-color: ${props => (props.$lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)')};
 	}
 `;
 
@@ -57,7 +51,7 @@ const NavOverflowItem = styled.button`
 	font-size: 12px;
 
 	&:hover {
-		background-color: var(--vscode-list-hoverBackground) !important;
+		background-color: var(--vscode-list-hoverBackground);
 	}
 `;
 

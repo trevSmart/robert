@@ -198,6 +198,8 @@
 		"lint:fix": "node scripts/lint-fix.cjs",
 		"format": "prettier --write \"src/**/*.{ts,tsx,json,js,md}\"",
 		"test": "vitest run",
+		"test:watch": "vitest watch",
+		"test:ui": "vitest --ui",
 		"test:vscode": "vscode-test",
 		"pretest:vscode": "tsc -p ./ && tsc -p ./tsconfig.test.json",
 		"version:patch": "npm version patch --no-git-tag-version",

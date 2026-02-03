@@ -6,6 +6,10 @@ export const GlobalStyle = createGlobalStyle`
 		font-family: 'Inter', ${themeColors.fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 	}
 
+	html, body {
+		background: linear-gradient(135deg, rgba(0, 0, 0, 0.01), rgba(50, 0, 80, 0.01));
+	}
+
 	@keyframes spin {
 		0% {
 			transform: rotate(0deg);
@@ -75,8 +79,7 @@ export const SettingsTitle = styled.h1`
 
 // Content areas
 export const ContentArea = styled.div<{ noPaddingTop?: boolean }>`
-	background-color: ${themeColors.background};
-	padding: ${props => (props.noPaddingTop ? '0 10px 10px 10px' : '10px')};
+	padding: ${props => (props.noPaddingTop ? '0 0 10px' : '10px 0')};
 	min-height: 300px;
 `;
 

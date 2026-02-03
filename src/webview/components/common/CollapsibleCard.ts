@@ -51,8 +51,10 @@ class CollapsibleCard extends HTMLElement {
 	}
 
 	private updateBackgroundColor() {
-		const bgColor = this.getBackgroundColor();
-		this.shadow.host.style.setProperty('--collapsible-card-bg', bgColor);
+		if (this.shadow?.host) {
+			const bgColor = this.getBackgroundColor();
+			this.shadow.host.style.setProperty('--collapsible-card-bg', bgColor);
+		}
 	}
 
 	private toggleCollapsed() {

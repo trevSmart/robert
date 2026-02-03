@@ -61,7 +61,7 @@
 				"useVsCodeApi": false,
 				"command": "npm run install:vscode-insiders",
 				"color": "#aa4455"
-			},
+			}
 		],
 		"defaultColor": "white",
 		"reloadButton": null,

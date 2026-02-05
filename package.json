@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.2.17",
+	"version": "0.2.19",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -115,6 +115,11 @@
 					"type": "boolean",
 					"default": false,
 					"description": "Show the Robert output channel when the extension starts up"
+				},
+				"robert.statusBarShowSprintDaysLeft": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show \"X days left\" in the status bar (days until current sprint cutoff). If disabled or no current sprint, shows \"IBM Robert\"."
 				}
 			}
 		},

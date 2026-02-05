@@ -9,6 +9,7 @@ import TasksTable from './common/TasksTable';
 import DefectsTable from './common/DefectsTable';
 import DefectForm from './common/DefectForm';
 import DiscussionsTable from './common/DiscussionsTable';
+import TestCasesTable from './common/TestCasesTable';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
 import Calendar from './common/Calendar';
@@ -21,7 +22,7 @@ import StateDistributionPie from './metrics/StateDistributionPie';
 import DefectSeverityChart from './metrics/DefectSeverityChart';
 import CollaborationView from './common/CollaborationView';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Defect, type Discussion, type GlobalSearchResultItem } from '../../types/rally';
+import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem } from '../../types/rally';
 import type { Holiday } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
@@ -285,6 +286,9 @@ interface PortfolioViewProps {
 	userStoryDiscussions: Discussion[];
 	userStoryDiscussionsLoading: boolean;
 	userStoryDiscussionsError: string | null;
+	userStoryTestCases: TestCase[];
+	userStoryTestCasesLoading: boolean;
+	userStoryTestCasesError: string | null;
 	_defects: RallyDefect[];
 	_defectsLoading: boolean;
 	_defectsError: string | null;
@@ -328,6 +332,9 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	userStoryDiscussions,
 	userStoryDiscussionsLoading,
 	userStoryDiscussionsError,
+	userStoryTestCases,
+	userStoryTestCasesLoading,
+	userStoryTestCasesError,
 	_defects,
 	_defectsLoading,
 	_defectsError,
@@ -385,34 +392,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
 					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
-					{activeUserStoryTab === 'tests' && (
-						<div
-							style={{
-								margin: '20px 0',
-								padding: '20px',
-								backgroundColor: '#282828',
-								borderRadius: '6px'
-							}}
-						>
-							<div
-								style={{
-									fontSize: '13px',
-									color: 'var(--vscode-foreground)',
-									marginBottom: '6px'
-								}}
-							>
-								This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
-							</div>
-							<div
-								style={{
-									fontSize: '12px',
-									color: 'var(--vscode-descriptionForeground)'
-								}}
-							>
-								Detailed test listing will be available in a future version of this view.
-							</div>
-						</div>
-					)}
+					{activeUserStoryTab === 'tests' && <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError || undefined} />}
 					{activeUserStoryTab === 'defects' && (
 						<DefectsTable
 							defects={userStoryDefects as Defect[]}
@@ -446,6 +426,9 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	userStoryDiscussions,
 	userStoryDiscussionsLoading,
 	userStoryDiscussionsError,
+	userStoryTestCases,
+	userStoryTestCasesLoading,
+	userStoryTestCasesError,
 	_selectedDefect,
 	activeUserStoryTab,
 	currentScreen,
@@ -483,34 +466,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
 				<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
 				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
-				{activeUserStoryTab === 'tests' && (
-					<div
-						style={{
-							margin: '20px 0',
-							padding: '20px',
-							backgroundColor: '#282828',
-							borderRadius: '6px'
-						}}
-					>
-						<div
-							style={{
-								fontSize: '13px',
-								color: 'var(--vscode-foreground)',
-								marginBottom: '6px'
-							}}
-						>
-							This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
-						</div>
-						<div
-							style={{
-								fontSize: '12px',
-								color: 'var(--vscode-descriptionForeground)'
-							}}
-						>
-							Detailed test listing will be available in a future version of this view.
-						</div>
-					</div>
-				)}
+				{activeUserStoryTab === 'tests' && <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError || undefined} />}
 				{activeUserStoryTab === 'defects' && (
 					<DefectsTable
 						defects={userStoryDefects as Defect[]}
@@ -808,6 +764,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoryDiscussionsLoading, setUserStoryDiscussionsLoading] = useState(false);
 	const [userStoryDiscussionsError, setUserStoryDiscussionsError] = useState<string | null>(null);
 
+	const [userStoryTestCases, setUserStoryTestCases] = useState<TestCase[]>([]);
+	const [userStoryTestCasesLoading, setUserStoryTestCasesLoading] = useState(false);
+	const [userStoryTestCasesError, setUserStoryTestCasesError] = useState<string | null>(null);
+
 	// Collaboration help requests count
 	const [collaborationHelpRequestsCount, setCollaborationHelpRequestsCount] = useState(0);
 
@@ -874,6 +834,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Track which user stories have already been attempted to load discussions for (by objectId)
 	const attemptedUserStoryDiscussions = useRef<Set<string>>(new Set());
+
+	// Track which user stories have already been attempted to load tests for (by objectId)
+	const attemptedUserStoryTests = useRef<Set<string>>(new Set());
 
 	// Track if we've loaded velocity data for metrics (reset when leaving metrics)
 	const hasLoadedVelocityDataForMetrics = useRef(false);
@@ -1031,6 +994,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		[sendMessage]
 	);
 
+	const loadUserStoryTests = useCallback(
+		(userStoryId: string) => {
+			setUserStoryTestCasesLoading(true);
+			setUserStoryTestCasesError(null);
+			sendMessage({
+				command: 'loadUserStoryTests',
+				userStoryId
+			});
+		},
+		[sendMessage]
+	);
+
 	const handleDefectSelected = useCallback((defect: RallyDefect) => {
 		setSelectedDefect(defect);
 		setCurrentScreen('defectDetail');
@@ -1151,10 +1126,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		setUserStoryDefectsError(null);
 		setUserStoryDiscussions([]);
 		setUserStoryDiscussionsError(null);
+		setUserStoryTestCases([]);
+		setUserStoryTestCasesError(null);
 		setActiveUserStoryTab('tasks');
 		// Clear the attempted tracking when going back
 		attemptedUserStoryDefects.current.clear();
 		attemptedUserStoryDiscussions.current.clear();
+		attemptedUserStoryTests.current.clear();
 	}, [activeViewType]);
 
 	const handleSectionChange = useCallback(
@@ -1493,6 +1471,19 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setUserStoryDiscussionsLoading(false);
 					setUserStoryDiscussionsError(message.error || 'Error loading discussions');
 					break;
+				case 'userStoryTestsLoaded':
+					setUserStoryTestCasesLoading(false);
+					if (message.testCases) {
+						setUserStoryTestCases(message.testCases);
+						setUserStoryTestCasesError(null);
+					} else {
+						setUserStoryTestCasesError('Failed to load test cases');
+					}
+					break;
+				case 'userStoryTestsError':
+					setUserStoryTestCasesLoading(false);
+					setUserStoryTestCasesError(message.error || 'Error loading test cases');
+					break;
 				case 'teamMembersLoaded':
 					setTeamMembersLoading(false);
 					if (message.teamMembers) {
@@ -1811,6 +1802,17 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			}
 		}
 	}, [selectedUserStory, activeUserStoryTab, userStoryDiscussionsLoading, loadUserStoryDiscussions]);
+
+	// Auto-load test cases when tests tab is selected for a user story
+	useEffect(() => {
+		if (selectedUserStory && activeUserStoryTab === 'tests' && !userStoryTestCasesLoading) {
+			// Check if we've already attempted to load test cases for this user story
+			if (!attemptedUserStoryTests.current.has(selectedUserStory.objectId)) {
+				attemptedUserStoryTests.current.add(selectedUserStory.objectId);
+				loadUserStoryTests(selectedUserStory.objectId);
+			}
+		}
+	}, [selectedUserStory, activeUserStoryTab, userStoryTestCasesLoading, loadUserStoryTests]);
 
 	useEffect(() => {
 		if (!hasVsCodeApi) {
@@ -3160,6 +3162,9 @@ jobs:
 									userStoryDiscussions,
 									userStoryDiscussionsLoading,
 									userStoryDiscussionsError,
+									userStoryTestCases,
+									userStoryTestCasesLoading,
+									userStoryTestCasesError,
 									_defects: defects,
 									_defectsLoading: defectsLoading,
 									_defectsError: defectsError,

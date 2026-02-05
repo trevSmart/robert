@@ -40,7 +40,7 @@ interface TestCasesTableProps {
 const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading, error }) => {
 	if (loading) return <div>Loading test cases...</div>;
 	if (error) return <div style={{ color: 'var(--vscode-errorForeground)' }}>{error}</div>;
-	if (!testCases.length) return <div style={{ color: 'var(--vscode-descriptionForeground)' }}>No test cases found.</div>;
+	if (!testCases.length) return <div style={{ color: 'var(--vscode-descriptionForeground)', padding: '20px', textAlign: 'center' }}>There are no test cases.</div>;
 
 	return (
 		<Table>

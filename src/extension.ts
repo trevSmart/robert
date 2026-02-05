@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
 import { RobertWebviewProvider } from './RobertWebviewProvider';
 import { SettingsManager } from './SettingsManager';
-import type { RallyData } from './types/rally';
+import type { RallyData, Iteration } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
 import { clearAllRallyCaches } from './libs/rally/rallyServices';
 
@@ -24,6 +24,7 @@ export const rallyData: RallyData = {
 // Store global references for reload functionality
 let globalWebviewProvider: RobertWebviewProvider | null = null;
 let _globalExtensionContext: vscode.ExtensionContext | null = null;
+let globalStatusBarItem: vscode.StatusBarItem | null = null;
 
 // In-memory state for the status popover (dummy content)
 const robertPopoverState = {
@@ -61,6 +62,9 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 			await globalWebviewProvider.prefetchRallyData('reload');
 			// Notify webview to refresh (via postMessage)
 			await globalWebviewProvider.resetAndRefreshWebviews();
+			if (globalStatusBarItem) {
+				updateStatusBarItem(globalStatusBarItem, 'idle', _errorHandler);
+			}
 			outputManager.appendLine('[Robert] ✅ Extension reload completed successfully');
 		} else {
 			outputManager.appendLine('[Robert] ⚠️  Global webview provider not available');
@@ -117,8 +121,8 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 	outputManager.appendLine('[Robert] ✅ Webview provider registered successfully');
 
-	// Prefetch Rally data on activation to warm the cache (non-blocking)
-	void webviewProvider.prefetchRallyData('activation');
+	// Prefetch Rally data on activation to warm the cache; refresh status bar when done
+	webviewProvider.prefetchRallyData('activation').then(() => updateStatusBarItem(statusBarItem, 'idle', errorHandler));
 
 	// If in debug mode, perform additional actions
 	if (isDebugMode) {
@@ -177,7 +181,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Create and setup status bar item
 	const statusBarItem = createStatusBarItem(context, errorHandler);
+	globalStatusBarItem = statusBarItem;
 	context.subscriptions.push(statusBarItem);
+
+	// Refresh status bar when sprint-days setting changes
+	context.subscriptions.push(
+		vscode.workspace.onDidChangeConfiguration(e => {
+			if (e.affectsConfiguration('robert.statusBarShowSprintDaysLeft')) {
+				updateStatusBarItem(statusBarItem, 'idle', errorHandler);
+			}
+		})
+	);
 
 	// Commands used by interactive tooltip links
 	context.subscriptions.push(
@@ -218,27 +232,78 @@ function createStatusBarItem(context: vscode.ExtensionContext, errorHandler: Err
 	return statusBarItem;
 }
 
+const STATUS_BAR_NO_SPRINT_TEXT = 'Robert';
+const STATUS_BAR_SPRINT_ICON = '$(calendar)';
+
+function getStatusBarIdleContent(): { text: string; daysLeft: number | null } {
+	try {
+		const settingsManager = SettingsManager.getInstance();
+		if (!settingsManager.getSetting('statusBarShowSprintDaysLeft')) {
+			return { text: STATUS_BAR_NO_SPRINT_TEXT, daysLeft: null };
+		}
+		const iterations = rallyData.iterations ?? [];
+		const today = new Date();
+		today.setHours(0, 0, 0, 0);
+
+		const activeIterations = iterations.filter((it: Iteration) => {
+			const startDate = it.startDate ? new Date(it.startDate) : null;
+			const endDate = it.endDate ? new Date(it.endDate) : null;
+			if (startDate) startDate.setHours(0, 0, 0, 0);
+			if (endDate) endDate.setHours(0, 0, 0, 0);
+			if (startDate && endDate) {
+				return today >= startDate && today <= endDate;
+			}
+			if (startDate && !endDate) return today >= startDate;
+			if (!startDate && endDate) return today <= endDate;
+			return false;
+		});
+
+		const currentSprint = activeIterations.length === 0 ? undefined : activeIterations.length === 1 ? activeIterations[0] : (activeIterations.find((it: Iteration) => it.name.toLowerCase().includes('sprint')) ?? activeIterations[0]);
+
+		if (!currentSprint || !currentSprint.endDate) {
+			return { text: STATUS_BAR_NO_SPRINT_TEXT, daysLeft: null };
+		}
+
+		const endDate = new Date(currentSprint.endDate);
+		endDate.setHours(0, 0, 0, 0);
+		const daysLeft = Math.round((endDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+		const sprintLabel = `${STATUS_BAR_SPRINT_ICON} ${currentSprint.name} · ${daysLeft} days left`;
+		return { text: sprintLabel, daysLeft };
+	} catch {
+		return { text: STATUS_BAR_NO_SPRINT_TEXT, daysLeft: null };
+	}
+}
+
+function getStatusBarIdleBackgroundColor(daysLeft: number | null): vscode.ThemeColor | undefined {
+	if (daysLeft === null) return undefined;
+	if (daysLeft <= 3) return new vscode.ThemeColor('statusBarItem.errorBackground');
+	if (daysLeft <= 5) return new vscode.ThemeColor('statusBarItem.warningBackground');
+	return undefined;
+}
+
 function updateStatusBarItem(item: vscode.StatusBarItem, state: string, errorHandler: ErrorHandler) {
 	try {
 		switch (state) {
-			case 'idle':
-				item.text = `IBM Robert`;
-				item.tooltip = `IBM Robert Extension - Ready | Click to open panel`;
-				item.backgroundColor = undefined;
+			case 'idle': {
+				const { text: idleText, daysLeft } = getStatusBarIdleContent();
+				item.text = idleText;
+				item.tooltip = idleText === STATUS_BAR_NO_SPRINT_TEXT ? `Robert Extension - Ready | Click to open panel` : `Sprint cutoff in ${daysLeft !== null ? `${daysLeft} days` : '0 days'} | Click to open panel`;
+				item.backgroundColor = getStatusBarIdleBackgroundColor(daysLeft);
 				break;
+			}
 			case 'active':
-				item.text = `IBM Robert $(check)`;
-				item.tooltip = `IBM Robert Extension - Panel is open | Click to focus`;
+				item.text = `Robert $(check)`;
+				item.tooltip = `Robert Extension - Panel is open | Click to focus`;
 				item.backgroundColor = new vscode.ThemeColor('statusBarItem.activeBackground');
 				break;
 			case 'busy':
-				item.text = `IBM Robert $(sync~spin)`;
-				item.tooltip = `IBM Robert Extension - Processing... | Click to open`;
+				item.text = `Robert $(sync~spin)`;
+				item.tooltip = `Robert Extension - Processing... | Click to open`;
 				item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
 				break;
 			case 'error':
-				item.text = `IBM Robert $(error)`;
-				item.tooltip = `IBM Robert Extension - Error occurred | Click for details`;
+				item.text = `Robert $(error)`;
+				item.tooltip = `Robert Extension - Error occurred | Click for details`;
 				item.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
 				break;
 		}
@@ -272,7 +337,7 @@ function buildStatusTooltip(errorHandler: ErrorHandler): vscode.MarkdownString {
 		const snoozed = robertPopoverState.snoozedUntil > Date.now();
 		const snoozeLabel = snoozed ? `Snoozed until ${new Date(robertPopoverState.snoozedUntil).toLocaleTimeString()}` : 'Snooze (5 min)';
 
-		md.appendMarkdown('**IBM Robert**  ');
+		md.appendMarkdown('**Robert**  ');
 		md.appendMarkdown(`[$${checked(robertPopoverState.allFiles)}](${allFilesLink}) ${pad('All files')}\n\n`);
 		md.appendMarkdown(`[$${checked(robertPopoverState.nextEditSuggestions)}](${nextEditLink}) ${pad('Next edit suggestions')}\n\n`);
 		md.appendMarkdown(`[Snooze](${snooze5Link} "Hide for 5 minutes") ${pad(snoozeLabel)}\n`);

@@ -15,6 +15,7 @@ export interface RobertSettings {
 	collaborationEnabled: boolean;
 	collaborationAutoConnect: boolean;
 	showOutputChannelOnStartup: boolean;
+	statusBarShowSprintDaysLeft: boolean;
 }
 
 export class SettingsManager {
@@ -53,7 +54,8 @@ export class SettingsManager {
 					collaborationServerUrl: config.get<string>('collaboration.serverUrl', 'https://robert-8vdt.onrender.com'),
 					collaborationEnabled: config.get<boolean>('collaboration.enabled', false),
 					collaborationAutoConnect: config.get<boolean>('collaboration.autoConnect', true),
-					showOutputChannelOnStartup: config.get<boolean>('showOutputChannelOnStartup', false)
+					showOutputChannelOnStartup: config.get<boolean>('showOutputChannelOnStartup', false),
+					statusBarShowSprintDaysLeft: config.get<boolean>('statusBarShowSprintDaysLeft', true)
 				};
 
 				return settings;
@@ -108,6 +110,9 @@ export class SettingsManager {
 			if (settings.showOutputChannelOnStartup !== undefined) {
 				await config.update('showOutputChannelOnStartup', settings.showOutputChannelOnStartup, vscode.ConfigurationTarget.Global);
 			}
+			if (settings.statusBarShowSprintDaysLeft !== undefined) {
+				await config.update('statusBarShowSprintDaysLeft', settings.statusBarShowSprintDaysLeft, vscode.ConfigurationTarget.Global);
+			}
 
 			this._errorHandler.logInfo('Settings saved to VS Code configuration', 'SettingsManager.saveSettings');
 		}, 'SettingsManager.saveSettings');
@@ -135,6 +140,7 @@ export class SettingsManager {
 			await config.update('collaboration.enabled', defaultSettings.collaborationEnabled, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.autoConnect', defaultSettings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
 			await config.update('showOutputChannelOnStartup', defaultSettings.showOutputChannelOnStartup, vscode.ConfigurationTarget.Global);
+			await config.update('statusBarShowSprintDaysLeft', defaultSettings.statusBarShowSprintDaysLeft, vscode.ConfigurationTarget.Global);
 			this._errorHandler.logInfo('Settings reset to default values', 'SettingsManager.resetSettings');
 		}, 'SettingsManager.resetSettings');
 	}
@@ -204,7 +210,8 @@ export class SettingsManager {
 			collaborationServerUrl: 'https://robert-8vdt.onrender.com',
 			collaborationEnabled: false,
 			collaborationAutoConnect: true,
-			showOutputChannelOnStartup: false
+			showOutputChannelOnStartup: false,
+			statusBarShowSprintDaysLeft: true
 		};
 	}
 

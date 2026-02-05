@@ -1,4 +1,4 @@
-import { FC, useState, useCallback, useMemo } from 'react';
+import { FC, useState, useCallback, useMemo, useRef } from 'react';
 import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme } from '../../utils/themeColors';
@@ -119,10 +119,16 @@ const DiscussionsIcon = ({ size = '18px' }: { size?: string }) => (
 	</svg>
 );
 
+const DESCRIPTION_HEIGHT_MIN = 80;
+const DESCRIPTION_HEIGHT_MAX = 600;
+const DESCRIPTION_HEIGHT_DEFAULT = 300;
+
 const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
+	const [descriptionHeight, setDescriptionHeight] = useState(DESCRIPTION_HEIGHT_DEFAULT);
+	const resizeStartRef = useRef({ y: 0, height: 0 });
 
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
@@ -148,6 +154,29 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			onAdditionalTabChange(tab);
 		}
 	};
+
+	const handleDescriptionResizeStart = useCallback(
+		(e: React.MouseEvent) => {
+			e.preventDefault();
+			resizeStartRef.current = { y: e.clientY, height: descriptionHeight };
+			document.body.style.cursor = 'ns-resize';
+			document.body.style.userSelect = 'none';
+			const onMouseMove = (moveEvent: MouseEvent) => {
+				const delta = moveEvent.clientY - resizeStartRef.current.y;
+				const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
+				setDescriptionHeight(newHeight);
+			};
+			const onMouseUp = () => {
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+				document.body.style.cursor = '';
+				document.body.style.userSelect = '';
+			};
+			document.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('mouseup', onMouseUp);
+		},
+		[descriptionHeight]
+	);
 
 	const handleRequestSupport = useCallback(() => {
 		if (!vscode) return;
@@ -328,24 +357,50 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
 					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
-					<div
-						dangerouslySetInnerHTML={{
-							__html: userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
-						}}
-						style={{
-							width: '100%',
-							padding: '12px',
-							backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px',
-							fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-							lineHeight: '1.6',
-							minHeight: '120px',
-							overflow: 'auto'
-						}}
-					/>
+					<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
+						<div
+							dangerouslySetInnerHTML={{
+								__html: userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+							}}
+							style={{
+								width: '100%',
+								minHeight: `${DESCRIPTION_HEIGHT_MIN}px`,
+								maxHeight: `${descriptionHeight}px`,
+								boxSizing: 'border-box',
+								padding: '12px',
+								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+								color: 'var(--vscode-input-foreground)',
+								fontSize: '13px',
+								fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+								lineHeight: '1.6',
+								overflow: 'auto'
+							}}
+						/>
+						<div
+							role="separator"
+							aria-label="Resize description"
+							onMouseDown={handleDescriptionResizeStart}
+							style={{
+								height: '8px',
+								backgroundColor: 'var(--vscode-panel-border)',
+								cursor: 'ns-resize',
+								display: 'flex',
+								alignItems: 'center',
+								justifyContent: 'center',
+								flexShrink: 0
+							}}
+						>
+							<div
+								style={{
+									width: '32px',
+									height: '3px',
+									borderRadius: '2px',
+									backgroundColor: 'var(--vscode-descriptionForeground)',
+									opacity: 0.6
+								}}
+							/>
+						</div>
+					</div>
 				</div>
 
 				{/* Additional Information */}
@@ -360,7 +415,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'tests'} onClick={() => handleTabChange('tests')} title="Click to view test cases">
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Tests</span>
+							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Test cases</span>
 							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
 								<TestsIcon />
 								{userStory.testCasesCount}

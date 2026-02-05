@@ -129,7 +129,7 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 						color: themeColors.descriptionForeground
 					}}
 				>
-					<p>No defects found in this project</p>
+					<p>There are no defects.</p>
 				</div>
 			)}
 

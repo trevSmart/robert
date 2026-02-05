@@ -759,7 +759,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	);
 
 	const [iterations, setIterations] = useState<Iteration[]>([]);
-	const [iterationsLoading, setIterationsLoading] = useState(false);
+	const [iterationsLoading, setIterationsLoading] = useState(true);
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const [debugMode, setDebugMode] = useState<boolean>(false);
@@ -2041,7 +2041,28 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							)}
 						</div>
 					)}
-					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} userStories={userStories} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromCalendar} />}
+					{activeSection === 'calendar' && (
+						<>
+							{iterationsLoading && (
+								<div style={{ textAlign: 'center', padding: '40px 20px' }}>
+									<div
+										style={{
+											border: `2px solid var(--vscode-panel-border)`,
+											borderTop: `2px solid var(--vscode-progressBar-background)`,
+											borderRadius: '50%',
+											width: '24px',
+											height: '24px',
+											animation: 'spin 1s linear infinite',
+											margin: '0 auto 16px'
+										}}
+									/>
+									<p style={{ color: 'var(--vscode-descriptionForeground)' }}>Loading plan data...</p>
+								</div>
+							)}
+							{!iterationsLoading && iterationsError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{iterationsError}</div>}
+							{!iterationsLoading && !iterationsError && <Calendar currentDate={calendarDate} iterations={iterations} userStories={userStories} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromCalendar} />}
+						</>
+					)}
 
 					{activeSection === 'team' && (
 						<div style={{ padding: '20px' }}>

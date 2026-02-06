@@ -1,4 +1,4 @@
-import { FC, useState, useCallback, useMemo, useRef } from 'react';
+import { FC, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme } from '../../utils/themeColors';
@@ -129,6 +129,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
 	const [descriptionHeight, setDescriptionHeight] = useState(DESCRIPTION_HEIGHT_DEFAULT);
 	const resizeStartRef = useRef({ y: 0, height: 0 });
+	const cleanupRef = useRef<(() => void) | null>(null);
 
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
@@ -155,25 +156,60 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		}
 	};
 
+	// Cleanup effect to remove event listeners and reset styles on unmount
+	useEffect(() => {
+		return () => {
+			// Call any active cleanup function
+			if (cleanupRef.current) {
+				cleanupRef.current();
+				cleanupRef.current = null;
+			}
+			// Reset document styles as a fallback
+			document.body.style.cursor = '';
+			document.body.style.userSelect = '';
+		};
+	}, []);
+
 	const handleDescriptionResizeStart = useCallback(
 		(e: React.MouseEvent) => {
 			e.preventDefault();
+			
+			// Clean up any existing resize operation before starting a new one
+			if (cleanupRef.current) {
+				cleanupRef.current();
+				cleanupRef.current = null;
+			}
+			
 			resizeStartRef.current = { y: e.clientY, height: descriptionHeight };
 			document.body.style.cursor = 'ns-resize';
 			document.body.style.userSelect = 'none';
+			
 			const onMouseMove = (moveEvent: MouseEvent) => {
 				const delta = moveEvent.clientY - resizeStartRef.current.y;
 				const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
 				setDescriptionHeight(newHeight);
 			};
+			
 			const onMouseUp = () => {
+				// Nullify cleanup ref first to prevent double cleanup
+				cleanupRef.current = null;
+				// Perform cleanup directly when drag ends normally
 				document.removeEventListener('mousemove', onMouseMove);
 				document.removeEventListener('mouseup', onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
 			};
+			
 			document.addEventListener('mousemove', onMouseMove);
 			document.addEventListener('mouseup', onMouseUp);
+			
+			// Store cleanup function to be called on unmount or when new resize starts
+			cleanupRef.current = () => {
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+				document.body.style.cursor = '';
+				document.body.style.userSelect = '';
+			};
 		},
 		[descriptionHeight]
 	);

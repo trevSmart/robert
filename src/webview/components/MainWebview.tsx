@@ -1119,8 +1119,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						// Restore basic navigation state
 						if (state.activeSection) setActiveSection(state.activeSection);
 						if (state.currentScreen) setCurrentScreen(state.currentScreen);
-						if (state.activeViewType) setActiveSubTabBySection(prev => ({ ...prev, portfolio: state.activeViewType }));
-						if (state.activeSubTabBySection) setActiveSubTabBySection(prev => ({ ...prev, ...state.activeSubTabBySection }));
+						if (state.activeSubTabBySection) {
+							setActiveSubTabBySection(prev => ({ ...prev, ...state.activeSubTabBySection }));
+						} else if (state.activeViewType) {
+							// Legacy state: map portfolio view type into subtab structure
+							setActiveSubTabBySection(prev => ({ ...prev, portfolio: state.activeViewType }));
+						}
 						if (state.activeUserStoryTab) setActiveUserStoryTab(state.activeUserStoryTab);
 						if (state.globalSearchTerm) setGlobalSearchTerm(state.globalSearchTerm);
 						if (state.calendarDate) setCalendarDate(new Date(state.calendarDate));

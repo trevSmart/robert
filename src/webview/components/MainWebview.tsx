@@ -1430,6 +1430,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		setUserStoriesError(null);
 	};
 
+	// Memoize SubTabsBar to prevent unnecessary re-renders
+	const portfolioSubTabsBar = useMemo(() => {
+		if (activeSection !== 'portfolio') return null;
+
+		const subTabs = getPortfolioSubTabs();
+		const activeSubTabId = activeSubTabBySection['portfolio'] ?? subTabs[0]?.id ?? 'bySprints';
+		return <SubTabsBar subTabs={subTabs} activeSubTabId={activeSubTabId} onSubTabChange={id => activeSection === 'portfolio' && switchViewType(id as PortfolioViewType)} />;
+	}, [activeSection, activeSubTabBySection, switchViewType]);
+
 	if (!hasVsCodeApi) {
 		return (
 			<Container>
@@ -1449,12 +1458,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			<CenteredContainer>
 				<StickyNav>
 					<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} />
-					{activeSection === 'portfolio' &&
-						(() => {
-							const subTabs = getPortfolioSubTabs();
-							const activeSubTabId = activeSubTabBySection['portfolio'] ?? subTabs[0]?.id ?? 'bySprints';
-							return <SubTabsBar subTabs={subTabs} activeSubTabId={activeSubTabId} onSubTabChange={id => activeSection === 'portfolio' && switchViewType(id as PortfolioViewType)} />;
-						})()}
+					{portfolioSubTabsBar}
 				</StickyNav>
 				<ContentArea noPaddingTop={activeSection === 'portfolio'}>
 					{activeSection === 'search' && (

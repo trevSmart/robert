@@ -190,16 +190,12 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				setDescriptionHeight(newHeight);
 			};
 			
-			// Shared cleanup logic to remove listeners and reset styles
-			const performCleanup = () => {
+			const onMouseUp = () => {
+				// Perform cleanup directly when drag ends normally
 				document.removeEventListener('mousemove', onMouseMove);
 				document.removeEventListener('mouseup', onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
-			};
-			
-			const onMouseUp = () => {
-				performCleanup();
 				cleanupRef.current = null;
 			};
 			
@@ -207,7 +203,14 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			document.addEventListener('mouseup', onMouseUp);
 			
 			// Store cleanup function to be called on unmount or when new resize starts
-			cleanupRef.current = performCleanup;
+			// Note: This doesn't need to remove onMouseUp since it will be called from within onMouseUp
+			// or during cleanup before new handlers are attached
+			cleanupRef.current = () => {
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+				document.body.style.cursor = '';
+				document.body.style.userSelect = '';
+			};
 		},
 		[descriptionHeight]
 	);

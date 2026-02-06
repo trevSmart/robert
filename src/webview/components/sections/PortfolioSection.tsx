@@ -5,7 +5,6 @@ import UserStoryForm from '../common/UserStoryForm';
 import TasksTable from '../common/TasksTable';
 import DefectsTable from '../common/DefectsTable';
 import DefectForm from '../common/DefectForm';
-import DiscussionsTable from '../common/DiscussionsTable';
 import ScreenHeader from '../common/ScreenHeader';
 import SprintDetailsForm from '../common/SprintDetailsForm';
 import AssigneeHoursChart from '../common/AssigneeHoursChart';

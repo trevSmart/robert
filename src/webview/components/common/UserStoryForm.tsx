@@ -181,23 +181,25 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
 				setDescriptionHeight(newHeight);
 			};
-			const onMouseUp = () => {
+			
+			// Shared cleanup function to remove listeners and reset styles
+			const cleanup = () => {
 				document.removeEventListener('mousemove', onMouseMove);
 				document.removeEventListener('mouseup', onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
 				cleanupRef.current = null;
 			};
+			
+			const onMouseUp = () => {
+				cleanup();
+			};
+			
 			document.addEventListener('mousemove', onMouseMove);
 			document.addEventListener('mouseup', onMouseUp);
-
+			
 			// Store cleanup function to be called on unmount if needed
-			cleanupRef.current = () => {
-				document.removeEventListener('mousemove', onMouseMove);
-				document.removeEventListener('mouseup', onMouseUp);
-				document.body.style.cursor = '';
-				document.body.style.userSelect = '';
-			};
+			cleanupRef.current = cleanup;
 		},
 		[descriptionHeight]
 	);

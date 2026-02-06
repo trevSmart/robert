@@ -1,4 +1,4 @@
-import { FC, useState, useCallback, useMemo, useRef } from 'react';
+import { FC, useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme } from '../../utils/themeColors';
@@ -129,6 +129,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
 	const [descriptionHeight, setDescriptionHeight] = useState(DESCRIPTION_HEIGHT_DEFAULT);
 	const resizeStartRef = useRef({ y: 0, height: 0 });
+	const cleanupRef = useRef<(() => void) | null>(null);
 
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
@@ -155,6 +156,20 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		}
 	};
 
+	// Cleanup effect to remove event listeners and reset styles on unmount
+	useEffect(() => {
+		return () => {
+			// Call any active cleanup function
+			if (cleanupRef.current) {
+				cleanupRef.current();
+				cleanupRef.current = null;
+			}
+			// Reset document styles as a fallback
+			document.body.style.cursor = '';
+			document.body.style.userSelect = '';
+		};
+	}, []);
+
 	const handleDescriptionResizeStart = useCallback(
 		(e: React.MouseEvent) => {
 			e.preventDefault();
@@ -171,9 +186,18 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				document.removeEventListener('mouseup', onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
+				cleanupRef.current = null;
 			};
 			document.addEventListener('mousemove', onMouseMove);
 			document.addEventListener('mouseup', onMouseUp);
+			
+			// Store cleanup function to be called on unmount if needed
+			cleanupRef.current = () => {
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+				document.body.style.cursor = '';
+				document.body.style.userSelect = '';
+			};
 		},
 		[descriptionHeight]
 	);

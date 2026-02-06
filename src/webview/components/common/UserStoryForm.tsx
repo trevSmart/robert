@@ -176,6 +176,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			resizeStartRef.current = { y: e.clientY, height: descriptionHeight };
 			document.body.style.cursor = 'ns-resize';
 			document.body.style.userSelect = 'none';
+			
+			let onMouseUp: () => void;
+			
 			const onMouseMove = (moveEvent: MouseEvent) => {
 				const delta = moveEvent.clientY - resizeStartRef.current.y;
 				const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
@@ -191,7 +194,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				cleanupRef.current = null;
 			};
 			
-			const onMouseUp = () => {
+			onMouseUp = () => {
 				cleanup();
 			};
 			

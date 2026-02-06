@@ -1,4 +1,4 @@
-import type { UserStory, RallyTask, RallyDefect, Discussion } from '../../../../types/rally';
+import type { UserStory, RallyTask, RallyDefect, Discussion, TestCase } from '../../../../types/rally';
 
 export type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
 
@@ -41,6 +41,9 @@ export interface PortfolioViewProps {
 	userStoryDiscussions: Discussion[];
 	userStoryDiscussionsLoading: boolean;
 	userStoryDiscussionsError: string | null;
+	userStoryTestCases: TestCase[];
+	userStoryTestCasesLoading: boolean;
+	userStoryTestCasesError: string | null;
 	defects: RallyDefect[];
 	defectsLoading: boolean;
 	defectsError: string | null;

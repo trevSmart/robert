@@ -9,6 +9,7 @@ import TasksTable from './common/TasksTable';
 import DefectsTable from './common/DefectsTable';
 import DefectForm from './common/DefectForm';
 import DiscussionsTable from './common/DiscussionsTable';
+import TestCasesTable from './common/TestCasesTable';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
 import SubTabsBar from './common/SubTabsBar';
@@ -27,7 +28,7 @@ import PortfolioSection, { type PortfolioViewType } from './sections/PortfolioSe
 import SearchSection from './sections/SearchSection';
 import TeamSection from './sections/TeamSection';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Defect, type Discussion, type GlobalSearchResultItem } from '../../types/rally';
+import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem } from '../../types/rally';
 import type { Holiday } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
@@ -245,6 +246,407 @@ import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 type SectionType = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 
+interface PortfolioViewProps {
+	iterations: Iteration[];
+	iterationsLoading: boolean;
+	iterationsError: string | null;
+	selectedIteration: Iteration | null;
+	userStories: UserStory[];
+	userStoriesLoading: boolean;
+	userStoriesError: string | null;
+	selectedUserStory: UserStory | null;
+	userStoriesHasMore?: boolean;
+	userStoriesLoadingMore?: boolean;
+	loadMoreUserStories?: () => void;
+	// Portfolio All User Stories props
+	portfolioUserStories: UserStory[];
+	portfolioUserStoriesLoading: boolean;
+	portfolioUserStoriesHasMore?: boolean;
+	portfolioUserStoriesLoadingMore?: boolean;
+	// Sprint User Stories props
+	sprintUserStories: UserStory[];
+	sprintUserStoriesLoading: boolean;
+	tasks: RallyTask[];
+	tasksLoading: boolean;
+	tasksError: string | null;
+	userStoryDefects: RallyDefect[];
+	userStoryDefectsLoading: boolean;
+	_userStoryDefectsError: string | null;
+	userStoryDiscussions: Discussion[];
+	userStoryDiscussionsLoading: boolean;
+	userStoryDiscussionsError: string | null;
+	userStoryTestCases: TestCase[];
+	userStoryTestCasesLoading: boolean;
+	userStoryTestCasesError: string | null;
+	_defects: RallyDefect[];
+	_defectsLoading: boolean;
+	_defectsError: string | null;
+	_defectsHasMore?: boolean;
+	_defectsLoadingMore?: boolean;
+	_onLoadMoreDefects?: () => void;
+	_selectedDefect: RallyDefect | null;
+	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions';
+	currentScreen: ScreenType;
+	onLoadIterations: () => void;
+	onIterationSelected: (iteration: Iteration) => void;
+	onUserStorySelected: (userStory: UserStory) => void;
+	onLoadUserStories: (iteration?: Iteration) => void;
+	onClearUserStories: () => void;
+	onLoadTasks: (userStoryId: string) => void;
+	onLoadUserStoryDefects: (userStoryId: string) => void;
+	_onLoadDefects: () => void;
+	_onDefectSelected: (defect: RallyDefect) => void;
+	onBackToIterations: () => void;
+	onBackToUserStories: () => void;
+	_onBackToDefects: () => void;
+	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
+}
+
+// Portfolio View Components
+const BySprintsView: FC<PortfolioViewProps> = ({
+	iterations,
+	iterationsLoading,
+	iterationsError,
+	selectedIteration,
+	sprintUserStories,
+	sprintUserStoriesLoading,
+	userStoriesError,
+	selectedUserStory,
+	tasks,
+	tasksLoading,
+	tasksError,
+	userStoryDefects,
+	userStoryDefectsLoading,
+	_userStoryDefectsError,
+	userStoryDiscussions,
+	userStoryDiscussionsLoading,
+	userStoryDiscussionsError,
+	userStoryTestCases,
+	userStoryTestCasesLoading,
+	userStoryTestCasesError,
+	_defects,
+	_defectsLoading,
+	_defectsError,
+	_selectedDefect,
+	activeUserStoryTab,
+	currentScreen,
+	onLoadIterations,
+	onIterationSelected,
+	onUserStorySelected,
+	onLoadUserStories,
+	onClearUserStories,
+	onLoadTasks,
+	onLoadUserStoryDefects,
+	_onLoadDefects,
+	_onDefectSelected,
+	onBackToIterations,
+	onBackToUserStories,
+	_onBackToDefects,
+	onActiveUserStoryTabChange
+}) => {
+	return (
+		<>
+			{currentScreen === 'iterations' && (
+				<>
+					<ScreenHeader title="Sprints" />
+					<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={onLoadIterations} onIterationSelected={onIterationSelected} selectedIteration={selectedIteration} />
+				</>
+			)}
+
+			{currentScreen === 'userStories' && selectedIteration && (
+				<>
+					<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
+					<collapsible-card title="Details">
+						<SprintDetailsForm iteration={selectedIteration} />
+					</collapsible-card>
+					<collapsible-card title="User stories assignment">
+						<AssigneeHoursChart userStories={sprintUserStories} />
+					</collapsible-card>
+					<collapsible-card title="User stories" background-color="inherit">
+						<UserStoriesTable
+							userStories={sprintUserStories}
+							loading={sprintUserStoriesLoading}
+							error={userStoriesError}
+							onLoadUserStories={() => onLoadUserStories(selectedIteration)}
+							onClearUserStories={onClearUserStories}
+							onUserStorySelected={onUserStorySelected}
+							selectedUserStory={selectedUserStory}
+						/>
+					</collapsible-card>
+				</>
+			)}
+
+			{currentScreen === 'userStoryDetail' && selectedUserStory && (
+				<>
+					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
+					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+					{activeUserStoryTab === 'tests' && <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError || undefined} />}
+					{activeUserStoryTab === 'defects' && (
+						<DefectsTable
+							defects={userStoryDefects as Defect[]}
+							loading={userStoryDefectsLoading}
+							error={_userStoryDefectsError || undefined}
+							onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
+							onDefectSelected={_onDefectSelected}
+							selectedDefect={_selectedDefect as Defect | null}
+						/>
+					)}
+					{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
+				</>
+			)}
+		</>
+	);
+};
+
+const AllUserStoriesView: FC<PortfolioViewProps> = ({
+	portfolioUserStories,
+	portfolioUserStoriesLoading,
+	portfolioUserStoriesHasMore = false,
+	portfolioUserStoriesLoadingMore = false,
+	userStoriesError,
+	selectedUserStory,
+	tasks,
+	tasksLoading,
+	tasksError,
+	userStoryDefects,
+	userStoryDefectsLoading,
+	_userStoryDefectsError,
+	userStoryDiscussions,
+	userStoryDiscussionsLoading,
+	userStoryDiscussionsError,
+	userStoryTestCases,
+	userStoryTestCasesLoading,
+	userStoryTestCasesError,
+	_selectedDefect,
+	activeUserStoryTab,
+	currentScreen,
+	onLoadUserStories,
+	onClearUserStories,
+	onUserStorySelected,
+	onLoadTasks,
+	onLoadUserStoryDefects,
+	_onDefectSelected,
+	onBackToUserStories,
+	onActiveUserStoryTabChange,
+	loadMoreUserStories
+}) => (
+	<>
+		{currentScreen === 'allUserStories' && !selectedUserStory && (
+			<>
+				<ScreenHeader title="All User Stories" />
+				<UserStoriesTable
+					userStories={portfolioUserStories}
+					loading={portfolioUserStoriesLoading}
+					error={userStoriesError}
+					onLoadUserStories={() => onLoadUserStories()} // Load all user stories
+					onClearUserStories={onClearUserStories}
+					onUserStorySelected={onUserStorySelected}
+					selectedUserStory={selectedUserStory}
+					hasMore={portfolioUserStoriesHasMore}
+					onLoadMore={loadMoreUserStories}
+					loadingMore={portfolioUserStoriesLoadingMore}
+				/>
+			</>
+		)}
+
+		{currentScreen === 'userStoryDetail' && selectedUserStory && (
+			<>
+				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+				<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
+				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
+				{activeUserStoryTab === 'tests' && <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError || undefined} />}
+				{activeUserStoryTab === 'defects' && (
+					<DefectsTable
+						defects={userStoryDefects as Defect[]}
+						loading={userStoryDefectsLoading}
+						error={_userStoryDefectsError || undefined}
+						onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
+						onDefectSelected={_onDefectSelected}
+						selectedDefect={_selectedDefect as Defect | null}
+					/>
+				)}
+				{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
+			</>
+		)}
+	</>
+);
+
+const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects, _defectsHasMore = false, _defectsLoadingMore = false, _onLoadMoreDefects }) => {
+	logDebug(`_onDefectSelected: ${JSON.stringify(_onDefectSelected)}, currentScreen: ${currentScreen}`, 'AllDefectsView');
+	return (
+		<>
+			{currentScreen === 'defects' && (
+				<>
+					<ScreenHeader title="All Defects" />
+					<DefectsTable
+						defects={_defects as Defect[]}
+						loading={_defectsLoading}
+						error={_defectsError || undefined}
+						onLoadDefects={_onLoadDefects}
+						onDefectSelected={_onDefectSelected}
+						selectedDefect={_selectedDefect as Defect | null}
+						hasMore={_defectsHasMore}
+						onLoadMore={_onLoadMoreDefects}
+						loadingMore={_defectsLoadingMore}
+					/>
+				</>
+			)}
+			{currentScreen === 'defectDetail' && _selectedDefect && (
+				<>
+					<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
+					<DefectForm defect={_selectedDefect as Defect} />
+				</>
+			)}
+		</>
+	);
+};
+
+// Portfolio Views Configuration
+// Icon components for portfolio tabs
+const SprintsIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M6.75 2.994v2.25m10.5-2.25v2.25m-14.252 13.5V7.491a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v11.251m-18 0a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25m-18 0v-7.5a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v7.5m-6.75-6h2.25m-9 2.25h4.5m.002-2.25h.005v.006H12v-.006Zm-.001 4.5h.006v.006h-.006v-.005Zm-2.25.001h.005v.006H9.75v-.006Zm-2.25 0h.005v.005h-.006v-.005Zm6.75-2.247h.005v.005h-.005v-.005Zm0 2.247h.006v.006h-.006v-.006Zm2.25-2.248h.006V15H16.5v-.005Z"
+		/>
+	</svg>
+);
+
+const UserStoriesIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z"
+		/>
+	</svg>
+);
+
+const DefectsIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0 1 12 12.75Zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 0 1-1.152 6.06M12 12.75c-2.883 0-5.647.508-8.208 1.44.125 2.104.52 4.136 1.153 6.06M12 12.75a2.25 2.25 0 0 0 2.248-2.354M12 12.75a2.25 2.25 0 0 1-2.248-2.354M12 8.25c.995 0 1.971-.08 2.922-.236.403-.066.74-.358.795-.762a3.778 3.778 0 0 0-.399-2.25M12 8.25c-.995 0-1.97-.08-2.922-.236-.402-.066-.74-.358-.795-.762a3.734 3.734 0 0 1 .4-2.253M12 8.25a2.25 2.25 0 0 0-2.248 2.146M12 8.25a2.25 2.25 0 0 1 2.248 2.146M8.683 5a6.032 6.032 0 0 1-1.155-1.002c.07-.63.27-1.222.574-1.747m.581 2.749A3.75 3.75 0 0 1 15.318 5m0 0c.427-.283.815-.62 1.155-.999a4.471 4.471 0 0 0-.575-1.752M4.921 6a24.048 24.048 0 0 0-.392 3.314c1.668.546 3.416.914 5.223 1.082M19.08 6c.205 1.08.337 2.187.392 3.314a23.882 23.882 0 0 1-5.223 1.082"
+		/>
+	</svg>
+);
+
+const portfolioViews: PortfolioViewConfig[] = [
+	{
+		id: 'bySprints',
+		label: 'Sprints',
+		icon: 'sprints',
+		description: 'View user stories organized by sprints',
+		component: BySprintsView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	},
+	{
+		id: 'allUserStories',
+		label: 'User Stories',
+		icon: 'user-stories',
+		description: 'View all user stories in the project',
+		component: AllUserStoriesView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	},
+	{
+		id: 'allDefects',
+		label: 'Defects',
+		icon: 'bug',
+		description: 'View all defects in the project',
+		component: AllDefectsView,
+		dataLoader: () => Promise.resolve(), // Will be set dynamically
+		stateCleaner: () => {} // Will be set dynamically
+	}
+];
+
+// Portfolio View Selector Component (Tab-like appearance)
+const PortfolioViewSelector: FC<{
+	views: PortfolioViewConfig[];
+	activeView: PortfolioViewType;
+	onViewChange: (viewId: PortfolioViewType) => void;
+}> = ({ views, activeView, onViewChange }) => {
+	const lightTheme = isLightTheme();
+	const [hoveredTab, setHoveredTab] = useState<PortfolioViewType | null>(null);
+
+	// Memoize hover background color based on theme
+	const hoverBackgroundColor = useMemo(() => (lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'), [lightTheme]);
+
+	const renderIcon = (icon?: string) => {
+		switch (icon) {
+			case 'sprints':
+				return <SprintsIcon />;
+			case 'user-stories':
+				return <UserStoriesIcon />;
+			case 'bug':
+				return <DefectsIcon />;
+			default:
+				return null;
+		}
+	};
+
+	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number, isHovered: boolean) => {
+		return {
+			padding: '10px 16px 6px',
+			border: 'none',
+			borderBottom: isActive
+				? lightTheme
+					? '2px solid #007acc' // Darker blue for better visibility in light themes
+					: '2px solid var(--vscode-progressBar-background)' // Standard color for dark themes
+				: '2px solid transparent',
+			borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
+			backgroundColor: !isActive && isHovered ? hoverBackgroundColor : 'transparent',
+			color: isActive
+				? lightTheme
+					? '#1e1e1e' // Dark color to ensure contrast in light themes
+					: 'var(--vscode-tab-activeForeground)' // Standard color for dark themes
+				: lightTheme
+					? '#333333'
+					: 'var(--vscode-tab-inactiveForeground)',
+			cursor: isActive ? 'default' : 'pointer',
+			display: 'flex',
+			alignItems: 'center',
+			gap: '8px',
+			fontSize: '12.4px',
+			fontWeight: isActive ? 600 : 400,
+			transition: 'all 0.15s ease',
+			position: 'relative' as const,
+			zIndex: isActive ? 1 : 0
+		};
+	};
+
+	return (
+		<div
+			style={{
+				marginBottom: '20px',
+				display: 'flex',
+				borderBottom: '1px solid var(--vscode-panel-border)',
+				borderRadius: '6px 6px 0 0'
+			}}
+		>
+			{views.map((view, index) => (
+				<button
+					key={view.id}
+					className={`portfolio-sub-tab ${activeView === view.id ? 'portfolio-sub-tab-active' : ''}`}
+					onClick={() => activeView !== view.id && onViewChange(view.id)}
+					onMouseEnter={() => setHoveredTab(view.id)}
+					onMouseLeave={() => setHoveredTab(null)}
+					style={getSubTabStyles(activeView === view.id, index, views.length, hoveredTab === view.id)}
+					title={view.description}
+				>
+					{renderIcon(view.icon)}
+					<span>{view.label}</span>
+				</button>
+			))}
+		</div>
+	);
+};
+
+
 interface MainWebviewProps {
 	webviewId: string;
 	context: string;
@@ -289,7 +691,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	);
 
 	const [iterations, setIterations] = useState<Iteration[]>([]);
-	const [iterationsLoading, setIterationsLoading] = useState(false);
+	const [iterationsLoading, setIterationsLoading] = useState(true);
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const [debugMode, setDebugMode] = useState<boolean>(false);
@@ -337,6 +739,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [userStoryDiscussions, setUserStoryDiscussions] = useState<Discussion[]>([]);
 	const [userStoryDiscussionsLoading, setUserStoryDiscussionsLoading] = useState(false);
 	const [userStoryDiscussionsError, setUserStoryDiscussionsError] = useState<string | null>(null);
+
+	const [userStoryTestCases, setUserStoryTestCases] = useState<TestCase[]>([]);
+	const [userStoryTestCasesLoading, setUserStoryTestCasesLoading] = useState(false);
+	const [userStoryTestCasesError, setUserStoryTestCasesError] = useState<string | null>(null);
 
 	// Collaboration help requests count
 	const [collaborationHelpRequestsCount, setCollaborationHelpRequestsCount] = useState(0);
@@ -406,6 +812,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Track which user stories have already been attempted to load discussions for (by objectId)
 	const attemptedUserStoryDiscussions = useRef<Set<string>>(new Set());
+
+	// Track which user stories have already been attempted to load tests for (by objectId)
+	const attemptedUserStoryTests = useRef<Set<string>>(new Set());
 
 	// Track if we've loaded velocity data for metrics (reset when leaving metrics)
 	const hasLoadedVelocityDataForMetrics = useRef(false);
@@ -563,6 +972,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		[sendMessage]
 	);
 
+	const loadUserStoryTests = useCallback(
+		(userStoryId: string) => {
+			setUserStoryTestCasesLoading(true);
+			setUserStoryTestCasesError(null);
+			sendMessage({
+				command: 'loadUserStoryTests',
+				userStoryId
+			});
+		},
+		[sendMessage]
+	);
+
 	const handleDefectSelected = useCallback((defect: RallyDefect) => {
 		setSelectedDefect(defect);
 		setCurrentScreen('defectDetail');
@@ -683,10 +1104,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		setUserStoryDefectsError(null);
 		setUserStoryDiscussions([]);
 		setUserStoryDiscussionsError(null);
+		setUserStoryTestCases([]);
+		setUserStoryTestCasesError(null);
 		setActiveUserStoryTab('tasks');
 		// Clear the attempted tracking when going back
 		attemptedUserStoryDefects.current.clear();
 		attemptedUserStoryDiscussions.current.clear();
+		attemptedUserStoryTests.current.clear();
 	}, [portfolioActiveViewType]);
 
 	const handleSectionChange = useCallback(
@@ -1025,6 +1449,19 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					setUserStoryDiscussionsLoading(false);
 					setUserStoryDiscussionsError(message.error || 'Error loading discussions');
 					break;
+				case 'userStoryTestsLoaded':
+					setUserStoryTestCasesLoading(false);
+					if (message.testCases) {
+						setUserStoryTestCases(message.testCases);
+						setUserStoryTestCasesError(null);
+					} else {
+						setUserStoryTestCasesError('Failed to load test cases');
+					}
+					break;
+				case 'userStoryTestsError':
+					setUserStoryTestCasesLoading(false);
+					setUserStoryTestCasesError(message.error || 'Error loading test cases');
+					break;
 				case 'teamMembersLoaded':
 					setTeamMembersLoading(false);
 					if (message.teamMembers) {
@@ -1351,6 +1788,17 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		}
 	}, [selectedUserStory, activeUserStoryTab, userStoryDiscussionsLoading, loadUserStoryDiscussions]);
 
+	// Auto-load test cases when tests tab is selected for a user story
+	useEffect(() => {
+		if (selectedUserStory && activeUserStoryTab === 'tests' && !userStoryTestCasesLoading) {
+			// Check if we've already attempted to load test cases for this user story
+			if (!attemptedUserStoryTests.current.has(selectedUserStory.objectId)) {
+				attemptedUserStoryTests.current.add(selectedUserStory.objectId);
+				loadUserStoryTests(selectedUserStory.objectId);
+			}
+		}
+	}, [selectedUserStory, activeUserStoryTab, userStoryTestCasesLoading, loadUserStoryTests]);
+
 	useEffect(() => {
 		if (!hasVsCodeApi) {
 			return;
@@ -1575,6 +2023,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							userStoryDiscussions={userStoryDiscussions}
 							userStoryDiscussionsLoading={userStoryDiscussionsLoading}
 							userStoryDiscussionsError={userStoryDiscussionsError}
+							userStoryTestCases={userStoryTestCases}
+							userStoryTestCasesLoading={userStoryTestCasesLoading}
+							userStoryTestCasesError={userStoryTestCasesError}
 							defects={defects}
 							defectsLoading={defectsLoading}
 							defectsError={defectsError}

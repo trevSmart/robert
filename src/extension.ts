@@ -193,6 +193,9 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
+	// Refresh "X days left" every hour (uses in-memory rallyData only, no API)
+	context.subscriptions.push(scheduleStatusBarUpdateHourly(statusBarItem, errorHandler));
+
 	// Commands used by interactive tooltip links
 	context.subscriptions.push(
 		vscode.commands.registerCommand('robert.toggleAllFiles', () => {
@@ -234,6 +237,17 @@ function createStatusBarItem(context: vscode.ExtensionContext, errorHandler: Err
 
 const STATUS_BAR_NO_SPRINT_TEXT = 'Robert';
 const STATUS_BAR_SPRINT_ICON = '$(calendar)';
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
+
+/** Schedules status bar refresh every hour so "X days left" stays correct. Uses in-memory rallyData only. */
+function scheduleStatusBarUpdateHourly(item: vscode.StatusBarItem, errorHandler: ErrorHandler): vscode.Disposable {
+	const intervalId = setInterval(() => {
+		updateStatusBarItem(item, 'idle', errorHandler);
+	}, ONE_HOUR_MS);
+
+	return new vscode.Disposable(() => clearInterval(intervalId));
+}
 
 function getStatusBarIdleContent(): { text: string; daysLeft: number | null } {
 	try {

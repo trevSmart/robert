@@ -11,7 +11,8 @@ import DefectForm from './common/DefectForm';
 import DiscussionsTable from './common/DiscussionsTable';
 import ScreenHeader from './common/ScreenHeader';
 import NavigationBar from './common/NavigationBar';
-import Calendar from './common/Calendar';
+import SubTabsBar from './common/SubTabsBar';
+import { getPortfolioSubTabs } from './sections/portfolio/portfolioSubTabs';
 import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
 import './common/CollapsibleCard';
@@ -19,7 +20,12 @@ import SprintKPIs from './metrics/SprintKPIs';
 import VelocityTrendChart from './metrics/VelocityTrendChart';
 import StateDistributionPie from './metrics/StateDistributionPie';
 import DefectSeverityChart from './metrics/DefectSeverityChart';
-import CollaborationView from './common/CollaborationView';
+import CollaborationSection from './sections/CollaborationSection';
+import CalendarSection from './sections/CalendarSection';
+import LibrarySection, { type Tutorial } from './sections/LibrarySection';
+import PortfolioSection, { type PortfolioViewType } from './sections/PortfolioSection';
+import SearchSection from './sections/SearchSection';
+import TeamSection from './sections/TeamSection';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type GlobalSearchResultItem } from '../../types/rally';
 import type { Holiday } from '../../types/utils';
@@ -232,488 +238,12 @@ const WrenchScrewdriverIcon = () => (
 	</svg>
 );
 
-import { CenteredContainer, Container, ContentArea, GlobalStyle } from './common/styled';
+import { CenteredContainer, Container, ContentArea, GlobalStyle, StickyNav } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
 type SectionType = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
-type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
-
-interface Tutorial {
-	title: string;
-	kicker: string;
-	bg: string;
-}
-
-interface PortfolioViewConfig {
-	id: PortfolioViewType;
-	label: string;
-	icon?: string;
-	description?: string;
-	component: ComponentType<PortfolioViewProps>;
-	dataLoader: () => Promise<void>;
-	stateCleaner: () => void;
-}
-
-interface PortfolioViewProps {
-	iterations: Iteration[];
-	iterationsLoading: boolean;
-	iterationsError: string | null;
-	selectedIteration: Iteration | null;
-	userStories: UserStory[];
-	userStoriesLoading: boolean;
-	userStoriesError: string | null;
-	selectedUserStory: UserStory | null;
-	userStoriesHasMore?: boolean;
-	userStoriesLoadingMore?: boolean;
-	loadMoreUserStories?: () => void;
-	// Portfolio All User Stories props
-	portfolioUserStories: UserStory[];
-	portfolioUserStoriesLoading: boolean;
-	portfolioUserStoriesHasMore?: boolean;
-	portfolioUserStoriesLoadingMore?: boolean;
-	// Sprint User Stories props
-	sprintUserStories: UserStory[];
-	sprintUserStoriesLoading: boolean;
-	tasks: RallyTask[];
-	tasksLoading: boolean;
-	tasksError: string | null;
-	userStoryDefects: RallyDefect[];
-	userStoryDefectsLoading: boolean;
-	_userStoryDefectsError: string | null;
-	userStoryDiscussions: Discussion[];
-	userStoryDiscussionsLoading: boolean;
-	userStoryDiscussionsError: string | null;
-	_defects: RallyDefect[];
-	_defectsLoading: boolean;
-	_defectsError: string | null;
-	_defectsHasMore?: boolean;
-	_defectsLoadingMore?: boolean;
-	_onLoadMoreDefects?: () => void;
-	_selectedDefect: RallyDefect | null;
-	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions';
-	currentScreen: ScreenType;
-	onLoadIterations: () => void;
-	onIterationSelected: (iteration: Iteration) => void;
-	onUserStorySelected: (userStory: UserStory) => void;
-	onLoadUserStories: (iteration?: Iteration) => void;
-	onClearUserStories: () => void;
-	onLoadTasks: (userStoryId: string) => void;
-	onLoadUserStoryDefects: (userStoryId: string) => void;
-	_onLoadDefects: () => void;
-	_onDefectSelected: (defect: RallyDefect) => void;
-	onBackToIterations: () => void;
-	onBackToUserStories: () => void;
-	_onBackToDefects: () => void;
-	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
-}
-
-// Portfolio View Components
-const BySprintsView: FC<PortfolioViewProps> = ({
-	iterations,
-	iterationsLoading,
-	iterationsError,
-	selectedIteration,
-	sprintUserStories,
-	sprintUserStoriesLoading,
-	userStoriesError,
-	selectedUserStory,
-	tasks,
-	tasksLoading,
-	tasksError,
-	userStoryDefects,
-	userStoryDefectsLoading,
-	_userStoryDefectsError,
-	userStoryDiscussions,
-	userStoryDiscussionsLoading,
-	userStoryDiscussionsError,
-	_defects,
-	_defectsLoading,
-	_defectsError,
-	_selectedDefect,
-	activeUserStoryTab,
-	currentScreen,
-	onLoadIterations,
-	onIterationSelected,
-	onUserStorySelected,
-	onLoadUserStories,
-	onClearUserStories,
-	onLoadTasks,
-	onLoadUserStoryDefects,
-	_onLoadDefects,
-	_onDefectSelected,
-	onBackToIterations,
-	onBackToUserStories,
-	_onBackToDefects,
-	onActiveUserStoryTabChange
-}) => {
-	return (
-		<>
-			{currentScreen === 'iterations' && (
-				<>
-					<ScreenHeader title="Sprints" />
-					<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={onLoadIterations} onIterationSelected={onIterationSelected} selectedIteration={selectedIteration} />
-				</>
-			)}
-
-			{currentScreen === 'userStories' && selectedIteration && (
-				<>
-					<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
-					<collapsible-card title="Details">
-						<SprintDetailsForm iteration={selectedIteration} />
-					</collapsible-card>
-					<collapsible-card title="User stories assignment">
-						<AssigneeHoursChart userStories={sprintUserStories} />
-					</collapsible-card>
-					<collapsible-card title="User stories" background-color="inherit">
-						<UserStoriesTable
-							userStories={sprintUserStories}
-							loading={sprintUserStoriesLoading}
-							error={userStoriesError}
-							onLoadUserStories={() => onLoadUserStories(selectedIteration)}
-							onClearUserStories={onClearUserStories}
-							onUserStorySelected={onUserStorySelected}
-							selectedUserStory={selectedUserStory}
-						/>
-					</collapsible-card>
-				</>
-			)}
-
-			{currentScreen === 'userStoryDetail' && selectedUserStory && (
-				<>
-					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
-					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
-					{activeUserStoryTab === 'tests' && (
-						<div
-							style={{
-								margin: '20px 0',
-								padding: '20px',
-								backgroundColor: '#282828',
-								borderRadius: '6px'
-							}}
-						>
-							<div
-								style={{
-									fontSize: '13px',
-									color: 'var(--vscode-foreground)',
-									marginBottom: '6px'
-								}}
-							>
-								This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
-							</div>
-							<div
-								style={{
-									fontSize: '12px',
-									color: 'var(--vscode-descriptionForeground)'
-								}}
-							>
-								Detailed test listing will be available in a future version of this view.
-							</div>
-						</div>
-					)}
-					{activeUserStoryTab === 'defects' && (
-						<DefectsTable
-							defects={userStoryDefects as Defect[]}
-							loading={userStoryDefectsLoading}
-							error={_userStoryDefectsError || undefined}
-							onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
-							onDefectSelected={_onDefectSelected}
-							selectedDefect={_selectedDefect as Defect | null}
-						/>
-					)}
-					{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
-				</>
-			)}
-		</>
-	);
-};
-
-const AllUserStoriesView: FC<PortfolioViewProps> = ({
-	portfolioUserStories,
-	portfolioUserStoriesLoading,
-	portfolioUserStoriesHasMore = false,
-	portfolioUserStoriesLoadingMore = false,
-	userStoriesError,
-	selectedUserStory,
-	tasks,
-	tasksLoading,
-	tasksError,
-	userStoryDefects,
-	userStoryDefectsLoading,
-	_userStoryDefectsError,
-	userStoryDiscussions,
-	userStoryDiscussionsLoading,
-	userStoryDiscussionsError,
-	_selectedDefect,
-	activeUserStoryTab,
-	currentScreen,
-	onLoadUserStories,
-	onClearUserStories,
-	onUserStorySelected,
-	onLoadTasks,
-	onLoadUserStoryDefects,
-	_onDefectSelected,
-	onBackToUserStories,
-	onActiveUserStoryTabChange,
-	loadMoreUserStories
-}) => (
-	<>
-		{currentScreen === 'allUserStories' && !selectedUserStory && (
-			<>
-				<ScreenHeader title="All User Stories" />
-				<UserStoriesTable
-					userStories={portfolioUserStories}
-					loading={portfolioUserStoriesLoading}
-					error={userStoriesError}
-					onLoadUserStories={() => onLoadUserStories()} // Load all user stories
-					onClearUserStories={onClearUserStories}
-					onUserStorySelected={onUserStorySelected}
-					selectedUserStory={selectedUserStory}
-					hasMore={portfolioUserStoriesHasMore}
-					onLoadMore={loadMoreUserStories}
-					loadingMore={portfolioUserStoriesLoadingMore}
-				/>
-			</>
-		)}
-
-		{currentScreen === 'userStoryDetail' && selectedUserStory && (
-			<>
-				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
-				<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
-				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as any} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
-				{activeUserStoryTab === 'tests' && (
-					<div
-						style={{
-							margin: '20px 0',
-							padding: '20px',
-							backgroundColor: '#282828',
-							borderRadius: '6px'
-						}}
-					>
-						<div
-							style={{
-								fontSize: '13px',
-								color: 'var(--vscode-foreground)',
-								marginBottom: '6px'
-							}}
-						>
-							This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
-						</div>
-						<div
-							style={{
-								fontSize: '12px',
-								color: 'var(--vscode-descriptionForeground)'
-							}}
-						>
-							Detailed test listing will be available in a future version of this view.
-						</div>
-					</div>
-				)}
-				{activeUserStoryTab === 'defects' && (
-					<DefectsTable
-						defects={userStoryDefects as Defect[]}
-						loading={userStoryDefectsLoading}
-						error={_userStoryDefectsError || undefined}
-						onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
-						onDefectSelected={_onDefectSelected}
-						selectedDefect={_selectedDefect as Defect | null}
-					/>
-				)}
-				{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
-			</>
-		)}
-	</>
-);
-
-const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects, _defectsHasMore = false, _defectsLoadingMore = false, _onLoadMoreDefects }) => {
-	logDebug(`_onDefectSelected: ${JSON.stringify(_onDefectSelected)}, currentScreen: ${currentScreen}`, 'AllDefectsView');
-	return (
-		<>
-			{currentScreen === 'defects' && (
-				<>
-					<ScreenHeader title="All Defects" />
-					<DefectsTable
-						defects={_defects as Defect[]}
-						loading={_defectsLoading}
-						error={_defectsError || undefined}
-						onLoadDefects={_onLoadDefects}
-						onDefectSelected={_onDefectSelected}
-						selectedDefect={_selectedDefect as Defect | null}
-						hasMore={_defectsHasMore}
-						onLoadMore={_onLoadMoreDefects}
-						loadingMore={_defectsLoadingMore}
-					/>
-				</>
-			)}
-			{currentScreen === 'defectDetail' && _selectedDefect && (
-				<>
-					<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
-					<DefectForm defect={_selectedDefect as Defect} />
-				</>
-			)}
-		</>
-	);
-};
-
-// Portfolio Views Configuration
-// Icon components for portfolio tabs
-const SprintsIcon = ({ size = '18px' }: { size?: string }) => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M6.75 2.994v2.25m10.5-2.25v2.25m-14.252 13.5V7.491a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v11.251m-18 0a2.25 2.25 0 0 0 2.25 2.25h13.5a2.25 2.25 0 0 0 2.25-2.25m-18 0v-7.5a2.25 2.25 0 0 1 2.25-2.25h13.5a2.25 2.25 0 0 1 2.25 2.25v7.5m-6.75-6h2.25m-9 2.25h4.5m.002-2.25h.005v.006H12v-.006Zm-.001 4.5h.006v.006h-.006v-.005Zm-2.25.001h.005v.006H9.75v-.006Zm-2.25 0h.005v.005h-.006v-.005Zm6.75-2.247h.005v.005h-.005v-.005Zm0 2.247h.006v.006h-.006v-.006Zm2.25-2.248h.006V15H16.5v-.005Z"
-		/>
-	</svg>
-);
-
-const UserStoriesIcon = ({ size = '18px' }: { size?: string }) => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M14.25 6.087c0-.355.186-.676.401-.959.221-.29.349-.634.349-1.003 0-1.036-1.007-1.875-2.25-1.875s-2.25.84-2.25 1.875c0 .369.128.713.349 1.003.215.283.401.604.401.959v0a.64.64 0 0 1-.657.643 48.39 48.39 0 0 1-4.163-.3c.186 1.613.293 3.25.315 4.907a.656.656 0 0 1-.658.663v0c-.355 0-.676-.186-.959-.401a1.647 1.647 0 0 0-1.003-.349c-1.036 0-1.875 1.007-1.875 2.25s.84 2.25 1.875 2.25c.369 0 .713-.128 1.003-.349.283-.215.604-.401.959-.401v0c.31 0 .555.26.532.57a48.039 48.039 0 0 1-.642 5.056c1.518.19 3.058.309 4.616.354a.64.64 0 0 0 .657-.643v0c0-.355-.186-.676-.401-.959a1.647 1.647 0 0 1-.349-1.003c0-1.035 1.008-1.875 2.25-1.875 1.243 0 2.25.84 2.25 1.875 0 .369-.128.713-.349 1.003-.215.283-.4.604-.4.959v0c0 .333.277.599.61.58a48.1 48.1 0 0 0 5.427-.63 48.05 48.05 0 0 0 .582-4.717.532.532 0 0 0-.533-.57v0c-.355 0-.676.186-.959.401-.29.221-.634.349-1.003.349-1.035 0-1.875-1.007-1.875-2.25s.84-2.25 1.875-2.25c.37 0 .713.128 1.003.349.283.215.604.401.96.401v0a.656.656 0 0 0 .658-.663 48.422 48.422 0 0 0-.37-5.36c-1.886.342-3.81.574-5.766.689a.578.578 0 0 1-.61-.58v0Z"
-		/>
-	</svg>
-);
-
-const DefectsIcon = ({ size = '18px' }: { size?: string }) => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
-		<path
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			d="M12 12.75c1.148 0 2.278.08 3.383.237 1.037.146 1.866.966 1.866 2.013 0 3.728-2.35 6.75-5.25 6.75S6.75 18.728 6.75 15c0-1.046.83-1.867 1.866-2.013A24.204 24.204 0 0 1 12 12.75Zm0 0c2.883 0 5.647.508 8.207 1.44a23.91 23.91 0 0 1-1.152 6.06M12 12.75c-2.883 0-5.647.508-8.208 1.44.125 2.104.52 4.136 1.153 6.06M12 12.75a2.25 2.25 0 0 0 2.248-2.354M12 12.75a2.25 2.25 0 0 1-2.248-2.354M12 8.25c.995 0 1.971-.08 2.922-.236.403-.066.74-.358.795-.762a3.778 3.778 0 0 0-.399-2.25M12 8.25c-.995 0-1.97-.08-2.922-.236-.402-.066-.74-.358-.795-.762a3.734 3.734 0 0 1 .4-2.253M12 8.25a2.25 2.25 0 0 0-2.248 2.146M12 8.25a2.25 2.25 0 0 1 2.248 2.146M8.683 5a6.032 6.032 0 0 1-1.155-1.002c.07-.63.27-1.222.574-1.747m.581 2.749A3.75 3.75 0 0 1 15.318 5m0 0c.427-.283.815-.62 1.155-.999a4.471 4.471 0 0 0-.575-1.752M4.921 6a24.048 24.048 0 0 0-.392 3.314c1.668.546 3.416.914 5.223 1.082M19.08 6c.205 1.08.337 2.187.392 3.314a23.882 23.882 0 0 1-5.223 1.082"
-		/>
-	</svg>
-);
-
-const portfolioViews: PortfolioViewConfig[] = [
-	{
-		id: 'bySprints',
-		label: 'Sprints',
-		icon: 'sprints',
-		description: 'View user stories organized by sprints',
-		component: BySprintsView,
-		dataLoader: () => Promise.resolve(), // Will be set dynamically
-		stateCleaner: () => {} // Will be set dynamically
-	},
-	{
-		id: 'allUserStories',
-		label: 'User Stories',
-		icon: 'user-stories',
-		description: 'View all user stories in the project',
-		component: AllUserStoriesView,
-		dataLoader: () => Promise.resolve(), // Will be set dynamically
-		stateCleaner: () => {} // Will be set dynamically
-	},
-	{
-		id: 'allDefects',
-		label: 'Defects',
-		icon: 'bug',
-		description: 'View all defects in the project',
-		component: AllDefectsView,
-		dataLoader: () => Promise.resolve(), // Will be set dynamically
-		stateCleaner: () => {} // Will be set dynamically
-	}
-];
-
-// Portfolio View Selector Component (Tab-like appearance)
-const PortfolioViewSelector: FC<{
-	views: PortfolioViewConfig[];
-	activeView: PortfolioViewType;
-	onViewChange: (viewId: PortfolioViewType) => void;
-}> = ({ views, activeView, onViewChange }) => {
-	const lightTheme = isLightTheme();
-	const [hoveredTab, setHoveredTab] = useState<PortfolioViewType | null>(null);
-
-	// Memoize hover background color based on theme
-	const hoverBackgroundColor = useMemo(() => (lightTheme ? 'rgba(0, 123, 255, 0.05)' : 'rgba(255, 255, 255, 0.05)'), [lightTheme]);
-
-	const renderIcon = (icon?: string) => {
-		switch (icon) {
-			case 'sprints':
-				return <SprintsIcon />;
-			case 'user-stories':
-				return <UserStoriesIcon />;
-			case 'bug':
-				return <DefectsIcon />;
-			default:
-				return null;
-		}
-	};
-
-	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number, isHovered: boolean) => {
-		return {
-			padding: '10px 16px 6px',
-			border: 'none',
-			borderBottom: isActive
-				? lightTheme
-					? '2px solid #007acc' // Darker blue for better visibility in light themes
-					: '2px solid var(--vscode-progressBar-background)' // Standard color for dark themes
-				: '2px solid transparent',
-			borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
-			backgroundColor: !isActive && isHovered ? hoverBackgroundColor : 'transparent',
-			color: isActive
-				? lightTheme
-					? '#1e1e1e' // Dark color to ensure contrast in light themes
-					: 'var(--vscode-tab-activeForeground)' // Standard color for dark themes
-				: lightTheme
-					? '#333333'
-					: 'var(--vscode-tab-inactiveForeground)',
-			cursor: isActive ? 'default' : 'pointer',
-			display: 'flex',
-			alignItems: 'center',
-			gap: '8px',
-			fontSize: '12.4px',
-			fontWeight: isActive ? 600 : 400,
-			transition: 'all 0.15s ease',
-			position: 'relative' as const,
-			zIndex: isActive ? 1 : 0
-		};
-	};
-
-	return (
-		<div
-			style={{
-				marginBottom: '20px',
-				display: 'flex',
-				borderBottom: '1px solid var(--vscode-panel-border)',
-				borderRadius: '6px 6px 0 0'
-			}}
-		>
-			{views.map((view, index) => (
-				<button
-					key={view.id}
-					className={`portfolio-sub-tab ${activeView === view.id ? 'portfolio-sub-tab-active' : ''}`}
-					onClick={() => activeView !== view.id && onViewChange(view.id)}
-					onMouseEnter={() => setHoveredTab(view.id)}
-					onMouseLeave={() => setHoveredTab(null)}
-					style={getSubTabStyles(activeView === view.id, index, views.length, hoveredTab === view.id)}
-					title={view.description}
-				>
-					{renderIcon(view.icon)}
-					<span>{view.label}</span>
-				</button>
-			))}
-		</div>
-	);
-};
-
-// Portfolio View Renderer Component
-const PortfolioViewRenderer: FC<{
-	activeViewType: PortfolioViewType;
-	viewProps: PortfolioViewProps;
-}> = ({ activeViewType, viewProps }) => {
-	const activeView = portfolioViews.find(view => view.id === activeViewType);
-	if (!activeView) {
-		return <div>View not found</div>;
-	}
-
-	const ActiveComponent = activeView.component;
-	return <ActiveComponent {...viewProps} />;
-};
 
 interface MainWebviewProps {
 	webviewId: string;
@@ -857,8 +387,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
-	const [activeViewType, setActiveViewType] = useState<PortfolioViewType>('bySprints');
+	const [activeSubTabBySection, setActiveSubTabBySection] = useState<Partial<Record<SectionType, string>>>({ portfolio: 'bySprints' });
 	const [calendarDate, setCalendarDate] = useState(new Date());
+
+	const portfolioActiveViewType = (activeSubTabBySection['portfolio'] ?? 'bySprints') as PortfolioViewType;
 
 	// Track if we've already loaded iterations for portfolio to avoid cascading renders
 	const hasLoadedPortfolioIterations = useRef(false);
@@ -1072,8 +604,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				currentCleaner();
 			}
 
-			// Change active view
-			setActiveViewType(newViewType);
+			// Change active view (sub-tabs live in layout; portfolio is the only section with sub-tabs for now)
+			setActiveSubTabBySection(prev => ({ ...prev, portfolio: newViewType }));
 
 			// Only load data if this view hasn't been loaded yet in this session
 			// This prevents redundant fetches when switching between tabs
@@ -1139,7 +671,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	const handleBackToUserStories = useCallback(() => {
 		// Depenent de la vista activa, tornem a la pantalla correcta
-		if (activeViewType === 'allUserStories') {
+		if (portfolioActiveViewType === 'allUserStories') {
 			setCurrentScreen('allUserStories');
 		} else {
 			setCurrentScreen('userStories');
@@ -1155,7 +687,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		// Clear the attempted tracking when going back
 		attemptedUserStoryDefects.current.clear();
 		attemptedUserStoryDiscussions.current.clear();
-	}, [activeViewType]);
+	}, [portfolioActiveViewType]);
 
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
@@ -1390,7 +922,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							setPortfolioUserStoriesOffset((message.offset || 0) + (message.userStories?.length || 0));
 							setUserStoriesError(null);
 							// Assegura que la pantalla es correcta quan es carreguen totes les user stories
-							if (activeViewType === 'allUserStories') {
+							if (portfolioActiveViewType === 'allUserStories') {
 								setCurrentScreen('allUserStories');
 							}
 						}
@@ -1456,7 +988,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						setDefectsError(null);
 						// Only navigate to defects list if we're not in detail view
 						// Don't override defectDetail when coming from search
-						if (activeViewType === 'allDefects' && currentScreen !== 'defects' && currentScreen !== 'defectDetail') {
+						if (portfolioActiveViewType === 'allDefects' && currentScreen !== 'defects' && currentScreen !== 'defectDetail') {
 							setCurrentScreen('defects');
 						}
 					} else {
@@ -1574,6 +1106,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							activeSection?: SectionType;
 							currentScreen?: ScreenType;
 							activeViewType?: PortfolioViewType;
+							activeSubTabBySection?: Partial<Record<SectionType, string>>;
 							selectedIterationId?: string;
 							selectedUserStoryId?: string;
 							selectedDefectId?: string;
@@ -1586,7 +1119,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						// Restore basic navigation state
 						if (state.activeSection) setActiveSection(state.activeSection);
 						if (state.currentScreen) setCurrentScreen(state.currentScreen);
-						if (state.activeViewType) setActiveViewType(state.activeViewType);
+						if (state.activeViewType) setActiveSubTabBySection(prev => ({ ...prev, portfolio: state.activeViewType }));
+						if (state.activeSubTabBySection) setActiveSubTabBySection(prev => ({ ...prev, ...state.activeSubTabBySection }));
 						if (state.activeUserStoryTab) setActiveUserStoryTab(state.activeUserStoryTab);
 						if (state.globalSearchTerm) setGlobalSearchTerm(state.globalSearchTerm);
 						if (state.calendarDate) setCalendarDate(new Date(state.calendarDate));
@@ -1621,7 +1155,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, activeViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, iterations]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, iterations]); // Only include dependencies needed by handleMessage
 
 	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
 	useEffect(() => {
@@ -1650,7 +1184,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			const navigationState = {
 				activeSection,
 				currentScreen,
-				activeViewType,
+				activeViewType: portfolioActiveViewType,
+				activeSubTabBySection,
 				selectedIterationId: selectedIteration?.objectId,
 				selectedUserStoryId: selectedUserStory?.objectId,
 				selectedDefectId: selectedDefect?.objectId,
@@ -1664,7 +1199,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			});
 		}, 100);
 		return () => clearTimeout(timeoutId);
-	}, [activeSection, currentScreen, activeViewType, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, activeUserStoryTab, globalSearchTerm, calendarDate, sendMessage]);
+	}, [activeSection, currentScreen, portfolioActiveViewType, activeSubTabBySection, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, activeUserStoryTab, globalSearchTerm, calendarDate, sendMessage]);
 
 	// Track calendar year changes and load holidays for the new year
 	useEffect(() => {
@@ -1908,579 +1443,51 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		<Container>
 			<GlobalStyle />
 			<CenteredContainer>
-				<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} />
-
+				<StickyNav>
+					<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} />
+					{activeSection === 'portfolio' &&
+						(() => {
+							const subTabs = getPortfolioSubTabs();
+							const activeSubTabId = activeSubTabBySection['portfolio'] ?? subTabs[0]?.id ?? 'bySprints';
+							return <SubTabsBar subTabs={subTabs} activeSubTabId={activeSubTabId} onSubTabChange={id => activeSection === 'portfolio' && switchViewType(id as PortfolioViewType)} />;
+						})()}
+				</StickyNav>
 				<ContentArea noPaddingTop={activeSection === 'portfolio'}>
 					{activeSection === 'search' && (
-						<div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', minHeight: 'calc(100vh - 140px)', height: '100%' }}>
-							<div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-								<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '18px', height: '18px', color: 'var(--vscode-foreground)', flexShrink: 0 }} aria-hidden>
-									<path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-								</svg>
-								<input
-									ref={searchInputRef}
-									type="text"
-									placeholder="Search by code (e.g. US123) or title..."
-									value={globalSearchTerm}
-									onChange={e => setGlobalSearchTerm(e.target.value)}
-									onKeyDown={e => {
-										if (e.key === 'Enter') runGlobalSearch(globalSearchTerm);
-									}}
-									style={{
-										flex: 1,
-										padding: '8px 12px',
-										fontSize: '13px',
-										border: '1px solid var(--vscode-input-border)',
-										backgroundColor: 'var(--vscode-input-background)',
-										color: 'var(--vscode-input-foreground)',
-										borderRadius: '4px',
-										outline: 'none'
-									}}
-									aria-label="Global search by code or title"
-								/>
-								<button
-									type="button"
-									onClick={() => runGlobalSearch(globalSearchTerm)}
-									disabled={globalSearchLoading || !globalSearchTerm.trim()}
-									style={{
-										padding: '8px 14px',
-										fontSize: '13px',
-										backgroundColor: 'var(--vscode-button-background)',
-										color: 'var(--vscode-button-foreground)',
-										border: 'none',
-										borderRadius: '4px',
-										cursor: globalSearchLoading || !globalSearchTerm.trim() ? 'default' : 'pointer',
-										opacity: globalSearchLoading || !globalSearchTerm.trim() ? 0.6 : 1
-									}}
-								>
-									{globalSearchLoading ? 'Searching…' : 'Search'}
-								</button>
-							</div>
-							{globalSearchError && <div style={{ color: 'var(--vscode-errorForeground)', fontSize: '13px' }}>{globalSearchError}</div>}
-							{globalSearchResults.length > 0 && (
-								<div
-									style={{
-										flex: 1,
-										minHeight: 0,
-										display: 'flex',
-										flexDirection: 'column',
-										border: '1px solid var(--vscode-panel-border)',
-										borderRadius: '6px',
-										overflow: 'hidden'
-									}}
-								>
-									<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', padding: '8px 12px', borderBottom: '1px solid var(--vscode-panel-border)', flexShrink: 0 }}>
-										{globalSearchResults.length} result{globalSearchResults.length !== 1 ? 's' : ''}
-									</div>
-									<ul
-										style={{
-											listStyle: 'none',
-											margin: 0,
-											padding: 0,
-											flex: 1,
-											minHeight: 0,
-											overflowY: 'scroll'
-										}}
-									>
-										{globalSearchResults.map((item, idx) => (
-											<li key={`${item.entityType}-${item.objectId}-${idx}`} style={{ margin: 0, padding: 0, borderBottom: '1px solid var(--vscode-panel-border)' }}>
-												<button
-													type="button"
-													className="search-result-button"
-													onClick={() => openSearchResult(item)}
-													style={{
-														padding: '10px 12px',
-														fontSize: '13px',
-														display: 'flex',
-														alignItems: 'center',
-														gap: '8px',
-														flexWrap: 'wrap',
-														cursor: 'pointer',
-														backgroundColor: 'transparent',
-														border: 'none',
-														width: '100%',
-														textAlign: 'left',
-														color: 'inherit',
-														transition: 'background-color 0.15s ease'
-													}}
-													onMouseEnter={e => {
-														e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
-													}}
-													onMouseLeave={e => {
-														e.currentTarget.style.backgroundColor = 'transparent';
-													}}
-												>
-													<span
-														style={{
-															fontSize: '11.5px',
-															fontWeight: 400,
-															padding: '5px 6px',
-															borderRadius: '8px',
-															backgroundColor: 'rgba(128, 128, 128, 0.1)',
-															color: 'var(--vscode-descriptionForeground)',
-															border: '1px solid var(--vscode-panel-border)',
-															textTransform: 'capitalize',
-															display: 'inline-flex',
-															alignItems: 'center',
-															gap: '7px'
-														}}
-													>
-														{item.entityType === 'userstory' && <SearchResultUserStoryIcon />}
-														{item.entityType === 'task' && <SearchResultTaskIcon />}
-														{item.entityType === 'testcase' && <SearchResultTestCaseIcon />}
-														{item.entityType === 'defect' && <SearchResultDefectIcon />}
-														{item.entityType === 'userstory' ? 'User Story' : item.entityType}
-													</span>
-													<span style={{ fontWeight: 600, color: 'var(--vscode-foreground)' }}>{item.formattedId}</span>
-													<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{item.name || '—'}</span>
-												</button>
-											</li>
-										))}
-									</ul>
-								</div>
-							)}
-						</div>
+						<SearchSection
+							searchInputRef={searchInputRef}
+							globalSearchTerm={globalSearchTerm}
+							onSearchTermChange={setGlobalSearchTerm}
+							onSearch={runGlobalSearch}
+							globalSearchLoading={globalSearchLoading}
+							globalSearchError={globalSearchError}
+							globalSearchResults={globalSearchResults}
+							onOpenResult={openSearchResult}
+						/>
 					)}
-					{activeSection === 'calendar' && <Calendar currentDate={calendarDate} iterations={iterations} userStories={userStories} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromCalendar} />}
+					{activeSection === 'calendar' && <CalendarSection currentDate={calendarDate} iterations={iterations} userStories={userStories} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromCalendar} />}
 
 					{activeSection === 'team' && (
-						<div style={{ padding: '20px' }}>
-							{/* Team Header */}
-							<div style={{ marginBottom: '30px', textAlign: 'center' }}>
-								<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '600' }}>Team Dashboard</h2>
-								<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Monitor team activity, collaboration, and project progress</p>
-							</div>
-
-							{/* Loading Spinner */}
-							{teamMembersLoading && (
-								<div style={{ textAlign: 'center', padding: '40px 20px' }}>
-									<div
-										style={{
-											border: `2px solid var(--vscode-panel-border)`,
-											borderTop: `2px solid var(--vscode-progressBar-background)`,
-											borderRadius: '50%',
-											width: '24px',
-											height: '24px',
-											animation: 'spin 1s linear infinite',
-											margin: '0 auto 16px'
-										}}
-									/>
-									<p style={{ color: 'var(--vscode-descriptionForeground)' }}>Loading team data...</p>
-								</div>
-							)}
-
-							{/* Team Content - only show when not loading */}
-							{!teamMembersLoading && (
-								<>
-									{/* Team Stats */}
-									{/* Team Members */}
-									<div style={{ marginBottom: '20px' }}>
-										<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-											<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
-											<select
-												value={selectedTeamIteration}
-												onChange={e => setSelectedTeamIteration(e.target.value)}
-												style={{
-													padding: '4px 8px',
-													borderRadius: '4px',
-													backgroundColor: 'var(--vscode-dropdown-background)',
-													color: 'var(--vscode-dropdown-foreground)',
-													border: '1px solid var(--vscode-dropdown-border)',
-													cursor: 'pointer',
-													fontSize: '12px'
-												}}
-											>
-												<option value="current">{findCurrentIteration(iterations)?.name || 'Current Sprint'} (current)</option>
-												{iterations
-													.filter(it => {
-														// Exclude current iteration to avoid duplicates
-														const currentIteration = findCurrentIteration(iterations);
-														if (currentIteration && it.objectId === currentIteration.objectId) {
-															return false;
-														}
-														// Only include past iterations (end date before today)
-														const endDate = new Date(it.endDate);
-														const today = new Date();
-														today.setHours(0, 0, 0, 0);
-														endDate.setHours(0, 0, 0, 0);
-														return endDate < today;
-													})
-													.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
-													.slice(0, 12)
-													.map(it => (
-														<option key={it.objectId} value={it.objectId}>
-															{it.name}
-														</option>
-													))}
-											</select>
-										</div>
-
-										{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
-
-										{!teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
-
-										{!teamMembersError &&
-											teamMembers.length > 0 &&
-											(() => {
-												// Active members: those with user stories assigned (even if 0 hours) OR with totalHours > 0
-												// This ensures users with assigned work (even 0 hours) appear in ACTIVE IN SPRINT
-												const activeMembers = teamMembers.filter(m => {
-													const hasStories = (m.progress as any).userStoriesCount > 0;
-													const hasHours = m.progress.totalHours > 0;
-													return hasStories || hasHours;
-												});
-												const inactiveMembers = teamMembers.filter(m => {
-													const hasStories = (m.progress as any).userStoriesCount > 0;
-													const hasHours = m.progress.totalHours > 0;
-													return !hasStories && !hasHours;
-												});
-
-												return (
-													<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-														{/* Active Members Section */}
-														{activeMembers.length > 0 && (
-															<div>
-																<h4
-																	style={{
-																		margin: '0 0 12px 0',
-																		color: 'var(--vscode-foreground)',
-																		fontSize: '13px',
-																		fontWeight: '600',
-																		textTransform: 'uppercase',
-																		letterSpacing: '0.5px',
-																		opacity: 0.7
-																	}}
-																>
-																	Active in Sprint
-																</h4>
-																<div
-																	style={{
-																		display: 'grid',
-																		gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-																		gap: '12px'
-																	}}
-																>
-																	{activeMembers.map(member => {
-																		// Generate initials from name
-																		const initials = member.name
-																			.split(' ')
-																			.map(part => part.charAt(0).toUpperCase())
-																			.join('')
-																			.slice(0, 2);
-
-																		const percentage = member.progress.percentage;
-																		const progressColor = percentage >= 75 ? 'var(--vscode-charts-green, #4caf50)' : percentage >= 50 ? 'var(--vscode-charts-orange, #ff9800)' : percentage >= 25 ? 'var(--vscode-charts-yellow, #ffc107)' : 'var(--vscode-charts-red, #f44336)';
-
-																		return (
-																			<div
-																				key={member.name}
-																				style={{
-																					backgroundColor: 'var(--vscode-editor-background)',
-																					border: '1px solid var(--vscode-panel-border)',
-																					borderRadius: '8px',
-																					padding: '12px',
-																					display: 'flex',
-																					flexDirection: 'column',
-																					alignItems: 'center',
-																					textAlign: 'center',
-																					cursor: 'pointer',
-																					transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-																				}}
-																				onMouseEnter={e => {
-																					e.currentTarget.style.transform = 'translateY(-2px)';
-																					e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-																				}}
-																				onMouseLeave={e => {
-																					e.currentTarget.style.transform = 'translateY(0)';
-																					e.currentTarget.style.boxShadow = 'none';
-																				}}
-																			>
-																				{/* Avatar with Progress Ring */}
-																				<div role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`} style={{ position: 'relative' }}>
-																					<svg
-																						width="64"
-																						height="64"
-																						style={{
-																							position: 'absolute',
-																							top: '-8px',
-																							left: '-8px',
-																							transform: 'rotate(-90deg)'
-																						}}
-																					>
-																						<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-																						<circle
-																							cx="32"
-																							cy="32"
-																							r="28"
-																							stroke={progressColor}
-																							strokeWidth="3"
-																							fill="none"
-																							strokeDasharray={2 * Math.PI * 28}
-																							strokeDashoffset={2 * Math.PI * 28 * (1 - percentage / 100)}
-																							strokeLinecap="round"
-																							style={{
-																								transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
-																							}}
-																						/>
-																					</svg>
-																					<div
-																						style={{
-																							width: '48px',
-																							height: '48px',
-																							borderRadius: '50%',
-																							background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-																							display: 'flex',
-																							alignItems: 'center',
-																							justifyContent: 'center',
-																							color: 'white',
-																							fontWeight: 'bold',
-																							fontSize: '16px',
-																							marginBottom: '6px'
-																						}}
-																					>
-																						{initials}
-																					</div>
-																				</div>
-
-																				{/* Member Info */}
-																				<div style={{ width: '100%' }}>
-																					<div style={{ marginBottom: '6px' }}>
-																						<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
-																						<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
-																						<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
-																							{member.progress.completedHours}h / {member.progress.totalHours}h
-																						</div>
-																					</div>
-																				</div>
-																			</div>
-																		);
-																	})}
-																</div>
-															</div>
-														)}
-
-														{/* Inactive Members Section */}
-														{inactiveMembers.length > 0 && (
-															<div>
-																<h4
-																	style={{
-																		margin: '0 0 12px 0',
-																		color: 'var(--vscode-foreground)',
-																		fontSize: '13px',
-																		fontWeight: '600',
-																		textTransform: 'uppercase',
-																		letterSpacing: '0.5px',
-																		opacity: 0.7
-																	}}
-																>
-																	Other Team Members
-																</h4>
-																<div
-																	style={{
-																		display: 'grid',
-																		gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-																		gap: '12px'
-																	}}
-																>
-																	{inactiveMembers.map(member => {
-																		// Generate initials from name
-																		const initials = member.name
-																			.split(' ')
-																			.map(part => part.charAt(0).toUpperCase())
-																			.join('')
-																			.slice(0, 2);
-
-																		return (
-																			<div
-																				key={member.name}
-																				style={{
-																					backgroundColor: 'var(--vscode-editor-background)',
-																					border: '1px solid var(--vscode-panel-border)',
-																					borderRadius: '8px',
-																					padding: '12px',
-																					display: 'flex',
-																					flexDirection: 'column',
-																					alignItems: 'center',
-																					textAlign: 'center',
-																					cursor: 'pointer',
-																					transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-																				}}
-																				onMouseEnter={e => {
-																					e.currentTarget.style.transform = 'translateY(-2px)';
-																					e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-																				}}
-																				onMouseLeave={e => {
-																					e.currentTarget.style.transform = 'translateY(0)';
-																					e.currentTarget.style.boxShadow = 'none';
-																				}}
-																			>
-																				{/* Avatar without Progress Ring */}
-																				<div style={{ position: 'relative' }}>
-																					<svg
-																						width="48"
-																						height="48"
-																						style={{
-																							position: 'absolute',
-																							top: '-6px',
-																							left: '-6px'
-																						}}
-																					>
-																						<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-																					</svg>
-																					<div
-																						style={{
-																							width: '36px',
-																							height: '36px',
-																							borderRadius: '50%',
-																							background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-																							display: 'flex',
-																							alignItems: 'center',
-																							justifyContent: 'center',
-																							color: 'white',
-																							fontWeight: 'bold',
-																							fontSize: '12px',
-																							marginBottom: '6px'
-																						}}
-																					>
-																						{initials}
-																					</div>
-																				</div>
-
-																				{/* Member Info */}
-																				<div style={{ width: '100%' }}>
-																					<div style={{ marginBottom: '6px' }}>
-																						<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
-																					</div>
-																				</div>
-																			</div>
-																		);
-																	})}
-																</div>
-															</div>
-														)}
-													</div>
-												);
-											})()}
-									</div>
-								</>
-							)}
-						</div>
+						<TeamSection
+							teamMembers={teamMembers}
+							teamMembersLoading={teamMembersLoading}
+							teamMembersError={teamMembersError}
+							selectedTeamIteration={selectedTeamIteration}
+							onTeamIterationChange={setSelectedTeamIteration}
+							iterations={iterations}
+							currentIterationName={findCurrentIteration(iterations)?.name ?? null}
+						/>
 					)}
-
-					{activeSection === 'library' && !selectedTutorial && (
-						<div style={{ padding: '20px' }}>
-							{/* Salesforce Banners */}
-							<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-								{[
-									{
-										title: 'Salesforce CRM Fundamentals',
-										kicker: 'PLATFORM',
-										accent: '#c86dd7',
-										bg: 'linear-gradient(135deg, #4a2c81 0%, #c86dd7 60%, #f0b7ff 100%)',
-										shadow: 'rgba(72, 36, 129, 0.18)',
-										icon: TargetIcon
-									},
-									{
-										title: 'Lightning Web Components',
-										kicker: 'DEVELOPMENT',
-										accent: '#2a6fd8',
-										bg: 'linear-gradient(135deg, #2e4c82 0%, #2a6fd8 100%)',
-										shadow: 'rgba(30, 60, 114, 0.18)',
-										icon: TrophyIcon
-									},
-									{
-										title: 'Salesforce Integration APIs',
-										kicker: 'CONNECTIVITY',
-										accent: '#3a8bbb',
-										bg: 'linear-gradient(135deg, #1f5c85 0%, #3a8bbb 60%, #c3e4ff 100%)',
-										shadow: 'rgba(15, 76, 117, 0.18)',
-										icon: ChartBarSquareIcon
-									},
-									{
-										title: 'Salesforce Einstein AI',
-										kicker: 'INTELLIGENCE',
-										accent: '#546a8a',
-										bg: 'linear-gradient(135deg, #3c4e60 0%, #546a8a 55%, #8a9ba6 100%)',
-										shadow: 'rgba(44, 62, 80, 0.18)',
-										icon: LightBulbIcon
-									},
-									{
-										title: 'Salesforce DevOps & CI/CD',
-										kicker: 'AUTOMATION',
-										accent: '#b27bff',
-										bg: 'linear-gradient(135deg, #5b3ea6 0%, #b27bff 55%, #e0c8ff 100%)',
-										shadow: 'rgba(91, 62, 166, 0.18)',
-										icon: ArrowPathIcon
-									}
-								].map(banner => (
-									<div
-										key={banner.title}
-										style={{
-											height: '110px',
-											borderRadius: '16px',
-											background: banner.bg,
-											display: 'flex',
-											alignItems: 'center',
-											justifyContent: 'space-between',
-											padding: '16px 20px',
-											color: '#ffffff',
-											cursor: 'pointer',
-											transition: 'transform 0.2s ease'
-										}}
-										onMouseEnter={e => {
-											e.currentTarget.style.transform = 'translateY(-1px)';
-										}}
-										onMouseLeave={e => {
-											e.currentTarget.style.transform = 'translateY(0)';
-										}}
-										onClick={() => {
-											sendMessage({
-												command: 'openTutorialInEditor',
-												tutorial: {
-													title: banner.title,
-													kicker: banner.kicker,
-													accent: banner.accent,
-													bg: banner.bg,
-													shadow: banner.shadow
-												}
-											});
-										}}
-									>
-										<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-											<div
-												style={{
-													fontSize: '11px',
-													letterSpacing: '0.12em',
-													fontWeight: 700,
-													color: 'rgba(255,255,255,0.8)',
-													textTransform: 'uppercase'
-												}}
-											>
-												{banner.kicker}
-											</div>
-											<div style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff' }}>{banner.title}</div>
-											<div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Hands-on Salesforce development and administration.</div>
-										</div>
-										<div
-											style={{
-												width: '46px',
-												height: '46px',
-												borderRadius: '50%',
-												backgroundColor: '#f5f5f5',
-												display: 'flex',
-												alignItems: 'center',
-												justifyContent: 'center',
-												color: banner.accent,
-												border: `2px solid ${banner.accent}`,
-												backdropFilter: 'blur(10px)'
-											}}
-										>
-											{banner.icon && typeof banner.icon === 'function' ? React.createElement(banner.icon as ComponentType<{ size?: string }>, { size: '28px' }) : React.createElement(banner.icon as ComponentType, {})}
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
+					{(activeSection === 'library' || selectedTutorial) && (
+						<LibrarySection
+							selectedTutorial={selectedTutorial}
+							onTutorialSelect={setSelectedTutorial}
+							onTutorialClose={() => {
+								setShowTutorial(false);
+								setSelectedTutorial(null);
+							}}
+							sendMessage={sendMessage}
+						/>
 					)}
 
 					{activeSection === 'metrics' && (
@@ -2529,641 +1536,60 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						</div>
 					)}
 
-					<div style={{ display: activeSection === 'collaboration' ? 'block' : 'none' }}>
-						<CollaborationView selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />
-					</div>
-
-					{/* Tutorial Content */}
-					{selectedTutorial && (
-						<div style={{ padding: '20px' }}>
-							{/* Back Button */}
-							<div style={{ marginBottom: '20px' }}>
-								<button
-									onClick={() => {
-										setShowTutorial(false);
-										setSelectedTutorial(null);
-									}}
-									style={{
-										padding: '8px 16px',
-										backgroundColor: 'var(--vscode-button-background)',
-										color: 'var(--vscode-button-foreground)',
-										border: 'none',
-										borderRadius: '4px',
-										cursor: 'pointer',
-										fontSize: '14px',
-										display: 'flex',
-										alignItems: 'center',
-										gap: '6px'
-									}}
-								>
-									<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px', marginRight: '6px' }}>
-										<path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
-									</svg>
-									Back to Salesforce
-								</button>
-							</div>
-
-							{/* Tutorial Header */}
-							<div
-								style={{
-									background: selectedTutorial.bg,
-									borderRadius: '16px',
-									padding: '24px',
-									marginBottom: '24px',
-									color: 'white'
-								}}
-							>
-								<div
-									style={{
-										fontSize: '11px',
-										letterSpacing: '0.12em',
-										fontWeight: 700,
-										color: 'rgba(255,255,255,0.8)',
-										textTransform: 'uppercase',
-										marginBottom: '8px'
-									}}
-								>
-									{selectedTutorial.kicker}
-								</div>
-								<h1 style={{ margin: '0 0 8px 0', fontSize: '28px', fontWeight: 700 }}>{selectedTutorial.title}</h1>
-								<p style={{ margin: 0, fontSize: '16px', opacity: 0.9 }}>Master {selectedTutorial.title.toLowerCase()} with hands-on examples and best practices.</p>
-							</div>
-
-							{/* Tutorial Content */}
-							<div style={{ display: 'flex', gap: '24px' }}>
-								{/* Main Content */}
-								<div style={{ flex: 2 }}>
-									{selectedTutorial.title === 'Salesforce CRM Fundamentals' && (
-										<div>
-											<h2>Understanding Salesforce CRM</h2>
-											<p>Salesforce CRM is the world&apos;s leading customer relationship management platform that helps businesses connect with customers, partners, and prospects.</p>
-
-											<h3>Key Concepts</h3>
-											<ul>
-												<li>
-													<strong>Leads:</strong> Potential customers who have shown interest
-												</li>
-												<li>
-													<strong>Accounts:</strong> Companies or organizations
-												</li>
-												<li>
-													<strong>Contacts:</strong> Individuals within accounts
-												</li>
-												<li>
-													<strong>Opportunities:</strong> Potential sales deals
-												</li>
-												<li>
-													<strong>Cases:</strong> Customer support issues
-												</li>
-											</ul>
-
-											<h3>Getting Started</h3>
-											<p>Begin by familiarizing yourself with the Salesforce interface and basic navigation. Learn how to create and manage records, and understand the relationship between different objects.</p>
-
-											<div
-												style={{
-													backgroundColor: 'var(--vscode-textBlockQuote-background)',
-													borderLeft: '4px solid var(--vscode-textBlockQuote-border)',
-													padding: '16px',
-													margin: '20px 0',
-													fontStyle: 'italic'
-												}}
-											>
-												💡 <strong>Pro Tip:</strong> Always use the search functionality to quickly find records instead of browsing through long lists.
-											</div>
-										</div>
-									)}
-
-									{selectedTutorial.title === 'Lightning Web Components' && (
-										<div>
-											<h2>Building with Lightning Web Components</h2>
-											<p>LWC is Salesforce&apos;s modern programming model for building fast, reusable components on the Lightning Platform.</p>
-
-											<h3>Why LWC?</h3>
-											<ul>
-												<li>Based on web standards (HTML, CSS, JavaScript)</li>
-												<li>Better performance than Aura components</li>
-												<li>Reusable across Salesforce experiences</li>
-												<li>Easier to learn for web developers</li>
-											</ul>
-
-											<h3>Basic Structure</h3>
-											<pre
-												style={{
-													backgroundColor: 'var(--vscode-textCodeBlock-background)',
-													padding: '16px',
-													borderRadius: '4px',
-													overflow: 'auto',
-													fontSize: '14px'
-												}}
-											>
-												{`// helloWorld.html
-<template>
-    <div class="slds-card">
-        <div class="slds-card__header">
-            <h2>Hello {greeting}!</h2>
-        </div>
-    </div>
-</template>
-
-// helloWorld.js
-import { LightningElement, track } from 'lwc';
-
-export default class HelloWorld extends LightningElement {
-    @track greeting = 'World';
-}
-
-// helloWorld.css
-.slds-card {
-    margin: 10px;
-}`}
-											</pre>
-
-											<h3>Best Practices</h3>
-											<ul>
-												<li>Use @track for reactive properties</li>
-												<li>Leverage SLDS for consistent styling</li>
-												<li>Test your components thoroughly</li>
-												<li>Follow naming conventions</li>
-											</ul>
-										</div>
-									)}
-
-									{selectedTutorial.title === 'Salesforce Integration APIs' && (
-										<div>
-											<h2>Connecting Systems with Salesforce APIs</h2>
-											<p>Salesforce provides powerful APIs to integrate with external systems and build connected experiences.</p>
-
-											<h3>Available APIs</h3>
-											<ul>
-												<li>
-													<strong>REST API:</strong> Standard RESTful web services
-												</li>
-												<li>
-													<strong>SOAP API:</strong> Traditional SOAP-based web services
-												</li>
-												<li>
-													<strong>Bulk API:</strong> For large data operations
-												</li>
-												<li>
-													<strong>Streaming API:</strong> Real-time data updates
-												</li>
-												<li>
-													<strong>Metadata API:</strong> Customize and manage metadata
-												</li>
-											</ul>
-
-											<h3>Authentication</h3>
-											<p>Use OAuth 2.0 for secure authentication. Salesforce supports various OAuth flows including:</p>
-											<ul>
-												<li>Authorization Code Flow</li>
-												<li>Client Credentials Flow</li>
-												<li>Username-Password Flow (for testing)</li>
-											</ul>
-
-											<h3>Example REST API Call</h3>
-											<pre
-												style={{
-													backgroundColor: 'var(--vscode-textCodeBlock-background)',
-													padding: '16px',
-													borderRadius: '4px',
-													overflow: 'auto',
-													fontSize: '14px'
-												}}
-											>
-												{`curl -X GET \\
-  https://yourinstance.salesforce.com/services/data/v58.0/sobjects/Account/ \\
-  -H "Authorization: Bearer YOUR_ACCESS_TOKEN" \\
-  -H "Content-Type: application/json"`}
-											</pre>
-										</div>
-									)}
-
-									{selectedTutorial.title === 'Salesforce Einstein AI' && (
-										<div>
-											<h2>Leveraging AI in Salesforce</h2>
-											<p>Salesforce Einstein brings artificial intelligence capabilities to your CRM, helping you gain insights and automate processes.</p>
-
-											<h3>Einstein Capabilities</h3>
-											<ul>
-												<li>
-													<strong>Salesforce Einstein Sales:</strong> Predictive lead scoring and opportunity insights
-												</li>
-												<li>
-													<strong>Salesforce Einstein Service:</strong> Case classification and automated solutions
-												</li>
-												<li>
-													<strong>Salesforce Einstein Marketing:</strong> Personalized campaigns and recommendations
-												</li>
-												<li>
-													<strong>Salesforce Einstein Relationship Insights:</strong> Contact and account insights
-												</li>
-											</ul>
-
-											<h3>Getting Started</h3>
-											<p>Enable Einstein in your org and configure it for your specific use cases. Make sure you have sufficient data for the AI models to learn from.</p>
-
-											<h3>Best Practices</h3>
-											<ul>
-												<li>Ensure data quality for better predictions</li>
-												<li>Start with pilot programs</li>
-												<li>Monitor and refine AI recommendations</li>
-												<li>Train users on interpreting AI insights</li>
-											</ul>
-
-											<div
-												style={{
-													backgroundColor: 'var(--vscode-textBlockQuote-background)',
-													borderLeft: '4px solid var(--vscode-textBlockQuote-border)',
-													padding: '16px',
-													margin: '20px 0',
-													fontStyle: 'italic'
-												}}
-											>
-												🤖 <strong>Remember:</strong> AI is a tool to augment human intelligence, not replace it. Always validate AI recommendations with your business knowledge.
-											</div>
-										</div>
-									)}
-
-									{selectedTutorial.title === 'Salesforce DevOps & CI/CD' && (
-										<div>
-											<h2>Implementing DevOps in Salesforce</h2>
-											<p>DevOps practices help teams deliver Salesforce changes faster and more reliably through automation and collaboration.</p>
-
-											<h3>Key DevOps Concepts</h3>
-											<ul>
-												<li>
-													<strong>Version Control:</strong> Git for source control
-												</li>
-												<li>
-													<strong>CI/CD Pipelines:</strong> Automated testing and deployment
-												</li>
-												<li>
-													<strong>Scratch Orgs:</strong> Temporary environments for development
-												</li>
-												<li>
-													<strong>Sandboxes:</strong> Testing environments
-												</li>
-												<li>
-													<strong>Change Sets:</strong> Deployment mechanism
-												</li>
-											</ul>
-
-											<h3>Recommended Tools</h3>
-											<ul>
-												<li>
-													<strong>Salesforce CLI:</strong> Command-line interface
-												</li>
-												<li>
-													<strong>GitHub Actions:</strong> CI/CD platform
-												</li>
-												<li>
-													<strong>CumulusCI:</strong> Open-source DevOps framework
-												</li>
-												<li>
-													<strong>CodeScan:</strong> Static code analysis
-												</li>
-											</ul>
-
-											<h3>Sample CI/CD Pipeline</h3>
-											<pre
-												style={{
-													backgroundColor: 'var(--vscode-textCodeBlock-background)',
-													padding: '16px',
-													borderRadius: '4px',
-													overflow: 'auto',
-													fontSize: '12px'
-												}}
-											>
-												{`name: Salesforce CI/CD
-on: [push, pull_request]
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install Salesforce CLI
-        run: npm install -g @salesforce/cli
-      - name: Authenticate
-        run: echo \${{ secrets.SFDX_AUTH_URL }} > auth.txt
-      - name: Run Tests
-        run: sf apex run test --code-coverage --result-format json
-      - name: Deploy to Sandbox
-        if: github.ref == 'refs/heads/main'
-        run: sf project deploy start --target-org sandbox`}
-											</pre>
-
-											<h3>Deployment Best Practices</h3>
-											<ul>
-												<li>Always test in scratch orgs first</li>
-												<li>Use named credentials for authentication</li>
-												<li>Implement proper rollback strategies</li>
-												<li>Monitor deployment health</li>
-											</ul>
-										</div>
-									)}
-								</div>
-
-								{/* Sidebar with Images */}
-								<div style={{ flex: 1 }}>
-									<div
-										style={{
-											backgroundColor: 'var(--vscode-editor-background)',
-											borderRadius: '8px',
-											padding: '16px',
-											border: '1px solid var(--vscode-panel-border)'
-										}}
-									>
-										<h3 style={{ margin: '0 0 16px 0', color: 'var(--vscode-foreground)' }}>Resources</h3>
-
-										{selectedTutorial.title === 'Salesforce CRM Fundamentals' && (
-											<div>
-												<div
-													style={{
-														width: '100%',
-														height: '150px',
-														backgroundColor: '#f8f9fa',
-														borderRadius: '8px',
-														display: 'flex',
-														alignItems: 'center',
-														justifyContent: 'center',
-														marginBottom: '12px',
-														border: '2px dashed #dee2e6'
-													}}
-												>
-													📊 CRM Dashboard Preview
-												</div>
-												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Visual representation of Salesforce CRM interface showing leads, accounts, and opportunities.</p>
-											</div>
-										)}
-
-										{selectedTutorial.title === 'Lightning Web Components' && (
-											<div>
-												<div
-													style={{
-														width: '100%',
-														height: '150px',
-														backgroundColor: '#f8f9fa',
-														borderRadius: '8px',
-														display: 'flex',
-														alignItems: 'center',
-														justifyContent: 'center',
-														marginBottom: '12px',
-														border: '2px dashed #0070d2'
-													}}
-												>
-													⚡ LWC Component Demo
-												</div>
-												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Example of a Lightning Web Component with interactive elements and Salesforce styling.</p>
-											</div>
-										)}
-
-										{selectedTutorial.title === 'Salesforce Integration APIs' && (
-											<div>
-												<div
-													style={{
-														width: '100%',
-														height: '150px',
-														backgroundColor: '#f8f9fa',
-														borderRadius: '8px',
-														display: 'flex',
-														alignItems: 'center',
-														justifyContent: 'center',
-														marginBottom: '12px',
-														border: '2px dashed #00a1e0'
-													}}
-												>
-													🔗 API Integration Flow
-												</div>
-												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Diagram showing how external systems connect to Salesforce via REST and SOAP APIs.</p>
-											</div>
-										)}
-
-										{selectedTutorial.title === 'Salesforce Einstein AI' && (
-											<div>
-												<div
-													style={{
-														width: '100%',
-														height: '150px',
-														backgroundColor: '#f8f9fa',
-														borderRadius: '8px',
-														display: 'flex',
-														alignItems: 'center',
-														justifyContent: 'center',
-														marginBottom: '12px',
-														border: '2px dashed #ff6b35'
-													}}
-												>
-													🧠 Einstein AI Insights
-												</div>
-												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Salesforce Einstein providing predictive analytics and AI-powered recommendations.</p>
-											</div>
-										)}
-
-										{selectedTutorial.title === 'Salesforce DevOps & CI/CD' && (
-											<div>
-												<div
-													style={{
-														width: '100%',
-														height: '150px',
-														backgroundColor: '#f8f9fa',
-														borderRadius: '8px',
-														display: 'flex',
-														alignItems: 'center',
-														justifyContent: 'center',
-														marginBottom: '12px',
-														border: '2px dashed #54698d'
-													}}
-												>
-													🔄 CI/CD Pipeline
-												</div>
-												<p style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', margin: '8px 0' }}>Automated deployment pipeline for Salesforce development with testing and quality gates.</p>
-											</div>
-										)}
-
-										<div style={{ marginTop: '16px', padding: '12px', backgroundColor: 'var(--vscode-textBlockQuote-background)', borderRadius: '4px' }}>
-											<h4 style={{ margin: '0 0 8px 0', fontSize: '14px', color: 'var(--vscode-foreground)' }}>Next Steps</h4>
-											<ul style={{ margin: 0, paddingLeft: '16px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>
-												<li>Complete hands-on exercises</li>
-												<li>Take certification exam</li>
-												<li>Join Trailhead community</li>
-												<li>Practice in sandbox org</li>
-											</ul>
-										</div>
-									</div>
-								</div>
-							</div>
-						</div>
-					)}
-
-					{activeSection === 'library' && !selectedTutorial && (
-						<div style={{ padding: '20px' }}>
-							{/* Assets Grid */}
-							<div
-								style={{
-									display: 'grid',
-									gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-									gap: '16px',
-									marginTop: '20px'
-								}}
-							>
-								{[
-									{
-										title: 'Project Templates',
-										description: 'Reusable project templates and checklists',
-										icon: DocumentTextIcon,
-										gradient: 'linear-gradient(135deg, #4a2c81 0%, #c586d8 65%, #f2c7ff 100%)',
-										shadow: 'rgba(72, 36, 129, 0.18)',
-										accent: '#c586d8'
-									},
-									{
-										title: 'Dashboards',
-										description: 'Interactive dashboards and reports',
-										icon: ChartBarIcon,
-										gradient: 'linear-gradient(135deg, #2e4c82 0%, #3b6fd6 100%)',
-										shadow: 'rgba(30, 60, 114, 0.18)',
-										accent: '#3b6fd6'
-									},
-									{
-										title: 'Lightning Web Components',
-										description: 'Reusable Lightning components for Salesforce',
-										icon: WrenchScrewdriverIcon,
-										gradient: 'linear-gradient(135deg, #1f5c85 0%, #3a8bbb 60%, #c3e4ff 100%)',
-										shadow: 'rgba(15, 76, 117, 0.18)',
-										accent: '#3a8bbb'
-									},
-									{
-										title: 'Checklists',
-										description: 'Standardized checklists and procedures',
-										icon: ClipboardDocumentCheckIcon,
-										gradient: 'linear-gradient(135deg, #3c4e60 0%, #546a8a 55%, #8a9ba6 100%)',
-										shadow: 'rgba(44, 62, 80, 0.18)',
-										accent: '#546a8a'
-									},
-									{
-										title: 'Documentation',
-										description: 'Guides, manuals, and documentation',
-										icon: BookOpenIcon,
-										gradient: 'linear-gradient(135deg, #4a2c81 0%, #c586d8 65%, #f2c7ff 100%)',
-										shadow: 'rgba(72, 36, 129, 0.18)',
-										accent: '#c586d8'
-									},
-									{
-										title: 'Tools & Scripts',
-										description: 'Automation scripts and utilities',
-										icon: WrenchScrewdriverIcon,
-										gradient: 'linear-gradient(135deg, #2e4c82 0%, #3b6fd6 100%)',
-										shadow: 'rgba(30, 60, 114, 0.18)',
-										accent: '#3b6fd6'
-									}
-								].map(asset => (
-									<div
-										key={asset.title}
-										style={{
-											background: asset.gradient,
-											borderRadius: '12px',
-											padding: '20px',
-											display: 'flex',
-											flexDirection: 'column',
-											alignItems: 'center',
-											textAlign: 'center',
-											cursor: 'pointer',
-											minHeight: '140px',
-											transition: 'transform 0.2s ease'
-										}}
-										onMouseEnter={e => {
-											e.currentTarget.style.transform = 'translateY(-1px)';
-										}}
-										onMouseLeave={e => {
-											e.currentTarget.style.transform = 'translateY(0)';
-										}}
-									>
-										<div style={{ marginBottom: '16px' }}>
-											<asset.icon />
-										</div>
-										<h4
-											style={{
-												margin: '0 0 8px 0',
-												color: '#ffffff',
-												fontSize: '16px',
-												fontWeight: '600'
-											}}
-										>
-											{asset.title}
-										</h4>
-										<p
-											style={{
-												margin: 0,
-												color: 'rgba(255,255,255,0.8)',
-												fontSize: '12px',
-												lineHeight: '1.4'
-											}}
-										>
-											{asset.description}
-										</p>
-									</div>
-								))}
-							</div>
-						</div>
-					)}
+					{activeSection === 'collaboration' && <CollaborationSection selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />}
 
 					{activeSection === 'portfolio' && (
-						<>
-							<PortfolioViewSelector views={portfolioViews} activeView={activeViewType} onViewChange={switchViewType} />
-							<PortfolioViewRenderer
-								activeViewType={activeViewType}
-								viewProps={{
-									iterations,
-									iterationsLoading,
-									iterationsError,
-									selectedIteration,
-									userStories,
-									userStoriesLoading,
-									userStoriesError,
-									selectedUserStory,
-									userStoriesHasMore,
-									userStoriesLoadingMore,
-									loadMoreUserStories,
-									portfolioUserStories,
-									portfolioUserStoriesLoading,
-									portfolioUserStoriesHasMore,
-									portfolioUserStoriesLoadingMore,
-									sprintUserStories,
-									sprintUserStoriesLoading,
-									tasks,
-									tasksLoading,
-									tasksError,
-									userStoryDefects,
-									userStoryDefectsLoading,
-									_userStoryDefectsError: userStoryDefectsError,
-									userStoryDiscussions,
-									userStoryDiscussionsLoading,
-									userStoryDiscussionsError,
-									_defects: defects,
-									_defectsLoading: defectsLoading,
-									_defectsError: defectsError,
-									_defectsHasMore: defectsHasMore,
-									_defectsLoadingMore: defectsLoadingMore,
-									_onLoadMoreDefects: loadMoreDefects,
-									_selectedDefect: selectedDefect,
-									activeUserStoryTab,
-									currentScreen,
-									onLoadIterations: loadIterations,
-									onIterationSelected: handleIterationSelected,
-									onUserStorySelected: handleUserStorySelected,
-									onLoadUserStories: loadUserStories,
-									onClearUserStories: clearUserStories,
-									onLoadTasks: loadTasks,
-									onLoadUserStoryDefects: loadUserStoryDefects,
-									_onLoadDefects: loadAllDefects,
-									_onDefectSelected: handleDefectSelected,
-									onBackToIterations: handleBackToIterations,
-									onBackToUserStories: handleBackToUserStories,
-									_onBackToDefects: handleBackToDefects,
-									onActiveUserStoryTabChange: setActiveUserStoryTab
-								}}
-							/>
-						</>
+						<PortfolioSection
+							activeViewType={portfolioActiveViewType}
+							iterations={iterations}
+							iterationsLoading={iterationsLoading}
+							iterationsError={iterationsError}
+							selectedIteration={selectedIteration}
+							userStories={userStories}
+							userStoriesLoading={userStoriesLoading}
+							userStoriesError={userStoriesError}
+							selectedUserStory={selectedUserStory}
+							userStoriesHasMore={userStoriesHasMore}
+							userStoriesLoadingMore={userStoriesLoadingMore}
+							loadMoreUserStories={loadMoreUserStories}
+							portfolioUserStories={portfolioUserStories}
+							portfolioUserStoriesLoading={portfolioUserStoriesLoading}
+							portfolioUserStoriesHasMore={portfolioUserStoriesHasMore}
+							portfolioUserStoriesLoadingMore={portfolioUserStoriesLoadingMore}
+							sprintUserStories={sprintUserStories}
+							sprintUserStoriesLoading={sprintUserStoriesLoading}
+							tasks={tasks}
+							tasksLoading={tasksLoading}
+							tasksError={tasksError}
+							userStoryDefects={userStoryDefects}
+							userStoryDefectsLoading={userStoryDefectsLoading}
+							_userStoryDefectsError={userStoryDefectsError}
+							userStoryDiscussions={userStoryDiscussions}
+							userStoryDiscussionsLoading={userStoryDiscussionsLoading}
+							userStoryDiscussionsError={userStoryDiscussionsError}
+							_defects={defects}
+							_defectsLoading={defectsLoading}
+							_defectsError={defectsError}
+							_defectsHasMore={defectsHasMore}
+							_defectsLoadingMore={defectsLoadingMore}
+							_onLoadMoreDefects={loadMoreDefects}
+							_selectedDefect={selectedDefect}
+							activeUserStoryTab={activeUserStoryTab}
+							currentScreen={currentScreen}
+							onLoadIterations={loadIterations}
+							onIterationSelected={handleIterationSelected}
+							onUserStorySelected={handleUserStorySelected}
+							onLoadUserStories={loadUserStories}
+							onClearUserStories={clearUserStories}
+							onLoadTasks={loadTasks}
+							onLoadUserStoryDefects={loadUserStoryDefects}
+							_onLoadDefects={loadAllDefects}
+							_onDefectSelected={handleDefectSelected}
+							onBackToIterations={handleBackToIterations}
+							onBackToUserStories={handleBackToUserStories}
+							_onBackToDefects={handleBackToDefects}
+							onActiveUserStoryTabChange={setActiveUserStoryTab}
+						/>
 					)}
 				</ContentArea>
 			</CenteredContainer>

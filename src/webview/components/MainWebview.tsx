@@ -1436,7 +1436,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 		const subTabs = getPortfolioSubTabs();
 		const activeSubTabId = activeSubTabBySection['portfolio'] ?? subTabs[0]?.id ?? 'bySprints';
-		return <SubTabsBar subTabs={subTabs} activeSubTabId={activeSubTabId} onSubTabChange={id => activeSection === 'portfolio' && switchViewType(id as PortfolioViewType)} />;
+		return <SubTabsBar subTabs={subTabs} activeSubTabId={activeSubTabId} onSubTabChange={id => switchViewType(id as PortfolioViewType)} />;
 	}, [activeSection, activeSubTabBySection, switchViewType]);
 
 	if (!hasVsCodeApi) {

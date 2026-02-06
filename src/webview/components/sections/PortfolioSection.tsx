@@ -5,7 +5,6 @@ import UserStoryForm from '../common/UserStoryForm';
 import TasksTable from '../common/TasksTable';
 import DefectsTable from '../common/DefectsTable';
 import ScreenHeader from '../common/ScreenHeader';
-import SprintDetailsForm from '../common/SprintDetailsForm';
 import '../common/CollapsibleCard';
 import type { PortfolioViewType, PortfolioViewProps } from './portfolio/types';
 import BySprintsView from './portfolio/BySprintsView';

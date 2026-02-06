@@ -97,7 +97,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 					</span>
 				)}
 				{testCasesCount > 0 && (
-					<span title={`${testCasesCount} test(s)`} style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85 }}>
+					<span title={`${testCasesCount} test case(s)`} style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85 }}>
 						<TestsIcon />
 					</span>
 				)}

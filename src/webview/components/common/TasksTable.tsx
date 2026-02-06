@@ -61,6 +61,18 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error }
 				</div>
 			)}
 
+			{!loading && !error && tasks.length === 0 && (
+				<div
+					style={{
+						textAlign: 'center',
+						padding: '20px',
+						color: themeColors.descriptionForeground
+					}}
+				>
+					<p>There are no tasks.</p>
+				</div>
+			)}
+
 			{tasks.length > 0 && !loading && !error && (
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
 					<thead>

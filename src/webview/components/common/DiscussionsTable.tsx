@@ -114,7 +114,7 @@ const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loadin
 	}
 
 	if (!discussions.length) {
-		return <EmptyState>No discussions found.</EmptyState>;
+		return <EmptyState>There are no discussions.</EmptyState>;
 	}
 
 	const formatDate = (dateString: string) => {

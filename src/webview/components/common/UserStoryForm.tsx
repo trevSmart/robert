@@ -177,34 +177,34 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			// Clean up any existing resize operation before starting a new one
 			if (cleanupRef.current) {
 				cleanupRef.current();
+				cleanupRef.current = null;
 			}
 			
 			resizeStartRef.current = { y: e.clientY, height: descriptionHeight };
 			document.body.style.cursor = 'ns-resize';
 			document.body.style.userSelect = 'none';
 			
-			const handlers = {
-				onMouseMove: (moveEvent: MouseEvent) => {
-					const delta = moveEvent.clientY - resizeStartRef.current.y;
-					const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
-					setDescriptionHeight(newHeight);
-				},
-				onMouseUp: () => {
-					// Call the cleanup function when drag ends normally
-					if (cleanupRef.current) {
-						cleanupRef.current();
-						cleanupRef.current = null;
-					}
-				}
+			const onMouseMove = (moveEvent: MouseEvent) => {
+				const delta = moveEvent.clientY - resizeStartRef.current.y;
+				const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
+				setDescriptionHeight(newHeight);
 			};
 			
-			document.addEventListener('mousemove', handlers.onMouseMove);
-			document.addEventListener('mouseup', handlers.onMouseUp);
+			const onMouseUp = () => {
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
+				document.body.style.cursor = '';
+				document.body.style.userSelect = '';
+				cleanupRef.current = null;
+			};
 			
-			// Store cleanup function to be called on unmount or when drag ends
+			document.addEventListener('mousemove', onMouseMove);
+			document.addEventListener('mouseup', onMouseUp);
+			
+			// Store cleanup function to be called on unmount or when new resize starts
 			cleanupRef.current = () => {
-				document.removeEventListener('mousemove', handlers.onMouseMove);
-				document.removeEventListener('mouseup', handlers.onMouseUp);
+				document.removeEventListener('mousemove', onMouseMove);
+				document.removeEventListener('mouseup', onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
 			};

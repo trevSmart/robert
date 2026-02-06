@@ -227,7 +227,7 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 function createStatusBarItem(context: vscode.ExtensionContext, errorHandler: ErrorHandler): vscode.StatusBarItem {
-	const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
+	const statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 30);
 
 	// Initialize with default state
 	updateStatusBarItem(statusBarItem, 'idle', errorHandler);

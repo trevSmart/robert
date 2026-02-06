@@ -191,15 +191,14 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 					params.forEach(param => {
 						const value = typeof param.value === 'number' ? param.value : Array.isArray(param.value) ? (typeof param.value[0] === 'number' ? param.value[0] : 0) : 0;
-						if (value > 0) {
-							const color = param.color || '#999999';
-							content += `<div style="display: flex; align-items: baseline; gap: 6px;">
-								<span style="width: 10px; height: 10px; background-color: ${color}; border-radius: 2px; display: inline-block; flex-shrink: 0; margin-top: 2px;"></span>
-								<span style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${param.seriesName}</span>
-								<span style="white-space: nowrap;">: <strong>${value}h</strong></span>
-							</div>`;
-							total += value;
-						}
+						// Show every assigned user story (including 0h) so the tooltip does not imply "no US assigned"
+						const color = param.color || '#999999';
+						content += `<div style="display: flex; align-items: baseline; gap: 6px;">
+							<span style="width: 10px; height: 10px; background-color: ${color}; border-radius: 2px; display: inline-block; flex-shrink: 0; margin-top: 2px;"></span>
+							<span style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${param.seriesName}</span>
+							<span style="white-space: nowrap;">: <strong>${value}h</strong></span>
+						</div>`;
+						total += value;
 					});
 
 					content += `<br/><strong>Total: ${total}h</strong></div>`;

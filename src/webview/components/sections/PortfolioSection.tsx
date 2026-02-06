@@ -4,7 +4,6 @@ import UserStoriesTable, { IterationsTable } from '../common/UserStoriesTable';
 import UserStoryForm from '../common/UserStoryForm';
 import TasksTable from '../common/TasksTable';
 import DefectsTable from '../common/DefectsTable';
-import ScreenHeader from '../common/ScreenHeader';
 import '../common/CollapsibleCard';
 import type { PortfolioViewType, PortfolioViewProps } from './portfolio/types';
 import BySprintsView from './portfolio/BySprintsView';

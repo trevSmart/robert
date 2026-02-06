@@ -177,32 +177,31 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			document.body.style.cursor = 'ns-resize';
 			document.body.style.userSelect = 'none';
 			
-			let onMouseUp: () => void;
-			
-			const onMouseMove = (moveEvent: MouseEvent) => {
-				const delta = moveEvent.clientY - resizeStartRef.current.y;
-				const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
-				setDescriptionHeight(newHeight);
+			const handlers = {
+				onMouseMove: (moveEvent: MouseEvent) => {
+					const delta = moveEvent.clientY - resizeStartRef.current.y;
+					const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
+					setDescriptionHeight(newHeight);
+				},
+				onMouseUp: () => {
+					document.removeEventListener('mousemove', handlers.onMouseMove);
+					document.removeEventListener('mouseup', handlers.onMouseUp);
+					document.body.style.cursor = '';
+					document.body.style.userSelect = '';
+					cleanupRef.current = null;
+				}
 			};
 			
-			// Shared cleanup function to remove listeners and reset styles
-			const cleanup = () => {
-				document.removeEventListener('mousemove', onMouseMove);
-				document.removeEventListener('mouseup', onMouseUp);
-				document.body.style.cursor = '';
-				document.body.style.userSelect = '';
-				cleanupRef.current = null;
-			};
-			
-			onMouseUp = () => {
-				cleanup();
-			};
-			
-			document.addEventListener('mousemove', onMouseMove);
-			document.addEventListener('mouseup', onMouseUp);
+			document.addEventListener('mousemove', handlers.onMouseMove);
+			document.addEventListener('mouseup', handlers.onMouseUp);
 			
 			// Store cleanup function to be called on unmount if needed
-			cleanupRef.current = cleanup;
+			cleanupRef.current = () => {
+				document.removeEventListener('mousemove', handlers.onMouseMove);
+				document.removeEventListener('mouseup', handlers.onMouseUp);
+				document.body.style.cursor = '';
+				document.body.style.userSelect = '';
+			};
 		},
 		[descriptionHeight]
 	);

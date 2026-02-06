@@ -27,14 +27,14 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	tasksError,
 	userStoryDefects,
 	userStoryDefectsLoading,
-	_userStoryDefectsError,
+	userStoryDefectsError,
 	userStoryDiscussions,
 	userStoryDiscussionsLoading,
 	userStoryDiscussionsError,
-	_defects,
-	_defectsLoading,
-	_defectsError,
-	_selectedDefect,
+	defects,
+	defectsLoading,
+	defectsError,
+	selectedDefect,
 	activeUserStoryTab,
 	currentScreen,
 	onLoadIterations,
@@ -44,11 +44,11 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	onClearUserStories,
 	onLoadTasks,
 	onLoadUserStoryDefects,
-	_onLoadDefects,
-	_onDefectSelected,
+	onLoadDefects,
+	onDefectSelected,
 	onBackToIterations,
 	onBackToUserStories,
-	_onBackToDefects,
+	onBackToDefects,
 	onActiveUserStoryTabChange
 }) => {
 	return (
@@ -120,10 +120,10 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						<DefectsTable
 							defects={userStoryDefects as Defect[]}
 							loading={userStoryDefectsLoading}
-							error={_userStoryDefectsError || undefined}
+							error={userStoryDefectsError || undefined}
 							onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
-							onDefectSelected={_onDefectSelected}
-							selectedDefect={_selectedDefect as Defect | null}
+							onDefectSelected={onDefectSelected}
+							selectedDefect={selectedDefect as Defect | null}
 						/>
 					)}
 					{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}

@@ -190,7 +190,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			};
 			document.addEventListener('mousemove', onMouseMove);
 			document.addEventListener('mouseup', onMouseUp);
-			
+
 			// Store cleanup function to be called on unmount if needed
 			cleanupRef.current = () => {
 				document.removeEventListener('mousemove', onMouseMove);

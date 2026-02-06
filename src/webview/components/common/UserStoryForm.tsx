@@ -184,23 +184,23 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					setDescriptionHeight(newHeight);
 				},
 				onMouseUp: () => {
-					document.removeEventListener('mousemove', handlers.onMouseMove);
-					document.removeEventListener('mouseup', handlers.onMouseUp);
-					document.body.style.cursor = '';
-					document.body.style.userSelect = '';
-					cleanupRef.current = null;
+					// Call the cleanup function when drag ends normally
+					if (cleanupRef.current) {
+						cleanupRef.current();
+					}
 				}
 			};
 			
 			document.addEventListener('mousemove', handlers.onMouseMove);
 			document.addEventListener('mouseup', handlers.onMouseUp);
 			
-			// Store cleanup function to be called on unmount if needed
+			// Store cleanup function to be called on unmount or when drag ends
 			cleanupRef.current = () => {
 				document.removeEventListener('mousemove', handlers.onMouseMove);
 				document.removeEventListener('mouseup', handlers.onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
+				cleanupRef.current = null;
 			};
 		},
 		[descriptionHeight]

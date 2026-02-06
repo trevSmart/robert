@@ -73,19 +73,6 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		// We don't re-sort here to preserve that ordering
 		const totalHours = assigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
 
-		// Slightly muted colors for Unassigned stories - still colorful but softer
-		const unassignedColors = [
-			'#8bb8d4', // blau suau
-			'#9cc9a0', // verd suau
-			'#d4b88b', // taronja suau
-			'#c9a0a0', // vermell suau
-			'#a0c4d4', // cian suau
-			'#d4c08b', // groc suau
-			'#bfa0c9', // lila suau
-			'#d4a0b8', // rosa suau
-			'#a8b0d4', // índigo suau
-			'#b8d4a0' // llima suau
-		];
 		const lightTheme = isLightTheme();
 
 		// Create series data for stacked bars
@@ -109,7 +96,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		const series = Array.from(allUserStories).map(storyId => {
 			const storyDetails = storyDetailsMap.get(storyId);
 
-			// Get the normal color for this story
+			// One color per story from the full palette so each segment is distinct (including in Unassigned bar)
 			const normalColor =
 				getColorPalette()[
 					Math.abs(
@@ -119,27 +106,15 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					) % 24
 				];
 
-			// Get muted color for Unassigned (gray variant based on story hash)
-			const grayIndex =
-				Math.abs(
-					String(storyId)
-						.split('')
-						.reduce((a, b) => a + b.charCodeAt(0), 0)
-				) % unassignedColors.length;
-			const mutedColor = unassignedColors[grayIndex];
-
-			// Create data points with individual colors for Unassigned vs assigned
-			const storyData = assigneeData.map((assignee, index) => {
+			// Create data points: same color for this story in every bar (assigned and Unassigned)
+			const storyData = assigneeData.map(assignee => {
 				const story = assignee.userStories.find(s => s.id === storyId);
 				const hours = story ? story.hours : 0;
-
-				// Index 0 is Unassigned (if hasUnassigned), use muted color
-				const isUnassignedBar = hasUnassigned && index === 0;
 
 				return {
 					value: hours,
 					itemStyle: {
-						color: isUnassignedBar ? mutedColor : normalColor
+						color: normalColor
 					}
 				};
 			});
@@ -274,8 +249,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					color: themeColors.foreground
 				},
 				axisLabel: {
-					color: '#999999',
-					interval: 0
+					interval: 0,
+					color: (value: string | number) => (value === 'Unassigned' ? (lightTheme ? 'rgba(0, 0, 0, 0.45)' : 'rgba(255, 255, 255, 0.5)') : '#999999')
 				},
 				axisLine: {
 					lineStyle: {

@@ -8,6 +8,14 @@ export const GlobalStyle = createGlobalStyle`
 
 	html, body {
 		background: linear-gradient(135deg, rgba(0, 0, 0, 0.01), rgba(50, 0, 80, 0.01));
+		margin: 0;
+		padding: 0;
+		height: 100%;
+		overflow: hidden;
+	}
+
+	#root {
+		height: 100%;
 	}
 
 	@keyframes spin {
@@ -32,11 +40,27 @@ export const Container = styled.div`
 	color: ${themeColors.foreground};
 	background-color: transparent;
 	margin: 0;
-	min-height: 100vh;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
 `;
 
 export const CenteredContainer = styled.div`
 	margin: 0 auto;
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	overflow: hidden;
+	width: 100%;
+`;
+
+export const StickyNav = styled.div`
+	flex-shrink: 0;
+	position: sticky;
+	top: 0;
+	z-index: 1;
+	background: var(--vscode-editor-background, transparent);
 `;
 
 export const SettingsContainer = styled.div`
@@ -80,7 +104,9 @@ export const SettingsTitle = styled.h1`
 // Content areas
 export const ContentArea = styled.div<{ noPaddingTop?: boolean }>`
 	padding: ${props => (props.noPaddingTop ? '0 0 10px' : '10px 0')};
-	min-height: 300px;
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
 `;
 
 export const SettingsContent = styled.div`

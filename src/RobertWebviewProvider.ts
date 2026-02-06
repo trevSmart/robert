@@ -62,6 +62,35 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		this.initializeCollaboration();
 	}
 
+	/**
+	 * Maps technical collaboration/HTTP errors to user-friendly messages for the UI.
+	 */
+	private getCollaborationErrorMessage(error: unknown): string {
+		const raw = error instanceof Error ? error.message : String(error);
+		if (/HTTP 502|502 Bad Gateway/i.test(raw)) {
+			return 'The collaboration server is not available. Check that the server is running and the URL is correct.';
+		}
+		if (/HTTP 503|503 Service Unavailable/i.test(raw)) {
+			return 'The collaboration service is temporarily unavailable. Try again later.';
+		}
+		if (/HTTP 504|504 Gateway Timeout/i.test(raw)) {
+			return 'The collaboration server took too long to respond. Try again later.';
+		}
+		if (/HTTP 404|404 Not Found/i.test(raw)) {
+			return 'The collaboration service was not found. Check the server URL.';
+		}
+		if (/fetch failed|ECONNREFUSED|ENOTFOUND|network/i.test(raw)) {
+			return 'Could not connect to the collaboration server. Check the URL and your network.';
+		}
+		if (/Collaboration server URL not configured/i.test(raw)) {
+			return 'Collaboration server URL is not set. Configure it in extension settings.';
+		}
+		if (/Rally User ID is required/i.test(raw)) {
+			return 'Rally user is required for collaboration. Ensure you are signed in to Rally.';
+		}
+		return raw || 'Something went wrong with the collaboration service.';
+	}
+
 	private async initializeCollaboration(): Promise<void> {
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			const settings = this._settingsManager.getSettings();
@@ -1187,11 +1216,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									});
 								}
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadCollaborationMessages');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1207,11 +1235,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									message: newMessage
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'createCollaborationMessage');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1245,13 +1272,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								});
 								vscode.window.showInformationMessage(`Support request sent for ${message.userStoryId}`);
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
+								const friendlyMessage = this.getCollaborationErrorMessage(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'requestUserStorySupport');
 								webview.postMessage({
 									command: 'supportRequestError',
-									error: errorMessage
+									error: friendlyMessage
 								});
-								vscode.window.showErrorMessage(`Failed to send support request: ${errorMessage}`);
+								vscode.window.showErrorMessage(`Failed to send support request: ${friendlyMessage}`);
 							}
 							break;
 						case 'createCollaborationMessageReply':
@@ -1266,11 +1293,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									reply
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'createCollaborationMessageReply');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1284,11 +1310,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									unreadCount: result.unreadCount
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadCollaborationNotifications');
 								webview.postMessage({
 									command: 'collaborationNotificationsError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1301,11 +1326,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									notificationId: message.notificationId
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markCollaborationNotificationAsRead');
 								webview.postMessage({
 									command: 'collaborationNotificationsError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1317,11 +1341,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									command: 'collaborationNotificationsMarkedAsRead'
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markAllCollaborationNotificationsAsRead');
 								webview.postMessage({
 									command: 'collaborationNotificationsError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1335,11 +1358,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									attendee
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'attendCollaborationMessage');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1352,11 +1374,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									messageId: message.messageId
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'unattendCollaborationMessage');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1369,11 +1390,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									messageId: message.messageId
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markCollaborationMessageAsRead');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1386,11 +1406,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									messageId: message.messageId
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'markCollaborationMessageAsUnread');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;
@@ -1403,11 +1422,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 									messageId: message.messageId
 								});
 							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'deleteCollaborationMessage');
 								webview.postMessage({
 									command: 'collaborationMessagesError',
-									error: errorMessage
+									error: this.getCollaborationErrorMessage(error)
 								});
 							}
 							break;

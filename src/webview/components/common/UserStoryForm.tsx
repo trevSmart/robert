@@ -191,20 +191,19 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			};
 			
 			const onMouseUp = () => {
+				// Nullify cleanup ref first to prevent double cleanup
+				cleanupRef.current = null;
 				// Perform cleanup directly when drag ends normally
 				document.removeEventListener('mousemove', onMouseMove);
 				document.removeEventListener('mouseup', onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
-				cleanupRef.current = null;
 			};
 			
 			document.addEventListener('mousemove', onMouseMove);
 			document.addEventListener('mouseup', onMouseUp);
 			
 			// Store cleanup function to be called on unmount or when new resize starts
-			// Note: This doesn't need to remove onMouseUp since it will be called from within onMouseUp
-			// or during cleanup before new handlers are attached
 			cleanupRef.current = () => {
 				document.removeEventListener('mousemove', onMouseMove);
 				document.removeEventListener('mouseup', onMouseUp);

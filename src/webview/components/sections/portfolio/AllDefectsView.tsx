@@ -6,30 +6,30 @@ import { logDebug } from '../../../utils/vscodeApi';
 import type { Defect } from '../../../../../types/rally';
 import type { PortfolioViewProps } from './types';
 
-const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _defectsError, _selectedDefect, currentScreen, _onLoadDefects, _onDefectSelected, _onBackToDefects, _defectsHasMore = false, _defectsLoadingMore = false, _onLoadMoreDefects }) => {
-	logDebug(`_onDefectSelected: ${JSON.stringify(_onDefectSelected)}, currentScreen: ${currentScreen}`, 'AllDefectsView');
+const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defectsError, selectedDefect, currentScreen, onLoadDefects, onDefectSelected, onBackToDefects, defectsHasMore = false, defectsLoadingMore = false, onLoadMoreDefects }) => {
+	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, currentScreen: ${currentScreen}`, 'AllDefectsView');
 	return (
 		<>
 			{currentScreen === 'defects' && (
 				<>
 					<ScreenHeader title="All Defects" />
 					<DefectsTable
-						defects={_defects as Defect[]}
-						loading={_defectsLoading}
-						error={_defectsError || undefined}
-						onLoadDefects={_onLoadDefects}
-						onDefectSelected={_onDefectSelected}
-						selectedDefect={_selectedDefect as Defect | null}
-						hasMore={_defectsHasMore}
-						onLoadMore={_onLoadMoreDefects}
-						loadingMore={_defectsLoadingMore}
+						defects={defects as Defect[]}
+						loading={defectsLoading}
+						error={defectsError || undefined}
+						onLoadDefects={onLoadDefects}
+						onDefectSelected={onDefectSelected}
+						selectedDefect={selectedDefect as Defect | null}
+						hasMore={defectsHasMore}
+						onLoadMore={onLoadMoreDefects}
+						loadingMore={defectsLoadingMore}
 					/>
 				</>
 			)}
-			{currentScreen === 'defectDetail' && _selectedDefect && (
+			{currentScreen === 'defectDetail' && selectedDefect && (
 				<>
-					<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
-					<DefectForm defect={_selectedDefect as Defect} />
+					<ScreenHeader title={`${selectedDefect.formattedId}: ${selectedDefect.name}`} showBackButton={true} onBack={onBackToDefects} />
+					<DefectForm defect={selectedDefect as Defect} />
 				</>
 			)}
 		</>

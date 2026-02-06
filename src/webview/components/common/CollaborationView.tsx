@@ -328,6 +328,35 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 	// This function renders message content with secure image handling.
 	// It only renders images from data: URIs to prevent tracking/data exfiltration risks.
 	// Remote URLs (https:) are rendered as plain text instead of auto-loading images.
+	const isSafeDataImageUrl = (url: string): boolean => {
+		// Basic normalization
+		const trimmed = url.trim();
+		if (!trimmed.toLowerCase().startsWith('data:')) {
+			return false;
+		}
+
+		// data:[<mediatype>][;base64],<data>
+		const afterScheme = trimmed.slice(5); // remove "data:"
+		const commaIndex = afterScheme.indexOf(',');
+		if (commaIndex === -1) {
+			return false;
+		}
+		const metadata = afterScheme.slice(0, commaIndex);
+		const [mediatypePart] = metadata.split(';', 1);
+		const mediatype = (mediatypePart || '').toLowerCase() || 'text/plain;charset=us-ascii';
+
+		// Allow only a small whitelist of image media types
+		const allowedImageTypes = [
+			'image/png',
+			'image/jpeg',
+			'image/jpg',
+			'image/gif',
+			'image/webp'
+		];
+
+		return allowedImageTypes.some(type => mediatype.startsWith(type));
+	};
+
 	const renderMessageContentSecure = (content: string): (string | JSX.Element)[] => {
 		const parts: (string | JSX.Element)[] = [];
 		const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
@@ -343,10 +372,10 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 			const imageUrl = match[2];
 			const trimmedUrl = imageUrl.trim();
 
-			// Only render images for safe URLs (restrict to data: URIs).
+			// Only render images for safe URLs (restrict to trusted data: image URIs).
 			// For other URLs, fall back to rendering the original markdown text
-			// to avoid auto-loading remote images in the webview.
-			if (trimmedUrl.toLowerCase().startsWith('data:')) {
+			// to avoid auto-loading remote or unsafe images in the webview.
+			if (isSafeDataImageUrl(trimmedUrl)) {
 				parts.push(
 					<img
 						key={`img-${match.index}`}

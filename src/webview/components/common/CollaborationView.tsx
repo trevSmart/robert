@@ -346,13 +346,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 		const mediatype = (mediatypePart || '').toLowerCase() || 'text/plain;charset=us-ascii';
 
 		// Allow only a small whitelist of image media types
-		const allowedImageTypes = [
-			'image/png',
-			'image/jpeg',
-			'image/jpg',
-			'image/gif',
-			'image/webp'
-		];
+		const allowedImageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/gif', 'image/webp'];
 
 		return allowedImageTypes.some(type => mediatype.startsWith(type));
 	};

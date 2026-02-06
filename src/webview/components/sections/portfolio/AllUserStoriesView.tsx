@@ -21,11 +21,11 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	tasksError,
 	userStoryDefects,
 	userStoryDefectsLoading,
-	_userStoryDefectsError,
+	userStoryDefectsError,
 	userStoryDiscussions,
 	userStoryDiscussionsLoading,
 	userStoryDiscussionsError,
-	_selectedDefect,
+	selectedDefect,
 	activeUserStoryTab,
 	currentScreen,
 	onLoadUserStories,
@@ -33,7 +33,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	onUserStorySelected,
 	onLoadTasks,
 	onLoadUserStoryDefects,
-	_onDefectSelected,
+	onDefectSelected,
 	onBackToUserStories,
 	onActiveUserStoryTabChange,
 	loadMoreUserStories
@@ -94,10 +94,10 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 					<DefectsTable
 						defects={userStoryDefects as Defect[]}
 						loading={userStoryDefectsLoading}
-						error={_userStoryDefectsError || undefined}
+						error={userStoryDefectsError || undefined}
 						onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
-						onDefectSelected={_onDefectSelected}
-						selectedDefect={_selectedDefect as Defect | null}
+						onDefectSelected={onDefectSelected}
+						selectedDefect={selectedDefect as Defect | null}
 					/>
 				)}
 				{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}

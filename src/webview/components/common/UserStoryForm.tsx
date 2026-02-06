@@ -173,6 +173,12 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const handleDescriptionResizeStart = useCallback(
 		(e: React.MouseEvent) => {
 			e.preventDefault();
+			
+			// Clean up any existing resize operation before starting a new one
+			if (cleanupRef.current) {
+				cleanupRef.current();
+			}
+			
 			resizeStartRef.current = { y: e.clientY, height: descriptionHeight };
 			document.body.style.cursor = 'ns-resize';
 			document.body.style.userSelect = 'none';
@@ -187,6 +193,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					// Call the cleanup function when drag ends normally
 					if (cleanupRef.current) {
 						cleanupRef.current();
+						cleanupRef.current = null;
 					}
 				}
 			};
@@ -200,7 +207,6 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				document.removeEventListener('mouseup', handlers.onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
-				cleanupRef.current = null;
 			};
 		},
 		[descriptionHeight]

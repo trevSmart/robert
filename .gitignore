@@ -46,6 +46,8 @@ jspm_packages/
 
 # dotenv environment variables file
 .env
+.env.local
+.env.*.local
 
 # IDE files
 .idea/
@@ -69,3 +71,24 @@ test-results/
 .claude/settings.local.json
 
 tmp/
+
+# Vite
+.vite/
+
+# Vitest
+.vitest/
+
+# Local databases
+*.db
+*.db-journal
+*.db-wal
+
+# Backup files
+*.backup
+*.bak
+
+# Salesforce CLI (local config and metadata cache)
+.sf/
+.sfdx/
+sfdx-project.json
+.forceignore

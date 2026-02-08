@@ -1,23 +1,18 @@
-# Robert
+# Salesforce DX Project: Next Steps
 
-Aquesta branca és un follow-up de 'vermell-tocino' amb 9 commits nous post-merge. PR oberta a main.
+Now that you’ve created a Salesforce DX project, what’s next? Here are some documentation resources to get you started.
 
-## Collaboration Feature
+## How Do You Plan to Deploy Your Changes?
 
-The Robert extension includes collaboration features that allow team members to communicate about Rally user stories in real-time.
+Do you want to deploy a set of changes, or create a self-contained application? Choose a [development model](https://developer.salesforce.com/tools/vscode/en/user-guide/development-models).
 
-### Using Collaboration Features
+## Configure Your Salesforce DX Project
 
-1. Open VS Code Settings (Cmd/Ctrl + ,)
-2. Search for "Robert Collaboration"
-3. Enable collaboration by setting `robert.collaboration.enabled` to `true`
-4. The extension will automatically connect to the collaboration server at `https://robert-8vdt.onrender.com`
+The `sfdx-project.json` file contains useful configuration information for your project. See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm) in the _Salesforce DX Developer Guide_ for details about this file.
 
-### Features
+## Read All About It
 
-- Real-time messaging on user stories
-- Message threads with replies
-- Notifications for new messages and updates
-- WebSocket support for instant updates
-
-For more information about the collaboration server, see [server/README.md](server/README.md).
+- [Salesforce Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
+- [Salesforce CLI Setup Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
+- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_intro.htm)
+- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/cli_reference.htm)

@@ -351,6 +351,49 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 		return allowedImageTypes.some(type => mediatype.startsWith(type));
 	};
 
+	/**
+	 * Strict allowlist for image URLs that can appear in markdown content.
+	 * Only permits data: URLs for common image types to avoid loading remote or unsafe content.
+	 */
+	const isSafeMarkdownImageUrl = (url: string): boolean => {
+		if (!url) {
+			return false;
+		}
+
+		const trimmed = url.trim();
+
+		// Enforce data:image/* prefix to disallow http/https/file/javascript/etc.
+		if (!trimmed.toLowerCase().startsWith('data:image/')) {
+			return false;
+		}
+
+		// Optionally restrict to a small set of common image media types.
+		// Example allowed prefixes: data:image/png, data:image/jpeg, data:image/gif, etc.
+		const allowedTypes = [
+			'data:image/png',
+			'data:image/jpeg',
+			'data:image/jpg',
+			'data:image/gif',
+			'data:image/webp',
+			'data:image/svg+xml'
+		];
+
+		const lower = trimmed.toLowerCase();
+		const matchesAllowedType = allowedTypes.some(prefix => lower.startsWith(prefix));
+		if (!matchesAllowedType) {
+			return false;
+		}
+
+		// Basic structure check for data URLs: must contain a comma separating metadata and data.
+		// For example: data:image/png;base64,.... or data:image/svg+xml,....
+		const commaIndex = trimmed.indexOf(',');
+		if (commaIndex === -1) {
+			return false;
+		}
+
+		return true;
+	};
+
 	const renderMessageContentSecure = (content: string): (string | JSX.Element)[] => {
 		const parts: (string | JSX.Element)[] = [];
 		const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
@@ -369,7 +412,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 			// Only render images for safe URLs (restrict to trusted data: image URIs).
 			// For other URLs, fall back to rendering the original markdown text
 			// to avoid auto-loading remote or unsafe images in the webview.
-			if (isSafeDataImageUrl(trimmedUrl)) {
+			if (isSafeMarkdownImageUrl(trimmedUrl)) {
 				parts.push(
 					<img
 						key={`img-${match.index}`}

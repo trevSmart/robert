@@ -394,6 +394,36 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 		return true;
 	};
 
+	/**
+	 * Returns a sanitized image URL if it is considered safe, otherwise null.
+	 * This performs strict validation of the URL's scheme to prevent XSS via
+	 * dangerous protocols such as javascript:, data:, file:, etc.
+	 */
+	const getSafeImageUrl = (url: string): string | null => {
+		const trimmed = url.trim();
+		if (!trimmed) {
+			return null;
+		}
+
+		let parsed: URL;
+		try {
+			// Use window.location.origin as base to safely handle relative URLs.
+			parsed = new URL(trimmed, window.location.origin);
+		} catch {
+			// Malformed URL
+			return null;
+		}
+
+		const protocol = parsed.protocol.toLowerCase();
+
+		// Allow only http/https. Disallow javascript:, data:, file:, etc.
+		if (protocol !== 'https:' && protocol !== 'http:') {
+			return null;
+		}
+
+		return parsed.toString();
+	};
+
 	const renderMessageContentSecure = (content: string): (string | JSX.Element)[] => {
 		const parts: (string | JSX.Element)[] = [];
 		const imageRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
@@ -409,14 +439,15 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 			const imageUrl = match[2];
 			const trimmedUrl = imageUrl.trim();
 
-			// Only render images for safe URLs (restrict to trusted data: image URIs).
+			// Only render images for safe URLs.
 			// For other URLs, fall back to rendering the original markdown text
 			// to avoid auto-loading remote or unsafe images in the webview.
-			if (isSafeMarkdownImageUrl(trimmedUrl)) {
+			const safeUrl = isSafeMarkdownImageUrl(trimmedUrl) ? getSafeImageUrl(trimmedUrl) : null;
+			if (safeUrl) {
 				parts.push(
 					<img
 						key={`img-${match.index}`}
-						src={trimmedUrl}
+						src={safeUrl}
 						alt={match[1] || 'Image'}
 						style={{
 							maxWidth: '100%',

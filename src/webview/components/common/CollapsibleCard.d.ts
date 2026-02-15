@@ -7,6 +7,7 @@ declare global {
 				React.HTMLAttributes<HTMLElement> & {
 					title?: string;
 					'default-collapsed'?: boolean;
+					'background-color'?: string;
 				},
 				HTMLElement
 			>;

@@ -37,6 +37,16 @@ import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 type SectionType = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 
+interface PortfolioViewConfig {
+	id: PortfolioViewType;
+	label: string;
+	icon: string;
+	description: string;
+	component: FC<PortfolioViewProps>;
+	dataLoader: () => Promise<void>;
+	stateCleaner: () => void;
+}
+
 interface PortfolioViewProps {
 	iterations: Iteration[];
 	iterationsLoading: boolean;
@@ -459,12 +469,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const hasVsCodeApi = Boolean(vscode);
 
 	const sendMessage = useCallback(
-		(message: Record<string, unknown>) => {
+		(command: string | Record<string, unknown>, data?: any) => {
 			if (!vscode) {
 				return;
 			}
 
-			const payload: Record<string, unknown> = { ...message };
+			let payload: Record<string, unknown>;
+
+			// Handle both signatures: (message: Record<string, unknown>) and (command: string, data?: any)
+			if (typeof command === 'string') {
+				payload = { command, ...(data !== undefined && { data }) };
+			} else {
+				payload = command;
+			}
+
 			if (!payload.webviewId) {
 				payload.webviewId = webviewId;
 			}
@@ -791,10 +809,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				bySprints: () => {
 					setSelectedIteration(null);
 					setCurrentScreen('iterations');
+					setSelectedUserStory(null);
 				},
 				allUserStories: () => {
 					setSelectedIteration(null);
 					setCurrentScreen('allUserStories');
+					setSelectedUserStory(null);
 				},
 				allDefects: () => {
 					setCurrentScreen('defects');
@@ -1242,10 +1262,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 								// Calculate blocked distribution for the same sprint
 								const blockedDistrib = groupByBlockedStatus(message.userStories);
 								setBlockedDistribution(blockedDistrib);
-
-								setStateDistributionLoading(false);
 							}
 						}
+						// Always disable loading for state distribution since we requested it
+						setStateDistributionLoading(false);
 					} else {
 						// Portfolio All User Stories context - update portfolio state
 						setPortfolioUserStoriesLoading(false);
@@ -1260,7 +1280,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							setPortfolioUserStoriesOffset((message.offset || 0) + (message.userStories?.length || 0));
 							setUserStoriesError(null);
 							// Assegura que la pantalla es correcta quan es carreguen totes les user stories
-							if (portfolioActiveViewType === 'allUserStories') {
+							if (portfolioActiveViewType === 'allUserStories' && currentScreen !== 'userStoryDetail') {
 								setCurrentScreen('allUserStories');
 							}
 						}
@@ -1404,21 +1424,21 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						setSelectedUserStory(message.userStory);
 						setActiveSection('portfolio');
 						setCurrentScreen('userStoryDetail');
-						setActiveViewType('bySprints');
+						setActiveSubTabBySection(prev => ({ ...prev, portfolio: 'allUserStories' }));
 						loadTasks(message.userStory.objectId);
 						const tab = pendingSearchUserStoryTabRef.current;
 						if (tab) {
 							setActiveUserStoryTab(tab);
 							pendingSearchUserStoryTabRef.current = null;
 						}
-						loadIterations();
+						loadAllUserStories();
 					}
 					break;
 				case 'defectByObjectIdLoaded':
 					if (message.defect) {
 						setSelectedDefect(message.defect);
 						setActiveSection('portfolio');
-						setActiveViewType('allDefects');
+						setActiveSubTabBySection(prev => ({ ...prev, portfolio: 'allDefects' }));
 						setCurrentScreen('defectDetail');
 						loadIterations();
 						loadAllDefects();
@@ -1587,14 +1607,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		(async () => {
 			try {
 				setStateDistributionLoading(true);
-				let targetIteration = null;
+				let targetIteration: Iteration | null = null;
 				let displayName = 'Next Sprint';
 
 				if (selectedReadinessSprint === 'next') {
 					targetIteration = findNextIteration(iterations);
 				} else {
 					// Find the iteration by name
-					targetIteration = iterations.find(it => it.name === selectedReadinessSprint);
+					targetIteration = iterations.find(it => it.name === selectedReadinessSprint) || null;
 				}
 
 				if (targetIteration) {

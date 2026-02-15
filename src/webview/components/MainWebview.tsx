@@ -1048,12 +1048,136 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Only run once on mount
 
+	// Helper function to reset all state to initial values
+	const resetAllState = useCallback(() => {
+		// Reset navigation
+		setActiveSection('calendar');
+		setCurrentScreen('iterations');
+		setActiveSubTabBySection({ portfolio: 'bySprints' });
+		setCalendarDate(new Date());
+
+		// Reset iterations
+		setIterations([]);
+		setIterationsLoading(false);
+		setIterationsError(null);
+		setSelectedIteration(null);
+
+		// Reset user stories
+		setUserStories([]);
+		setUserStoriesLoading(false);
+		setUserStoriesError(null);
+		setSelectedUserStory(null);
+		setUserStoriesOffset(0);
+		setUserStoriesHasMore(false);
+		setUserStoriesLoadingMore(false);
+
+		// Reset portfolio user stories
+		setPortfolioUserStories([]);
+		setPortfolioUserStoriesOffset(0);
+		setPortfolioUserStoriesHasMore(false);
+		setPortfolioUserStoriesLoading(false);
+		setPortfolioUserStoriesLoadingMore(false);
+
+		// Reset sprint user stories
+		setSprintUserStories([]);
+		setSprintUserStoriesLoading(false);
+
+		// Reset tasks
+		setTasks([]);
+		setTasksLoading(false);
+		setTasksError(null);
+		setActiveUserStoryTab('tasks');
+
+		// Reset defects
+		setDefects([]);
+		setDefectsLoading(false);
+		setDefectsError(null);
+		setSelectedDefect(null);
+		setDefectsOffset(0);
+		setDefectsHasMore(false);
+		setDefectsLoadingMore(false);
+
+		// Reset user story defects
+		setUserStoryDefects([]);
+		setUserStoryDefectsLoading(false);
+		setUserStoryDefectsError(null);
+
+		// Reset discussions
+		setUserStoryDiscussions([]);
+		setUserStoryDiscussionsLoading(false);
+		setUserStoryDiscussionsError(null);
+
+		// Reset test cases
+		setUserStoryTestCases([]);
+		setUserStoryTestCasesLoading(false);
+		setUserStoryTestCasesError(null);
+
+		// Reset collaboration
+		setCollaborationHelpRequestsCount(0);
+
+		// Reset team members
+		setTeamMembers([]);
+		setTeamMembersLoading(false);
+		setTeamMembersError(null);
+		setSelectedTeamIteration('current');
+
+		// Reset metrics
+		setMetricsLoading(false);
+		setVelocityData([]);
+		setVelocityLoading(false);
+		setStateDistribution([]);
+		setStateDistributionLoading(false);
+		setNextSprintName('Next Sprint');
+		setSelectedReadinessSprint('next');
+		setBlockedDistribution([]);
+		setDefectsBySeverity([]);
+		setDefectsBySeverityLoading(false);
+		setAverageVelocity(0);
+		setCompletedPoints(0);
+		setWip(0);
+		setBlockedItems(0);
+
+		// Reset search
+		setGlobalSearchTerm('');
+		setGlobalSearchResults([]);
+		setGlobalSearchLoading(false);
+		setGlobalSearchError(null);
+
+		// Reset other state
+		setDebugMode(false);
+		setCurrentUser(null);
+		setHolidays([]);
+		setSelectedTutorial(null);
+		setShowTutorial(false);
+
+		// Clear all refs
+		hasLoadedPortfolioIterations.current = false;
+		hasLoadedCalendarIterations.current = false;
+		loadedViews.current.clear();
+		attemptedUserStoryDefects.current.clear();
+		attemptedUserStoryDiscussions.current.clear();
+		attemptedUserStoryTests.current.clear();
+		hasLoadedVelocityDataForMetrics.current = false;
+		pendingSearchUserStoryTabRef.current = null;
+
+		logDebug('All state reset complete', 'MainWebview.resetAllState');
+	}, []);
+
 	// Handle messages from extension
 	useEffect(() => {
 		const handleMessage = (event: MessageEvent) => {
 			const message = event.data;
 
 			switch (message.command) {
+				case 'refresh':
+					logDebug('Received refresh command from extension', 'MainWebview.handleMessage');
+					// Reset all state to initial values
+					resetAllState();
+					// Reload iterations to populate the initial view
+					setTimeout(() => {
+						loadIterations();
+					}, 100);
+					break;
 				case 'showLogo':
 					// Handle logo display if needed
 					break;
@@ -1386,7 +1510,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, iterations]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, iterations, resetAllState]); // Only include dependencies needed by handleMessage
 
 	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
 	useEffect(() => {

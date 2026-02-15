@@ -369,14 +369,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 
 		// Optionally restrict to a small set of common image media types.
 		// Example allowed prefixes: data:image/png, data:image/jpeg, data:image/gif, etc.
-		const allowedTypes = [
-			'data:image/png',
-			'data:image/jpeg',
-			'data:image/jpg',
-			'data:image/gif',
-			'data:image/webp',
-			'data:image/svg+xml'
-		];
+		const allowedTypes = ['data:image/png', 'data:image/jpeg', 'data:image/jpg', 'data:image/gif', 'data:image/webp', 'data:image/svg+xml'];
 
 		const lower = trimmed.toLowerCase();
 		const matchesAllowedType = allowedTypes.some(prefix => lower.startsWith(prefix));

@@ -1806,7 +1806,6 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 					// Add assignee if it exists and is not "Unassigned"
 					if (userStory.assignee && userStory.assignee !== 'Unassigned') {
 						assigneeSet.add(userStory.assignee);
-						errorHandler.logInfo(`Added assignee: ${userStory.assignee} (from ${userStory.formattedId})`, 'rallyServices.getRecentTeamMembers');
 					}
 				}
 			}

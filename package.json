@@ -255,7 +255,7 @@
 		"react-dnd-html5-backend": "^16.0.1",
 		"react-dom": "^19.2.4",
 		"striptags": "^3.2.0",
-		"styled-components": "^6.3.8",
+		"styled-components": "^6.3.9",
 		"vite": "^7.3.0",
 		"vscrui": "^0.3.0"
 	}

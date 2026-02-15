@@ -121,5 +121,8 @@
 	"biome.requireConfiguration": true,
 	"editor.codeActionsOnSave": {
 		"source.fixAll": "explicit"
+	},
+	"[typescriptreact]": {
+		"editor.defaultFormatter": "vscode.typescript-language-features"
 	}
 }

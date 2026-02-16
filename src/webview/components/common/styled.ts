@@ -262,3 +262,28 @@ export const LogoDescription = styled.p`
 	color: ${themeColors.descriptionForeground};
 	line-height: 1.4;
 `;
+
+// Loading spinner
+export const SpinnerContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	gap: 16px;
+`;
+
+export const Spinner = styled.div`
+	width: 24px;
+	height: 24px;
+	border: 2px solid var(--vscode-panel-border);
+	border-top: 2px solid var(--vscode-progressBar-background);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+`;
+
+export const LoadingText = styled.div`
+	font-size: 13px;
+	color: ${themeColors.descriptionForeground};
+	text-align: center;
+`;

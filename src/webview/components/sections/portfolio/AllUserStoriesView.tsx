@@ -38,7 +38,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	onActiveUserStoryTabChange,
 	loadMoreUserStories
 }) => (
-	<>
+	<div style={{ padding: '0 20px' }}>
 		{currentScreen === 'allUserStories' && !selectedUserStory && (
 			<>
 				<ScreenHeader title="All User Stories" />
@@ -103,7 +103,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 				{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
 			</>
 		)}
-	</>
+	</div>
 );
 
 export default AllUserStoriesView;

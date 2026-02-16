@@ -9,7 +9,7 @@ import type { PortfolioViewProps } from './types';
 const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defectsError, selectedDefect, currentScreen, onLoadDefects, onDefectSelected, onBackToDefects, defectsHasMore = false, defectsLoadingMore = false, onLoadMoreDefects }) => {
 	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, currentScreen: ${currentScreen}`, 'AllDefectsView');
 	return (
-		<>
+		<div style={{ padding: '0 20px' }}>
 			{currentScreen === 'defects' && (
 				<>
 					<ScreenHeader title="All Defects" />
@@ -32,7 +32,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defec
 					<DefectForm defect={selectedDefect as Defect} />
 				</>
 			)}
-		</>
+		</div>
 	);
 };
 

@@ -225,7 +225,7 @@
 		"@types/vscode": "^1.64.0",
 		"@typescript-eslint/eslint-plugin": "^8.54.0",
 		"@typescript-eslint/parser": "^8.54.0",
-		"@vitejs/plugin-react": "^5.1.2",
+		"@vitejs/plugin-react": "^5.1.4",
 		"@vitest/ui": "^4.0.18",
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
@@ -245,7 +245,7 @@
 	"dependencies": {
 		"@types/react-dnd": "^3.0.2",
 		"@types/react-dom": "^19.2.3",
-		"@vitejs/plugin-react": "^5.1.2",
+		"@vitejs/plugin-react": "^5.1.4",
 		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",
 		"ibm-rally-node": "^0.0.17",

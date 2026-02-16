@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.2.40",
+	"version": "0.2.41",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -243,18 +243,12 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
-		"@types/react-dnd": "^3.0.2",
-		"@types/react-dom": "^19.2.3",
-		"@vitejs/plugin-react": "^5.1.4",
 		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",
 		"ibm-rally-node": "^0.0.17",
 		"node-fetch": "^3.3.2",
 		"react": "^19.2.4",
-		"react-dnd": "^16.0.1",
-		"react-dnd-html5-backend": "^16.0.1",
 		"react-dom": "^19.2.4",
-		"striptags": "^3.2.0",
 		"styled-components": "^6.3.9",
 		"vite": "^7.3.0",
 		"vscrui": "^0.3.0"

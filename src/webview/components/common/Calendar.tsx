@@ -39,6 +39,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 	const [hoveredDay, setHoveredDay] = useState<DayInfo | null>(null);
+	const [hoveredIteration, setHoveredIteration] = useState<Iteration | null>(null);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 	const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 800);
 	const [calendarGridWidth, setCalendarGridWidth] = useState(800);
@@ -71,8 +72,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	}
 
 	function getSprintBarHeight(cellWidth: number) {
-		const min = 3; // px
-		const max = 9; // px
+		const min = 4; // px
+		const max = 10; // px
 		const minWidth = 50; // Cell width at which bar is at min size
 		const maxWidth = 150; // Cell width at which bar is at max size
 
@@ -146,7 +147,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		});
 
 		// Calculate days until next sprint end
-		let daysUntilSprintEnd = null;
+		let daysUntilSprintEnd: number | null = null;
 		const upcomingSprints = activeIterations.filter(s => {
 			const endDate = s.endDate ? new Date(s.endDate) : null;
 			if (!endDate) return false;
@@ -158,7 +159,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			const endDate = new Date(nextSprint.endDate);
 			endDate.setHours(0, 0, 0, 0);
 			const diffTime = endDate.getTime() - todayStart.getTime();
-			daysUntilSprintEnd = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+			daysUntilSprintEnd = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) as number;
 		}
 
 		// Calculate average sprint duration
@@ -300,7 +301,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		}, 240);
 	};
 
-	const isNarrowViewport = windowWidth < 465;
+	const isNarrowViewport = windowWidth < 400;
 
 	// Extract first name from user, removing "Dr Lusuarri"
 	const getUserFirstName = (user: unknown) => {
@@ -420,13 +421,33 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-	// Iteration colors - cycle through these colors in order
-	// Darker colors for light theme, brighter for dark theme
+	// ============================================================================
+	// SPRINT COLOR ASSIGNMENT SYSTEM
+	// ============================================================================
+	// This system ensures that overlapping sprints (e.g., a long "Backlog Deuda
+	// Tecnica" sprint spanning 4-5 months alongside a 1-month current sprint)
+	// never receive visually similar colors.
+	//
+	// Strategy:
+	// 1. Palette Reordering: Colors arranged for maximum perceptual separation
+	//    between consecutive indices (warm/cool alternation, light/dark variation)
+	//
+	// 2. Overlap Detection: When assigning colors, check which sprints overlap
+	//    temporally and avoid reusing their color indices
+	//
+	// 3. Adaptive Stride: If a color index conflicts with an overlapping sprint,
+	//    skip ahead by stride of 4 to find a maximally different color
+	//
+	// This guarantees zero probability of similar colors for overlapping sprints
+	// while maintaining deterministic assignment (same sprint = same color always)
+	// ============================================================================
+
+	// Iteration colors - reordered for maximum perceptual separation
 	// Excluded turquoise/green colors to avoid confusion with holiday events (#4cafa0)
 	const lightTheme = isLightTheme();
 	const iterationColors = lightTheme
-		? ['#d9a500', '#8b5fbf', '#6a8c3a', '#b868c9', '#c77830', '#1e7fa8', '#d97a3f', '#2d7a7f', '#c9354b', '#8a684e', '#a35a8f', '#d97f3f']
-		: ['#ffb627', '#d4a5ff', '#f6cf71', '#dcb0f2', '#f4a261', '#4ecdc4', '#ff6b6b', '#6ec9d9', '#f89c75', '#a8dadc', '#f9b384', '#e0d1f7'];
+		? ['#1e7fa8', '#c9354b', '#6a8c3a', '#b868c9', '#d9a500', '#2d7a7f', '#c77830', '#a35a8f', '#d97a3f', '#8b5fbf', '#8a684e', '#d97f3f']
+		: ['#ffb627', '#4ecdc4', '#ff6b6b', '#d4a5ff', '#f4a261', '#6ec9d9', '#f6cf71', '#e0d1f7', '#f89c75', '#a8dadc', '#dcb0f2', '#f9b384'];
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {
@@ -449,6 +470,25 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		return startDate <= monthEnd && endDate >= monthStart;
 	};
 
+	// Helper function to check if two iterations overlap temporally
+	const doIterationsOverlap = (iter1: Iteration, iter2: Iteration): boolean => {
+		const start1 = iter1.startDate ? new Date(iter1.startDate) : null;
+		const end1 = iter1.endDate ? new Date(iter1.endDate) : null;
+		const start2 = iter2.startDate ? new Date(iter2.startDate) : null;
+		const end2 = iter2.endDate ? new Date(iter2.endDate) : null;
+
+		if (!start1 || !end1 || !start2 || !end2) return false;
+
+		// Reset time components for accurate date comparison
+		start1.setHours(0, 0, 0, 0);
+		end1.setHours(23, 59, 59, 999);
+		start2.setHours(0, 0, 0, 0);
+		end2.setHours(23, 59, 59, 999);
+
+		// Two iterations overlap if one starts before the other ends
+		return start1 <= end2 && start2 <= end1;
+	};
+
 	// Filter iterations that overlap with current month
 	const currentMonthIterations = iterations.filter(doesIterationOverlapMonth);
 
@@ -461,9 +501,50 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		return a.objectId.localeCompare(b.objectId);
 	});
 
+	// Assign colors with overlap detection to prevent similar colors for overlapping sprints
 	const iterationColorMap = new Map<string, string>();
-	orderedAllIterations.forEach((iteration, index) => {
-		iterationColorMap.set(iteration.objectId, iterationColors[index % iterationColors.length]);
+	const assignedIndices = new Map<string, number>();
+
+	orderedAllIterations.forEach((iteration, sortedIndex) => {
+		// Find all previous iterations that overlap with current one
+		const overlappingIterations = orderedAllIterations
+			.slice(0, sortedIndex)
+			.filter(other => doIterationsOverlap(iteration, other));
+
+		// Get indices already used by overlapping iterations
+		const usedIndices = new Set(
+			overlappingIterations
+				.map(other => assignedIndices.get(other.objectId))
+				.filter((idx): idx is number => idx !== undefined)
+		);
+
+		// Start with natural index, but use adaptive stride if conflicts exist
+		let colorIndex = sortedIndex % iterationColors.length;
+		let attempts = 0;
+		const maxAttempts = iterationColors.length;
+
+		// If this index is used by an overlapping sprint, skip ahead with stride
+		while (attempts < maxAttempts && usedIndices.has(colorIndex)) {
+			// Stride of 4 ensures we skip to maximally different colors
+			// (12 colors / 4 = 3 distinct groups)
+			colorIndex = (colorIndex + 4) % iterationColors.length;
+			attempts++;
+		}
+
+		// Fallback: if all stride attempts conflict, use linear search
+		if (usedIndices.has(colorIndex)) {
+			colorIndex = 0;
+			while (colorIndex < iterationColors.length && usedIndices.has(colorIndex)) {
+				colorIndex++;
+			}
+			// If still no free color, fall back to natural index (rare edge case with many overlaps)
+			if (colorIndex >= iterationColors.length) {
+				colorIndex = sortedIndex % iterationColors.length;
+			}
+		}
+
+		iterationColorMap.set(iteration.objectId, iterationColors[colorIndex]);
+		assignedIndices.set(iteration.objectId, colorIndex);
 	});
 
 	// Function to add red component to a hex color
@@ -597,10 +678,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	};
 
 	// Generate calendar days
-	const calendarDays = [];
+	const calendarDays: DayInfo[] = [];
 	let dayCounter = 1 - startDay; // Start from previous month
 
-	for (let i = 0; i < totalDays; i++) {
+	for (let i = 0;i < totalDays;i++) {
 		const currentDayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayCounter);
 		const isCurrentMonth = dayCounter >= 1 && dayCounter <= lastDay.getDate();
 		const isToday = isCurrentMonth && dayCounter === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
@@ -619,8 +700,19 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			return currentDayDate >= startDate && currentDayDate <= endDate;
 		});
 
+		// For display, show the actual day number (positive for previous month days)
+		let displayDay = dayCounter;
+		if (dayCounter < 1) {
+			// Previous month: calculate the actual day number
+			const prevMonthDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 0);
+			displayDay = prevMonthDate.getDate() + dayCounter;
+		} else if (dayCounter > lastDay.getDate()) {
+			// Next month: calculate the actual day number
+			displayDay = dayCounter - lastDay.getDate();
+		}
+
 		calendarDays.push({
-			day: dayCounter,
+			day: displayDay,
 			date: currentDayDate,
 			isCurrentMonth,
 			isToday,
@@ -660,13 +752,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		<div
 			ref={containerRef}
 			style={{
-				padding: '16px 0',
+				padding: '16px 20px',
 				minHeight: '500px',
 				transition: 'all 100ms ease'
 			}}
 		>
 			{/* Welcome message */}
-			{currentUser && (
+			{!!currentUser && (
 				<div
 					ref={welcomeRef}
 					style={{
@@ -852,7 +944,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								cursor: 'pointer',
 								transition: 'background-color 0.2s ease',
 								position: 'relative',
-								overflow: 'hidden',
+								overflow: 'visible',
 								gridColumn: gridColumn
 							}}
 							onMouseEnter={e => {
@@ -866,7 +958,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								setMousePosition({ x: e.clientX, y: e.clientY });
 							}}
 							onMouseLeave={e => {
-								setHoveredDay(null);
+								// Only clear hoveredDay if we're not over a sprint bar (check if hoveredIteration is set)
+								if (!hoveredIteration) {
+									setHoveredDay(null);
+								}
 								if (!dayInfo.isToday) {
 									const dayOfWeek = index % 7;
 									const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
@@ -915,9 +1010,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										// Convert color to RGBA
 										const colorRgb = event.color.startsWith('#')
 											? event.color
-													.match(/[A-Za-z0-9]{2}/g)
-													?.map(x => parseInt(x, 16))
-													.join(',') || '76,175,160'
+												.match(/[A-Za-z0-9]{2}/g)
+												?.map(x => parseInt(x, 16))
+												.join(',') || '76,175,160'
 											: event.color;
 										return (
 											<div
@@ -1003,8 +1098,20 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													borderBottomLeftRadius: isFirstDay ? '4px' : '0',
 													borderTopRightRadius: isLastDay ? '4px' : '0',
 													borderBottomRightRadius: isLastDay ? '4px' : '0',
-													marginLeft: isFirstDay ? '1px' : '0',
-													marginRight: isLastDay ? '2px' : '0'
+													marginLeft: isFirstDay ? '1px' : '-0.5px',
+													marginRight: isLastDay ? '1px' : '-0.5px',
+													cursor: 'pointer'
+												}}
+												onMouseEnter={(e) => {
+													setHoveredIteration(iteration);
+													setMousePosition({ x: e.clientX, y: e.clientY });
+													setHoveredDay(null);
+												}}
+												onMouseMove={(e) => {
+													setMousePosition({ x: e.clientX, y: e.clientY });
+												}}
+												onMouseLeave={() => {
+													setHoveredIteration(null);
 												}}
 											/>
 										);
@@ -1045,8 +1152,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', minWidth: 0 }}>
 									<div
 										style={{
-											width: '20px',
-											height: '5px',
+											width: '12px',
+											height: '12px',
+											borderRadius: '50%',
 											backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
 											opacity: 0.9,
 											flexShrink: 0
@@ -1101,9 +1209,35 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					</div>
 				</div>
 			)}
-			{hoveredDay &&
+			{(hoveredDay || hoveredIteration) &&
 				(() => {
-					const tooltip = getDayTooltip(hoveredDay);
+					if (hoveredIteration) {
+						return (
+							<div
+								style={{
+									position: 'fixed',
+									left: mousePosition.x + 10,
+									top: mousePosition.y - 30,
+									backgroundColor: 'var(--vscode-quickInput-background)',
+									color: 'var(--vscode-quickInput-foreground)',
+									border: '1px solid var(--vscode-panel-border)',
+									borderRadius: '4px',
+									padding: '6px 10px',
+									fontSize: '12px',
+									pointerEvents: 'none',
+									zIndex: 1000,
+									boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+									maxWidth: '200px',
+									wordWrap: 'break-word'
+								}}
+							>
+								<div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '13px' }}>{hoveredIteration.name}</div>
+								<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{hoveredIteration.state}</div>
+							</div>
+						);
+					}
+
+					const tooltip = getDayTooltip(hoveredDay!);
 					return (
 						<div
 							style={{

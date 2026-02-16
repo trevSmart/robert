@@ -52,7 +52,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	onActiveUserStoryTabChange
 }) => {
 	return (
-		<>
+		<div style={{ padding: '0 20px' }}>
 			{currentScreen === 'iterations' && (
 				<>
 					<ScreenHeader title="Sprints" />
@@ -129,7 +129,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 					{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
 				</>
 			)}
-		</>
+		</div>
 	);
 };
 

@@ -28,7 +28,7 @@ declare global {
 				'default-collapsed'?: boolean;
 				'background-color'?: string;
 				children?: React.ReactNode;
-				[key: string]: any;
+				[key: string]: unknown;
 			};
 		}
 	}

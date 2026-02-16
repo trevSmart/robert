@@ -30,7 +30,7 @@ import type { Holiday } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 
-import { CenteredContainer, Container, ContentArea, GlobalStyle, StickyNav } from './common/styled';
+import { CenteredContainer, Container, ContentArea, GlobalStyle, StickyNav, SpinnerContainer, Spinner, LoadingText } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
@@ -1855,7 +1855,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							onOpenResult={openSearchResult}
 						/>
 					)}
-					{activeSection === 'calendar' && <CalendarSection currentDate={calendarDate} iterations={iterations} userStories={userStories} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromCalendar} />}
+					{activeSection === 'calendar' && (
+						<>
+							{iterationsLoading && iterations.length === 0 ? (
+								<SpinnerContainer>
+									<Spinner />
+									<LoadingText>Loading sprints...</LoadingText>
+								</SpinnerContainer>
+							) : (
+								<CalendarSection currentDate={calendarDate} iterations={iterations} userStories={userStories} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromCalendar} />
+							)}
+						</>
+					)}
 
 					{activeSection === 'team' && (
 						<TeamSection

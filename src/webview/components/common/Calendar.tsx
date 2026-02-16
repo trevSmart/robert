@@ -507,16 +507,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	orderedAllIterations.forEach((iteration, sortedIndex) => {
 		// Find all previous iterations that overlap with current one
-		const overlappingIterations = orderedAllIterations
-			.slice(0, sortedIndex)
-			.filter(other => doIterationsOverlap(iteration, other));
+		const overlappingIterations = orderedAllIterations.slice(0, sortedIndex).filter(other => doIterationsOverlap(iteration, other));
 
 		// Get indices already used by overlapping iterations
-		const usedIndices = new Set(
-			overlappingIterations
-				.map(other => assignedIndices.get(other.objectId))
-				.filter((idx): idx is number => idx !== undefined)
-		);
+		const usedIndices = new Set(overlappingIterations.map(other => assignedIndices.get(other.objectId)).filter((idx): idx is number => idx !== undefined));
 
 		// Start with natural index, but use adaptive stride if conflicts exist
 		let colorIndex = sortedIndex % iterationColors.length;
@@ -681,7 +675,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const calendarDays: DayInfo[] = [];
 	let dayCounter = 1 - startDay; // Start from previous month
 
-	for (let i = 0;i < totalDays;i++) {
+	for (let i = 0; i < totalDays; i++) {
 		const currentDayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayCounter);
 		const isCurrentMonth = dayCounter >= 1 && dayCounter <= lastDay.getDate();
 		const isToday = isCurrentMonth && dayCounter === today.getDate() && currentDate.getMonth() === today.getMonth() && currentDate.getFullYear() === today.getFullYear();
@@ -1010,9 +1004,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										// Convert color to RGBA
 										const colorRgb = event.color.startsWith('#')
 											? event.color
-												.match(/[A-Za-z0-9]{2}/g)
-												?.map(x => parseInt(x, 16))
-												.join(',') || '76,175,160'
+													.match(/[A-Za-z0-9]{2}/g)
+													?.map(x => parseInt(x, 16))
+													.join(',') || '76,175,160'
 											: event.color;
 										return (
 											<div
@@ -1102,12 +1096,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													marginRight: isLastDay ? '1px' : '-0.5px',
 													cursor: 'pointer'
 												}}
-												onMouseEnter={(e) => {
+												onMouseEnter={e => {
 													setHoveredIteration(iteration);
 													setMousePosition({ x: e.clientX, y: e.clientY });
 													setHoveredDay(null);
 												}}
-												onMouseMove={(e) => {
+												onMouseMove={e => {
 													setMousePosition({ x: e.clientX, y: e.clientY });
 												}}
 												onMouseLeave={() => {

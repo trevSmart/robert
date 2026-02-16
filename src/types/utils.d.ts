@@ -26,5 +26,5 @@ export interface DayEvent {
 	tooltip: string;
 	color: string; // Hex color code
 	opacity: number; // 0-1 transparency level
-	data?: Holiday | Record<string, unknown>; // Original data object (Holiday, Iteration, etc)
+	data?: Holiday | Record<string, unknown> | unknown; // Original data object (Holiday, Iteration, etc)
 }

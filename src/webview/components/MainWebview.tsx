@@ -18,7 +18,7 @@ import SprintDetailsForm from './common/SprintDetailsForm';
 import AssigneeHoursChart from './common/AssigneeHoursChart';
 import './common/CollapsibleCard';
 import CollaborationSection from './sections/CollaborationSection';
-import CalendarSection from './sections/CalendarSection';
+import HomeSection from './sections/HomeSection';
 import LibrarySection, { type Tutorial } from './sections/LibrarySection';
 import PortfolioSection, { type PortfolioViewType } from './sections/PortfolioSection';
 import MetricsSection from './sections/MetricsSection';
@@ -34,7 +34,7 @@ import { CenteredContainer, Container, ContentArea, GlobalStyle, StickyNav, Spin
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
-type SectionType = 'search' | 'calendar' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
+type SectionType = 'search' | 'home' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 
 interface PortfolioViewConfig {
@@ -599,18 +599,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const searchInputRef = useRef<HTMLInputElement>(null);
 
 	// Navigation state
-	const [activeSection, setActiveSection] = useState<SectionType>('calendar');
+	const [activeSection, setActiveSection] = useState<SectionType>('home');
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
 	const [activeSubTabBySection, setActiveSubTabBySection] = useState<Partial<Record<SectionType, string>>>({ portfolio: 'bySprints' });
-	const [calendarDate, setCalendarDate] = useState(new Date());
+	const [homeDate, setHomeDate] = useState(new Date());
 
 	const portfolioActiveViewType = (activeSubTabBySection['portfolio'] ?? 'bySprints') as PortfolioViewType;
 
 	// Track if we've already loaded iterations for portfolio to avoid cascading renders
 	const hasLoadedPortfolioIterations = useRef(false);
 
-	// Track if we've already loaded iterations for calendar to avoid cascading renders
-	const hasLoadedCalendarIterations = useRef(false);
+	// Track if we've already loaded iterations for home to avoid cascading renders
+	const hasLoadedHomeIterations = useRef(false);
 
 	// Track if this is the first time navigating to portfolio section
 	// (should auto-navigate to detail; subsequent times stay on list)
@@ -866,7 +866,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		[loadUserStories]
 	);
 
-	const handleIterationClickFromCalendar = useCallback(
+	const handleIterationClickFromHome = useCallback(
 		(iteration: Iteration) => {
 			setActiveSection('portfolio');
 			handleIterationSelected(iteration);
@@ -930,7 +930,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
 			setActiveSection(section);
-			if (section === 'portfolio' || section === 'calendar') {
+			if (section === 'portfolio' || section === 'home') {
 				// Load iterations only if we don't already have them and we're not already loading / in error
 				if (!iterations.length && !iterationsLoading && !iterationsError) {
 					loadIterations();
@@ -1061,11 +1061,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			command: 'getState'
 		});
 
-		// Load iterations for calendar section on initial mount
-		// Since activeSection defaults to 'calendar', we should load iterations immediately
+		// Load iterations for home section on initial mount
+		// Since activeSection defaults to 'home', we should load iterations immediately
 		setTimeout(() => {
-			if (!hasLoadedCalendarIterations.current) {
-				hasLoadedCalendarIterations.current = true;
+			if (!hasLoadedHomeIterations.current) {
+				hasLoadedHomeIterations.current = true;
 				loadIterations();
 			}
 		}, 200); // Small delay to ensure webview is fully initialized
@@ -1075,10 +1075,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	// Helper function to reset all state to initial values
 	const resetAllState = useCallback(() => {
 		// Reset navigation
-		setActiveSection('calendar');
+		setActiveSection('home');
 		setCurrentScreen('iterations');
 		setActiveSubTabBySection({ portfolio: 'bySprints' });
-		setCalendarDate(new Date());
+		setHomeDate(new Date());
 
 		// Reset iterations
 		setIterations([]);
@@ -1176,7 +1176,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 		// Clear all refs
 		hasLoadedPortfolioIterations.current = false;
-		hasLoadedCalendarIterations.current = false;
+		hasLoadedHomeIterations.current = false;
 		isFirstPortfolioNavigation.current = true;
 		loadedViews.current.clear();
 		attemptedUserStoryDefects.current.clear();
@@ -1490,7 +1490,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							selectedDefectId?: string;
 							activeUserStoryTab?: 'tasks' | 'tests' | 'defects' | 'discussions';
 							globalSearchTerm?: string;
-							calendarDate?: string;
+							homeDate?: string;
 						};
 						logDebug(`Restoring navigation state: ${JSON.stringify(state)}`);
 
@@ -1505,7 +1505,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						}
 						if (state.activeUserStoryTab) setActiveUserStoryTab(state.activeUserStoryTab);
 						if (state.globalSearchTerm) setGlobalSearchTerm(state.globalSearchTerm);
-						if (state.calendarDate) setCalendarDate(new Date(state.calendarDate));
+						if (state.homeDate) setHomeDate(new Date(state.homeDate));
 
 						// Restore selected iteration - need to find it in loaded iterations
 						if (state.selectedIterationId && iterations.length > 0) {
@@ -1573,7 +1573,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				selectedDefectId: selectedDefect?.objectId,
 				activeUserStoryTab,
 				globalSearchTerm,
-				calendarDate: calendarDate.toISOString()
+				homeDate: homeDate.toISOString()
 			};
 			sendMessage({
 				command: 'saveState',
@@ -1581,27 +1581,27 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			});
 		}, 100);
 		return () => clearTimeout(timeoutId);
-	}, [activeSection, currentScreen, portfolioActiveViewType, activeSubTabBySection, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, activeUserStoryTab, globalSearchTerm, calendarDate, sendMessage]);
+	}, [activeSection, currentScreen, portfolioActiveViewType, activeSubTabBySection, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, activeUserStoryTab, globalSearchTerm, homeDate, sendMessage]);
 
-	// Track calendar year changes and load holidays for the new year
+	// Track home year changes and load holidays for the new year
 	useEffect(() => {
-		const calendarYear = calendarDate.getFullYear();
+		const homeYear = homeDate.getFullYear();
 		const currentYear = new Date().getFullYear();
 
 		// Check if we already have holidays for this year
-		const hasHolidaysForYear = holidays.some(h => h.date.startsWith(`${calendarYear}-`));
+		const hasHolidaysForYear = holidays.some(h => h.date.startsWith(`${homeYear}-`));
 
 		// Load holidays if we don't have them for this year and it's different from current year
 		// (current year holidays are loaded with iterations)
-		if (!hasHolidaysForYear && calendarYear !== currentYear) {
-			logDebug(`Calendar navigated to year ${calendarYear}, loading holidays...`);
+		if (!hasHolidaysForYear && homeYear !== currentYear) {
+			logDebug(`Home navigated to year ${homeYear}, loading holidays...`);
 			sendMessage({
 				command: 'loadHolidaysForYear',
-				year: calendarYear,
+				year: homeYear,
 				country: 'ES'
 			});
 		}
-	}, [calendarDate, holidays, sendMessage]);
+	}, [homeDate, holidays, sendMessage]);
 
 	// Calculate metrics when data changes - load charts in parallel (state distribution, defects, KPIs)
 	useEffect(() => {
@@ -1678,17 +1678,17 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		}
 	}, [activeSection, iterations, portfolioUserStories, defects, findNextIteration, selectedReadinessSprint]);
 
-	// Load iterations when navigating to calendar section
+	// Load iterations when navigating to home section
 	useEffect(() => {
-		if (activeSection === 'calendar' && !hasLoadedCalendarIterations.current && !iterations.length && !iterationsLoading && !iterationsError) {
-			hasLoadedCalendarIterations.current = true;
+		if (activeSection === 'home' && !hasLoadedHomeIterations.current && !iterations.length && !iterationsLoading && !iterationsError) {
+			hasLoadedHomeIterations.current = true;
 			// Use setTimeout to make the call asynchronous and avoid linter warning about setState in effects
 			setTimeout(() => {
 				loadIterations();
 			}, 0);
-		} else if (activeSection !== 'calendar') {
-			// Reset flag when leaving calendar section
-			hasLoadedCalendarIterations.current = false;
+		} else if (activeSection !== 'home') {
+			// Reset flag when leaving home section
+			hasLoadedHomeIterations.current = false;
 		}
 	}, [activeSection, iterations.length, iterationsLoading, iterationsError, loadIterations]);
 
@@ -1863,7 +1863,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							onOpenResult={openSearchResult}
 						/>
 					)}
-					{activeSection === 'calendar' && (
+					{activeSection === 'home' && (
 						<>
 							{iterationsLoading && iterations.length === 0 ? (
 								<SpinnerContainer>
@@ -1871,7 +1871,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 									<LoadingText>Loading sprints...</LoadingText>
 								</SpinnerContainer>
 							) : (
-								<CalendarSection currentDate={calendarDate} iterations={iterations} userStories={userStories} onMonthChange={setCalendarDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromCalendar} />
+								<HomeSection currentDate={homeDate} iterations={iterations} userStories={userStories} onMonthChange={setHomeDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromHome} />
 							)}
 						</>
 					)}

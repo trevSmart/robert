@@ -717,6 +717,30 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		dayCounter++;
 	}
 
+	// Pre-compute consistent iteration order per week row so that
+	// sprint bars stay at the same vertical position across the whole week
+	const weekIterationsOrder: Iteration[][] = [];
+	const numWeeks = Math.ceil(calendarDays.length / 7);
+	for (let w = 0; w < numWeeks; w++) {
+		const weekDays = calendarDays.slice(w * 7, (w + 1) * 7);
+		const iterationSet = new Map<string, Iteration>();
+		for (const day of weekDays) {
+			for (const iter of day.iterations) {
+				if (!iterationSet.has(iter.objectId)) {
+					iterationSet.set(iter.objectId, iter);
+				}
+			}
+		}
+		// Sort consistently: by start date, then objectId
+		const sorted = [...iterationSet.values()].sort((a, b) => {
+			const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
+			const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
+			if (aStart !== bStart) return aStart - bStart;
+			return a.objectId.localeCompare(b.objectId);
+		});
+		weekIterationsOrder.push(sorted);
+	}
+
 	const goToPreviousMonth = () => {
 		const newDate = new Date(currentDate);
 		newDate.setMonth(newDate.getMonth() - 1);
@@ -729,15 +753,19 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		onMonthChange?.(newDate);
 	};
 
+	const goToCurrentMonth = () => {
+		onMonthChange?.(new Date(today.getFullYear(), today.getMonth(), 1));
+	};
+
 	// Icon components
 	const PreviousMonthIcon = () => (
-		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '20px', height: '20px', pointerEvents: 'none' }} aria-hidden={true} focusable="false">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px', pointerEvents: 'none' }} aria-hidden={true} focusable="false">
 			<path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
 		</svg>
 	);
 
 	const NextMonthIcon = () => (
-		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '20px', height: '20px', pointerEvents: 'none' }} aria-hidden={true} focusable="false">
+		<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '16px', height: '16px', pointerEvents: 'none' }} aria-hidden={true} focusable="false">
 			<path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
 		</svg>
 	);
@@ -759,11 +787,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						textAlign: 'center',
 						marginBottom: '16px',
 						padding: '12px',
-						backgroundColor: themeColors.panelBackground,
+						backgroundColor: lightTheme ? 'rgba(91, 155, 213, 0.12)' : 'rgba(107, 163, 232, 0.14)',
 						borderRadius: '8px',
-						border: `1px solid ${themeColors.panelBorder}`,
+						border: `1px solid ${lightTheme ? 'rgba(91, 155, 213, 0.25)' : 'rgba(107, 163, 232, 0.25)'}`,
 						maxWidth: '700px',
-						margin: '0 auto 23px auto'
+						margin: '0 40px 32px 40px'
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
@@ -772,7 +800,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					<div
 						onClick={rotateMessage}
 						style={{
-							fontSize: '12px',
+							fontSize: '13px',
+							lineHeight: 1.4,
 							color: themeColors.descriptionForeground,
 							marginTop: '4px',
 							opacity: messageVisible ? 1 : 0,
@@ -791,75 +820,122 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					marginBottom: '14px',
 					display: 'flex',
 					alignItems: 'center',
-					justifyContent: 'center'
+					width: '100%',
+					maxWidth: '980px',
+					margin: '0 auto 14px auto'
 				}}
 			>
-				<button
-					onClick={goToPreviousMonth}
+				<div style={{ flex: 1, minWidth: 0 }} />
+				<div
 					style={{
-						padding: '8px 12px',
-						border: 'none',
-						outline: 'none',
-						backgroundColor: 'transparent',
-						color: themeColors.foreground,
-						borderRadius: '4px',
-						cursor: 'pointer',
 						display: 'flex',
 						alignItems: 'center',
 						justifyContent: 'center',
-						transition: 'background-color 0.2s ease'
-					}}
-					onMouseEnter={e => {
-						e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
-					}}
-					onMouseLeave={e => {
-						e.currentTarget.style.backgroundColor = 'transparent';
-					}}
-					disabled={!onMonthChange}
-					title="Previous Month"
-				>
-					<PreviousMonthIcon />
-				</button>
-
-				<h2
-					style={{
-						margin: '0',
-						color: themeColors.foreground,
-						fontSize: '17.4px',
-						fontWeight: '300',
-						minWidth: '14	0px',
-						textAlign: 'center'
+						gap: '4px',
+						flexShrink: 0
 					}}
 				>
-					{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
-				</h2>
+					<button
+						onClick={goToPreviousMonth}
+						style={{
+							padding: '2px 8px',
+							border: 'none',
+							outline: 'none',
+							backgroundColor: 'transparent',
+							color: themeColors.foreground,
+							borderRadius: '4px',
+							cursor: 'pointer',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							transition: 'background-color 0.2s ease'
+						}}
+						onMouseEnter={e => {
+							e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
+						}}
+						onMouseLeave={e => {
+							e.currentTarget.style.backgroundColor = 'transparent';
+						}}
+						disabled={!onMonthChange}
+						title="Previous Month"
+					>
+						<PreviousMonthIcon />
+					</button>
 
-				<button
-					onClick={goToNextMonth}
+					<h2
+						style={{
+							margin: '0',
+							color: themeColors.foreground,
+							fontSize: '16.4px',
+							fontWeight: '300',
+							minWidth: '140px',
+							textAlign: 'center'
+						}}
+					>
+						{monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
+					</h2>
+
+					<button
+						onClick={goToNextMonth}
+						style={{
+							padding: '2px 8px',
+							border: 'none',
+							outline: 'none',
+							backgroundColor: 'transparent',
+							color: themeColors.foreground,
+							borderRadius: '4px',
+							cursor: 'pointer',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							transition: 'background-color 0.2s ease'
+						}}
+						onMouseEnter={e => {
+							e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
+						}}
+						onMouseLeave={e => {
+							e.currentTarget.style.backgroundColor = 'transparent';
+						}}
+						disabled={!onMonthChange}
+						title="Next Month"
+					>
+						<NextMonthIcon />
+					</button>
+				</div>
+				<div
 					style={{
-						padding: '8px 12px',
-						border: 'none',
-						outline: 'none',
-						backgroundColor: 'transparent',
-						color: themeColors.foreground,
-						borderRadius: '4px',
-						cursor: 'pointer',
+						flex: 1,
 						display: 'flex',
+						justifyContent: 'flex-end',
 						alignItems: 'center',
-						justifyContent: 'center',
-						transition: 'background-color 0.2s ease'
+						minWidth: 0
 					}}
-					onMouseEnter={e => {
-						e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
-					}}
-					onMouseLeave={e => {
-						e.currentTarget.style.backgroundColor = 'transparent';
-					}}
-					disabled={!onMonthChange}
-					title="Next Month"
 				>
-					<NextMonthIcon />
-				</button>
+					<button
+						onClick={goToCurrentMonth}
+						style={{
+							padding: '4px 10px',
+							border: 'none',
+							outline: 'none',
+							backgroundColor: 'transparent',
+							color: themeColors.descriptionForeground,
+							borderRadius: '4px',
+							cursor: 'pointer',
+							fontSize: '12px',
+							transition: 'background-color 0.2s ease'
+						}}
+						onMouseEnter={e => {
+							e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
+						}}
+						onMouseLeave={e => {
+							e.currentTarget.style.backgroundColor = 'transparent';
+						}}
+						disabled={!onMonthChange}
+						title="Go to current month"
+					>
+						Today
+					</button>
+				</div>
 			</div>
 
 			{/* Calendar Grid */}
@@ -882,7 +958,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					<div
 						key={day}
 						style={{
-							padding: '12px 8px',
+							padding: '11px 8px',
 							backgroundColor: themeColors.titleBarActiveBackground,
 							color: themeColors.titleBarActiveForeground,
 							textAlign: 'center',
@@ -945,7 +1021,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								setHoveredDay(dayInfo);
 								setMousePosition({ x: e.clientX, y: e.clientY });
 								if (!dayInfo.isToday) {
-									e.currentTarget.style.backgroundColor = lightTheme ? 'rgba(255, 255, 255, 0.25)' : themeColors.listHoverBackground;
+									e.currentTarget.style.backgroundColor = lightTheme ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)';
 								}
 							}}
 							onMouseMove={e => {
@@ -1050,68 +1126,86 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									)}
 								</div>
 							)}
-							{/* Show iteration indicator lines */}
-							{dayInfo.iterations.length > 0 && (
-								<div
-									style={{
-										position: 'absolute',
-										bottom: '0',
-										left: '-1px',
-										right: '-1px',
-										display: 'flex',
-										flexDirection: 'column',
-										gap: '1px',
-										zIndex: 1
-									}}
-									title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
-								>
-									{/* Show up to 2 iteration lines with assigned colors */}
-									{dayInfo.iterations.slice(0, 2).map(iteration => {
-										const iterationStartDate = iteration.startDate ? new Date(iteration.startDate) : null;
-										const iterationEndDate = iteration.endDate ? new Date(iteration.endDate) : null;
+							{/* Show iteration indicator lines with consistent vertical order per week */}
+							{(() => {
+								const weekIndex = Math.floor(index / 7);
+								const weekIters = weekIterationsOrder[weekIndex] || [];
+								if (weekIters.length === 0) return null;
+								const activeIds = new Set(dayInfo.iterations.map(i => i.objectId));
+								return (
+									<div
+										style={{
+											position: 'absolute',
+											bottom: '0',
+											left: '-1px',
+											right: '-1px',
+											display: 'flex',
+											flexDirection: 'column',
+											gap: '1px',
+											zIndex: 1
+										}}
+										title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
+									>
+										{weekIters.slice(0, 2).map(iteration => {
+											const isActive = activeIds.has(iteration.objectId);
+											if (!isActive) {
+												return (
+													<div
+														key={iteration.objectId}
+														style={{
+															height: getSprintBarHeight(calendarGridWidth) + 'px',
+															backgroundColor: 'transparent'
+														}}
+													/>
+												);
+											}
 
-										if (iterationStartDate) iterationStartDate.setHours(0, 0, 0, 0);
-										if (iterationEndDate) iterationEndDate.setHours(0, 0, 0, 0);
+											const iterationStartDate = iteration.startDate ? new Date(iteration.startDate) : null;
+											const iterationEndDate = iteration.endDate ? new Date(iteration.endDate) : null;
 
-										const dayDate = new Date(dayInfo.date.getFullYear(), dayInfo.date.getMonth(), dayInfo.date.getDate());
-										dayDate.setHours(0, 0, 0, 0);
+											if (iterationStartDate) iterationStartDate.setHours(0, 0, 0, 0);
+											if (iterationEndDate) iterationEndDate.setHours(0, 0, 0, 0);
 
-										const isFirstDay = iterationStartDate && dayDate.getTime() === iterationStartDate.getTime();
-										const isLastDay = iterationEndDate && dayDate.getTime() === iterationEndDate.getTime();
+											const dayDate = new Date(dayInfo.date.getFullYear(), dayInfo.date.getMonth(), dayInfo.date.getDate());
+											dayDate.setHours(0, 0, 0, 0);
 
-										return (
-											<div
-												key={iteration.objectId}
-												style={{
-													height: getSprintBarHeight(calendarGridWidth) + 'px',
-													backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-													filter: lightTheme ? 'saturate(68%) brightness(170%) contrast(85%)' : 'saturate(58%) brightness(70%) contrast(85%)',
-													opacity: 1,
-													transition: 'opacity 0.2s ease',
-													borderTopLeftRadius: isFirstDay ? '4px' : '0',
-													borderBottomLeftRadius: isFirstDay ? '4px' : '0',
-													borderTopRightRadius: isLastDay ? '4px' : '0',
-													borderBottomRightRadius: isLastDay ? '4px' : '0',
-													marginLeft: isFirstDay ? '1px' : '-0.5px',
-													marginRight: isLastDay ? '1px' : '-0.5px',
-													cursor: 'pointer'
-												}}
-												onMouseEnter={e => {
-													setHoveredIteration(iteration);
-													setMousePosition({ x: e.clientX, y: e.clientY });
-													setHoveredDay(null);
-												}}
-												onMouseMove={e => {
-													setMousePosition({ x: e.clientX, y: e.clientY });
-												}}
-												onMouseLeave={() => {
-													setHoveredIteration(null);
-												}}
-											/>
-										);
-									})}
-								</div>
-							)}
+											const isFirstDay = iterationStartDate && dayDate.getTime() === iterationStartDate.getTime();
+											const isLastDay = iterationEndDate && dayDate.getTime() === iterationEndDate.getTime();
+
+											return (
+												<div
+													key={iteration.objectId}
+													style={{
+														height: getSprintBarHeight(calendarGridWidth) + 'px',
+														backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+														filter: lightTheme ? 'saturate(77%) brightness(162%) contrast(87%)' : 'saturate(72%) brightness(79%) contrast(90%)',
+														opacity: 1,
+														transition: 'opacity 0.2s ease',
+														borderTopLeftRadius: isFirstDay ? '4px' : '0',
+														borderBottomLeftRadius: isFirstDay ? '4px' : '0',
+														borderTopRightRadius: isLastDay ? '4px' : '0',
+														borderBottomRightRadius: isLastDay ? '4px' : '0',
+														marginLeft: isFirstDay ? '1px' : '-0.5px',
+														marginRight: isLastDay ? '1px' : '-0.5px',
+														cursor: 'pointer'
+													}}
+													onMouseEnter={e => {
+														setHoveredIteration(iteration);
+														setMousePosition({ x: e.clientX, y: e.clientY });
+														setHoveredDay(null);
+													}}
+													onMouseMove={e => {
+														setMousePosition({ x: e.clientX, y: e.clientY });
+													}}
+													onMouseLeave={() => {
+														setHoveredIteration(null);
+													}}
+												/>
+											);
+										})}
+									</div>
+								);
+							})()}
 						</div>
 					);
 				})}
@@ -1158,7 +1252,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										style={{
 											textAlign: 'right',
 											cursor: onIterationClick ? 'pointer' : 'default',
-											color: onIterationClick ? 'var(--vscode-textLink-foreground)' : 'var(--vscode-foreground)',
+											color: themeColors.foreground,
 											textDecoration: 'none',
 											fontSize: '12px',
 											whiteSpace: 'nowrap',
@@ -1166,7 +1260,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 											textOverflow: 'ellipsis'
 										}}
 										onClick={() => onIterationClick?.(iteration)}
-										title={onIterationClick ? `Click to view user stories for ${iteration.name}` : undefined}
 									>
 										{iteration.name}
 									</span>
@@ -1181,7 +1274,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										overflow: 'hidden',
 										flexShrink: 0
 									}}
-									title="Iteration progress"
 								>
 									{(() => {
 										const baseColor = iterationColorMap.get(iteration.objectId) || '#2196f3';

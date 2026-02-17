@@ -612,6 +612,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	// Track if we've already loaded iterations for calendar to avoid cascading renders
 	const hasLoadedCalendarIterations = useRef(false);
 
+	// Track if this is the first time navigating to portfolio section
+	// (should auto-navigate to detail; subsequent times stay on list)
+	const isFirstPortfolioNavigation = useRef(true);
+
 	// Track which portfolio views have been loaded to avoid redundant fetches
 	const loadedViews = useRef<Set<PortfolioViewType>>(new Set());
 
@@ -1173,6 +1177,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		// Clear all refs
 		hasLoadedPortfolioIterations.current = false;
 		hasLoadedCalendarIterations.current = false;
+		isFirstPortfolioNavigation.current = true;
 		loadedViews.current.clear();
 		attemptedUserStoryDefects.current.clear();
 		attemptedUserStoryDiscussions.current.clear();
@@ -1210,12 +1215,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 						setCurrentUser(message.currentUser || null);
 						setHolidays(message.holidays || []);
 
-						// Auto-select current iteration if available (but don't override detail screens)
+						// Auto-select current iteration only on first portfolio navigation
+						// Subsequent times, stay on the iterations list
 						const currentIteration = findCurrentIteration(message.iterations);
-						if (currentIteration) {
+						if (currentIteration && activeSection === 'portfolio' && isFirstPortfolioNavigation.current) {
+							isFirstPortfolioNavigation.current = false;
 							setSelectedIteration(currentIteration);
 							loadUserStories(currentIteration);
-							// Only navigate to userStories if we're on the iterations list screen
+							// Navigate to userStories only if we're on the iterations list screen
 							// Don't override userStoryDetail when coming from search
 							if (currentScreen === 'iterations') {
 								setCurrentScreen('userStories');
@@ -1530,7 +1537,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, iterations, resetAllState]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, iterations, resetAllState, activeSection]); // Only include dependencies needed by handleMessage
 
 	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
 	useEffect(() => {
@@ -1693,6 +1700,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		} else if (activeSection !== 'portfolio') {
 			// Reset flags when leaving portfolio section
 			hasLoadedPortfolioIterations.current = false;
+			isFirstPortfolioNavigation.current = false; // Don't reset; persist the "not first" state
 			loadedViews.current.clear();
 			attemptedUserStoryDefects.current.clear();
 		}

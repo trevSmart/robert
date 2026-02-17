@@ -1146,8 +1146,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', minWidth: 0 }}>
 									<div
 										style={{
-											width: '12px',
-											height: '12px',
+											width: '8px',
+											height: '8px',
 											borderRadius: '50%',
 											backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
 											opacity: 0.9,

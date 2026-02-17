@@ -1,4 +1,4 @@
-import type React from 'react';
+import React from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
 import { type UserStory } from '../../../types/rally';
 
@@ -186,7 +186,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 							>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, textDecoration: 'none' }}>{userStory.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{userStory.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: userStory.assignee ? themeColors.foreground : 'rgba(200, 200, 200, 0.5)' }}>{userStory.assignee || 'Unassigned'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: userStory.assignee ? themeColors.foreground : '#6c757d' }}>{userStory.assignee || 'Unassigned'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: getScheduleStateColor(userStory.scheduleState || 'new') }}>{userStory.scheduleState || 'N/A'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', width: '110px', textAlign: 'center' }}>{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}</td>
 

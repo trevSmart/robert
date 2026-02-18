@@ -39,6 +39,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 	const [hoveredDay, setHoveredDay] = useState<DayInfo | null>(null);
+	const [isHeaderHovered, setIsHeaderHovered] = useState(false);
 	const [hoveredIteration, setHoveredIteration] = useState<Iteration | null>(null);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 	const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 800);
@@ -96,8 +97,49 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		return size;
 	}
+	// Animation state: sprint bars grow from left to right on mount
+	const [sprintBarsAnimated, setSprintBarsAnimated] = useState(false);
+	const [sprintBarsTransition, setSprintBarsTransition] = useState(true);
+
 	const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 	const [messages, setMessages] = useState<string[]>([]);
+
+	// Marquee refs and state
+	const marqueeContainerRef = useRef<HTMLDivElement>(null);
+	const marqueeTextRef = useRef<HTMLSpanElement>(null);
+	const [marqueeOverflow, setMarqueeOverflow] = useState(0);
+	const [marqueeKey, setMarqueeKey] = useState(0); // bump to reset animation position
+
+	// Track page visibility to pause animations when hidden
+	const [pageVisible, setPageVisible] = useState(() => (typeof document !== 'undefined' ? document.visibilityState === 'visible' : true));
+
+	// Trigger sprint bar grow animation shortly after mount
+	useEffect(() => {
+		const timer = setTimeout(() => setSprintBarsAnimated(true), 80);
+		return () => clearTimeout(timer);
+	}, []);
+
+	// Reset animation when month changes: snap bars to hidden (no transition),
+	// then re-enable transitions and animate in after paint.
+	useEffect(() => {
+		setSprintBarsTransition(false);
+		setSprintBarsAnimated(false);
+		// Double rAF ensures the browser paints the hidden state before re-animating
+		const raf = requestAnimationFrame(() => {
+			requestAnimationFrame(() => {
+				setSprintBarsTransition(true);
+				setSprintBarsAnimated(true);
+			});
+		});
+		return () => cancelAnimationFrame(raf);
+	}, [currentDate.getMonth(), currentDate.getFullYear()]);
+
+	// Listen to page visibility changes
+	useEffect(() => {
+		const handler = () => setPageVisible(document.visibilityState === 'visible');
+		document.addEventListener('visibilitychange', handler);
+		return () => document.removeEventListener('visibilitychange', handler);
+	}, []);
 
 	// Monitor window width to hide events on narrow viewports
 	useEffect(() => {
@@ -240,10 +282,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		];
 
 		setMessages(generatedMessages);
+	}, [currentDate, iterations, userStories, holidays, todayStart.getTime()]);
 
-		setMessages(generatedMessages);
+	// Set up interval to rotate messages every 20 seconds (paused when page is hidden)
+	useEffect(() => {
+		if (!pageVisible || messages.length === 0) return;
 
-		// Set up interval to rotate messages every 20 seconds with a quick fade
 		let changeTimeout: ReturnType<typeof setTimeout> | null = null;
 		const interval = setInterval(() => {
 			if (messageAnimatingRef.current) return; // avoid overlapping anims
@@ -252,24 +296,54 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			setMessageVisible(false);
 			// after fade-out, advance the message and fade in
 			changeTimeout = setTimeout(() => {
-				setCurrentMessageIndex(prev => (prev + 1) % generatedMessages.length);
+				setMarqueeKey(k => k + 1); // reset marquee position before showing new message
+				setCurrentMessageIndex(prev => (prev + 1) % messages.length);
 				setMessageVisible(true);
 				// clear animating flag after fade-in completes
 				setTimeout(() => {
 					messageAnimatingRef.current = false;
 				}, 260);
 			}, 240);
-		}, 20000);
+		}, 60000);
 
 		return () => {
 			clearInterval(interval);
 			if (changeTimeout) clearTimeout(changeTimeout);
 		};
-	}, [currentDate, iterations, userStories, holidays, todayStart.getTime()]);
+	}, [pageVisible, messages]);
 
 	// Visibility state for fade animation
 	const [messageVisible, setMessageVisible] = useState(true);
 	const messageAnimatingRef = useRef(false);
+
+	// Measure marquee overflow when message changes
+	useEffect(() => {
+		// Small delay to let the DOM update after message change
+		const timer = setTimeout(() => {
+			if (marqueeContainerRef.current && marqueeTextRef.current) {
+				const containerWidth = marqueeContainerRef.current.offsetWidth;
+				const textWidth = marqueeTextRef.current.scrollWidth;
+				const overflow = textWidth - containerWidth;
+				setMarqueeOverflow(overflow > 0 ? overflow + 16 : 0); // +16px padding
+			}
+		}, 300); // wait for fade-in to complete
+		return () => clearTimeout(timer);
+	}, [currentMessageIndex, messages]);
+
+	// Also measure on window resize to catch container width changes
+	useEffect(() => {
+		const handleResize = () => {
+			if (marqueeContainerRef.current && marqueeTextRef.current) {
+				const containerWidth = marqueeContainerRef.current.offsetWidth;
+				const textWidth = marqueeTextRef.current.scrollWidth;
+				const overflow = textWidth - containerWidth;
+				setMarqueeOverflow(overflow > 0 ? overflow + 16 : 0); // +16px padding
+			}
+		};
+
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
 
 	// Helper to extract iteration id from a user story (robust to shapes)
 	const getIterationId = (us: any) => {
@@ -293,6 +367,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		messageAnimatingRef.current = true;
 		setMessageVisible(false);
 		setTimeout(() => {
+			setMarqueeKey(k => k + 1); // reset marquee position before showing new message
 			setCurrentMessageIndex(prev => (prev + 1) % messages.length);
 			setMessageVisible(true);
 			setTimeout(() => {
@@ -779,6 +854,17 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				transition: 'all 100ms ease'
 			}}
 		>
+			{/* Marquee keyframes — pause 30% at each end, scroll 20% each direction */}
+			{marqueeOverflow > 0 && (
+				<style>{`
+					@keyframes marquee-scroll {
+						0%, 30% { transform: translateX(0); }
+						50%, 80% { transform: translateX(-${marqueeOverflow}px); }
+						100% { transform: translateX(0); }
+					}
+				`}</style>
+			)}
+
 			{/* Welcome message */}
 			{!!currentUser && (
 				<div
@@ -786,7 +872,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					style={{
 						textAlign: 'center',
 						marginBottom: '16px',
-						padding: '12px',
+						padding: '12px 16px',
 						backgroundColor: lightTheme ? 'rgba(91, 155, 213, 0.12)' : 'rgba(107, 163, 232, 0.14)',
 						borderRadius: '8px',
 						border: `1px solid ${lightTheme ? 'rgba(91, 155, 213, 0.25)' : 'rgba(107, 163, 232, 0.25)'}`,
@@ -794,22 +880,36 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						margin: '0 40px 32px 40px'
 					}}
 				>
-					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground }}>
+					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground, textAlign: 'center' }}>
 						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>!
 					</div>
 					<div
+						ref={marqueeContainerRef}
 						onClick={rotateMessage}
 						style={{
-							fontSize: '13px',
-							lineHeight: 1.4,
-							color: themeColors.descriptionForeground,
+							overflow: 'hidden',
 							marginTop: '4px',
+							cursor: 'pointer',
+							maskImage: marqueeOverflow > 0 ? 'linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent)' : 'none',
+							WebkitMaskImage: marqueeOverflow > 0 ? 'linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent)' : 'none',
 							opacity: messageVisible ? 1 : 0,
-							transition: 'opacity 240ms ease',
-							cursor: 'pointer'
+							transition: 'opacity 240ms ease'
 						}}
 					>
-						{messages[currentMessageIndex] || 'Get ready for an amazing sprint!'}
+						<span
+							key={marqueeKey}
+							ref={marqueeTextRef}
+							style={{
+								display: 'inline-block',
+								fontSize: '12px',
+								color: themeColors.descriptionForeground,
+								whiteSpace: 'nowrap',
+								animation: marqueeOverflow > 0 && pageVisible ? `marquee-scroll ${Math.max(16, marqueeOverflow / 9)}s linear infinite` : 'none',
+								transformOrigin: 'left'
+							}}
+						>
+							{messages[currentMessageIndex] || 'Get ready for an amazing sprint!'}
+						</span>
 					</div>
 				</div>
 			)}
@@ -824,6 +924,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					maxWidth: '980px',
 					margin: '0 auto 14px auto'
 				}}
+				onMouseEnter={() => setIsHeaderHovered(true)}
+				onMouseLeave={() => setIsHeaderHovered(false)}
 			>
 				<div style={{ flex: 1, minWidth: 0 }} />
 				<div
@@ -922,7 +1024,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							borderRadius: '4px',
 							cursor: 'pointer',
 							fontSize: '12px',
-							transition: 'background-color 0.2s ease'
+							opacity: isHeaderHovered ? 1 : 0,
+							pointerEvents: isHeaderHovered ? 'auto' : 'none',
+							transition: 'opacity 0.2s ease, background-color 0.2s ease'
 						}}
 						onMouseEnter={e => {
 							e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
@@ -1172,6 +1276,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 											const isFirstDay = iterationStartDate && dayDate.getTime() === iterationStartDate.getTime();
 											const isLastDay = iterationEndDate && dayDate.getTime() === iterationEndDate.getTime();
 
+											// Use the cell's global position in the calendar grid for the delay,
+											// so all sprint bars animate as one continuous sweep across the month.
+											const stagger = 14; // ms between consecutive calendar cells
+											const cellDuration = 28; // ms per cell – slightly longer than stagger for seamless overlap
+											const animDelay = index * stagger;
+
 											return (
 												<div
 													key={iteration.objectId}
@@ -1179,8 +1289,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 														height: getSprintBarHeight(calendarGridWidth) + 'px',
 														backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
 														filter: lightTheme ? 'saturate(77%) brightness(162%) contrast(87%)' : 'saturate(72%) brightness(79%) contrast(90%)',
-														opacity: 1,
-														transition: 'opacity 0.2s ease',
+														opacity: sprintBarsAnimated ? 1 : 0,
+														transform: sprintBarsAnimated ? 'scaleX(1)' : 'scaleX(0)',
+														transformOrigin: 'left center',
+														transition: sprintBarsTransition ? `transform ${cellDuration}ms linear ${animDelay}ms, opacity ${cellDuration}ms linear ${animDelay}ms` : 'none',
 														borderTopLeftRadius: isFirstDay ? '4px' : '0',
 														borderBottomLeftRadius: isFirstDay ? '4px' : '0',
 														borderTopRightRadius: isLastDay ? '4px' : '0',
@@ -1281,10 +1393,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										return (
 											<div
 												style={{
-													width: `${getIterationProgress(iteration)}%`,
+													width: sprintBarsAnimated ? `${getIterationProgress(iteration)}%` : '0%',
 													height: '100%',
 													backgroundImage: `linear-gradient(90deg, ${baseColor}, ${endColor})`,
-													borderRadius: '999px'
+													borderRadius: '999px',
+													filter: lightTheme ? 'saturate(77%) brightness(162%) contrast(87%)' : 'saturate(72%) brightness(79%) contrast(90%)',
+													transition: sprintBarsTransition ? 'width 800ms cubic-bezier(0.22, 0.61, 0.36, 1) 200ms' : 'none'
 												}}
 											/>
 										);

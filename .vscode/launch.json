@@ -19,7 +19,8 @@
 				"group": "",
 				"order": 1,
 				"panel": "dedicated"
-			}
+			},
+			"suppressMultipleSessionWarning": true
 		}
 	]
 }

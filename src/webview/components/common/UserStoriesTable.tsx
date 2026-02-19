@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
 import { type UserStory } from '../../../types/rally';
+import { useTableSort, type SortConfig } from '../../hooks/useTableSort';
 
 // Icon components
 const TasksIcon = () => (
@@ -40,6 +41,18 @@ const DiscussionsIcon = () => (
 	</svg>
 );
 
+const SortDescIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0-3.75-3.75M17.25 21 21 17.25" />
+	</svg>
+);
+
+const SortAscIcon = () => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h5.25m5.25-.75L17.25 9m0 0L21 12.75M17.25 9v12" />
+	</svg>
+);
+
 interface Iteration {
 	objectId: string;
 	name: string;
@@ -64,6 +77,65 @@ interface UserStoriesTableProps {
 }
 
 const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loading = false, error, onUserStorySelected, selectedUserStory, hasMore = false, onLoadMore, loadingMore = false }) => {
+	// Initialize sorting with default sort by formattedId descending
+	const { sortedItems, sortConfig, requestSort } = useTableSort<UserStory>(userStories, { key: 'formattedId', direction: 'desc' });
+
+	// Component to render sortable headers with visual indicators (icon visible on hover or when column is active)
+	const SortableHeader: React.FC<{
+		label: string;
+		sortKey: keyof UserStory;
+		style?: React.CSSProperties;
+		textAlign?: 'left' | 'center' | 'right';
+	}> = ({ label, sortKey, style, textAlign = 'left' }) => {
+		const [hovered, setHovered] = useState(false);
+		const isActive = sortConfig?.key === sortKey;
+		const direction = isActive ? sortConfig?.direction : undefined;
+		const showIndicator = isActive || hovered;
+
+		const renderSortIcon = () => {
+			if (!showIndicator) return null;
+			if (isActive) {
+				return direction === 'asc' ? <SortAscIcon /> : <SortDescIcon />;
+			}
+			return <SortDescIcon />;
+		};
+
+		return (
+			<th
+				onClick={() => requestSort(sortKey)}
+				onMouseEnter={() => setHovered(true)}
+				onMouseLeave={() => setHovered(false)}
+				style={{
+					padding: '10px 12px',
+					textAlign,
+					borderBottom: `1px solid ${themeColors.panelBorder}`,
+					fontWeight: 'bold',
+					cursor: 'pointer',
+					backgroundColor: themeColors.tabActiveBackground,
+					color: themeColors.tabActiveForeground,
+					userSelect: 'none',
+					whiteSpace: 'nowrap',
+					...style
+				}}
+				title={`Sort by ${label}`}
+			>
+				<span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+					{label}
+					<span
+						style={{
+							opacity: showIndicator ? (isActive ? 1 : 0.6) : 0,
+							display: 'inline-flex',
+							transition: 'opacity 0.15s ease',
+							flexShrink: 0
+						}}
+					>
+						{renderSortIcon()}
+					</span>
+				</span>
+			</th>
+		);
+	};
+
 	const getScheduleStateColor = (scheduleState: string) => {
 		switch (scheduleState?.toLowerCase()) {
 			case 'new':
@@ -149,18 +221,17 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 			{userStories.length > 0 && !loading && !error && (
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '10%' }}>ID</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Name</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '15%' }}>Assigned To</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '15%' }}>State</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '110px' }}>Total Hours</th>
-
-							<th style={{ padding: '10px 12px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '100px' }}>Items</th>
+						<tr style={{ backgroundColor: themeColors.tabActiveBackground, color: themeColors.tabActiveForeground }}>
+							<SortableHeader label="ID" sortKey="formattedId" style={{ width: '10%' }} />
+							<SortableHeader label="Name" sortKey="name" />
+							<SortableHeader label="Assigned To" sortKey="assignee" style={{ width: '15%' }} />
+							<SortableHeader label="State" sortKey="scheduleState" style={{ width: '15%' }} />
+							<SortableHeader label="Total Hours" sortKey="taskEstimateTotal" style={{ width: '110px' }} textAlign="center" />
+							<th style={{ padding: '10px 12px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '100px', backgroundColor: themeColors.tabActiveBackground, color: themeColors.tabActiveForeground }}>Items</th>
 						</tr>
 					</thead>
 					<tbody>
-						{userStories.map(userStory => (
+						{sortedItems.map(userStory => (
 							<tr
 								key={userStory.objectId}
 								onClick={() => onUserStorySelected?.(userStory)}
@@ -300,7 +371,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 			{iterations.length > 0 && !loading && !error && (
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
+						<tr style={{ backgroundColor: themeColors.tabActiveBackground, color: themeColors.tabActiveForeground }}>
 							<th style={{ padding: '10px 4px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '30px' }}></th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', minWidth: '150px' }}>Name</th>
 							<th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Hours</th>

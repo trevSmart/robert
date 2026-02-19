@@ -24,13 +24,14 @@ import PortfolioSection, { type PortfolioViewType } from './sections/PortfolioSe
 import MetricsSection from './sections/MetricsSection';
 import SearchSection from './sections/SearchSection';
 import TeamSection from './sections/TeamSection';
+import { useSmoothScroll } from '../hooks/useSmoothScroll';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem } from '../../types/rally';
-import type { Holiday } from '../../types/utils';
+import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 
-import { CenteredContainer, Container, ContentArea, GlobalStyle, StickyNav, SpinnerContainer, Spinner, LoadingText } from './common/styled';
+import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
@@ -467,6 +468,7 @@ interface Iteration {
 const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
+	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
 
 	const sendMessage = useCallback(
 		(command: string | Record<string, unknown>, data?: any) => {
@@ -505,6 +507,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [debugMode, setDebugMode] = useState<boolean>(false);
 	const [currentUser, setCurrentUser] = useState<RallyUser | null>(null);
 	const [holidays, setHolidays] = useState<Holiday[]>([]);
+	const [customCalendarEvents, setCustomCalendarEvents] = useState<CustomCalendarEvent[]>([]);
 	const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
 	const [_showTutorial, setShowTutorial] = useState<boolean>(false);
 
@@ -612,6 +615,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	// Track if we've already loaded iterations for home to avoid cascading renders
 	const hasLoadedHomeIterations = useRef(false);
 
+	// Track if we've already loaded team members to avoid redundant fetches
+	const hasLoadedTeamMembers = useRef(false);
+
 	// Track if this is the first time navigating to portfolio section
 	// (should auto-navigate to detail; subsequent times stay on list)
 	const isFirstPortfolioNavigation = useRef(true);
@@ -637,6 +643,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		sendMessage({
 			command: 'loadIterations'
 		});
+		sendMessage({ command: 'loadCustomEvents' });
 	}, [sendMessage]);
 
 	const loadTeamMembers = useCallback(
@@ -937,8 +944,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				}
 			}
 			if (section === 'team') {
-				// Load team members when navigating to the team section
-				if (!teamMembers.length && !teamMembersLoading && !teamMembersError) {
+				// Load team members only once per session to avoid redundant fetches
+				if (!hasLoadedTeamMembers.current && !teamMembersLoading && !teamMembersError) {
+					hasLoadedTeamMembers.current = true;
 					loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
 				}
 			}
@@ -955,12 +963,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				}
 			}
 		},
-		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories, selectedTeamIteration]
+		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories, selectedTeamIteration]
 	);
 
-	// Reload team members when selected iteration changes
+	// Reload team members when selected iteration changes (only if already loaded)
 	useEffect(() => {
-		if (activeSection === 'team' && teamMembers.length > 0) {
+		if (activeSection === 'team' && hasLoadedTeamMembers.current) {
 			loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
 		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1177,6 +1185,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		// Clear all refs
 		hasLoadedPortfolioIterations.current = false;
 		hasLoadedHomeIterations.current = false;
+		hasLoadedTeamMembers.current = false;
 		isFirstPortfolioNavigation.current = true;
 		loadedViews.current.clear();
 		attemptedUserStoryDefects.current.clear();
@@ -1249,6 +1258,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					break;
 				case 'holidaysError':
 					logDebug(`Failed to load holidays for year ${message.year}: ${message.error}`);
+					break;
+				case 'customEventsLoaded':
+					setCustomCalendarEvents(message.events || []);
+					break;
+				case 'customEventSaved':
+					setCustomCalendarEvents(message.allEvents || []);
+					break;
+				case 'customEventDeleted':
+					setCustomCalendarEvents(message.allEvents || []);
 					break;
 				case 'userStoriesLoaded':
 					// Determine context using iteration field from backend
@@ -1850,148 +1868,162 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} />
 					{portfolioSubTabsBar}
 				</StickyNav>
-				<ContentArea noPaddingTop={activeSection === 'portfolio'}>
-					{activeSection === 'search' && (
-						<SearchSection
-							searchInputRef={searchInputRef}
-							globalSearchTerm={globalSearchTerm}
-							onSearchTermChange={setGlobalSearchTerm}
-							onSearch={runGlobalSearch}
-							globalSearchLoading={globalSearchLoading}
-							globalSearchError={globalSearchError}
-							globalSearchResults={globalSearchResults}
-							onOpenResult={openSearchResult}
-						/>
-					)}
-					{activeSection === 'home' && (
-						<>
-							{iterationsLoading && iterations.length === 0 ? (
-								<SpinnerContainer>
-									<Spinner />
-									<LoadingText>Loading sprints...</LoadingText>
-								</SpinnerContainer>
-							) : (
-								<HomeSection currentDate={homeDate} iterations={iterations} userStories={userStories} onMonthChange={setHomeDate} debugMode={debugMode} currentUser={currentUser} holidays={holidays} onIterationClick={handleIterationClickFromHome} />
-							)}
-						</>
-					)}
+				<SmoothScrollWrapper ref={wrapperRef}>
+					<SmoothScrollContent ref={contentRef} noPaddingTop={activeSection === 'portfolio'}>
+						{activeSection === 'search' && (
+							<SearchSection
+								searchInputRef={searchInputRef}
+								globalSearchTerm={globalSearchTerm}
+								onSearchTermChange={setGlobalSearchTerm}
+								onSearch={runGlobalSearch}
+								globalSearchLoading={globalSearchLoading}
+								globalSearchError={globalSearchError}
+								globalSearchResults={globalSearchResults}
+								onOpenResult={openSearchResult}
+							/>
+						)}
+						{activeSection === 'home' && (
+							<>
+								{iterationsLoading && iterations.length === 0 ? (
+									<SpinnerContainer>
+										<Spinner />
+										<LoadingText>Loading sprints...</LoadingText>
+									</SpinnerContainer>
+								) : (
+									<HomeSection
+										currentDate={homeDate}
+										iterations={iterations}
+										userStories={userStories}
+										onMonthChange={setHomeDate}
+										debugMode={debugMode}
+										currentUser={currentUser}
+										holidays={holidays}
+										onIterationClick={handleIterationClickFromHome}
+										customEvents={customCalendarEvents}
+										onSaveCustomEvent={(event: CustomCalendarEvent) => sendMessage('saveCustomEvent', { event })}
+										onDeleteCustomEvent={(eventId: string) => sendMessage('deleteCustomEvent', { eventId })}
+									/>
+								)}
+							</>
+						)}
 
-					{activeSection === 'team' && (
-						<TeamSection
-							teamMembers={teamMembers}
-							teamMembersLoading={teamMembersLoading}
-							teamMembersError={teamMembersError}
-							selectedTeamIteration={selectedTeamIteration}
-							onTeamIterationChange={setSelectedTeamIteration}
-							iterations={iterations}
-							currentIterationName={findCurrentIteration(iterations)?.name ?? null}
-						/>
-					)}
-					{(activeSection === 'library' || selectedTutorial) && (
-						<LibrarySection
-							selectedTutorial={selectedTutorial}
-							onTutorialSelect={setSelectedTutorial}
-							onTutorialClose={() => {
-								setShowTutorial(false);
-								setSelectedTutorial(null);
-							}}
-							sendMessage={sendMessage}
-						/>
-					)}
+						{activeSection === 'team' && (
+							<TeamSection
+								teamMembers={teamMembers}
+								teamMembersLoading={teamMembersLoading}
+								teamMembersError={teamMembersError}
+								selectedTeamIteration={selectedTeamIteration}
+								onTeamIterationChange={setSelectedTeamIteration}
+								iterations={iterations}
+								currentIterationName={findCurrentIteration(iterations)?.name ?? null}
+							/>
+						)}
+						{(activeSection === 'library' || selectedTutorial) && (
+							<LibrarySection
+								selectedTutorial={selectedTutorial}
+								onTutorialSelect={setSelectedTutorial}
+								onTutorialClose={() => {
+									setShowTutorial(false);
+									setSelectedTutorial(null);
+								}}
+								sendMessage={sendMessage}
+							/>
+						)}
 
-					{activeSection === 'metrics' && (
-						<MetricsSection
-							averageVelocity={averageVelocity}
-							completedPoints={completedPoints}
-							wip={wip}
-							blockedItems={blockedItems}
-							metricsLoading={metricsLoading}
-							velocityData={velocityData}
-							velocityLoading={velocityLoading}
-							stateDistribution={stateDistribution}
-							stateDistributionLoading={stateDistributionLoading}
-							blockedDistribution={blockedDistribution}
-							nextSprintName={nextSprintName}
-							selectedReadinessSprint={selectedReadinessSprint}
-							onReadinessSprintChange={setSelectedReadinessSprint}
-							sprintIterations={iterations
-								.filter(it => {
-									const nextIter = findNextIteration(iterations);
-									if (nextIter && it.name === nextIter.name) {
-										return false;
-									}
-									return true;
-								})
-								.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
-								.map(it => ({
-									objectId: it.objectId,
-									name: it.name,
-									startDate: it.startDate
-								}))}
-							defectsBySeverity={defectsBySeverity}
-							defectsBySeverityLoading={defectsBySeverityLoading}
-						/>
-					)}
+						{activeSection === 'metrics' && (
+							<MetricsSection
+								averageVelocity={averageVelocity}
+								completedPoints={completedPoints}
+								wip={wip}
+								blockedItems={blockedItems}
+								metricsLoading={metricsLoading}
+								velocityData={velocityData}
+								velocityLoading={velocityLoading}
+								stateDistribution={stateDistribution}
+								stateDistributionLoading={stateDistributionLoading}
+								blockedDistribution={blockedDistribution}
+								nextSprintName={nextSprintName}
+								selectedReadinessSprint={selectedReadinessSprint}
+								onReadinessSprintChange={setSelectedReadinessSprint}
+								sprintIterations={iterations
+									.filter(it => {
+										const nextIter = findNextIteration(iterations);
+										if (nextIter && it.name === nextIter.name) {
+											return false;
+										}
+										return true;
+									})
+									.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+									.map(it => ({
+										objectId: it.objectId,
+										name: it.name,
+										startDate: it.startDate
+									}))}
+								defectsBySeverity={defectsBySeverity}
+								defectsBySeverityLoading={defectsBySeverityLoading}
+							/>
+						)}
 
-					{activeSection === 'collaboration' && <CollaborationSection selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />}
+						{activeSection === 'collaboration' && <CollaborationSection selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />}
 
-					{activeSection === 'portfolio' && (
-						<PortfolioSection
-							activeViewType={portfolioActiveViewType}
-							iterations={iterations}
-							iterationsLoading={iterationsLoading}
-							iterationsError={iterationsError}
-							selectedIteration={selectedIteration}
-							userStories={userStories}
-							userStoriesLoading={userStoriesLoading}
-							userStoriesError={userStoriesError}
-							selectedUserStory={selectedUserStory}
-							userStoriesHasMore={userStoriesHasMore}
-							userStoriesLoadingMore={userStoriesLoadingMore}
-							loadMoreUserStories={loadMoreUserStories}
-							portfolioUserStories={portfolioUserStories}
-							portfolioUserStoriesLoading={portfolioUserStoriesLoading}
-							portfolioUserStoriesHasMore={portfolioUserStoriesHasMore}
-							portfolioUserStoriesLoadingMore={portfolioUserStoriesLoadingMore}
-							sprintUserStories={sprintUserStories}
-							sprintUserStoriesLoading={sprintUserStoriesLoading}
-							tasks={tasks}
-							tasksLoading={tasksLoading}
-							tasksError={tasksError}
-							userStoryDefects={userStoryDefects}
-							userStoryDefectsLoading={userStoryDefectsLoading}
-							userStoryDefectsError={userStoryDefectsError}
-							userStoryDiscussions={userStoryDiscussions}
-							userStoryDiscussionsLoading={userStoryDiscussionsLoading}
-							userStoryDiscussionsError={userStoryDiscussionsError}
-							userStoryTestCases={userStoryTestCases}
-							userStoryTestCasesLoading={userStoryTestCasesLoading}
-							userStoryTestCasesError={userStoryTestCasesError}
-							defects={defects}
-							defectsLoading={defectsLoading}
-							defectsError={defectsError}
-							defectsHasMore={defectsHasMore}
-							defectsLoadingMore={defectsLoadingMore}
-							onLoadMoreDefects={loadMoreDefects}
-							selectedDefect={selectedDefect}
-							activeUserStoryTab={activeUserStoryTab}
-							currentScreen={currentScreen}
-							onLoadIterations={loadIterations}
-							onIterationSelected={handleIterationSelected}
-							onUserStorySelected={handleUserStorySelected}
-							onLoadUserStories={loadUserStories}
-							onClearUserStories={clearUserStories}
-							onLoadTasks={loadTasks}
-							onLoadUserStoryDefects={loadUserStoryDefects}
-							onLoadDefects={loadAllDefects}
-							onDefectSelected={handleDefectSelected}
-							onBackToIterations={handleBackToIterations}
-							onBackToUserStories={handleBackToUserStories}
-							onBackToDefects={handleBackToDefects}
-							onActiveUserStoryTabChange={setActiveUserStoryTab}
-						/>
-					)}
-				</ContentArea>
+						{activeSection === 'portfolio' && (
+							<PortfolioSection
+								activeViewType={portfolioActiveViewType}
+								iterations={iterations}
+								iterationsLoading={iterationsLoading}
+								iterationsError={iterationsError}
+								selectedIteration={selectedIteration}
+								userStories={userStories}
+								userStoriesLoading={userStoriesLoading}
+								userStoriesError={userStoriesError}
+								selectedUserStory={selectedUserStory}
+								userStoriesHasMore={userStoriesHasMore}
+								userStoriesLoadingMore={userStoriesLoadingMore}
+								loadMoreUserStories={loadMoreUserStories}
+								portfolioUserStories={portfolioUserStories}
+								portfolioUserStoriesLoading={portfolioUserStoriesLoading}
+								portfolioUserStoriesHasMore={portfolioUserStoriesHasMore}
+								portfolioUserStoriesLoadingMore={portfolioUserStoriesLoadingMore}
+								sprintUserStories={sprintUserStories}
+								sprintUserStoriesLoading={sprintUserStoriesLoading}
+								tasks={tasks}
+								tasksLoading={tasksLoading}
+								tasksError={tasksError}
+								userStoryDefects={userStoryDefects}
+								userStoryDefectsLoading={userStoryDefectsLoading}
+								userStoryDefectsError={userStoryDefectsError}
+								userStoryDiscussions={userStoryDiscussions}
+								userStoryDiscussionsLoading={userStoryDiscussionsLoading}
+								userStoryDiscussionsError={userStoryDiscussionsError}
+								userStoryTestCases={userStoryTestCases}
+								userStoryTestCasesLoading={userStoryTestCasesLoading}
+								userStoryTestCasesError={userStoryTestCasesError}
+								defects={defects}
+								defectsLoading={defectsLoading}
+								defectsError={defectsError}
+								defectsHasMore={defectsHasMore}
+								defectsLoadingMore={defectsLoadingMore}
+								onLoadMoreDefects={loadMoreDefects}
+								selectedDefect={selectedDefect}
+								activeUserStoryTab={activeUserStoryTab}
+								currentScreen={currentScreen}
+								onLoadIterations={loadIterations}
+								onIterationSelected={handleIterationSelected}
+								onUserStorySelected={handleUserStorySelected}
+								onLoadUserStories={loadUserStories}
+								onClearUserStories={clearUserStories}
+								onLoadTasks={loadTasks}
+								onLoadUserStoryDefects={loadUserStoryDefects}
+								onLoadDefects={loadAllDefects}
+								onDefectSelected={handleDefectSelected}
+								onBackToIterations={handleBackToIterations}
+								onBackToUserStories={handleBackToUserStories}
+								onBackToDefects={handleBackToDefects}
+								onActiveUserStoryTabChange={setActiveUserStoryTab}
+							/>
+						)}
+					</SmoothScrollContent>
+				</SmoothScrollWrapper>
 			</CenteredContainer>
 		</Container>
 	);

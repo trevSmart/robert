@@ -21,10 +21,22 @@ export interface Holiday {
  * Supports holidays, sprint cutoffs, and other event types
  */
 export interface DayEvent {
-	type: 'holiday' | 'sprintCutoff' | 'other';
+	type: 'holiday' | 'sprintCutoff' | 'customEvent' | 'other';
 	displayText: string;
 	tooltip: string;
 	color: string; // Hex color code
 	opacity: number; // 0-1 transparency level
-	data?: Holiday | Record<string, unknown> | unknown; // Original data object (Holiday, Iteration, etc)
+	data?: Holiday | CustomCalendarEvent | Record<string, unknown> | unknown; // Original data object (Holiday, Iteration, etc)
+}
+
+/**
+ * User-created custom calendar event
+ */
+export interface CustomCalendarEvent {
+	id: string; // UUID
+	date: string; // YYYY-MM-DD
+	time?: string; // HH:MM (optional)
+	title: string;
+	description?: string;
+	color: string; // Hex color code
 }

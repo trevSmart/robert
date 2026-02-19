@@ -112,7 +112,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Register the webview provider for activity bar
 	outputManager.appendLine('[Robert] 📋 Registering webview provider for activity bar');
-	const webviewProvider = new RobertWebviewProvider(context.extensionUri);
+	const webviewProvider = new RobertWebviewProvider(context.extensionUri, context);
 	globalWebviewProvider = webviewProvider;
 	context.subscriptions.push(
 		vscode.window.registerWebviewViewProvider(RobertWebviewProvider.viewType, webviewProvider, {

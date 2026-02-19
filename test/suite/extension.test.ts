@@ -59,11 +59,12 @@ suite('Extension Integration Test Suite', () => {
 
 	test('Configuration defaults should be correct', () => {
 		const config = vscode.workspace.getConfiguration('robert');
-		
-		assert.strictEqual(config.get('apiEndpoint'), 'https://rally.example.com');
-		assert.strictEqual(config.get('refreshInterval'), 30);
-		assert.strictEqual(config.get('autoRefresh'), true);
-		assert.strictEqual(config.get('debugMode'), false);
+
+		// Use inspect().defaultValue so the test is independent of user/workspace overrides
+		assert.strictEqual(config.inspect('apiEndpoint')?.defaultValue, 'https://rally.example.com');
+		assert.strictEqual(config.inspect('refreshInterval')?.defaultValue, 30);
+		assert.strictEqual(config.inspect('autoRefresh')?.defaultValue, true);
+		assert.strictEqual(config.inspect('debugMode')?.defaultValue, false);
 	});
 
 	test('Output channel should be created', async () => {
@@ -78,16 +79,27 @@ suite('Extension Integration Test Suite', () => {
 suite('Settings Manager Integration Tests', () => {
 	test('Should be able to update settings', async () => {
 		const config = vscode.workspace.getConfiguration('robert');
-		
+
 		// Store original value
 		const originalValue = config.get('debugMode');
-		
+
 		// Update setting
 		await config.update('debugMode', true, vscode.ConfigurationTarget.Global);
-		
+
+		// Wait for configuration change event so the in-memory config is updated
+		await new Promise<void>((resolve) => {
+			const disposable = vscode.workspace.onDidChangeConfiguration((e) => {
+				if (e.affectsConfiguration('robert.debugMode')) {
+					disposable.dispose();
+					resolve();
+				}
+			});
+			setTimeout(resolve, 500); // Fallback in case event does not fire
+		});
+
 		// Verify update
-		assert.strictEqual(config.get('debugMode'), true);
-		
+		assert.strictEqual(vscode.workspace.getConfiguration('robert').get('debugMode'), true);
+
 		// Restore original value
 		await config.update('debugMode', originalValue, vscode.ConfigurationTarget.Global);
 	});

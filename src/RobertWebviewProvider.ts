@@ -52,7 +52,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	// Debug mode state
 	private _isDebugMode: boolean = false;
 
-	constructor(private readonly _extensionUri: vscode.Uri) {
+	constructor(
+		private readonly _extensionUri: vscode.Uri,
+		private readonly _context: vscode.ExtensionContext
+	) {
 		this._errorHandler = ErrorHandler.getInstance();
 		this._settingsManager = SettingsManager.getInstance();
 		this._collaborationClient = CollaborationClient.getInstance();
@@ -1532,6 +1535,32 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								});
 							}
 							break;
+						case 'loadCustomEvents': {
+							const events = (this._context.globalState.get<import('./types/utils').CustomCalendarEvent[]>('robert.customCalendarEvents', []) ?? []).filter(Boolean);
+							webview.postMessage({ command: 'customEventsLoaded', events });
+							break;
+						}
+						case 'saveCustomEvent': {
+							const allEvents = (this._context.globalState.get<import('./types/utils').CustomCalendarEvent[]>('robert.customCalendarEvents', []) ?? []).filter(Boolean);
+							const incoming = (message.data?.event ?? message.event) as import('./types/utils').CustomCalendarEvent;
+							const existingIndex = allEvents.findIndex(e => e.id === incoming.id);
+							if (existingIndex >= 0) {
+								allEvents[existingIndex] = incoming;
+							} else {
+								allEvents.push(incoming);
+							}
+							await this._context.globalState.update('robert.customCalendarEvents', allEvents);
+							webview.postMessage({ command: 'customEventSaved', allEvents });
+							break;
+						}
+						case 'deleteCustomEvent': {
+							const allEvents = (this._context.globalState.get<import('./types/utils').CustomCalendarEvent[]>('robert.customCalendarEvents', []) ?? []).filter(Boolean);
+							const eventId = message.data?.eventId ?? message.eventId;
+							const filtered = allEvents.filter(e => e.id !== eventId);
+							await this._context.globalState.update('robert.customCalendarEvents', filtered);
+							webview.postMessage({ command: 'customEventDeleted', allEvents: filtered });
+							break;
+						}
 						default:
 							this._errorHandler.logWarning(`Unknown message command: ${message.command}`, 'WebviewMessageListener');
 							break;

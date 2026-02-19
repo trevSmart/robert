@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
-import type { Holiday, DayEvent } from '../../../types/utils';
+import type { Holiday, DayEvent, CustomCalendarEvent } from '../../../types/utils';
 import type { UserStory } from '../../../types/rally';
 
 interface Iteration {
@@ -32,14 +32,27 @@ interface CalendarProps {
 	currentUser?: unknown;
 	holidays?: Holiday[];
 	onIterationClick?: (iteration: Iteration) => void;
+	customEvents?: CustomCalendarEvent[];
+	onSaveCustomEvent?: (event: CustomCalendarEvent) => void;
+	onDeleteCustomEvent?: (eventId: string) => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], userStories = [], onMonthChange, debugMode = false, currentUser, holidays = [], onIterationClick }) => {
+const PRESET_COLORS = ['#e05252', '#e07c52', '#e0c452', '#7bc67b', '#52a0e0', '#8a52e0', '#e052b8', '#808080'];
+
+const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], userStories = [], onMonthChange, debugMode = false, currentUser, holidays = [], onIterationClick, customEvents = [], onSaveCustomEvent, onDeleteCustomEvent }) => {
 	const today = new Date();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
 
 	const [hoveredDay, setHoveredDay] = useState<DayInfo | null>(null);
 	const [isHeaderHovered, setIsHeaderHovered] = useState(false);
+
+	// Custom event modal state
+	const [modalOpen, setModalOpen] = useState(false);
+	const [modalClosing, setModalClosing] = useState(false);
+	const [modalEntered, setModalEntered] = useState(false);
+	const [editingEvent, setEditingEvent] = useState<CustomCalendarEvent | null>(null);
+	const [modalForm, setModalForm] = useState({ date: '', time: '', title: '', description: '', color: '#52a0e0' });
+	const modalTransitionMs = 220;
 	const [hoveredIteration, setHoveredIteration] = useState<Iteration | null>(null);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 	const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 800);
@@ -112,6 +125,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	// Track page visibility to pause animations when hidden
 	const [pageVisible, setPageVisible] = useState(() => (typeof document !== 'undefined' ? document.visibilityState === 'visible' : true));
+
+	// Trigger modal enter animation after mount
+	useEffect(() => {
+		if (!modalOpen || modalEntered) return;
+		const id = requestAnimationFrame(() => {
+			requestAnimationFrame(() => setModalEntered(true));
+		});
+		return () => cancelAnimationFrame(id);
+	}, [modalOpen, modalEntered]);
 
 	// Trigger sprint bar grow animation shortly after mount
 	useEffect(() => {
@@ -535,14 +557,16 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
 		const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
-		// Reset time for date comparison
-		startDate.setHours(0, 0, 0, 0);
-		endDate.setHours(23, 59, 59, 999);
+		// Reset time for date comparison - need to do this before assignment
+		const iterStartDate = new Date(startDate);
+		const iterEndDate = new Date(endDate);
+		iterStartDate.setHours(0, 0, 0, 0);
+		iterEndDate.setHours(23, 59, 59, 999);
 		monthStart.setHours(0, 0, 0, 0);
 		monthEnd.setHours(23, 59, 59, 999);
 
 		// Check for overlap: iteration starts before month ends AND iteration ends after month starts
-		return startDate <= monthEnd && endDate >= monthStart;
+		return iterStartDate <= monthEnd && iterEndDate >= monthStart;
 	};
 
 	// Helper function to check if two iterations overlap temporally
@@ -566,6 +590,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	// Filter iterations that overlap with current month
 	const currentMonthIterations = iterations.filter(doesIterationOverlapMonth);
+
+	// Debug: log all iterations to help diagnose missing sprints
+	if (debugMode) {
+		console.log('All iterations:', iterations.map(i => ({ name: i.name, start: i.startDate, end: i.endDate })));
+		console.log('Current month iterations:', currentMonthIterations.map(i => ({ name: i.name, start: i.startDate, end: i.endDate })));
+	}
 
 	// Assign colors deterministically across all iterations for cross-month consistency
 	const orderedAllIterations = [...iterations].sort((a, b) => {
@@ -695,6 +725,55 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		});
 	};
 
+	// Custom event modal helpers
+	const openModal = (event: CustomCalendarEvent | null, prefillDate?: string) => {
+		if (event) {
+			setEditingEvent(event);
+			setModalForm({ date: event.date, time: event.time || '', title: event.title, description: event.description || '', color: event.color });
+		} else {
+			setEditingEvent(null);
+			const defaultDate = prefillDate || `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+			setModalForm({ date: defaultDate, time: '', title: '', description: '', color: '#52a0e0' });
+		}
+		setModalClosing(false);
+		setModalEntered(false);
+		setModalOpen(true);
+	};
+
+	const closeModal = () => {
+		setModalClosing(true);
+	};
+
+	const handleModalTransitionEnd = (e: React.TransitionEvent) => {
+		if (e.target !== e.currentTarget) return;
+		if (modalClosing) {
+			setModalOpen(false);
+			setModalClosing(false);
+			setModalEntered(false);
+			setEditingEvent(null);
+		}
+	};
+
+	const saveModal = () => {
+		if (!modalForm.title.trim() || !modalForm.date) return;
+		const event: CustomCalendarEvent = {
+			id: editingEvent?.id || crypto.randomUUID(),
+			date: modalForm.date,
+			time: modalForm.time || undefined,
+			title: modalForm.title.trim(),
+			description: modalForm.description.trim() || undefined,
+			color: modalForm.color
+		};
+		onSaveCustomEvent?.(event);
+		closeModal();
+	};
+
+	const deleteModal = () => {
+		if (!editingEvent) return;
+		onDeleteCustomEvent?.(editingEvent.id);
+		closeModal();
+	};
+
 	// Helper function to get all events for a specific day
 	const getEventsForDay = (dayDate: Date): DayEvent[] => {
 		const events: DayEvent[] = [];
@@ -741,6 +820,19 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					data: endingSprint
 				});
 			}
+		}
+
+		// Add custom user events
+		const dayCustomEvents = customEvents.filter(e => e != null && e.date === dateStr);
+		for (const ce of dayCustomEvents) {
+			events.push({
+				type: 'customEvent',
+				displayText: ce.time ? `${ce.time} ${ce.title}` : ce.title,
+				tooltip: ce.description || ce.title,
+				color: ce.color,
+				opacity: 0.85,
+				data: ce
+			});
 		}
 
 		return events;
@@ -792,9 +884,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		dayCounter++;
 	}
 
-	// Pre-compute consistent iteration order per week row so that
-	// sprint bars stay at the same vertical position across the whole week
-	const weekIterationsOrder: Iteration[][] = [];
+	// Pre-compute consistent iteration slot assignment per week row so that
+	// sprint bars stay at the same vertical position across the whole week.
+	// Non-overlapping iterations share the same slot (interval scheduling).
+	const weekIterationsOrder: { iteration: Iteration; slotIndex: number }[][] = [];
 	const numWeeks = Math.ceil(calendarDays.length / 7);
 	for (let w = 0; w < numWeeks; w++) {
 		const weekDays = calendarDays.slice(w * 7, (w + 1) * 7);
@@ -813,7 +906,28 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			if (aStart !== bStart) return aStart - bStart;
 			return a.objectId.localeCompare(b.objectId);
 		});
-		weekIterationsOrder.push(sorted);
+
+		// Assign slots using interval scheduling: non-overlapping iterations share a slot
+		const slotAssignments: { iteration: Iteration; slotIndex: number }[] = [];
+		const slots: Iteration[] = []; // last iteration assigned to each slot
+		for (const iter of sorted) {
+			// Find the first slot where this iteration does not overlap with the last assigned iteration
+			let assignedSlot = -1;
+			for (let s = 0; s < slots.length; s++) {
+				if (!doIterationsOverlap(slots[s], iter)) {
+					assignedSlot = s;
+					break;
+				}
+			}
+			if (assignedSlot === -1) {
+				assignedSlot = slots.length;
+				slots.push(iter);
+			} else {
+				slots[assignedSlot] = iter;
+			}
+			slotAssignments.push({ iteration: iter, slotIndex: assignedSlot });
+		}
+		weekIterationsOrder.push(slotAssignments);
 	}
 
 	const goToPreviousMonth = () => {
@@ -871,13 +985,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					ref={welcomeRef}
 					style={{
 						textAlign: 'center',
-						marginBottom: '16px',
 						padding: '12px 16px',
-						backgroundColor: lightTheme ? 'rgba(91, 155, 213, 0.12)' : 'rgba(107, 163, 232, 0.14)',
+						backgroundColor: lightTheme ? 'rgba(91, 155, 213, 0.04)' : 'rgba(107, 163, 232, 0.05)',
 						borderRadius: '8px',
-						border: `1px solid ${lightTheme ? 'rgba(91, 155, 213, 0.25)' : 'rgba(107, 163, 232, 0.25)'}`,
+						border: `1px solid ${lightTheme ? 'rgba(91, 155, 213, 0.12)' : 'rgba(107, 163, 232, 0.14)'}`,
 						maxWidth: '700px',
-						margin: '0 40px 32px 40px'
+						margin: '0 auto 32px auto'
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground, textAlign: 'center' }}>
@@ -927,7 +1040,33 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				onMouseEnter={() => setIsHeaderHovered(true)}
 				onMouseLeave={() => setIsHeaderHovered(false)}
 			>
-				<div style={{ flex: 1, minWidth: 0 }} />
+				<div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', minWidth: 0 }}>
+					<button
+						onClick={() => openModal(null)}
+						style={{
+							padding: '4px 10px',
+							border: 'none',
+							outline: 'none',
+							backgroundColor: 'transparent',
+							color: themeColors.descriptionForeground,
+							borderRadius: '4px',
+							cursor: 'pointer',
+							fontSize: '12px',
+							opacity: isHeaderHovered ? 1 : 0,
+							pointerEvents: isHeaderHovered ? 'auto' : 'none',
+							transition: 'opacity 0.2s ease, background-color 0.2s ease'
+						}}
+						onMouseEnter={e => {
+							e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
+						}}
+						onMouseLeave={e => {
+							e.currentTarget.style.backgroundColor = 'transparent';
+						}}
+						title="Create new event"
+					>
+						+ New Event
+					</button>
+				</div>
 				<div
 					style={{
 						display: 'flex',
@@ -1188,9 +1327,18 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													?.map(x => parseInt(x, 16))
 													.join(',') || '76,175,160'
 											: event.color;
+										const isCustomEvent = event.type === 'customEvent';
 										return (
 											<div
 												key={idx}
+												onClick={
+													isCustomEvent
+														? e => {
+																e.stopPropagation();
+																openModal(event.data as CustomCalendarEvent);
+															}
+														: undefined
+												}
 												style={{
 													backgroundColor: `rgba(${colorRgb}, ${event.opacity})`,
 													color: 'white',
@@ -1207,7 +1355,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													WebkitBoxOrient: 'vertical',
 													WebkitLineClamp: 2,
 													whiteSpace: 'normal',
-													wordBreak: 'break-word'
+													wordBreak: 'break-word',
+													pointerEvents: isCustomEvent ? 'auto' : 'none',
+													cursor: isCustomEvent ? 'pointer' : 'default'
 												}}
 												title={event.tooltip}
 											>
@@ -1250,71 +1400,75 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										}}
 										title={dayInfo.iterations.map(iter => `${iter.name} (${iter.state})`).join(', ')}
 									>
-										{weekIters.slice(0, 2).map(iteration => {
-											const isActive = activeIds.has(iteration.objectId);
-											if (!isActive) {
+										{(() => {
+											// Build a map from slotIndex -> assignment for active iterations in this day
+											const slotMap = new Map<number, typeof weekIters[0]>();
+											for (const assignment of weekIters) {
+												if (activeIds.has(assignment.iteration.objectId)) {
+													slotMap.set(assignment.slotIndex, assignment);
+												}
+											}
+											const numSlots = weekIters.length > 0 ? Math.max(...weekIters.map(a => a.slotIndex)) + 1 : 0;
+											const stagger = 14;
+											const cellDuration = 28;
+											const animDelay = index * stagger;
+											const dayDate = new Date(dayInfo.date.getFullYear(), dayInfo.date.getMonth(), dayInfo.date.getDate());
+											dayDate.setHours(0, 0, 0, 0);
+
+											return Array.from({ length: numSlots }, (_, slotIdx) => {
+												const assignment = slotMap.get(slotIdx);
+												if (!assignment) {
+													return (
+														<div
+															key={`slot-${slotIdx}`}
+															style={{
+																height: getSprintBarHeight(calendarGridWidth) + 'px',
+																backgroundColor: 'transparent'
+															}}
+														/>
+													);
+												}
+												const { iteration } = assignment;
+												const iterationStartDate = iteration.startDate ? new Date(iteration.startDate) : null;
+												const iterationEndDate = iteration.endDate ? new Date(iteration.endDate) : null;
+												if (iterationStartDate) iterationStartDate.setHours(0, 0, 0, 0);
+												if (iterationEndDate) iterationEndDate.setHours(0, 0, 0, 0);
+												const isFirstDay = iterationStartDate && dayDate.getTime() === iterationStartDate.getTime();
+												const isLastDay = iterationEndDate && dayDate.getTime() === iterationEndDate.getTime();
 												return (
 													<div
 														key={iteration.objectId}
 														style={{
 															height: getSprintBarHeight(calendarGridWidth) + 'px',
-															backgroundColor: 'transparent'
+															backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+															filter: lightTheme ? 'saturate(77%) brightness(162%) contrast(87%)' : 'saturate(72%) brightness(79%) contrast(90%)',
+															opacity: sprintBarsAnimated ? 1 : 0,
+															transform: sprintBarsAnimated ? 'scaleX(1)' : 'scaleX(0)',
+															transformOrigin: 'left center',
+															transition: sprintBarsTransition ? `transform ${cellDuration}ms linear ${animDelay}ms, opacity ${cellDuration}ms linear ${animDelay}ms` : 'none',
+															borderTopLeftRadius: isFirstDay ? '4px' : '0',
+															borderBottomLeftRadius: isFirstDay ? '4px' : '0',
+															borderTopRightRadius: isLastDay ? '4px' : '0',
+															borderBottomRightRadius: isLastDay ? '4px' : '0',
+															marginLeft: isFirstDay ? '1px' : '-0.5px',
+															marginRight: isLastDay ? '1px' : '-0.5px',
+															cursor: 'pointer'
+														}}
+														onMouseEnter={e => {
+															setHoveredIteration(iteration);
+															setMousePosition({ x: e.clientX, y: e.clientY });
+															setHoveredDay(null);
+														}}
+														onMouseMove={e => {
+															setMousePosition({ x: e.clientX, y: e.clientY });
+														}}
+														onMouseLeave={() => {
+															setHoveredIteration(null);
 														}}
 													/>
 												);
-											}
-
-											const iterationStartDate = iteration.startDate ? new Date(iteration.startDate) : null;
-											const iterationEndDate = iteration.endDate ? new Date(iteration.endDate) : null;
-
-											if (iterationStartDate) iterationStartDate.setHours(0, 0, 0, 0);
-											if (iterationEndDate) iterationEndDate.setHours(0, 0, 0, 0);
-
-											const dayDate = new Date(dayInfo.date.getFullYear(), dayInfo.date.getMonth(), dayInfo.date.getDate());
-											dayDate.setHours(0, 0, 0, 0);
-
-											const isFirstDay = iterationStartDate && dayDate.getTime() === iterationStartDate.getTime();
-											const isLastDay = iterationEndDate && dayDate.getTime() === iterationEndDate.getTime();
-
-											// Use the cell's global position in the calendar grid for the delay,
-											// so all sprint bars animate as one continuous sweep across the month.
-											const stagger = 14; // ms between consecutive calendar cells
-											const cellDuration = 28; // ms per cell – slightly longer than stagger for seamless overlap
-											const animDelay = index * stagger;
-
-											return (
-												<div
-													key={iteration.objectId}
-													style={{
-														height: getSprintBarHeight(calendarGridWidth) + 'px',
-														backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
-														filter: lightTheme ? 'saturate(77%) brightness(162%) contrast(87%)' : 'saturate(72%) brightness(79%) contrast(90%)',
-														opacity: sprintBarsAnimated ? 1 : 0,
-														transform: sprintBarsAnimated ? 'scaleX(1)' : 'scaleX(0)',
-														transformOrigin: 'left center',
-														transition: sprintBarsTransition ? `transform ${cellDuration}ms linear ${animDelay}ms, opacity ${cellDuration}ms linear ${animDelay}ms` : 'none',
-														borderTopLeftRadius: isFirstDay ? '4px' : '0',
-														borderBottomLeftRadius: isFirstDay ? '4px' : '0',
-														borderTopRightRadius: isLastDay ? '4px' : '0',
-														borderBottomRightRadius: isLastDay ? '4px' : '0',
-														marginLeft: isFirstDay ? '1px' : '-0.5px',
-														marginRight: isLastDay ? '1px' : '-0.5px',
-														cursor: 'pointer'
-													}}
-													onMouseEnter={e => {
-														setHoveredIteration(iteration);
-														setMousePosition({ x: e.clientX, y: e.clientY });
-														setHoveredDay(null);
-													}}
-													onMouseMove={e => {
-														setMousePosition({ x: e.clientX, y: e.clientY });
-													}}
-													onMouseLeave={() => {
-														setHoveredIteration(null);
-													}}
-												/>
-											);
-										})}
+											});
+										})()}
 									</div>
 								);
 							})()}
@@ -1462,6 +1616,213 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						</div>
 					);
 				})()}
+			{/* Custom Event Modal */}
+			{modalOpen && (
+				<div
+					onClick={closeModal}
+					onTransitionEnd={handleModalTransitionEnd}
+					style={{
+						position: 'fixed',
+						inset: 0,
+						backgroundColor: 'rgba(0,0,0,0.45)',
+						backdropFilter: 'blur(1.4px)',
+						WebkitBackdropFilter: 'blur(1.4px)',
+						zIndex: 9999,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						opacity: modalClosing ? 0 : modalEntered ? 1 : 0,
+						transition: `opacity ${modalTransitionMs}ms ease`
+					}}
+				>
+					<div
+						onClick={e => e.stopPropagation()}
+						style={{
+							backgroundColor: 'var(--vscode-editor-background)',
+							border: '1px solid var(--vscode-panel-border)',
+							borderRadius: '8px',
+							padding: '24px',
+							width: '360px',
+							maxWidth: '90vw',
+							display: 'flex',
+							flexDirection: 'column',
+							gap: '14px',
+							boxShadow: '0 8px 32px rgba(0,0,0,0.32)',
+							opacity: modalClosing ? 0 : modalEntered ? 1 : 0,
+							transform: modalClosing ? 'translateY(-12px) scale(0.96)' : modalEntered ? 'translateY(0) scale(1)' : 'translateY(-12px) scale(0.96)',
+							transition: `opacity ${modalTransitionMs}ms ease, transform ${modalTransitionMs}ms ease`
+						}}
+					>
+						<h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: themeColors.foreground }}>{editingEvent ? 'Edit Event' : 'New Event'}</h3>
+
+						{/* Date + Time row */}
+						<div style={{ display: 'flex', gap: '10px' }}>
+							<div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
+								<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Date *</label>
+								<input
+									type="date"
+									value={modalForm.date}
+									onChange={e => setModalForm(f => ({ ...f, date: e.target.value }))}
+									style={{
+										background: 'var(--vscode-input-background)',
+										color: 'var(--vscode-input-foreground)',
+										border: '1px solid var(--vscode-input-border, var(--vscode-panel-border))',
+										borderRadius: '4px',
+										padding: '5px 8px',
+										fontSize: '12px',
+										width: '100%',
+										boxSizing: 'border-box',
+										colorScheme: 'dark'
+									}}
+								/>
+							</div>
+							<div style={{ width: '100px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+								<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Time (optional)</label>
+								<input
+									type="time"
+									value={modalForm.time}
+									onChange={e => setModalForm(f => ({ ...f, time: e.target.value }))}
+									style={{
+										background: 'var(--vscode-input-background)',
+										color: 'var(--vscode-input-foreground)',
+										border: '1px solid var(--vscode-input-border, var(--vscode-panel-border))',
+										borderRadius: '4px',
+										padding: '5px 8px',
+										fontSize: '12px',
+										width: '100%',
+										boxSizing: 'border-box',
+										colorScheme: 'dark'
+									}}
+								/>
+							</div>
+						</div>
+
+						{/* Title */}
+						<div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+							<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Title *</label>
+							<input
+								type="text"
+								value={modalForm.title}
+								onChange={e => setModalForm(f => ({ ...f, title: e.target.value }))}
+								placeholder="Event title"
+								style={{
+									background: 'var(--vscode-input-background)',
+									color: 'var(--vscode-input-foreground)',
+									border: '1px solid var(--vscode-input-border, var(--vscode-panel-border))',
+									borderRadius: '4px',
+									padding: '5px 8px',
+									fontSize: '12px',
+									width: '100%',
+									boxSizing: 'border-box'
+								}}
+							/>
+						</div>
+
+						{/* Description */}
+						<div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+							<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Description (shown on hover)</label>
+							<textarea
+								value={modalForm.description}
+								onChange={e => setModalForm(f => ({ ...f, description: e.target.value }))}
+								placeholder="Optional description..."
+								rows={3}
+								style={{
+									background: 'var(--vscode-input-background)',
+									color: 'var(--vscode-input-foreground)',
+									border: '1px solid var(--vscode-input-border, var(--vscode-panel-border))',
+									borderRadius: '4px',
+									padding: '5px 8px',
+									fontSize: '12px',
+									width: '100%',
+									boxSizing: 'border-box',
+									resize: 'vertical',
+									fontFamily: 'inherit'
+								}}
+							/>
+						</div>
+
+						{/* Color */}
+						<div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+							<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Color</label>
+							<div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+								{PRESET_COLORS.map(c => (
+									<button
+										key={c}
+										onClick={() => setModalForm(f => ({ ...f, color: c }))}
+										style={{
+											width: '22px',
+											height: '22px',
+											borderRadius: '50%',
+											backgroundColor: c,
+											border: modalForm.color === c ? '2px solid var(--vscode-focusBorder)' : '2px solid transparent',
+											cursor: 'pointer',
+											outline: 'none',
+											padding: 0,
+											flexShrink: 0
+										}}
+										title={c}
+									/>
+								))}
+								<input type="color" value={modalForm.color} onChange={e => setModalForm(f => ({ ...f, color: e.target.value }))} style={{ width: '22px', height: '22px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'none' }} title="Custom color" />
+							</div>
+						</div>
+
+						{/* Action buttons */}
+						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+							<div>
+								{editingEvent && (
+									<button
+										onClick={deleteModal}
+										style={{
+											padding: '6px 14px',
+											borderRadius: '4px',
+											border: 'none',
+											cursor: 'pointer',
+											backgroundColor: 'var(--vscode-inputValidation-errorBackground, #5a1d1d)',
+											color: 'var(--vscode-errorForeground, #f48771)',
+											fontSize: '12px'
+										}}
+									>
+										Delete
+									</button>
+								)}
+							</div>
+							<div style={{ display: 'flex', gap: '8px' }}>
+								<button
+									onClick={closeModal}
+									style={{
+										padding: '6px 14px',
+										borderRadius: '4px',
+										border: '1px solid var(--vscode-panel-border)',
+										cursor: 'pointer',
+										backgroundColor: 'transparent',
+										color: themeColors.foreground,
+										fontSize: '12px'
+									}}
+								>
+									Cancel
+								</button>
+								<button
+									onClick={saveModal}
+									disabled={!modalForm.title.trim() || !modalForm.date}
+									style={{
+										padding: '6px 14px',
+										borderRadius: '4px',
+										border: 'none',
+										cursor: !modalForm.title.trim() || !modalForm.date ? 'not-allowed' : 'pointer',
+										backgroundColor: 'var(--vscode-button-background)',
+										color: 'var(--vscode-button-foreground)',
+										fontSize: '12px',
+										opacity: !modalForm.title.trim() || !modalForm.date ? 0.5 : 1
+									}}
+								>
+									Save
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 };

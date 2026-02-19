@@ -12,6 +12,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButt
 			style={{
 				display: 'flex',
 				alignItems: 'center',
+				marginTop: '20px',
 				marginBottom: '20px',
 				paddingBottom: '10px',
 				borderBottom: '1px solid var(--vscode-panel-border)',

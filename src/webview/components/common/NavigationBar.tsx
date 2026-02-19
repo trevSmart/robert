@@ -1,12 +1,24 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { isLightTheme } from '../../utils/themeColors';
 
-// Base styles shared between NavTab and NavOverflowBtn
+// Animation keyframes for dropdown
+const fadeInScale = keyframes`
+	from {
+		opacity: 0;
+		transform: translateY(-4px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+`;
+
+// Base styles shared between NavTab and NavOverflowBtn (first-level tabs only)
 const baseNavButtonStyles = css<{ $isActive: boolean; $lightTheme: boolean }>`
 	padding: 10px 16px 6px;
 	border: none;
-	background-color: transparent;
+	background-color: ${props => (props.$isActive ? 'transparent' : props.$lightTheme ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.22)')};
 	color: ${props => (props.$isActive ? (props.$lightTheme ? '#1e1e1e' : 'var(--vscode-tab-activeForeground)') : props.$lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)')};
 	border-bottom: ${props => (props.$isActive ? (props.$lightTheme ? '2px solid #007acc' : '2px solid var(--vscode-progressBar-background)') : 'none')};
 	font-size: 12.4px;
@@ -53,6 +65,22 @@ const NavOverflowItem = styled.button<{ $isActive: boolean }>`
 	&:hover {
 		background-color: var(--vscode-list-hoverBackground);
 	}
+`;
+
+const NavOverflowMenu = styled.div`
+	position: absolute;
+	right: 0;
+	top: 100%;
+	margin-top: 6px;
+	background-color: var(--vscode-editor-background);
+	border: 1px solid var(--vscode-panel-border);
+	border-radius: 6px;
+	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+	z-index: 10;
+	min-width: 180px;
+	padding: 6px 0;
+	animation: ${fadeInScale} 0.15s ease-out;
+	transform-origin: top right;
 `;
 
 // Inline styles for measurement (mirrors baseNavButtonStyles)
@@ -156,6 +184,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	);
 	const [visibleCount, setVisibleCount] = useState(tabs.length);
 	const [overflowOpen, setOverflowOpen] = useState(false);
+	const [lastReorderedTabId, setLastReorderedTabId] = useState<Section | null>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const measureTabsRef = useRef<HTMLDivElement>(null);
 	const measureOverflowRef = useRef<HTMLButtonElement>(null);
@@ -203,6 +232,32 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		setVisibleCount(nextVisibleCount);
 	}, [tabs.length]);
 
+	// Reorder tabs when an overflow tab is selected to make it visible
+	const reorderTabsForSelectedTab = useCallback(() => {
+		// Check if the active section is in an overflow tab
+		const activeTabIndex = tabs.findIndex(tab => tab.id === activeSection);
+
+		// If active tab is not visible, reorder to make it visible
+		if (activeTabIndex >= visibleCount && activeTabIndex !== -1) {
+			// Strategy: Keep visible tabs except the last non-search tab, then add active tab
+			// This ensures the active tab is shown AND there's still room for the overflow button
+			const searchTab = tabs[0];
+			const restTabs = tabs.slice(1);
+
+			// Get tabs that should remain visible, leaving room for active tab and dropdown
+			// We need: search + (visibleCount - 2) other tabs + active tab = visibleCount total
+			const otherVisibleTabs = restTabs.slice(0, Math.max(0, visibleCount - 2));
+			const activeTab = tabs[activeTabIndex];
+
+			// Rebuild: search + other visible tabs + active tab
+			// The dropdown button will still be shown because we have overflow tabs
+			const reordered = [searchTab, ...otherVisibleTabs, activeTab];
+			return reordered;
+		}
+
+		return null;
+	}, [tabs, visibleCount, activeSection]);
+
 	useLayoutEffect(() => {
 		requestAnimationFrame(() => {
 			recomputeVisibleTabs();
@@ -248,9 +303,32 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		return () => observer.disconnect();
 	}, [recomputeVisibleTabs]);
 
-	const visibleTabs = tabs.slice(0, visibleCount);
-	const overflowTabs = tabs.slice(visibleCount);
+	// Track when we reorder tabs for an overflow selection
+	useEffect(() => {
+		const activeTabIndex = tabs.findIndex(tab => tab.id === activeSection);
+		if (activeTabIndex >= visibleCount && activeTabIndex !== -1) {
+			// Active tab is in overflow, so we'll reorder
+			setLastReorderedTabId(activeSection);
+		} else if (lastReorderedTabId && activeTabIndex < visibleCount && activeTabIndex !== -1) {
+			// We navigated to a visible tab, so reset the reorder state
+			setLastReorderedTabId(null);
+		}
+	}, [activeSection, visibleCount, tabs, lastReorderedTabId]);
+
+	// Get reordered tabs if an overflow tab is selected
+	const shouldReorder = lastReorderedTabId !== null;
+	const reorderedTabs = shouldReorder ? reorderTabsForSelectedTab() : null;
+	const displayTabs = reorderedTabs || tabs;
+
+	// Calculate visible tabs, ensuring dropdown is shown when there are overflow tabs
+	const visibleTabs = displayTabs.slice(0, visibleCount);
+	const overflowTabs = displayTabs.slice(visibleCount);
 	const isOverflowActive = overflowTabs.some(tab => tab.id === activeSection);
+
+	// If we're showing a reordered tab, we need to ensure there's always an overflow button
+	// so the user can access other tabs
+	// Keep dropdown visible if we're in a reordered state, OR if there are overflow tabs
+	const hasOverflow = overflowTabs.length > 0 || shouldReorder;
 
 	return (
 		<div
@@ -263,7 +341,6 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 				style={{
 					display: 'flex',
 					gap: '0',
-					flex: 1,
 					minWidth: 0,
 					position: 'relative'
 				}}
@@ -304,7 +381,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 						)}
 					</NavTab>
 				))}
-				{overflowTabs.length > 0 && (
+				{hasOverflow && (
 					<div style={{ position: 'relative', display: 'flex' }}>
 						<NavOverflowBtn
 							ref={realOverflowButtonRef}
@@ -323,21 +400,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 							<span style={{ fontSize: '18px', lineHeight: 1 }}>…</span>
 						</NavOverflowBtn>
 						{overflowOpen && (
-							<div
-								style={{
-									position: 'absolute',
-									right: 0,
-									top: '100%',
-									marginTop: '6px',
-									backgroundColor: 'var(--vscode-editor-background)',
-									border: '1px solid var(--vscode-panel-border)',
-									borderRadius: '6px',
-									boxShadow: '0 8px 24px rgba(0, 0, 0, 0.2)',
-									zIndex: 10,
-									minWidth: '180px',
-									padding: '6px 0'
-								}}
-							>
+							<NavOverflowMenu>
 								{overflowTabs.map(({ id, label, Icon, iconOnly }) => (
 									<NavOverflowItem
 										key={id}
@@ -377,7 +440,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 										)}
 									</NavOverflowItem>
 								))}
-							</div>
+							</NavOverflowMenu>
 						)}
 					</div>
 				)}

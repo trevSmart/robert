@@ -7,7 +7,7 @@ export const GlobalStyle = createGlobalStyle`
 	}
 
 	html, body {
-		background: linear-gradient(135deg, rgba(0, 0, 0, 0.01), rgba(50, 0, 80, 0.01));
+		background: var(--vscode-editor-background);
 		margin: 0;
 		padding: 0;
 		height: 100%;
@@ -38,7 +38,7 @@ export const Container = styled.div`
 		'Segoe UI',
 		sans-serif;
 	color: ${themeColors.foreground};
-	background-color: transparent;
+	background-color: var(--vscode-editor-background);
 	margin: 0;
 	height: 100vh;
 	display: flex;
@@ -107,6 +107,18 @@ export const ContentArea = styled.div<{ noPaddingTop?: boolean }>`
 	flex: 1;
 	overflow-y: auto;
 	min-height: 0;
+`;
+
+// Lenis smooth scroll wrapper (overflow hidden, Lenis controls scroll via transform)
+export const SmoothScrollWrapper = styled.div`
+	flex: 1;
+	overflow: hidden;
+	min-height: 0;
+`;
+
+// Inner content for Lenis (receives transform for scroll)
+export const SmoothScrollContent = styled.div<{ noPaddingTop?: boolean }>`
+	padding: ${props => (props.noPaddingTop ? '0 0 10px' : '10px 0')};
 `;
 
 export const SettingsContent = styled.div`

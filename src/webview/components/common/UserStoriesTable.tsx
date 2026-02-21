@@ -142,13 +142,11 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 					borderBottom: `1px solid ${themeColors.panelBorder}`,
 					fontWeight: 'bold',
 					cursor: 'pointer',
-					backgroundColor: themeColors.tabActiveBackground,
-					color: themeColors.tabActiveForeground,
+					backgroundColor: themeColors.titleBarActiveBackground,
+					color: themeColors.titleBarActiveForeground,
 					userSelect: 'none',
 					whiteSpace: 'nowrap',
 					width: columnWidths[colKey],
-					minWidth: columnWidths[colKey],
-					maxWidth: columnWidths[colKey],
 					overflow: 'hidden'
 				}}
 				title={`Sort by ${label}`}
@@ -253,9 +251,9 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 			)}
 
 			{userStories.length > 0 && !loading && !error && (
-				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}`, tableLayout: 'fixed' }}>
+				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.tabActiveBackground, color: themeColors.tabActiveForeground }}>
+						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
 							<SortableHeader label="ID" sortKey="formattedId" colKey="formattedId" />
 							<SortableHeader label="Name" sortKey="name" colKey="name" />
 							<SortableHeader label="Assigned To" sortKey="assignee" colKey="assignee" />
@@ -269,10 +267,8 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									borderBottom: `1px solid ${themeColors.panelBorder}`,
 									fontWeight: 'bold',
 									width: columnWidths['items'],
-									minWidth: columnWidths['items'],
-									maxWidth: columnWidths['items'],
-									backgroundColor: themeColors.tabActiveBackground,
-									color: themeColors.tabActiveForeground,
+									backgroundColor: themeColors.titleBarActiveBackground,
+									color: themeColors.titleBarActiveForeground,
 									overflow: 'hidden'
 								}}
 							>
@@ -449,7 +445,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 			{iterations.length > 0 && !loading && !error && (
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.tabActiveBackground, color: themeColors.tabActiveForeground }}>
+						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
 							<th style={{ padding: '10px 4px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '30px' }}></th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', minWidth: '100px', width: '40%' }}>Name</th>
 							<th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '80px' }}>Hours</th>
@@ -462,7 +458,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 							groupedIterations[year].map((iteration, iterationIndex) => (
 								<React.Fragment key={`${year}-${iteration.objectId}`}>
 									{iterationIndex === 0 && (
-										<tr style={{ backgroundColor: themeColors.tabActiveBackground, color: themeColors.tabActiveForeground }}>
+										<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
 											<td colSpan={5} style={{ padding: '12px 12px 12px 46px', fontWeight: 'bold', borderBottom: `1px solid ${themeColors.panelBorder}`, textAlign: 'left' }}>
 												{year}
 											</td>

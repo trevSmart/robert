@@ -1444,11 +1444,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							break;
 						case 'globalSearch':
 							try {
-								this._errorHandler.logDebug(`Global search: "${message.term}"`, 'WebviewMessageListener');
-								const searchResult = await globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 15 });
+								this._errorHandler.logDebug(`Global search: "${message.term}" (type: ${message.searchType || 'all'}, offset: ${message.offset ?? 0})`, 'WebviewMessageListener');
+								const searchResult = await globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 50, searchType: message.searchType, offset: message.offset ?? 0 });
 								webview.postMessage({
 									command: 'globalSearchResults',
 									results: searchResult.results,
+									hasMore: searchResult.hasMore,
 									term: message.term
 								});
 							} catch (error) {

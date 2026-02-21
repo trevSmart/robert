@@ -689,9 +689,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	};
 
 	const getIterationHours = (iteration: Iteration): number => {
-		return userStories
-			.filter(us => extractIterationId(us as any) === iteration.objectId)
-			.reduce((sum, us) => sum + (us.taskEstimateTotal || 0), 0);
+		return userStories.filter(us => extractIterationId(us as any) === iteration.objectId).reduce((sum, us) => sum + (us.taskEstimateTotal || 0), 0);
 	};
 
 	// Order current-month iterations for legend display

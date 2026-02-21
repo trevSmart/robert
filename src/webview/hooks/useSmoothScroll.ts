@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import type Lenis from 'lenis';
 
 export function useSmoothScroll(enabled = true) {
 	const wrapperRef = useRef<HTMLDivElement>(null);
@@ -12,7 +13,7 @@ export function useSmoothScroll(enabled = true) {
 		if (!wrapper || !content) return;
 
 		let rafId: number | undefined;
-		let lenisInstance: { destroy: () => void } | null = null;
+		let lenisInstance: Lenis | null = null;
 		let cancelled = false;
 
 		const initLenis = async () => {

@@ -1275,7 +1275,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
 								e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth
 									? lightTheme
-										? 'rgba(230, 230, 230, 0.08)'
+										? 'rgba(230, 230, 230, 0.18)'
 										: 'rgba(0, 0, 0, 0.18)'
 									: isWeekend && dayInfo.isCurrentMonth
 										? lightTheme

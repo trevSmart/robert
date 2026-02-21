@@ -2319,11 +2319,11 @@ function buildGlobalSearchQuery(term: string, projectRef: string): RallyQueryBui
  * @param options - Optional limit per entity type (default 15)
  * @returns Combined results with entityType, formattedId, name, objectId
  */
-export async function globalSearch(term: string, options?: { limitPerType?: number }): Promise<{ results: GlobalSearchResultItem[]; source: string }> {
+export async function globalSearch(term: string, options?: { limitPerType?: number; searchType?: string; offset?: number }): Promise<{ results: GlobalSearchResultItem[]; hasMore: boolean; source: string }> {
 	const trimmed = (term || '').trim();
 	if (!trimmed) {
 		errorHandler.logDebug('Global search called with empty term', 'rallyServices.globalSearch');
-		return { results: [], source: 'api' };
+		return { results: [], hasMore: false, source: 'api' };
 	}
 
 	const validation = await validateRallyConfiguration();
@@ -2338,7 +2338,7 @@ export async function globalSearch(term: string, options?: { limitPerType?: numb
 
 	const rallyApi = getRallyApi();
 
-	const fetchOptions = [
+	let fetchOptions = [
 		{
 			type: 'hierarchicalrequirement' as const,
 			fetch: ['FormattedID', 'Name', 'ObjectID', 'Project', 'Iteration', '_ref'],
@@ -2361,17 +2361,37 @@ export async function globalSearch(term: string, options?: { limitPerType?: numb
 		}
 	];
 
-	const runOne = async (opts: (typeof fetchOptions)[0]): Promise<GlobalSearchResultItem[]> => {
+	// Filter fetch options based on searchType
+	if (options?.searchType && options.searchType !== 'all') {
+		const searchTypeMap: Record<string, (option: (typeof fetchOptions)[0]) => boolean> = {
+			'user-stories': opt => opt.entityType === 'userstory',
+			defects: opt => opt.entityType === 'defect',
+			tasks: opt => opt.entityType === 'task',
+			'test-cases': opt => opt.entityType === 'testcase'
+		};
+
+		const filterFn = searchTypeMap[options.searchType];
+		if (filterFn) {
+			fetchOptions = fetchOptions.filter(filterFn);
+		}
+	}
+
+	const offset = options?.offset ?? 0;
+	const pageSize = limitPerType + 1; // Fetch one extra to detect if there are more results
+
+	const runOne = async (opts: (typeof fetchOptions)[0]): Promise<{ items: GlobalSearchResultItem[]; hasMore: boolean }> => {
 		try {
 			const result = await rallyApi.query({
 				type: opts.type,
 				fetch: opts.fetch,
 				query: searchQuery,
-				limit: limitPerType
+				limit: pageSize,
+				start: offset + 1 // Rally API uses 1-based indexing
 			});
 			const resultData = result as RallyApiResult;
 			const results = resultData.Results || resultData.QueryResult?.Results || [];
-			return results.map((r: any) => ({
+			const hasMore = results.length > limitPerType;
+			const items = results.slice(0, limitPerType).map((r: any) => ({
 				entityType: opts.entityType,
 				formattedId: r.FormattedID ?? r.formattedId ?? '',
 				name: r.Name ?? r.name ?? '',
@@ -2380,20 +2400,22 @@ export async function globalSearch(term: string, options?: { limitPerType?: numb
 				iteration: r.Iteration?._refObjectName ?? r.Iteration?.refObjectName ?? r.iteration?._refObjectName ?? r.iteration?.refObjectName ?? null,
 				_ref: r._ref
 			}));
+			return { items, hasMore };
 		} catch (err) {
 			errorHandler.logWarning(`Global search failed for ${opts.type}: ${err instanceof Error ? err.message : String(err)}`, 'rallyServices.globalSearch');
-			return [];
+			return { items: [], hasMore: false };
 		}
 	};
 
-	errorHandler.logInfo(`Global search: "${trimmed}" (limit ${limitPerType} per type)`, 'rallyServices.globalSearch');
+	errorHandler.logInfo(`Global search: "${trimmed}" (limit ${limitPerType} per type, offset ${offset})`, 'rallyServices.globalSearch');
 
 	const arrays = await Promise.all(fetchOptions.map(runOne));
-	const results: GlobalSearchResultItem[] = arrays.flat();
+	const results: GlobalSearchResultItem[] = arrays.flatMap(a => a.items);
+	const hasMore = arrays.some(a => a.hasMore);
 
-	errorHandler.logInfo(`Global search returned ${results.length} results`, 'rallyServices.globalSearch');
+	errorHandler.logInfo(`Global search returned ${results.length} results (hasMore: ${hasMore})`, 'rallyServices.globalSearch');
 
-	return { results, source: 'api' };
+	return { results, hasMore, source: 'api' };
 }
 
 /**

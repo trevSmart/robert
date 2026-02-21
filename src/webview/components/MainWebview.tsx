@@ -596,6 +596,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [globalSearchResults, setGlobalSearchResults] = useState<GlobalSearchResultItem[]>([]);
 	const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
 	const [globalSearchError, setGlobalSearchError] = useState<string | null>(null);
+	const [globalSearchHasMore, setGlobalSearchHasMore] = useState(false);
+	const [globalSearchLoadingMore, setGlobalSearchLoadingMore] = useState(false);
+	const [globalSearchOffset, setGlobalSearchOffset] = useState(0);
+	const [globalSearchTermUsed, setGlobalSearchTermUsed] = useState('');
 	// When opening a user story from a task/testcase search result, which tab to select
 	const pendingSearchUserStoryTabRef = useRef<'tasks' | 'tests' | null>(null);
 	// Ref for search input to focus when search tab is selected
@@ -678,16 +682,22 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	);
 
 	const runGlobalSearch = useCallback(
-		(term: string) => {
+		(term: string, searchType: any = 'all', offset: number = 0) => {
 			const t = (term || '').trim();
 			if (!t) return;
 			setGlobalSearchLoading(true);
 			setGlobalSearchError(null);
-			setGlobalSearchResults([]);
+			if (offset === 0) {
+				setGlobalSearchResults([]);
+				setGlobalSearchTermUsed(t);
+			}
+			setGlobalSearchOffset(offset);
 			sendMessage({
 				command: 'globalSearch',
 				term: t,
-				limitPerType: 15
+				searchType,
+				limitPerType: 50,
+				offset
 			});
 		},
 		[sendMessage]
@@ -709,6 +719,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 			}
 		},
 		[sendMessage]
+	);
+
+	const loadMoreSearchResults = useCallback(
+		(term: string, searchType: any) => {
+			setGlobalSearchLoadingMore(true);
+			const newOffset = globalSearchOffset + 50;
+			runGlobalSearch(term, searchType, newOffset);
+		},
+		[globalSearchOffset]
 	);
 
 	const loadUserStories = useCallback(
@@ -1455,7 +1474,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				case 'globalSearchResults':
 					setGlobalSearchLoading(false);
 					setGlobalSearchError(null);
-					setGlobalSearchResults(message.results || []);
+					const newResults = globalSearchOffset === 0 ? message.results || [] : [...globalSearchResults, ...(message.results || [])];
+					setGlobalSearchResults(newResults);
+					// Use the hasMore flag from the server
+					setGlobalSearchHasMore(message.hasMore ?? false);
+					setGlobalSearchLoadingMore(false);
 					break;
 				case 'globalSearchError':
 					setGlobalSearchLoading(false);
@@ -1910,7 +1933,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 									<>
 										{renderedSection === 'search' && (
 											<SearchSection
-												searchInputRef={searchInputRef}
 												globalSearchTerm={globalSearchTerm}
 												onSearchTermChange={setGlobalSearchTerm}
 												onSearch={runGlobalSearch}
@@ -1918,6 +1940,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 												globalSearchError={globalSearchError}
 												globalSearchResults={globalSearchResults}
 												onOpenResult={openSearchResult}
+												globalSearchHasMore={globalSearchHasMore}
+												globalSearchLoadingMore={globalSearchLoadingMore}
+												onLoadMoreResults={loadMoreSearchResults}
+												globalSearchTermUsed={globalSearchTermUsed}
 											/>
 										)}
 										{renderedSection === 'home' && (

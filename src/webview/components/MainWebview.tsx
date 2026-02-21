@@ -25,7 +25,6 @@ import MetricsSection from './sections/MetricsSection';
 import SearchSection from './sections/SearchSection';
 import TeamSection from './sections/TeamSection';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
-import { useTabFade } from '../hooks/useTabFade';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem } from '../../types/rally';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';

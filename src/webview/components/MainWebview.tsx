@@ -990,7 +990,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		if (activeSection === 'team' && hasLoadedTeamMembers.current) {
 			loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
 		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		 
 	}, [selectedTeamIteration, activeSection, loadTeamMembers]);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {

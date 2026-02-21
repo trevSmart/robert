@@ -20,7 +20,7 @@ const baseNavButtonStyles = css<{ $isActive: boolean; $lightTheme: boolean }>`
 	border: none;
 	background-color: ${props => (props.$isActive ? 'transparent' : props.$lightTheme ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.22)')};
 	color: ${props => (props.$isActive ? (props.$lightTheme ? '#1e1e1e' : 'var(--vscode-tab-activeForeground)') : props.$lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)')};
-	border-bottom: ${props => (props.$isActive ? (props.$lightTheme ? '2px solid #007acc' : '2px solid var(--vscode-progressBar-background)') : 'none')};
+	border-bottom: ${props => (props.$isActive ? (props.$lightTheme ? '2px solid #007acc' : '2px solid var(--vscode-progressBar-background)') : '2px solid transparent')};
 	font-size: 12.4px;
 	font-weight: ${props => (props.$isActive ? '600' : '400')};
 	transition: all 0.2s ease;

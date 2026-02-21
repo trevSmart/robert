@@ -41,7 +41,7 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error }
 							borderRadius: '50%',
 							width: '20px',
 							height: '20px',
-							animation: 'spin 1s linear infinite',
+							animation: 'spin 1s linear infinite'
 						}}
 					/>
 					<p>Loading tasks...</p>
@@ -93,15 +93,15 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error }
 									borderBottom: `1px solid ${themeColors.panelBorder}`,
 									cursor: 'default',
 									transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
-							}}
+								}}
 								onMouseEnter={e => {
 									e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
 									e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${themeColors.listHoverBackground}`;
-							}}
+								}}
 								onMouseLeave={e => {
 									e.currentTarget.style.backgroundColor = '';
 									e.currentTarget.style.boxShadow = 'none';
-							}}
+								}}
 							>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{task.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{task.name}</td>

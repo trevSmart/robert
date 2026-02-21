@@ -1812,7 +1812,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		};
 	}, [hasVsCodeApi, sendMessage]);
 
-	// Handle mouse back button navigation
+	// Handle keyboard shortcut for opening search (Cmd/Ctrl+F)
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key === 'f' && (event.metaKey || event.ctrlKey)) {

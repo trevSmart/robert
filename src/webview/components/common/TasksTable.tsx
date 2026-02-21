@@ -33,7 +33,7 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error }
 			}}
 		>
 			{loading && (
-				<div style={{ textAlign: 'center', padding: '20px' }}>
+				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -42,7 +42,6 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error }
 							width: '20px',
 							height: '20px',
 							animation: 'spin 1s linear infinite',
-							margin: '0 auto 10px'
 						}}
 					/>
 					<p>Loading tasks...</p>
@@ -94,15 +93,15 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error }
 									borderBottom: `1px solid ${themeColors.panelBorder}`,
 									cursor: 'default',
 									transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
-								}}
+							}}
 								onMouseEnter={e => {
 									e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
 									e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${themeColors.listHoverBackground}`;
-								}}
+							}}
 								onMouseLeave={e => {
 									e.currentTarget.style.backgroundColor = '';
 									e.currentTarget.style.boxShadow = 'none';
-								}}
+							}}
 							>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{task.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{task.name}</td>

@@ -190,7 +190,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 	return (
 		<>
 			{loading && (
-				<div style={{ textAlign: 'center', padding: '20px' }}>
+				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -199,7 +199,6 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 							width: '20px',
 							height: '20px',
 							animation: 'spin 1s linear infinite',
-							margin: '0 auto 10px'
 						}}
 					/>
 					<p>Loading user stories...</p>
@@ -241,19 +240,19 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									color: selectedUserStory?.objectId === userStory.objectId ? themeColors.listActiveSelectionForeground : undefined,
 									borderBottom: `1px solid ${themeColors.panelBorder}`,
 									transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
-								}}
+							}}
 								onMouseEnter={e => {
 									if (selectedUserStory?.objectId !== userStory.objectId) {
 										e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
 										e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${themeColors.listHoverBackground}`;
 									}
-								}}
+							}}
 								onMouseLeave={e => {
 									if (selectedUserStory?.objectId !== userStory.objectId) {
 										e.currentTarget.style.backgroundColor = selectedUserStory?.objectId === userStory.objectId ? themeColors.listActiveSelectionBackground : '';
 										e.currentTarget.style.boxShadow = 'none';
 									}
-								}}
+							}}
 							>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, textDecoration: 'none' }}>{userStory.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{userStory.name}</td>
@@ -340,7 +339,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 			}}
 		>
 			{loading && (
-				<div style={{ textAlign: 'center', padding: '20px' }}>
+				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -349,7 +348,6 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 							width: '20px',
 							height: '20px',
 							animation: 'spin 1s linear infinite',
-							margin: '0 auto 10px'
 						}}
 					/>
 					<p>Loading iterations...</p>
@@ -373,8 +371,8 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 					<thead>
 						<tr style={{ backgroundColor: themeColors.tabActiveBackground, color: themeColors.tabActiveForeground }}>
 							<th style={{ padding: '10px 4px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '30px' }}></th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', minWidth: '150px' }}>Name</th>
-							<th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Hours</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', minWidth: '100px', width: '40%' }}>Name</th>
+							<th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '80px' }}>Hours</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Start Date</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>End Date</th>
 						</tr>
@@ -392,68 +390,51 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 									onClick={() => onIterationSelected?.(iteration)}
 									style={{
 										cursor: onIterationSelected ? 'pointer' : 'default',
-										backgroundColor: selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionBackground : undefined,
+										backgroundColor: selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionBackground : isCurrentDayIteration(iteration) ? 'rgba(33, 150, 243, 0.06)' : undefined,
 										color: selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionForeground : undefined,
 										borderBottom: `1px solid ${themeColors.panelBorder}`,
 										transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
-									}}
+								}}
 									onMouseEnter={e => {
 										if (selectedIteration?.objectId !== iteration.objectId) {
 											e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
 											e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${themeColors.listHoverBackground}`;
 										}
-									}}
+								}}
 									onMouseLeave={e => {
 										if (selectedIteration?.objectId !== iteration.objectId) {
 											e.currentTarget.style.backgroundColor = selectedIteration?.objectId === iteration.objectId ? themeColors.listActiveSelectionBackground : '';
 											e.currentTarget.style.boxShadow = 'none';
 										}
-									}}
+								}}
 								>
 									<td style={{ padding: '10px 4px', textAlign: 'center', fontWeight: 'normal' }}>
 										{isCurrentDayIteration(iteration) && (
 											<div
 												style={{
-													display: 'inline-flex',
-													alignItems: 'center',
-													justifyContent: 'center',
-													width: '18px',
-													height: '18px',
+													display: 'inline-block',
+													width: '8px',
+													height: '8px',
 													borderRadius: '50%',
 													backgroundColor: themeColors.buttonBackground,
-													color: themeColors.buttonForeground,
-													opacity: 0.7,
-													animation: 'glow-subtle 3s ease-in-out infinite'
-												}}
+													opacity: 0.8,
+													animation: 'glow-subtle 1.8s ease-in-out infinite'
+											}}
 												title="Ongoing"
 											>
 												<style>{`
 													@keyframes glow-subtle {
 														0%, 100% {
-															box-shadow: 0 0 6px rgba(33, 150, 243, 0.5);
-															opacity: 0.8;
+															box-shadow: 0 0 8px rgba(33, 150, 243, 0.65);
+															opacity: 0.85;
 														}
 														50% {
-															box-shadow: 0 0 12px rgba(33, 150, 243, 0.8);
+															box-shadow: 0 0 18px rgba(33, 150, 243, 1), 0 0 6px rgba(33, 150, 243, 0.6);
 															opacity: 1;
 														}
 													}
 												`}</style>
-												<svg
-													xmlns="http://www.w3.org/2000/svg"
-													fill="none"
-													viewBox="0 0 24 24"
-													strokeWidth="1.5"
-													stroke="currentColor"
-													style={{
-														width: '14px',
-														height: '14px',
-														color: 'inherit'
-													}}
-												>
-													<path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
-												</svg>
-											</div>
+										</div>
 										)}
 									</td>
 									<td style={{ padding: '10px 12px', fontWeight: 'normal', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : themeColors.foreground, textDecoration: 'none' }}>{iteration.name}</td>

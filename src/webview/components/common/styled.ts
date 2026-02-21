@@ -26,6 +26,19 @@ export const GlobalStyle = createGlobalStyle`
 			transform: rotate(360deg);
 		}
 	}
+
+	@keyframes tab-fade-in {
+		from { opacity: 0; }
+		to   { opacity: 1; }
+	}
+`;
+
+export const TabFadeWrapper = styled.div`
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	animation: tab-fade-in 150ms ease-in;
+	will-change: opacity;
 `;
 
 // Base container styles
@@ -114,11 +127,16 @@ export const SmoothScrollWrapper = styled.div`
 	flex: 1;
 	overflow: hidden;
 	min-height: 0;
+	display: flex;
+	flex-direction: column;
 `;
 
 // Inner content for Lenis (receives transform for scroll)
 export const SmoothScrollContent = styled.div<{ noPaddingTop?: boolean }>`
 	padding: ${props => (props.noPaddingTop ? '0 0 10px' : '10px 0')};
+	flex: 1;
+	display: flex;
+	flex-direction: column;
 `;
 
 export const SettingsContent = styled.div`
@@ -281,7 +299,8 @@ export const SpinnerContainer = styled.div`
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	height: 100%;
+	flex: 1;
+	min-height: 200px;
 	gap: 16px;
 `;
 

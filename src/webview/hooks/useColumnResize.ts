@@ -1,10 +1,21 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 export type ColumnWidths = Record<string, number>;
 
 export function useColumnResize(initialWidths: ColumnWidths) {
 	const [columnWidths, setColumnWidths] = useState<ColumnWidths>(initialWidths);
 	const resizingRef = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
+	const listenersRef = useRef<{ onMouseMove: (e: MouseEvent) => void; onMouseUp: () => void } | null>(null);
+
+	useEffect(() => {
+		return () => {
+			if (listenersRef.current) {
+				document.removeEventListener('mousemove', listenersRef.current.onMouseMove);
+				document.removeEventListener('mouseup', listenersRef.current.onMouseUp);
+				listenersRef.current = null;
+			}
+		};
+	}, []);
 
 	const startResize = (key: string, e: React.MouseEvent) => {
 		e.preventDefault();
@@ -24,8 +35,10 @@ export function useColumnResize(initialWidths: ColumnWidths) {
 			resizingRef.current = null;
 			document.removeEventListener('mousemove', onMouseMove);
 			document.removeEventListener('mouseup', onMouseUp);
+			listenersRef.current = null;
 		};
 
+		listenersRef.current = { onMouseMove, onMouseUp };
 		document.addEventListener('mousemove', onMouseMove);
 		document.addEventListener('mouseup', onMouseUp);
 	};

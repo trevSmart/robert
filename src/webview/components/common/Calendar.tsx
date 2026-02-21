@@ -290,7 +290,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				? `${blockedUS} blocked ${blockedUS === 1 ? 'story' : 'stories'} this month. Time to unblock! 🚨`
 				: completedUS > 0
 					? `You've completed ${completedUS} ${completedUS === 1 ? 'story' : 'stories'}! ${pendingUS} more to go. 🎯`
-					: daysUntilSprintEnd && daysUntilSprintEnd > 0 && daysUntilSprintEnd <= 7
+					: daysUntilSprintEnd !== null && daysUntilSprintEnd >= 0 && daysUntilSprintEnd <= 7
 						? daysUntilSprintEnd === 1
 							? `Only Tomorrow left in the sprint. Final push! ⏰`
 							: daysUntilSprintEnd === 0

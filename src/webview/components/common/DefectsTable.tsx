@@ -101,7 +101,7 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 							borderRadius: '50%',
 							width: '20px',
 							height: '20px',
-							animation: 'spin 1s linear infinite',
+							animation: 'spin 1s linear infinite'
 						}}
 					/>
 					<p>Loading defects...</p>
@@ -152,26 +152,26 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 									if (onDefectSelected) {
 										onDefectSelected(defect);
 									}
-							}}
+								}}
 								style={{
 									cursor: onDefectSelected ? 'pointer' : 'default',
 									backgroundColor: selectedDefect?.objectId === defect.objectId ? themeColors.listActiveSelectionBackground : undefined,
 									color: selectedDefect?.objectId === defect.objectId ? themeColors.listActiveSelectionForeground : undefined,
 									borderBottom: `1px solid ${themeColors.panelBorder}`,
 									transition: 'background-color 0.15s ease, box-shadow 0.15s ease'
-							}}
+								}}
 								onMouseEnter={e => {
 									if (selectedDefect?.objectId !== defect.objectId) {
 										e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
 										e.currentTarget.style.boxShadow = `inset 0 0 0 1px ${themeColors.listHoverBackground}`;
 									}
-							}}
+								}}
 								onMouseLeave={e => {
 									if (selectedDefect?.objectId !== defect.objectId) {
 										e.currentTarget.style.backgroundColor = selectedDefect?.objectId === defect.objectId ? themeColors.listActiveSelectionBackground : '';
 										e.currentTarget.style.boxShadow = 'none';
 									}
-							}}
+								}}
 							>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, textDecoration: 'none' }}>{defect.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal' }}>{defect.name}</td>
@@ -180,7 +180,7 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 										padding: '10px 12px',
 										fontWeight: 'normal',
 										color: getScheduleStateColor(defect.scheduleState || 'new')
-								}}
+									}}
 								>
 									{defect.scheduleState || 'N/A'}
 								</td>
@@ -189,7 +189,7 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 										padding: '10px 12px',
 										fontWeight: 'normal',
 										color: getSeverityColor(defect.severity)
-								}}
+									}}
 								>
 									{defect.severity || 'N/A'}
 								</td>
@@ -198,7 +198,7 @@ const DefectsTable: FC<DefectsTableProps> = ({ defects, loading = false, error, 
 										padding: '10px 12px',
 										fontWeight: 'normal',
 										color: getPriorityColor(defect.priority)
-								}}
+									}}
 								>
 									{defect.priority || 'N/A'}
 								</td>

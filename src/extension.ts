@@ -102,12 +102,11 @@ export function activate(context: vscode.ExtensionContext) {
 	const settingsManager = SettingsManager.getInstance();
 	const showOutputOnStartup = settingsManager.getSetting('showOutputChannelOnStartup');
 
-	// Auto-show output channel if setting is enabled
-	if (showOutputOnStartup) {
-		outputManager.appendLine('[Robert] 📺 Showing output channel on startup (showOutputChannelOnStartup setting enabled)');
+	// Auto-show output channel if setting is enabled or if in debug mode
+	if (showOutputOnStartup || isDebugMode) {
+		const reason = isDebugMode ? 'debug mode enabled' : 'showOutputChannelOnStartup setting enabled';
+		outputManager.appendLine(`[Robert] 📺 Showing output channel on startup (${reason})`);
 		outputManager.show();
-	} else if (isDebugMode) {
-		outputManager.appendLine('[Robert] 🐛 Debug mode enabled (output channel not shown - enable showOutputChannelOnStartup setting to change this)');
 	}
 
 	// Register the webview provider for activity bar

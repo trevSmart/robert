@@ -31,13 +31,18 @@ export const GlobalStyle = createGlobalStyle`
 		from { opacity: 0; }
 		to   { opacity: 1; }
 	}
+
+	@keyframes tab-fade-out {
+		from { opacity: 1; }
+		to   { opacity: 0; }
+	}
 `;
 
-export const TabFadeWrapper = styled.div`
+export const TabFadeWrapper = styled.div<{ $leaving?: boolean }>`
 	display: flex;
 	flex-direction: column;
 	flex: 1;
-	animation: tab-fade-in 150ms ease-in;
+	animation: ${({ $leaving }) => ($leaving ? 'tab-fade-out' : 'tab-fade-in')} 84ms ${({ $leaving }) => ($leaving ? 'ease-out' : 'ease-in')};
 	will-change: opacity;
 `;
 

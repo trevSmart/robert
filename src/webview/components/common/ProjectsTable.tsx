@@ -83,7 +83,7 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 							borderRadius: '50%',
 							width: '20px',
 							height: '20px',
-							animation: 'spin 1s linear infinite',
+							animation: 'spin 1s linear infinite'
 						}}
 					/>
 					<p>Loading projects...</p>

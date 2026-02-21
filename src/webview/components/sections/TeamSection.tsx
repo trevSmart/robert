@@ -70,7 +70,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 
 			{/* Loading Spinner */}
 			{teamMembersLoading && (
-				<div style={{ textAlign: 'center', padding: '40px 20px' }}>
+				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
 					<div
 						style={{
 							border: '2px solid var(--vscode-panel-border)',
@@ -78,8 +78,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 							borderRadius: '50%',
 							width: '24px',
 							height: '24px',
-							animation: 'spin 1s linear infinite',
-							margin: '0 auto 16px'
+							animation: 'spin 1s linear infinite'
 						}}
 					/>
 					<p style={{ color: 'var(--vscode-descriptionForeground)' }}>Loading team data...</p>

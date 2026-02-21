@@ -367,22 +367,6 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
-	// Helper to extract iteration id from a user story (robust to shapes)
-	const getIterationId = (us: any) => {
-		if (!us || !us.iteration) return null;
-		const it = us.iteration;
-		if (typeof it === 'string') return it;
-		if (typeof it === 'object') {
-			if (it.objectId) return it.objectId;
-			if (it._ref) {
-				const m = (it._ref as string).match(/([^/]+)(?:\?.*)?$/);
-				if (m) return m[1];
-			}
-			if (it._refObjectName) return it._refObjectName;
-		}
-		return null;
-	};
-
 	// Rotate message on user click (with fade)
 	const rotateMessage = () => {
 		if (messageAnimatingRef.current || messages.length === 0) return;
@@ -593,8 +577,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 	// Debug: log all iterations to help diagnose missing sprints
 	if (debugMode) {
-		console.log('All iterations:', iterations.map(i => ({ name: i.name, start: i.startDate, end: i.endDate })));
-		console.log('Current month iterations:', currentMonthIterations.map(i => ({ name: i.name, start: i.startDate, end: i.endDate })));
+		console.log(
+			'All iterations:',
+			iterations.map(i => ({ name: i.name, start: i.startDate, end: i.endDate }))
+		);
+		console.log(
+			'Current month iterations:',
+			currentMonthIterations.map(i => ({ name: i.name, start: i.startDate, end: i.endDate }))
+		);
 	}
 
 	// Assign colors deterministically across all iterations for cross-month consistency
@@ -694,6 +684,26 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const rawProgress = (elapsed / total) * 100;
 
 		return Math.max(0, Math.min(100, rawProgress));
+	};
+
+	const getIterationHours = (iteration: Iteration): number => {
+		const extractId = (us: any) => {
+			if (!us || !us.iteration) return null;
+			const it = us.iteration;
+			if (typeof it === 'string') return it;
+			if (typeof it === 'object') {
+				if (it.objectId) return it.objectId;
+				if (it._ref) {
+					const m = (it._ref as string).match(/([^/]+)(?:\?.*)?$/);
+					if (m) return m[1];
+				}
+				if (it._refObjectName) return it._refObjectName;
+			}
+			return null;
+		};
+		return userStories
+			.filter(us => extractId(us as any) === iteration.objectId)
+			.reduce((sum, us) => sum + (us.taskEstimateTotal || 0), 0);
 	};
 
 	// Order current-month iterations for legend display
@@ -1040,33 +1050,34 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				onMouseEnter={() => setIsHeaderHovered(true)}
 				onMouseLeave={() => setIsHeaderHovered(false)}
 			>
-				<div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', minWidth: 0 }}>
-					<button
-						onClick={() => openModal(null)}
-						style={{
-							padding: '4px 10px',
-							border: 'none',
-							outline: 'none',
-							backgroundColor: 'transparent',
-							color: themeColors.descriptionForeground,
-							borderRadius: '4px',
-							cursor: 'pointer',
-							fontSize: '12px',
-							opacity: isHeaderHovered ? 1 : 0,
-							pointerEvents: isHeaderHovered ? 'auto' : 'none',
-							transition: 'opacity 0.2s ease, background-color 0.2s ease'
-						}}
-						onMouseEnter={e => {
-							e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
-						}}
-						onMouseLeave={e => {
-							e.currentTarget.style.backgroundColor = 'transparent';
-						}}
-						title="Create new event"
-					>
-						+ New Event
-					</button>
-				</div>
+			<div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', minWidth: 0 }}>
+				<button
+					onClick={goToCurrentMonth}
+					style={{
+						padding: '4px 10px',
+						border: 'none',
+						outline: 'none',
+						backgroundColor: 'transparent',
+						color: themeColors.descriptionForeground,
+						borderRadius: '4px',
+						cursor: 'pointer',
+						fontSize: '12px',
+						opacity: isHeaderHovered ? 1 : 0,
+						pointerEvents: isHeaderHovered ? 'auto' : 'none',
+						transition: 'opacity 0.2s ease, background-color 0.2s ease'
+					}}
+					onMouseEnter={e => {
+						e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
+					}}
+					onMouseLeave={e => {
+						e.currentTarget.style.backgroundColor = 'transparent';
+					}}
+					disabled={!onMonthChange}
+					title="Go to current month"
+				>
+					Today
+				</button>
+			</div>
 				<div
 					style={{
 						display: 'flex',
@@ -1143,42 +1154,41 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						<NextMonthIcon />
 					</button>
 				</div>
-				<div
+			<div
+				style={{
+					flex: 1,
+					display: 'flex',
+					justifyContent: 'flex-end',
+					alignItems: 'center',
+					minWidth: 0
+				}}
+			>
+				<button
+					onClick={() => openModal(null)}
 					style={{
-						flex: 1,
-						display: 'flex',
-						justifyContent: 'flex-end',
-						alignItems: 'center',
-						minWidth: 0
+						padding: '4px 10px',
+						border: 'none',
+						outline: 'none',
+						backgroundColor: 'transparent',
+						color: themeColors.descriptionForeground,
+						borderRadius: '4px',
+						cursor: 'pointer',
+						fontSize: '12px',
+						opacity: isHeaderHovered ? 1 : 0,
+						pointerEvents: isHeaderHovered ? 'auto' : 'none',
+						transition: 'opacity 0.2s ease, background-color 0.2s ease'
 					}}
+					onMouseEnter={e => {
+						e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
+					}}
+					onMouseLeave={e => {
+						e.currentTarget.style.backgroundColor = 'transparent';
+					}}
+					title="Create new event"
 				>
-					<button
-						onClick={goToCurrentMonth}
-						style={{
-							padding: '4px 10px',
-							border: 'none',
-							outline: 'none',
-							backgroundColor: 'transparent',
-							color: themeColors.descriptionForeground,
-							borderRadius: '4px',
-							cursor: 'pointer',
-							fontSize: '12px',
-							opacity: isHeaderHovered ? 1 : 0,
-							pointerEvents: isHeaderHovered ? 'auto' : 'none',
-							transition: 'opacity 0.2s ease, background-color 0.2s ease'
-						}}
-						onMouseEnter={e => {
-							e.currentTarget.style.backgroundColor = themeColors.buttonSecondaryBackground;
-						}}
-						onMouseLeave={e => {
-							e.currentTarget.style.backgroundColor = 'transparent';
-						}}
-						disabled={!onMonthChange}
-						title="Go to current month"
-					>
-						Today
-					</button>
-				</div>
+					+ New Event
+				</button>
+			</div>
 			</div>
 
 			{/* Calendar Grid */}
@@ -1233,20 +1243,18 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								minHeight: '46px',
 								maxHeight: '90px',
 								padding: '8px',
-								backgroundColor: dayInfo.isToday
-									? 'rgba(33, 150, 243, 0.3)'
-									: !dayInfo.isCurrentMonth
+								backgroundColor: !dayInfo.isCurrentMonth
+									? lightTheme
+										? 'rgba(230, 230, 230, 0.18)'
+										: 'rgba(0, 0, 0, 0.18)'
+									: isWeekend && dayInfo.isCurrentMonth
 										? lightTheme
-											? 'rgba(230, 230, 230, 0.18)'
+											? 'rgba(200, 200, 200, 0.12)'
 											: 'rgba(0, 0, 0, 0.18)'
-										: isWeekend && dayInfo.isCurrentMonth
-											? lightTheme
-												? 'rgba(200, 200, 200, 0.12)'
-												: 'rgba(0, 0, 0, 0.18)'
-											: lightTheme
-												? 'rgba(250, 250, 250, 0.6)'
-												: 'transparent',
-								color: dayInfo.isToday ? themeColors.listActiveSelectionForeground : dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
+										: lightTheme
+											? 'rgba(250, 250, 250, 0.6)'
+											: 'transparent',
+								color: dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
 								borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
 								display: 'flex',
 								flexDirection: 'column',
@@ -1263,9 +1271,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							onMouseEnter={e => {
 								setHoveredDay(dayInfo);
 								setMousePosition({ x: e.clientX, y: e.clientY });
-								if (!dayInfo.isToday) {
-									e.currentTarget.style.backgroundColor = lightTheme ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)';
-								}
+								e.currentTarget.style.backgroundColor = lightTheme ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.12)';
 							}}
 							onMouseMove={e => {
 								setMousePosition({ x: e.clientX, y: e.clientY });
@@ -1275,21 +1281,19 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								if (!hoveredIteration) {
 									setHoveredDay(null);
 								}
-								if (!dayInfo.isToday) {
-									const dayOfWeek = index % 7;
-									const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
-									e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth
+								const dayOfWeek = index % 7;
+								const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
+								e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth
+									? lightTheme
+										? 'rgba(230, 230, 230, 0.08)'
+										: 'rgba(0, 0, 0, 0.18)'
+									: isWeekend && dayInfo.isCurrentMonth
 										? lightTheme
-											? 'rgba(230, 230, 230, 0.08)'
+											? 'rgba(200, 200, 200, 0.12)'
 											: 'rgba(0, 0, 0, 0.18)'
-										: isWeekend && dayInfo.isCurrentMonth
-											? lightTheme
-												? 'rgba(200, 200, 200, 0.12)'
-												: 'rgba(0, 0, 0, 0.18)'
-											: lightTheme
-												? 'rgba(250, 250, 250, 0.6)'
-												: 'transparent';
-								}
+										: lightTheme
+											? 'rgba(250, 250, 250, 0.6)'
+											: 'transparent';
 							}}
 						>
 							<span
@@ -1298,7 +1302,18 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									fontWeight: '200',
 									marginBottom: '4px',
 									opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
-									color: dayInfo.isCurrentMonth ? (dayInfo.isToday ? themeColors.listActiveSelectionForeground : themeColors.foreground) : themeColors.descriptionForeground
+									color: dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
+									...(dayInfo.isToday ? {
+										backgroundColor: 'rgba(33, 150, 243, 0.85)',
+										color: '#ffffff',
+										borderRadius: '50%',
+										display: 'inline-flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										minWidth: (getDayNumberFontSize(calendarGridWidth) * 1.8) + 'px',
+										height: (getDayNumberFontSize(calendarGridWidth) * 1.8) + 'px',
+										fontWeight: '500',
+									} : {})
 								}}
 							>
 								{dayInfo.day}
@@ -1402,7 +1417,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									>
 										{(() => {
 											// Build a map from slotIndex -> assignment for active iterations in this day
-											const slotMap = new Map<number, typeof weekIters[0]>();
+											const slotMap = new Map<number, (typeof weekIters)[0]>();
 											for (const assignment of weekIters) {
 												if (activeIds.has(assignment.iteration.objectId)) {
 													slotMap.set(assignment.slotIndex, assignment);
@@ -1462,8 +1477,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 														onMouseMove={e => {
 															setMousePosition({ x: e.clientX, y: e.clientY });
 														}}
-														onMouseLeave={() => {
+														onMouseLeave={e => {
 															setHoveredIteration(null);
+															setHoveredDay(dayInfo);
+															setMousePosition({ x: e.clientX, y: e.clientY });
 														}}
 													/>
 												);
@@ -1565,52 +1582,51 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			)}
 			{(hoveredDay || hoveredIteration) &&
 				(() => {
+					const tooltipOffset = 10;
+					const wouldClip = mousePosition.x + tooltipOffset + 200 > window.innerWidth;
+					const tooltipPos = wouldClip
+						? { right: window.innerWidth - mousePosition.x + tooltipOffset, left: undefined }
+						: { left: mousePosition.x + tooltipOffset, right: undefined };
+					const tooltipStyle = {
+						position: 'fixed' as const,
+						...tooltipPos,
+						top: mousePosition.y - 30,
+						backgroundColor: 'var(--vscode-quickInput-background)',
+						color: 'var(--vscode-quickInput-foreground)',
+						border: '1px solid var(--vscode-panel-border)',
+						borderRadius: '4px',
+						padding: '6px 10px',
+						fontSize: '12px',
+						pointerEvents: 'none' as const,
+						zIndex: 1000,
+						boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+						maxWidth: '200px',
+						wordWrap: 'break-word' as const
+					};
+
 					if (hoveredIteration) {
+						const iterStart = hoveredIteration.startDate ? new Date(hoveredIteration.startDate) : null;
+						const iterEnd = hoveredIteration.endDate ? new Date(hoveredIteration.endDate) : null;
+						const iterDays = iterStart && iterEnd
+							? Math.round((iterEnd.getTime() - iterStart.getTime()) / (1000 * 60 * 60 * 24)) + 1
+							: null;
+						const iterHours = getIterationHours(hoveredIteration);
+						const monthNames3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+						const fmtDate = (d: Date) => `${d.getDate()} ${monthNames3[d.getMonth()]}`;
+						const iterDetail = iterStart && iterEnd && iterDays !== null
+							? `${fmtDate(iterStart)} to ${fmtDate(iterEnd)}${iterHours > 0 ? `: ${iterHours}h` : ''}`
+							: null;
 						return (
-							<div
-								style={{
-									position: 'fixed',
-									left: mousePosition.x + 10,
-									top: mousePosition.y - 30,
-									backgroundColor: 'var(--vscode-quickInput-background)',
-									color: 'var(--vscode-quickInput-foreground)',
-									border: '1px solid var(--vscode-panel-border)',
-									borderRadius: '4px',
-									padding: '6px 10px',
-									fontSize: '12px',
-									pointerEvents: 'none',
-									zIndex: 1000,
-									boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-									maxWidth: '200px',
-									wordWrap: 'break-word'
-								}}
-							>
-								<div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '13px' }}>{hoveredIteration.name}</div>
-								<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{hoveredIteration.state}</div>
+							<div style={tooltipStyle}>
+								<div style={{ fontWeight: '600', marginBottom: iterDetail ? '4px' : '0', fontSize: '13px' }}>{hoveredIteration.name}</div>
+								{iterDetail && <div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{iterDetail}</div>}
 							</div>
 						);
 					}
 
 					const tooltip = getDayTooltip(hoveredDay!);
 					return (
-						<div
-							style={{
-								position: 'fixed',
-								left: mousePosition.x + 10,
-								top: mousePosition.y - 30,
-								backgroundColor: 'var(--vscode-quickInput-background)',
-								color: 'var(--vscode-quickInput-foreground)',
-								border: '1px solid var(--vscode-panel-border)',
-								borderRadius: '4px',
-								padding: '6px 10px',
-								fontSize: '12px',
-								pointerEvents: 'none',
-								zIndex: 1000,
-								boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-								maxWidth: '200px',
-								wordWrap: 'break-word'
-							}}
-						>
+						<div style={tooltipStyle}>
 							<div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '13px' }}>{tooltip.title}</div>
 							<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{tooltip.content}</div>
 						</div>

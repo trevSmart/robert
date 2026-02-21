@@ -2,6 +2,7 @@ import type { FC } from 'react';
 import UserStoriesTable from '../../common/UserStoriesTable';
 import UserStoryForm from '../../common/UserStoryForm';
 import TasksTable from '../../common/TasksTable';
+import TestCasesTable from '../../common/TestCasesTable';
 import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
@@ -22,6 +23,9 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	userStoryDefects,
 	userStoryDefectsLoading,
 	userStoryDefectsError,
+	userStoryTestCases,
+	userStoryTestCasesLoading,
+	userStoryTestCasesError,
 	userStoryDiscussions,
 	userStoryDiscussionsLoading,
 	userStoryDiscussionsError,
@@ -62,34 +66,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
 				<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
 				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as RallyTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
-				{activeUserStoryTab === 'tests' && (
-					<div
-						style={{
-							margin: '20px 0',
-							padding: '20px',
-							backgroundColor: '#282828',
-							borderRadius: '6px'
-						}}
-					>
-						<div
-							style={{
-								fontSize: '13px',
-								color: 'var(--vscode-foreground)',
-								marginBottom: '6px'
-							}}
-						>
-							This user story has <strong>{typeof selectedUserStory.testCasesCount === 'number' ? selectedUserStory.testCasesCount : 0}</strong> test cases.
-						</div>
-						<div
-							style={{
-								fontSize: '12px',
-								color: 'var(--vscode-descriptionForeground)'
-							}}
-						>
-							Detailed test listing will be available in a future version of this view.
-						</div>
-					</div>
-				)}
+				{activeUserStoryTab === 'tests' && <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError} />}
 				{activeUserStoryTab === 'defects' && (
 					<DefectsTable
 						defects={userStoryDefects as Defect[]}

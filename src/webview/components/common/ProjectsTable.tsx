@@ -75,7 +75,7 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 			</div>
 
 			{loading && (
-				<div style={{ textAlign: 'center', padding: '20px' }}>
+				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -84,7 +84,6 @@ const ProjectsTable: React.FC<ProjectsTableProps> = ({ projects, loading = false
 							width: '20px',
 							height: '20px',
 							animation: 'spin 1s linear infinite',
-							margin: '0 auto 10px'
 						}}
 					/>
 					<p>Loading projects...</p>

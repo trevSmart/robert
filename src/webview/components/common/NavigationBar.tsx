@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import styled, { css, keyframes } from 'styled-components';
 import { isLightTheme } from '../../utils/themeColors';
 
@@ -193,7 +193,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 	const recomputeVisibleTabs = useCallback(() => {
 		if (!containerRef.current || !measureTabsRef.current) return;
 
-		const availableWidth = containerRef.current.getBoundingClientRect().width;
+		const availableWidth = (containerRef.current.parentElement ?? containerRef.current).getBoundingClientRect().width;
 		const tabWidths = Array.from(measureTabsRef.current.children).map(child => (child as HTMLElement).getBoundingClientRect().width);
 
 		// Use real overflow button width if available (when rendered), otherwise use measured width
@@ -303,6 +303,18 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		return () => observer.disconnect();
 	}, [recomputeVisibleTabs]);
 
+	// Close overflow menu on click outside
+	useEffect(() => {
+		if (!overflowOpen) return;
+		const handleClickOutside = (e: MouseEvent) => {
+			if (realOverflowButtonRef.current && !realOverflowButtonRef.current.closest('[data-overflow-container]')?.contains(e.target as Node)) {
+				setOverflowOpen(false);
+			}
+		};
+		document.addEventListener('mousedown', handleClickOutside);
+		return () => document.removeEventListener('mousedown', handleClickOutside);
+	}, [overflowOpen]);
+
 	// Track when we reorder tabs for an overflow selection
 	useEffect(() => {
 		const activeTabIndex = tabs.findIndex(tab => tab.id === activeSection);
@@ -382,7 +394,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 					</NavTab>
 				))}
 				{hasOverflow && (
-					<div style={{ position: 'relative', display: 'flex' }}>
+					<div style={{ position: 'relative', display: 'flex' }} data-overflow-container>
 						<NavOverflowBtn
 							ref={realOverflowButtonRef}
 							type="button"

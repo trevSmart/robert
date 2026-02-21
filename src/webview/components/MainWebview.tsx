@@ -25,13 +25,14 @@ import MetricsSection from './sections/MetricsSection';
 import SearchSection from './sections/SearchSection';
 import TeamSection from './sections/TeamSection';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
+import { useTabFade } from '../hooks/useTabFade';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem } from '../../types/rally';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 
-import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText } from './common/styled';
+import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
@@ -1794,6 +1795,21 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 
 	// Handle mouse back button navigation
 	useEffect(() => {
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key === 'f' && (event.metaKey || event.ctrlKey)) {
+				event.preventDefault();
+				handleSectionChange('search');
+			}
+		};
+
+		document.addEventListener('keydown', handleKeyDown);
+
+		return () => {
+			document.removeEventListener('keydown', handleKeyDown);
+		};
+	}, [handleSectionChange]);
+
+	useEffect(() => {
 		const handleMouseEvent = (event: globalThis.MouseEvent) => {
 			// Mouse back button is typically button 3 (some mice use button 4)
 			// Button values: 0 = left, 1 = middle, 2 = right, 3 = back, 4 = forward
@@ -1870,6 +1886,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 				</StickyNav>
 				<SmoothScrollWrapper ref={wrapperRef}>
 					<SmoothScrollContent ref={contentRef} noPaddingTop={activeSection === 'portfolio'}>
+						<TabFadeWrapper key={`${activeSection}__${activeSubTabBySection['portfolio'] ?? ''}__${currentScreen}`}>
 						{activeSection === 'search' && (
 							<SearchSection
 								searchInputRef={searchInputRef}
@@ -2022,6 +2039,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 								onActiveUserStoryTabChange={setActiveUserStoryTab}
 							/>
 						)}
+						</TabFadeWrapper>
 					</SmoothScrollContent>
 				</SmoothScrollWrapper>
 			</CenteredContainer>

@@ -277,7 +277,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		// Create 4 different insight-based messages
 		const generatedMessages = [
 			// 1) Sprint cutoff message (if applicable)
-			daysUntilSprintEnd && daysUntilSprintEnd > 0 ? (daysUntilSprintEnd === 1 ? `Sprint cutoff Tomorrow! 🏁` : daysUntilSprintEnd === 0 ? `Sprint cutoff Today! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`) : `Stay focused on your current sprint objectives! 💪`,
+			daysUntilSprintEnd !== null && daysUntilSprintEnd >= 0 ? (daysUntilSprintEnd === 1 ? `Sprint cutoff Tomorrow! 🏁` : daysUntilSprintEnd === 0 ? `Sprint cutoff Today! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`) : `Stay focused on your current sprint objectives! 💪`,
 
 			// 2) Hours summary (use totalHours computed from user stories)
 			totalHours > 0 ? `${totalHours}h total this month. ${hoursCompletionPercentage}% done! ${remainingHours}h left. 💪` : `No work scheduled this month. That's rare! 🤔`,

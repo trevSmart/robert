@@ -65,7 +65,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 		<div style={{ padding: '0 20px' }}>
 			{currentScreen === 'allUserStories' && !selectedUserStory && (
 				<>
-					<ScreenHeader title="All User Stories" />
+					<ScreenHeader title="All User Stories" sticky={true} />
 					<UserStoriesTable
 						userStories={portfolioUserStories}
 						loading={portfolioUserStoriesLoading}
@@ -83,7 +83,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
 				</>
 			)}

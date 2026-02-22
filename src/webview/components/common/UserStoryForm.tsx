@@ -440,9 +440,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							</span>
 						</StatPill>
 					</div>
-					{additionalTabContent?.[selectedAdditionalTab] && (
-						<div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>
-					)}
+					{additionalTabContent?.[selectedAdditionalTab] && <div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>}
 				</div>
 			</div>
 		</collapsible-card>

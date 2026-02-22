@@ -12,7 +12,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defec
 		<div style={{ padding: '0 20px' }}>
 			{currentScreen === 'defects' && (
 				<>
-					<ScreenHeader title="All Defects" />
+					<ScreenHeader title="All Defects" sticky={true} />
 					<DefectsTable
 						defects={defects as Defect[]}
 						loading={defectsLoading}
@@ -28,7 +28,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defec
 			)}
 			{currentScreen === 'defectDetail' && selectedDefect && (
 				<>
-					<ScreenHeader title={`${selectedDefect.formattedId}: ${selectedDefect.name}`} showBackButton={true} onBack={onBackToDefects} />
+					<ScreenHeader title={`Defect "${selectedDefect.formattedId}: ${selectedDefect.name}"`} showBackButton={true} onBack={onBackToDefects} />
 					<DefectForm defect={selectedDefect as Defect} />
 				</>
 			)}

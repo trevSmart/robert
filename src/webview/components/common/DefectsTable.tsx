@@ -203,16 +203,10 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 				border: 'none',
 				borderRadius: 0
 			}
-		: {
-				margin: '20px 0',
-				padding: '20px',
-				backgroundColor: themeColors.panelBackground,
-				border: `1px solid ${themeColors.panelBorder}`,
-				borderRadius: '6px'
-			};
+		: undefined;
 
 	return (
-		<div style={containerStyle}>
+		<>
 			{loading && (
 				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
 					<div
@@ -299,7 +293,7 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 									}
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, textDecoration: 'none' }}>{defect.formattedId}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.name}</td>
 								<td
 									style={{
@@ -364,7 +358,7 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 					</button>
 				</div>
 			)}
-		</div>
+		</>
 	);
 };
 

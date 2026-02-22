@@ -48,7 +48,7 @@ class CollapsibleCard extends HTMLElement {
 		const customBg = this.getAttribute('background-color');
 		if (customBg) return customBg;
 		// Use lighter color in light theme, darker in dark theme
-		return isLightTheme() ? 'rgba(0, 0, 0, 0.03)' : 'rgba(0, 0, 0, 0.1)';
+		return isLightTheme() ? 'rgba(0, 0, 0, 0.01)' : 'rgba(0, 0, 0, 0.1)';
 	}
 
 	private updateTitle() {

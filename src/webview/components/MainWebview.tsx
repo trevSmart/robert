@@ -168,7 +168,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 		<>
 			{currentScreen === 'iterations' && (
 				<>
-					<ScreenHeader title="Sprints" />
+					<ScreenHeader title="Sprints" sticky={true} />
 					<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={onLoadIterations} onIterationSelected={onIterationSelected} selectedIteration={selectedIteration} />
 				</>
 			)}
@@ -198,7 +198,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
 				</>
 			)}
@@ -261,7 +261,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 		<>
 			{currentScreen === 'allUserStories' && !selectedUserStory && (
 				<>
-					<ScreenHeader title="All User Stories" />
+					<ScreenHeader title="All User Stories" sticky={true} />
 					<UserStoriesTable
 						userStories={portfolioUserStories}
 						loading={portfolioUserStoriesLoading}
@@ -279,7 +279,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
 				</>
 			)}
@@ -293,7 +293,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _de
 		<>
 			{currentScreen === 'defects' && (
 				<>
-					<ScreenHeader title="All Defects" />
+					<ScreenHeader title="All Defects" sticky={true} />
 					<DefectsTable
 						defects={_defects as Defect[]}
 						loading={_defectsLoading}
@@ -309,7 +309,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ _defects, _defectsLoading, _de
 			)}
 			{currentScreen === 'defectDetail' && _selectedDefect && (
 				<>
-					<ScreenHeader title={`${_selectedDefect.formattedId}: ${_selectedDefect.name}`} showBackButton={true} onBack={_onBackToDefects} />
+					<ScreenHeader title={`Defect "${_selectedDefect.formattedId}: ${_selectedDefect.name}"`} showBackButton={true} onBack={_onBackToDefects} />
 					<DefectForm defect={_selectedDefect as Defect} />
 				</>
 			)}

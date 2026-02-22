@@ -82,84 +82,41 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 	};
 
 	return (
-		<div
-			style={{
-				margin: '20px 0',
-				padding: '20px 40px 20px 20px',
-				backgroundColor: 'var(--vscode-editor-background)',
-				border: '1px solid var(--vscode-panel-border)',
-				borderRadius: '6px'
-			}}
-		>
-			<div
-				style={{
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'center',
-					marginBottom: '20px'
-				}}
-			>
-				<h2
+		<>
+			<collapsible-card title={`${defect.formattedId}: ${defect.name}`}>
+				<div
 					style={{
-						fontSize: '18px',
-						fontWeight: '600',
-						color: 'var(--vscode-foreground)',
-						margin: '0',
-						letterSpacing: '0.5px'
+						padding: '20px',
+						display: 'flex',
+						flexDirection: 'column',
+						gap: '20px'
 					}}
 				>
-					{defect.formattedId}
-				</h2>
-				{defect.scheduleState && (
 					<div
 						style={{
-							fontSize: '14px',
-							fontWeight: '500',
-							color: getScheduleStateColor(defect.scheduleState)
+							display: 'flex',
+							justifyContent: 'space-between',
+							alignItems: 'center'
 						}}
 					>
-						{defect.scheduleState}
+						{defect.scheduleState && (
+							<div
+								style={{
+									fontSize: '14px',
+									fontWeight: '500',
+									color: getScheduleStateColor(defect.scheduleState)
+								}}
+							>
+								{defect.scheduleState}
+							</div>
+						)}
 					</div>
-				)}
-			</div>
 
-			<div style={{ marginBottom: '16px' }}>
-				<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Name</label>
-				<input
-					type="text"
-					value={defect.name}
-					readOnly
-					style={{
-						width: '100%',
-						padding: '6px 8px',
-						backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-						color: 'var(--vscode-input-foreground)',
-						border: '1px solid var(--vscode-input-border)',
-						borderRadius: '3px',
-						fontSize: '13px'
-					}}
-				/>
-			</div>
-
-			<div
-				style={{
-					display: 'grid',
-					gridTemplateColumns: '1fr 1fr',
-					columnGap: '40px',
-					rowGap: '12px',
-					alignItems: 'start'
-				}}
-			>
-				{/* Basic Information */}
-				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Status & Priority</h3>
-
-				<div style={{ display: 'flex', gap: '16px' }}>
-					<div style={{ flex: '1' }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>State</label>
+					<div style={{ marginBottom: '0px' }}>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Name</label>
 						<input
 							type="text"
-							value={defect.state || 'N/A'}
+							value={defect.name}
 							readOnly
 							style={{
 								width: '100%',
@@ -172,114 +129,125 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 							}}
 						/>
 					</div>
-					<div style={{ flex: '1' }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Severity</label>
-						<input
-							type="text"
-							value={defect.severity || 'N/A'}
-							readOnly
-							style={{
-								width: '100%',
-								padding: '6px 8px',
-								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '3px',
-								fontSize: '13px'
-							}}
-						/>
-					</div>
-				</div>
-
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Priority</label>
-					<input
-						type="text"
-						value={defect.priority || 'N/A'}
-						readOnly
-						style={{
-							width: '100%',
-							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px'
-						}}
-					/>
-				</div>
-
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Assigned To</label>
-					<input
-						type="text"
-						value={defect.owner || 'N/A'}
-						readOnly
-						style={{
-							width: '100%',
-							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px'
-						}}
-					/>
-				</div>
-
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
-					<StatusPill isBlocked={defect.blocked}>{defect.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
-				</div>
-
-				{/* Description */}
-				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
 					<div
-						dangerouslySetInnerHTML={{
-							__html: defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
-						}}
 						style={{
-							width: '100%',
-							padding: '12px',
-							backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px',
-							fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-							lineHeight: '1.6',
-							minHeight: '120px',
-							overflow: 'auto'
+							display: 'grid',
+							gridTemplateColumns: '1fr 1fr',
+							columnGap: '40px',
+							rowGap: '12px',
+							alignItems: 'start'
 						}}
-					/>
-				</div>
+					>
+						{/* Basic Information */}
+						<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
+						<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Status & Priority</h3>
 
-				{/* Additional Information */}
-				<h3 style={{ margin: '16px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
-				<div style={{ gridColumn: '1 / -1' }}>
-					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
-						<div style={getInfoCardStyles()}>
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Environment</span>
-							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.environment || 'N/A'}</span>
+						<div style={{ display: 'flex', gap: '16px' }}>
+							<div style={{ flex: '1' }}>
+								<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>State</label>
+								<input
+									type="text"
+									value={defect.state || 'N/A'}
+									readOnly
+									style={{
+										width: '100%',
+										padding: '6px 8px',
+										backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+										color: 'var(--vscode-input-foreground)',
+										border: '1px solid var(--vscode-input-border)',
+										borderRadius: '3px',
+										fontSize: '13px'
+									}}
+								/>
+							</div>
+							<div style={{ flex: '1' }}>
+								<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Severity</label>
+								<input
+									type="text"
+									value={defect.severity || 'N/A'}
+									readOnly
+									style={{
+										width: '100%',
+										padding: '6px 8px',
+										backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+										color: 'var(--vscode-input-foreground)',
+										border: '1px solid var(--vscode-input-border)',
+										borderRadius: '3px',
+										fontSize: '13px'
+									}}
+								/>
+							</div>
 						</div>
-						<div style={getInfoCardStyles()}>
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Found In Build</span>
-							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.foundInBuild || 'N/A'}</span>
+
+						<div>
+							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Priority</label>
+							<input
+								type="text"
+								value={defect.priority || 'N/A'}
+								readOnly
+								style={{
+									width: '100%',
+									padding: '6px 8px',
+									backgroundColor: 'var(--vscode-input-background)',
+									color: 'var(--vscode-input-foreground)',
+									border: '1px solid var(--vscode-input-border)',
+									borderRadius: '3px',
+									fontSize: '13px'
+								}}
+							/>
 						</div>
-						<div style={getInfoCardStyles()}>
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Target Build</span>
-							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.targetBuild || 'N/A'}</span>
+
+						<div>
+							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Assigned To</label>
+							<input
+								type="text"
+								value={defect.owner || 'N/A'}
+								readOnly
+								style={{
+									width: '100%',
+									padding: '6px 8px',
+									backgroundColor: 'var(--vscode-input-background)',
+									color: 'var(--vscode-input-foreground)',
+									border: '1px solid var(--vscode-input-border)',
+									borderRadius: '3px',
+									fontSize: '13px'
+								}}
+							/>
 						</div>
-						<div style={getInfoCardStyles()}>
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Discussions</span>
-							<span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>{defect.discussionCount}</span>
+
+						<div>
+							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
+							<StatusPill isBlocked={defect.blocked}>{defect.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
+						</div>
+
+						{/* Description */}
+						<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
+							<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+
+							<div
+								dangerouslySetInnerHTML={{
+									__html: defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+								}}
+								style={{
+									width: '100%',
+									padding: '12px',
+									backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+									color: 'var(--vscode-input-foreground)',
+									border: '1px solid var(--vscode-input-border)',
+									borderRadius: '3px',
+									fontSize: '13px',
+									fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+									lineHeight: '1.6',
+									minHeight: '120px',
+									overflow: 'auto'
+								}}
+							/>
 						</div>
 					</div>
 				</div>
-			</div>
-		</div>
+			</collapsible-card>
+		</>
 	);
 };
 

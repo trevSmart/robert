@@ -77,7 +77,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 		<div style={{ padding: '0 20px' }}>
 			{currentScreen === 'iterations' && (
 				<>
-					<ScreenHeader title="Sprints" />
+					<ScreenHeader title="All Sprints" sticky={true} />
 					<IterationsTable iterations={iterations} loading={iterationsLoading} error={iterationsError} onLoadIterations={onLoadIterations} onIterationSelected={onIterationSelected} selectedIteration={selectedIteration} />
 				</>
 			)}
@@ -107,7 +107,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
 				</>
 			)}

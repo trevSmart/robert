@@ -1,4 +1,4 @@
-import { themeColors } from '../../utils/themeColors';
+import { themeColors, isLightTheme } from '../../utils/themeColors';
 
 class CollapsibleCard extends HTMLElement {
 	private shadow: ShadowRoot;
@@ -45,7 +45,10 @@ class CollapsibleCard extends HTMLElement {
 	}
 
 	private getBackgroundColor(): string {
-		return this.getAttribute('background-color') || 'rgba(0, 0, 0, 0.1)';
+		const customBg = this.getAttribute('background-color');
+		if (customBg) return customBg;
+		// Use lighter color in light theme, darker in dark theme
+		return isLightTheme() ? 'rgba(0, 0, 0, 0.03)' : 'rgba(0, 0, 0, 0.1)';
 	}
 
 	private updateTitle() {

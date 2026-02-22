@@ -4,21 +4,32 @@ interface ScreenHeaderProps {
 	title: string;
 	onBack?: () => void;
 	showBackButton?: boolean;
+	sticky?: boolean;
 }
 
-const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButton = false }) => {
+const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButton = false, sticky = false }) => {
+	const stickyHeader = Boolean(sticky || (showBackButton && onBack));
 	return (
 		<div
 			style={{
 				display: 'flex',
 				alignItems: 'center',
-				marginTop: '20px',
+				marginTop: stickyHeader ? 0 : '20px',
 				marginBottom: '20px',
+				paddingTop: stickyHeader ? '12px' : 0,
 				paddingBottom: '10px',
 				borderBottom: '1px solid var(--vscode-panel-border)',
 				fontSize: '14px',
 				fontWeight: 'bold',
-				color: 'var(--vscode-foreground)'
+				color: 'var(--vscode-foreground)',
+				...(stickyHeader
+					? {
+							position: 'sticky',
+							top: 0,
+							zIndex: 2,
+							backgroundColor: 'var(--vscode-editor-background)'
+						}
+					: {})
 			}}
 		>
 			{showBackButton && onBack && (

@@ -667,12 +667,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			async message => {
 				await this._errorHandler.executeWithErrorHandling(async () => {
 					// Log all incoming messages for debugging
-					this._errorHandler.logInfo(`Received message: ${message.command} from webview: ${webviewId || 'unknown'}`, 'WebviewMessageListener');
+					// this._errorHandler.logInfo(`Received message: ${message.command} from webview: ${webviewId || 'unknown'}`, 'WebviewMessageListener');
 
 					// Log webview ID for debugging
-					if (webviewId) {
-						this._errorHandler.logInfo(`Message from webview: ${webviewId}`, 'WebviewMessageListener');
-					}
+					// if (webviewId) {
+					// 	this._errorHandler.logInfo(`Message from webview: ${webviewId}`, 'WebviewMessageListener');
+					// }
 					switch (message.command) {
 						case 'webviewReady':
 							this._errorHandler.logInfo(`Webview ready: context=${message.context}`, 'WebviewMessageListener');
@@ -689,13 +689,12 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							vscode.window.showInformationMessage(`Demo for ${message.demoType} not implemented yet. Try adding Chart.js, D3.js, or other libraries!`);
 							this._errorHandler.logInfo(`Message received: showDemo — demoType=${message.demoType}`, 'WebviewMessageListener');
 							break;
-						case 'saveState':
-							// Save navigation state to shared state (syncs across all webviews)
-							if (message.state) {
-								this._sharedNavigationState = message.state as Record<string, unknown>;
-								this._errorHandler.logInfo(`Shared navigation state saved`, 'WebviewMessageListener');
-							}
-							break;
+					case 'saveState':
+						// Save navigation state to shared state (syncs across all webviews)
+						if (message.state) {
+							this._sharedNavigationState = message.state as Record<string, unknown>;
+						}
+						break;
 						case 'getState':
 							// Return shared navigation state to any webview that requests it
 							if (this._sharedNavigationState) {
@@ -1442,26 +1441,25 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								this._websocketClient.unsubscribeUserStory(message.userStoryId);
 							}
 							break;
-						case 'globalSearch':
-							try {
-								this._errorHandler.logDebug(`Global search: "${message.term}" (type: ${message.searchType || 'all'}, offset: ${message.offset ?? 0})`, 'WebviewMessageListener');
-								const searchResult = await globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 50, searchType: message.searchType, offset: message.offset ?? 0 });
-								webview.postMessage({
-									command: 'globalSearchResults',
-									results: searchResult.results,
-									hasMore: searchResult.hasMore,
-									term: message.term
-								});
-							} catch (error) {
-								const errorMessage = error instanceof Error ? error.message : String(error);
-								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'globalSearch');
-								webview.postMessage({
-									command: 'globalSearchError',
-									error: errorMessage,
-									term: message.term
-								});
-							}
-							break;
+					case 'globalSearch':
+						try {
+							const searchResult = await globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 50, searchType: message.searchType, offset: message.offset ?? 0 });
+							webview.postMessage({
+								command: 'globalSearchResults',
+								results: searchResult.results,
+								hasMore: searchResult.hasMore,
+								term: message.term
+							});
+						} catch (error) {
+							const errorMessage = error instanceof Error ? error.message : String(error);
+							this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'globalSearch');
+							webview.postMessage({
+								command: 'globalSearchError',
+								error: errorMessage,
+								term: message.term
+							});
+						}
+						break;
 						case 'loadUserStoryByObjectId':
 							try {
 								const usResult = await getUserStoryByObjectId(message.objectId);

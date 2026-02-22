@@ -78,7 +78,7 @@ export const StickyNav = styled.div`
 	position: sticky;
 	top: 0;
 	z-index: 1;
-	background: var(--vscode-editor-background, transparent);
+	background: var(--vscode-panel-background);
 `;
 
 export const SettingsContainer = styled.div`

@@ -93,6 +93,8 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 	// Initialize sorting with default sort by formattedId descending
 	const { sortedItems, sortConfig, requestSort } = useTableSort<UserStory>(userStories, { key: 'formattedId', direction: 'desc' });
 	const { columnWidths, startResize } = useColumnResize(INITIAL_WIDTHS);
+	const totalColumnWidth = Object.values(columnWidths).reduce((sum, width) => sum + width, 0);
+	const getColumnPercent = (key: ColumnKey) => (totalColumnWidth > 0 ? (columnWidths[key] / totalColumnWidth) * 100 : 0);
 
 	const ResizeHandle: React.FC<{ colKey: ColumnKey }> = ({ colKey }) => (
 		<div
@@ -146,7 +148,6 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 					color: themeColors.titleBarActiveForeground,
 					userSelect: 'none',
 					whiteSpace: 'nowrap',
-					width: columnWidths[colKey],
 					overflow: 'hidden'
 				}}
 				title={`Sort by ${label}`}
@@ -251,7 +252,15 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 			)}
 
 			{userStories.length > 0 && !loading && !error && (
-				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
+				<table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
+					<colgroup>
+						<col style={{ width: `${getColumnPercent('formattedId')}%` }} />
+						<col style={{ width: `${getColumnPercent('name')}%` }} />
+						<col style={{ width: `${getColumnPercent('assignee')}%` }} />
+						<col style={{ width: `${getColumnPercent('scheduleState')}%` }} />
+						<col style={{ width: `${getColumnPercent('taskEstimateTotal')}%` }} />
+						<col style={{ width: `${getColumnPercent('items')}%` }} />
+					</colgroup>
 					<thead>
 						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
 							<SortableHeader label="ID" sortKey="formattedId" colKey="formattedId" />
@@ -266,7 +275,6 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									textAlign: 'center',
 									borderBottom: `1px solid ${themeColors.panelBorder}`,
 									fontWeight: 'bold',
-									width: columnWidths['items'],
 									backgroundColor: themeColors.titleBarActiveBackground,
 									color: themeColors.titleBarActiveForeground,
 									overflow: 'hidden'
@@ -351,6 +359,8 @@ interface IterationsTableProps {
 }
 
 export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, loading = false, error, onIterationSelected, selectedIteration }) => {
+	const yearGroupBackground = `color-mix(in srgb, ${themeColors.titleBarActiveBackground} 55%, ${themeColors.background})`;
+
 	// Function to check if iteration corresponds to current day
 	const isCurrentDayIteration = (iteration: any) => {
 		if (!iteration.startDate || !iteration.endDate) return false;
@@ -446,7 +456,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
 					<thead>
 						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
-							<th style={{ padding: '10px 4px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '30px' }}></th>
+							<th style={{ padding: '10px 0 10px 12px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '20px' }}></th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', minWidth: '100px', width: '40%' }}>Name</th>
 							<th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '80px' }}>Hours</th>
 							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Start Date</th>
@@ -458,8 +468,9 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 							groupedIterations[year].map((iteration, iterationIndex) => (
 								<React.Fragment key={`${year}-${iteration.objectId}`}>
 									{iterationIndex === 0 && (
-										<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
-											<td colSpan={5} style={{ padding: '12px 12px 12px 46px', fontWeight: 'bold', borderBottom: `1px solid ${themeColors.panelBorder}`, textAlign: 'left' }}>
+										<tr style={{ backgroundColor: yearGroupBackground, color: themeColors.titleBarActiveForeground }}>
+											<td style={{ width: '20px', borderBottom: `1px solid ${themeColors.panelBorder}` }} />
+											<td colSpan={4} style={{ padding: '10px 12px', fontWeight: 'bold', borderBottom: `1px solid ${themeColors.panelBorder}`, textAlign: 'left' }}>
 												{year}
 											</td>
 										</tr>
@@ -487,20 +498,28 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 											}
 										}}
 									>
-										<td style={{ padding: '10px 4px', textAlign: 'center', fontWeight: 'normal' }}>
+										<td style={{ padding: '10px 0 10px 12px', fontWeight: 'normal' }}>
 											{isCurrentDayIteration(iteration) && (
 												<div
 													style={{
-														display: 'inline-block',
-														width: '8px',
-														height: '8px',
-														borderRadius: '50%',
-														backgroundColor: themeColors.buttonBackground,
-														opacity: 0.8,
-														animation: 'glow-subtle 1.8s ease-in-out infinite'
+														display: 'flex',
+														alignItems: 'center',
+														justifyContent: 'center',
+														width: '100%',
+														height: '100%'
 													}}
-													title="Ongoing"
 												>
+													<div
+														style={{
+															width: '8px',
+															height: '8px',
+															borderRadius: '50%',
+															backgroundColor: themeColors.buttonBackground,
+															opacity: 0.8,
+															animation: 'glow-subtle 1.8s ease-in-out infinite'
+														}}
+														title="Ongoing"
+													/>
 													<style>{`
 													@keyframes glow-subtle {
 														0%, 100% {

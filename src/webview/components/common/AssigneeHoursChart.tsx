@@ -92,6 +92,9 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			});
 		});
 
+		// Track colors per story for tooltip reuse
+		const storyColorMap = new Map<string, string>();
+
 		// Create series for each user story
 		const series = Array.from(allUserStories).map(storyId => {
 			const storyDetails = storyDetailsMap.get(storyId);
@@ -105,6 +108,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 							.reduce((a, b) => a + b.charCodeAt(0), 0)
 					) % 24
 				];
+
+			storyColorMap.set(storyId, normalColor);
 
 			// Create data points: same color for this story in every bar (assigned and Unassigned)
 			const storyData = assigneeData.map(assignee => {
@@ -137,6 +142,21 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			};
 		});
 
+		// Build assignee -> stories map for tooltip content
+		const assigneeStoriesMap = new Map(
+			assigneeData
+				.map(assignee => [
+					assignee.name,
+					assignee.userStories.map(story => ({
+						id: story.id,
+						formattedId: story.formattedId,
+						name: story.name,
+						hours: story.hours,
+						color: storyColorMap.get(story.id) ?? '#999999'
+					}))
+				])
+			);
+
 		// Configure chart options
 		const option: echarts.EChartsOption = {
 			backgroundColor: 'transparent',
@@ -159,6 +179,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 				axisPointer: {
 					type: 'shadow'
 				},
+				showDelay: 200,
 				position: ((point: [number, number], params: echarts.TooltipComponentFormatterCallbackParams, dom: HTMLElement, rect: unknown, size: { viewSize: [number, number]; contentSize: [number, number] }): [number, number] => {
 					// Position tooltip to the right of the cursor, with some padding
 					let x = point[0] + 10;
@@ -182,27 +203,29 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					return [x, y];
 				}) as echarts.TooltipComponentOption['position'],
 				formatter: function (params: echarts.TooltipComponentFormatterCallbackParams) {
-					if (!Array.isArray(params) || params.length === 0) {
+					const assigneeName = Array.isArray(params) ? params[0]?.name : params.name;
+					if (!assigneeName) {
 						return '';
 					}
-					const assignee = params[0].name;
-					let content = `<div style="font-size: 11.5px;"><strong style="font-size: 12.5px;">${assignee}</strong><br/><br/>`;
+
+					const stories = assigneeStoriesMap.get(assigneeName) ?? [];
+					if (stories.length === 0) {
+						return `<div style="font-size: 11.5px;"><strong style="font-size: 12.5px;">${assigneeName}</strong><br/><br/>No user stories assigned.</div>`;
+					}
+
 					let total = 0;
+					const storyRows = stories
+						.map(story => {
+							total += story.hours;
+							return `<div style="display: flex; align-items: baseline; gap: 6px;">
+								<span style="width: 10px; height: 10px; background-color: ${story.color}; border-radius: 2px; display: inline-block; flex-shrink: 0; margin-top: 2px;"></span>
+								<span style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${story.formattedId}: ${story.name}</span>
+								<span style="white-space: nowrap;">: <strong>${story.hours}h</strong></span>
+							</div>`;
+						})
+						.join('');
 
-					params.forEach(param => {
-						const value = typeof param.value === 'number' ? param.value : Array.isArray(param.value) ? (typeof param.value[0] === 'number' ? param.value[0] : 0) : 0;
-						// Show every assigned user story (including 0h) so the tooltip does not imply "no US assigned"
-						const color = param.color || '#999999';
-						content += `<div style="display: flex; align-items: baseline; gap: 6px;">
-							<span style="width: 10px; height: 10px; background-color: ${color}; border-radius: 2px; display: inline-block; flex-shrink: 0; margin-top: 2px;"></span>
-							<span style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;">${param.seriesName}</span>
-							<span style="white-space: nowrap;">: <strong>${value}h</strong></span>
-						</div>`;
-						total += value;
-					});
-
-					content += `<br/><strong>Total: ${total}h</strong></div>`;
-					return content;
+					return `<div style="font-size: 11.5px;"><strong style="font-size: 12.5px;">${assigneeName}</strong><br/><br/>${storyRows}<br/><strong>Total: ${total}h</strong></div>`;
 				},
 				backgroundColor: `color-mix(in srgb, ${themeColors.background} 85%, transparent)`,
 				borderColor: themeColors.panelBorder,

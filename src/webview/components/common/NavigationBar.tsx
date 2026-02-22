@@ -346,7 +346,9 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		<div
 			style={{
 				display: 'flex',
-				borderBottom: '1px solid var(--vscode-panel-border)'
+				borderBottom: '1px solid var(--vscode-panel-border)',
+				width: '100%',
+				backgroundColor: 'var(--vscode-panel-background)'
 			}}
 		>
 			<div

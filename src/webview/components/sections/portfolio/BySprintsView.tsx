@@ -55,6 +55,24 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	onBackToDefects,
 	onActiveUserStoryTabChange
 }) => {
+	const additionalTabContent = selectedUserStory
+		? {
+				tasks: <TasksTable tasks={tasks as RallyTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} embedded />,
+				tests: <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError} embedded />,
+				defects: (
+					<DefectsTable
+						defects={userStoryDefects as Defect[]}
+						loading={userStoryDefectsLoading}
+						error={userStoryDefectsError || undefined}
+						onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
+						onDefectSelected={onDefectSelected}
+						selectedDefect={selectedDefect as Defect | null}
+						embedded
+					/>
+				),
+				discussions: <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} embedded />
+			}
+		: undefined;
 	return (
 		<div style={{ padding: '0 20px' }}>
 			{currentScreen === 'iterations' && (
@@ -66,7 +84,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStories' && selectedIteration && (
 				<>
-					<ScreenHeader title={`User Stories - ${selectedIteration.name}`} showBackButton={true} onBack={onBackToIterations} />
+					<ScreenHeader title={`Sprint "${selectedIteration.name}"`} showBackButton={true} onBack={onBackToIterations} />
 					<collapsible-card title="Details">
 						<SprintDetailsForm iteration={selectedIteration} />
 					</collapsible-card>
@@ -90,20 +108,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
 					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
-					{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as RallyTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
-					{activeUserStoryTab === 'tests' && <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError} />}
-					{activeUserStoryTab === 'defects' && (
-						<DefectsTable
-							defects={userStoryDefects as Defect[]}
-							loading={userStoryDefectsLoading}
-							error={userStoryDefectsError || undefined}
-							onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
-							onDefectSelected={onDefectSelected}
-							selectedDefect={selectedDefect as Defect | null}
-						/>
-					)}
-					{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
 				</>
 			)}
 		</div>

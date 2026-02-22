@@ -144,18 +144,17 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 		// Build assignee -> stories map for tooltip content
 		const assigneeStoriesMap = new Map(
-			assigneeData
-				.map(assignee => [
-					assignee.name,
-					assignee.userStories.map(story => ({
-						id: story.id,
-						formattedId: story.formattedId,
-						name: story.name,
-						hours: story.hours,
-						color: storyColorMap.get(story.id) ?? '#999999'
-					}))
-				])
-			);
+			assigneeData.map(assignee => [
+				assignee.name,
+				assignee.userStories.map(story => ({
+					id: story.id,
+					formattedId: story.formattedId,
+					name: story.name,
+					hours: story.hours,
+					color: storyColorMap.get(story.id) ?? '#999999'
+				}))
+			])
+		);
 
 		// Configure chart options
 		const option: echarts.EChartsOption = {

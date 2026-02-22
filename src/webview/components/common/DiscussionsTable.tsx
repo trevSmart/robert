@@ -2,15 +2,15 @@ import React from 'react';
 import styled from 'styled-components';
 import { Discussion } from '../../../types/rally';
 
-const ChatContainer = styled.div`
+const ChatContainer = styled.div<{ embedded?: boolean }>`
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
-	margin-top: 10px;
-	padding: 16px;
-	background: var(--vscode-editor-background);
-	border: 1px solid var(--vscode-panel-border);
-	border-radius: 6px;
+	margin-top: ${props => (props.embedded ? '0' : '10px')};
+	padding: ${props => (props.embedded ? '0' : '16px')};
+	background: ${props => (props.embedded ? 'transparent' : 'var(--vscode-editor-background)')};
+	border: ${props => (props.embedded ? 'none' : '1px solid var(--vscode-panel-border)')};
+	border-radius: ${props => (props.embedded ? '0' : '6px')};
 	max-height: 500px;
 	overflow-y: auto;
 `;
@@ -97,9 +97,10 @@ interface DiscussionsTableProps {
 	discussions: Discussion[];
 	loading?: boolean;
 	error?: string | null;
+	embedded?: boolean;
 }
 
-const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loading, error }) => {
+const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loading, error, embedded = false }) => {
 	if (loading) {
 		return (
 			<LoadingContainer>
@@ -151,7 +152,7 @@ const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loadin
 	});
 
 	return (
-		<ChatContainer>
+		<ChatContainer embedded={embedded}>
 			{sortedDiscussions.map(discussion => (
 				<MessageBubble key={discussion.objectId}>
 					<MessageHeader>

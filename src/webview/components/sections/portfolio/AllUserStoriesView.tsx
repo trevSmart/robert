@@ -41,33 +41,12 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	onBackToUserStories,
 	onActiveUserStoryTabChange,
 	loadMoreUserStories
-}) => (
-	<div style={{ padding: '0 20px' }}>
-		{currentScreen === 'allUserStories' && !selectedUserStory && (
-			<>
-				<ScreenHeader title="All User Stories" />
-				<UserStoriesTable
-					userStories={portfolioUserStories}
-					loading={portfolioUserStoriesLoading}
-					error={userStoriesError}
-					onLoadUserStories={() => onLoadUserStories()}
-					onClearUserStories={onClearUserStories}
-					onUserStorySelected={onUserStorySelected}
-					selectedUserStory={selectedUserStory}
-					hasMore={portfolioUserStoriesHasMore}
-					onLoadMore={loadMoreUserStories}
-					loadingMore={portfolioUserStoriesLoadingMore}
-				/>
-			</>
-		)}
-
-		{currentScreen === 'userStoryDetail' && selectedUserStory && (
-			<>
-				<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
-				<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} />
-				{activeUserStoryTab === 'tasks' && <TasksTable tasks={tasks as RallyTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} />}
-				{activeUserStoryTab === 'tests' && <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError} />}
-				{activeUserStoryTab === 'defects' && (
+}) => {
+	const additionalTabContent = selectedUserStory
+		? {
+				tasks: <TasksTable tasks={tasks as RallyTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} embedded />,
+				tests: <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError} embedded />,
+				defects: (
 					<DefectsTable
 						defects={userStoryDefects as Defect[]}
 						loading={userStoryDefectsLoading}
@@ -75,12 +54,41 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 						onLoadDefects={() => selectedUserStory && onLoadUserStoryDefects(selectedUserStory.objectId)}
 						onDefectSelected={onDefectSelected}
 						selectedDefect={selectedDefect as Defect | null}
+						embedded
 					/>
-				)}
-				{activeUserStoryTab === 'discussions' && <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} />}
-			</>
-		)}
-	</div>
-);
+				),
+				discussions: <DiscussionsTable discussions={userStoryDiscussions} loading={userStoryDiscussionsLoading} error={userStoryDiscussionsError} embedded />
+			}
+		: undefined;
+
+	return (
+		<div style={{ padding: '0 20px' }}>
+			{currentScreen === 'allUserStories' && !selectedUserStory && (
+				<>
+					<ScreenHeader title="All User Stories" />
+					<UserStoriesTable
+						userStories={portfolioUserStories}
+						loading={portfolioUserStoriesLoading}
+						error={userStoriesError}
+						onLoadUserStories={() => onLoadUserStories()}
+						onClearUserStories={onClearUserStories}
+						onUserStorySelected={onUserStorySelected}
+						selectedUserStory={selectedUserStory}
+						hasMore={portfolioUserStoriesHasMore}
+						onLoadMore={loadMoreUserStories}
+						loadingMore={portfolioUserStoriesLoadingMore}
+					/>
+				</>
+			)}
+
+			{currentScreen === 'userStoryDetail' && selectedUserStory && (
+				<>
+					<ScreenHeader title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} />
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
+				</>
+			)}
+		</div>
+	);
+};
 
 export default AllUserStoriesView;

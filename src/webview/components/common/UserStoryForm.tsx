@@ -1,4 +1,4 @@
-import { FC, useState, useCallback, useMemo, useRef } from 'react';
+import { FC, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme } from '../../utils/themeColors';
@@ -25,7 +25,7 @@ const StatPill: FC<{
 	isSelected: boolean;
 	onClick: () => void;
 	title: string;
-	children: React.ReactNode;
+	children: ReactNode;
 }> = ({ isSelected, onClick, title, children }) => {
 	const lightTheme = isLightTheme();
 
@@ -68,10 +68,13 @@ const StatPill: FC<{
 	);
 };
 
+type AdditionalTabKey = 'tasks' | 'tests' | 'defects' | 'discussions';
+
 interface UserStoryFormProps {
 	userStory: UserStory;
-	selectedAdditionalTab?: 'tasks' | 'tests' | 'defects' | 'discussions';
-	onAdditionalTabChange?: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
+	selectedAdditionalTab?: AdditionalTabKey;
+	onAdditionalTabChange?: (tab: AdditionalTabKey) => void;
+	additionalTabContent?: Partial<Record<AdditionalTabKey, ReactNode>>;
 }
 
 // Help Request icon
@@ -123,7 +126,7 @@ const DESCRIPTION_HEIGHT_MIN = 80;
 const DESCRIPTION_HEIGHT_MAX = 600;
 const DESCRIPTION_HEIGHT_DEFAULT = 300;
 
-const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange }) => {
+const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange, additionalTabContent }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
@@ -149,7 +152,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		}
 	};
 
-	const handleTabChange = (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => {
+	const handleTabChange = (tab: AdditionalTabKey) => {
 		if (onAdditionalTabChange) {
 			onAdditionalTabChange(tab);
 		}
@@ -404,7 +407,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				</div>
 
 				{/* Additional Information */}
-				<h3 style={{ margin: '16px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
+				<div style={{ gridColumn: '1 / -1', margin: '20px 0 0 0', borderTop: '1px solid var(--vscode-panel-border)' }} />
+				<h3 style={{ margin: '12px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
 				<div style={{ gridColumn: '1 / -1' }}>
 					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
 						<StatPill isSelected={selectedAdditionalTab === 'tasks'} onClick={() => handleTabChange('tasks')} title="Click to view tasks">
@@ -436,6 +440,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							</span>
 						</StatPill>
 					</div>
+					{additionalTabContent?.[selectedAdditionalTab] && (
+						<div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>
+					)}
 				</div>
 			</div>
 		</collapsible-card>

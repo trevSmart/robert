@@ -69,6 +69,26 @@ npm run test:coverage
 npm run test:vscode
 ```
 
+## Testing with AI Agents
+
+If you're testing the Robert extension with automated AI agents in virtual environments:
+
+- **[AI Agent Testing Guide](./AI_AGENT_TESTING.md)** - Complete guide for setting up the extension for AI agent testing
+- **[Setup Script](./example-ai-agent-setup.sh)** - Automated environment setup for agents
+- **[Environment Variables Reference](../ENVIRONMENT_VARIABLES.md)** - All supported environment variables
+
+The extension supports environment variable configuration, making it easy to test without modifying VS Code settings:
+
+```bash
+# Set Rally configuration via environment variables
+export ROBERT_RALLY_API_KEY="your-api-key"
+export ROBERT_RALLY_INSTANCE="https://rally1.rallydev.com"
+export ROBERT_RALLY_PROJECT_NAME="TestProject"
+
+# Run tests
+npm test
+```
+
 ## Test Configuration
 
 ### Vitest Configuration

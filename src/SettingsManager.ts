@@ -35,6 +35,7 @@ export class SettingsManager {
 
 	/**
 	 * Get all settings with their current values
+	 * Priority: VS Code Settings > Environment Variables > Defaults
 	 */
 	public getSettings(): RobertSettings {
 		return (
@@ -42,20 +43,20 @@ export class SettingsManager {
 				const config = vscode.workspace.getConfiguration('robert');
 
 				const settings: RobertSettings = {
-					apiEndpoint: config.get<string>('apiEndpoint', 'https://rally.example.com'),
-					refreshInterval: config.get<number>('refreshInterval', 30),
-					autoRefresh: config.get<boolean>('autoRefresh', true),
-					debugMode: config.get<boolean>('debugMode', false),
-					advancedFeatures: config.get<boolean>('advancedFeatures', false),
-					maxResults: config.get<number>('maxResults', 100),
-					rallyInstance: config.get<string>('rallyInstance', 'https://rally1.rallydev.com'),
-					rallyApiKey: config.get<string>('rallyApiKey', ''),
-					rallyProjectName: config.get<string>('rallyProjectName', ''),
-					collaborationServerUrl: config.get<string>('collaboration.serverUrl', 'https://robert-8vdt.onrender.com'),
-					collaborationEnabled: config.get<boolean>('collaboration.enabled', false),
-					collaborationAutoConnect: config.get<boolean>('collaboration.autoConnect', true),
-					showOutputChannelOnStartup: config.get<boolean>('showOutputChannelOnStartup', false),
-					statusBarShowSprintDaysLeft: config.get<boolean>('statusBarShowSprintDaysLeft', true)
+					apiEndpoint: this.resolveSettingWithFallback('apiEndpoint', config.get<string>('apiEndpoint', ''), 'ROBERT_API_ENDPOINT', 'https://rally.example.com'),
+					refreshInterval: this.resolveNumericSettingWithFallback('refreshInterval', config.get<number>('refreshInterval') ?? 0, 'ROBERT_REFRESH_INTERVAL', 30),
+					autoRefresh: this.resolveBooleanSettingWithFallback('autoRefresh', config.get<boolean>('autoRefresh'), 'ROBERT_AUTO_REFRESH', true),
+					debugMode: this.resolveBooleanSettingWithFallback('debugMode', config.get<boolean>('debugMode'), 'ROBERT_DEBUG_MODE', false),
+					advancedFeatures: this.resolveBooleanSettingWithFallback('advancedFeatures', config.get<boolean>('advancedFeatures'), 'ROBERT_ADVANCED_FEATURES', false),
+					maxResults: this.resolveNumericSettingWithFallback('maxResults', config.get<number>('maxResults') ?? 0, 'ROBERT_MAX_RESULTS', 100),
+					rallyInstance: this.resolveSettingWithFallback('rallyInstance', config.get<string>('rallyInstance', ''), 'ROBERT_RALLY_INSTANCE', 'https://rally1.rallydev.com'),
+					rallyApiKey: this.resolveSettingWithFallback('rallyApiKey', config.get<string>('rallyApiKey', ''), 'ROBERT_RALLY_API_KEY', ''),
+					rallyProjectName: this.resolveSettingWithFallback('rallyProjectName', config.get<string>('rallyProjectName', ''), 'ROBERT_RALLY_PROJECT_NAME', ''),
+					collaborationServerUrl: this.resolveSettingWithFallback('collaboration.serverUrl', config.get<string>('collaboration.serverUrl', ''), 'ROBERT_COLLABORATION_SERVER_URL', 'https://robert-8vdt.onrender.com'),
+					collaborationEnabled: this.resolveBooleanSettingWithFallback('collaboration.enabled', config.get<boolean>('collaboration.enabled'), 'ROBERT_COLLABORATION_ENABLED', false),
+					collaborationAutoConnect: this.resolveBooleanSettingWithFallback('collaboration.autoConnect', config.get<boolean>('collaboration.autoConnect'), 'ROBERT_COLLABORATION_AUTO_CONNECT', true),
+					showOutputChannelOnStartup: this.resolveBooleanSettingWithFallback('showOutputChannelOnStartup', config.get<boolean>('showOutputChannelOnStartup'), 'ROBERT_SHOW_OUTPUT_ON_STARTUP', false),
+					statusBarShowSprintDaysLeft: this.resolveBooleanSettingWithFallback('statusBarShowSprintDaysLeft', config.get<boolean>('statusBarShowSprintDaysLeft'), 'ROBERT_STATUS_BAR_SPRINT_DAYS', true)
 				};
 
 				return settings;
@@ -147,6 +148,7 @@ export class SettingsManager {
 
 	/**
 	 * Get a specific setting value
+	 * Priority: VS Code Settings > Environment Variables > Defaults
 	 */
 	public getSetting<K extends keyof RobertSettings>(key: K): RobertSettings[K] {
 		return (
@@ -156,17 +158,50 @@ export class SettingsManager {
 
 				// Handle nested settings
 				if (key === 'collaborationServerUrl') {
-					return config.get('collaboration.serverUrl', defaultValue) as RobertSettings[K];
+					const vscodeVal = config.get('collaboration.serverUrl', '');
+					return this.resolveSettingWithFallback('collaboration.serverUrl', vscodeVal, 'ROBERT_COLLABORATION_SERVER_URL', defaultValue as string) as RobertSettings[K];
 				}
 				if (key === 'collaborationEnabled') {
-					return config.get('collaboration.enabled', defaultValue) as RobertSettings[K];
+					const vscodeVal = config.get<boolean>('collaboration.enabled');
+					return this.resolveBooleanSettingWithFallback('collaboration.enabled', vscodeVal, 'ROBERT_COLLABORATION_ENABLED', defaultValue as boolean) as RobertSettings[K];
 				}
 				if (key === 'collaborationAutoConnect') {
-					return config.get('collaboration.autoConnect', defaultValue) as RobertSettings[K];
+					const vscodeVal = config.get<boolean>('collaboration.autoConnect');
+					return this.resolveBooleanSettingWithFallback('collaboration.autoConnect', vscodeVal, 'ROBERT_COLLABORATION_AUTO_CONNECT', defaultValue as boolean) as RobertSettings[K];
 				}
 
-				// Type assertion to handle the generic return type
-				return config.get(key, defaultValue) as RobertSettings[K];
+				// Handle Rally connection settings with environment variable fallback
+				if (key === 'rallyApiKey') {
+					const vscodeVal = config.get<string>(key, '');
+					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_API_KEY', defaultValue as string) as RobertSettings[K];
+				}
+				if (key === 'rallyInstance') {
+					const vscodeVal = config.get<string>(key, '');
+					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_INSTANCE', defaultValue as string) as RobertSettings[K];
+				}
+				if (key === 'rallyProjectName') {
+					const vscodeVal = config.get<string>(key, '');
+					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_PROJECT_NAME', defaultValue as string) as RobertSettings[K];
+				}
+
+				// For numeric settings
+				if (typeof defaultValue === 'number') {
+					const vscodeVal = config.get<number>(key) ?? 0;
+					const envVarName = `ROBERT_${key.toUpperCase()}`;
+					return this.resolveNumericSettingWithFallback(key, vscodeVal, envVarName, defaultValue as number) as RobertSettings[K];
+				}
+
+				// For boolean settings
+				if (typeof defaultValue === 'boolean') {
+					const vscodeVal = config.get<boolean>(key);
+					const envVarName = `ROBERT_${key.toUpperCase()}`;
+					return this.resolveBooleanSettingWithFallback(key, vscodeVal, envVarName, defaultValue as boolean) as RobertSettings[K];
+				}
+
+				// For string settings
+				const vscodeVal = config.get<string>(key, '');
+				const envVarName = `ROBERT_${key.toUpperCase()}`;
+				return this.resolveSettingWithFallback(key, vscodeVal, envVarName, defaultValue as string) as RobertSettings[K];
 			}, `SettingsManager.getSetting.${key}`) || this.getDefaultSettings()[key]
 		);
 	}
@@ -213,6 +248,82 @@ export class SettingsManager {
 			showOutputChannelOnStartup: false,
 			statusBarShowSprintDaysLeft: true
 		};
+	}
+
+	/**
+	 * Resolve string setting with priority: VS Code setting > Environment variable > Default
+	 * @param settingKey - The configuration key
+	 * @param vscodeValue - Value from VS Code config
+	 * @param envVarName - Environment variable name to check
+	 * @param defaultValue - Fallback default value
+	 */
+	private resolveSettingWithFallback(settingKey: string, vscodeValue: string, envVarName: string, defaultValue: string): string {
+		// Priority 1: VS Code setting (if not empty)
+		if (vscodeValue && vscodeValue.trim() !== '') {
+			return vscodeValue;
+		}
+
+		// Priority 2: Environment variable
+		const envValue = process.env[envVarName];
+		if (envValue && envValue.trim() !== '') {
+			this._errorHandler.logDebug(`Setting '${settingKey}' loaded from environment variable '${envVarName}'`, 'SettingsManager.resolveSettingWithFallback');
+			return envValue;
+		}
+
+		// Priority 3: Default value
+		return defaultValue;
+	}
+
+	/**
+	 * Resolve numeric setting with priority: VS Code setting > Environment variable > Default
+	 * @param settingKey - The configuration key
+	 * @param vscodeValue - Value from VS Code config
+	 * @param envVarName - Environment variable name to check
+	 * @param defaultValue - Fallback default value
+	 */
+	private resolveNumericSettingWithFallback(settingKey: string, vscodeValue: number, envVarName: string, defaultValue: number): number {
+		// Priority 1: VS Code setting (if not 0)
+		if (vscodeValue > 0) {
+			return vscodeValue;
+		}
+
+		// Priority 2: Environment variable
+		const envValue = process.env[envVarName];
+		if (envValue && envValue.trim() !== '') {
+			const parsed = parseInt(envValue, 10);
+			if (!isNaN(parsed)) {
+				this._errorHandler.logDebug(`Setting '${settingKey}' loaded from environment variable '${envVarName}' (value: ${parsed})`, 'SettingsManager.resolveNumericSettingWithFallback');
+				return parsed;
+			}
+		}
+
+		// Priority 3: Default value
+		return defaultValue;
+	}
+
+	/**
+	 * Resolve boolean setting with priority: VS Code setting > Environment variable > Default
+	 * @param settingKey - The configuration key
+	 * @param vscodeValue - Value from VS Code config (can be undefined)
+	 * @param envVarName - Environment variable name to check
+	 * @param defaultValue - Fallback default value
+	 */
+	private resolveBooleanSettingWithFallback(settingKey: string, vscodeValue: boolean | undefined, envVarName: string, defaultValue: boolean): boolean {
+		// Priority 1: VS Code setting (if explicitly set)
+		if (vscodeValue !== undefined) {
+			return vscodeValue;
+		}
+
+		// Priority 2: Environment variable
+		const envValue = process.env[envVarName];
+		if (envValue !== undefined) {
+			const boolValue = envValue.toLowerCase() === 'true' || envValue === '1' || envValue.toLowerCase() === 'yes';
+			this._errorHandler.logDebug(`Setting '${settingKey}' loaded from environment variable '${envVarName}' (value: ${boolValue})`, 'SettingsManager.resolveBooleanSettingWithFallback');
+			return boolValue;
+		}
+
+		// Priority 3: Default value
+		return defaultValue;
 	}
 
 	/**

@@ -98,6 +98,36 @@ Robert/
 - Es mantenen entre sessions
 - Es poden sincronitzar amb VS Code Sync
 
+### Resolució de Configuració (Prioritat)
+
+L'extensió resol la configuració en aquest ordre:
+
+1. **VS Code Settings** (prioritat alta) - Configuració de l'usuari en VS Code
+2. **Variables d'Entorn** (prioritat mitjana) - Variables del sistema (per a agents IA i CI/CD)
+3. **Valors per Defecte** (prioritat baixa) - Defaults de l'extensió
+
+Això permet que les agències IA configuren la connexió a Rally sense modificar fitxers de configuració de VS Code.
+
+### Variables d'Entorn Suportades
+
+Per a entorns de testing automatitzat i agentes IA:
+
+```bash
+# Rally Configuration
+export ROBERT_RALLY_API_KEY="your-api-key"
+export ROBERT_RALLY_INSTANCE="https://rally1.rallydev.com"
+export ROBERT_RALLY_PROJECT_NAME="YourProject"
+
+# Extension Settings
+export ROBERT_DEBUG_MODE="true"
+export ROBERT_AUTO_REFRESH="true"
+export ROBERT_COLLABORATION_ENABLED="false"
+```
+
+**Documentació completa**: [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md)
+
+**Guia per a Agentes IA**: [test/AI_AGENT_TESTING.md](test/AI_AGENT_TESTING.md)
+
 ## 🎯 Funcionalitats Principals
 
 ### 1. **Integració Rally**

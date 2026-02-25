@@ -92,3 +92,5 @@ tmp/
 .sfdx/
 sfdx-project.json
 .forceignore
+
+.env

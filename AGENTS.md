@@ -280,3 +280,17 @@ This is a VS Code extension; it cannot be run standalone in the cloud VM. The pr
 The collaboration server (`server/`) is optional. It requires PostgreSQL and is disabled by default (`robert.collaboration.enabled: false`). To build it: `cd server && npm run build`. It does not need to run for extension development.
 
 The project uses two separate `package.json`/`package-lock.json` files: root for the extension, `server/` for the collaboration server. Both need `npm install` independently.
+
+### Running the extension GUI in the Cloud VM
+
+VS Code can be installed and launched with a display (`DISPLAY=:1 code --disable-gpu /workspace`) for GUI testing. To test the extension:
+
+1. Compile and build: `npx tsc -p ./ && npm run build:webview`
+2. Package VSIX (requires temporarily overriding `vscode:prepublish` to skip lint, since it has pre-existing errors)
+3. Install: `code --install-extension dist/robert-latest.vsix --force`
+4. Launch VS Code: `DISPLAY=:1 code --disable-gpu /workspace`
+5. Use the `computerUse` subagent to interact with the GUI
+
+### Rally configuration
+
+The extension reads Rally credentials from VS Code settings with environment variable fallback (`resolveSettingWithFallback` in `SettingsManager.ts`). The env vars are: `ROBERT_RALLY_API_KEY`, `ROBERT_RALLY_INSTANCE`, `ROBERT_RALLY_PROJECT_NAME`. However, env var fallback may not work reliably in packaged VSIX mode; configuring settings directly in VS Code is more reliable (via Command Palette > "Preferences: Open User Settings (JSON)").

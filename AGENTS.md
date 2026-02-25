@@ -235,3 +235,18 @@ Any action performed by our extension must be logged to the "Robert" Output chan
 2. `npm run build:webview`: Construir webviews
 3. `npm run package`: Generar VSIX
 4. `vsce publish`: Publicar a marketplace
+
+## Cursor Cloud specific instructions
+
+This is a VS Code extension; it cannot be run standalone in the cloud VM. The primary development workflow is:
+
+- **Lint**: `npm run lint` (pre-existing warnings/errors in the codebase; exit code 1 is expected)
+- **Tests**: `npm test` runs Vitest. 138/139 tests pass; `test/extension.test.ts > should activate extension without errors` fails pre-existingly due to an incomplete VS Code API mock (`workspace.onDidChangeConfiguration`).
+- **TypeScript compile**: `npx tsc -p ./` (clean, zero errors)
+- **Webview build**: `npm run build:webview` (Vite, builds React webviews to `out/webview/`)
+- **Watch mode**: `npm run watch` for TypeScript incremental compilation during development
+- **VSIX packaging**: `npm run package` fails due to `vscode:prepublish` running `lint:fix` which exits 1 on pre-existing lint errors. Use `npm run compile:fast` for a quick compile without lint gating.
+
+The collaboration server (`server/`) is optional. It requires PostgreSQL and is disabled by default (`robert.collaboration.enabled: false`). To build it: `cd server && npm run build`. It does not need to run for extension development.
+
+The project uses two separate `package.json`/`package-lock.json` files: root for the extension, `server/` for the collaboration server. Both need `npm install` independently.

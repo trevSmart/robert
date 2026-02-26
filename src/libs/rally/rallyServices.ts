@@ -2530,3 +2530,132 @@ export async function getTestCaseWithParent(objectId: string): Promise<{ testCas
 	const formatted = await formatTestCasesAsync(results);
 	return { testCase: formatted[0] ?? null, userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null };
 }
+
+/**
+ * Fetch revisions for a user story by querying RevisionHistory directly
+ */
+export async function getUserStoryRevisions(objectId: string): Promise<{ revisions: any[]; source: string; count: number }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+
+	errorHandler.logDebug(`Fetching revisions for user story: ${objectId}`, 'getUserStoryRevisions');
+
+	const rallyApi = getRallyApi();
+	
+	// Step 1: Get the User Story to fetch its RevisionHistory reference
+	const usResult = await rallyApi.query({
+		type: 'hierarchicalrequirement',
+		fetch: ['RevisionHistory'],
+		query: queryUtils.where('ObjectID', '=', objectId)
+	});
+
+	const usResultData = usResult as RallyApiResult;
+	const usResults = usResultData.Results || usResultData.QueryResult?.Results || [];
+
+	if (!usResults.length) {
+		errorHandler.logDebug(`No user story found: ${objectId}`, 'getUserStoryRevisions');
+		return {
+			revisions: [],
+			source: 'api',
+			count: 0
+		};
+	}
+
+	const usObject = usResults[0] as any;
+	if (!usObject.RevisionHistory || !usObject.RevisionHistory._ref) {
+		errorHandler.logDebug(`No RevisionHistory found for user story: ${objectId}`, 'getUserStoryRevisions');
+		return {
+			revisions: [],
+			source: 'api',
+			count: 0
+		};
+	}
+
+	const revisionHistoryRef = usObject.RevisionHistory._ref;
+	
+	// Step 2: Get the RevisionHistory object to fetch Revisions collection
+	const rhResult = await rallyApi.query({
+		ref: revisionHistoryRef,
+		fetch: ['Revisions']
+	} as any);
+
+	const rhResultData = rhResult as any;
+	
+	if (!rhResultData.Revisions || !rhResultData.Revisions._ref) {
+		errorHandler.logDebug(`No Revisions collection found for user story: ${objectId}`, 'getUserStoryRevisions');
+		return {
+			revisions: [],
+			source: 'api',
+			count: 0
+		};
+	}
+
+	// Step 3: Get all revisions from the Revisions collection
+	const revisionsResult = await rallyApi.query({
+		ref: rhResultData.Revisions._ref,
+		fetch: ['RevisionNumber', 'Description', 'User', 'CreationDate'],
+		limit: 100,
+		order: 'RevisionNumber desc'
+	} as any);
+
+	const revisionResults = revisionsResult as RallyApiResult;
+	const results = revisionResults.Results || revisionResults.QueryResult?.Results || [];
+
+	if (!results.length) {
+		errorHandler.logDebug(`No revisions found for user story: ${objectId}`, 'getUserStoryRevisions');
+		return {
+			revisions: [],
+			source: 'api',
+			count: 0
+		};
+	}
+
+	const revisions = await formatRevisionsAsync(results);
+	errorHandler.logDebug(`Retrieved ${revisions.length} revisions for user story: ${objectId}`, 'getUserStoryRevisions');
+
+	return {
+		revisions: revisions,
+		source: 'api',
+		count: revisions.length
+	};
+}
+
+/**
+ * Format revisions from Rally API response
+ */
+async function formatRevisionsAsync(results: any[]): Promise<any[]> {
+	const formatted: any[] = [];
+
+	for (let i = 0; i < results.length; i++) {
+		const revision: any = results[i];
+
+		// Extract author from User object
+		let author = 'Unknown';
+		if (revision.User) {
+			if (revision.User._refObjectName) {
+				author = revision.User._refObjectName;
+			} else if (revision.User.DisplayName) {
+				author = revision.User.DisplayName;
+			} else if (revision.User.UserName) {
+				author = revision.User.UserName;
+			}
+		}
+
+		formatted.push({
+			revisionNumber: revision.RevisionNumber ?? revision.revisionNumber,
+			description: revision.Description ?? revision.description ?? 'No description',
+			author: author,
+			createdDate: revision.CreationDate ?? revision.createdDate,
+			_ref: revision._ref
+		});
+
+		// Yield to event loop every CHUNK_SIZE items
+		if ((i + 1) % CHUNK_SIZE === 0) {
+			await yieldToEventLoop();
+		}
+	}
+
+	return formatted.sort((a, b) => b.revisionNumber - a.revisionNumber);
+}

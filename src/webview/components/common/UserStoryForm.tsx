@@ -68,7 +68,7 @@ const StatPill: FC<{
 	);
 };
 
-type AdditionalTabKey = 'tasks' | 'tests' | 'defects' | 'discussions';
+type AdditionalTabKey = 'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions';
 
 interface UserStoryFormProps {
 	userStory: UserStory;
@@ -122,6 +122,12 @@ const DiscussionsIcon = ({ size = '18px' }: { size?: string }) => (
 	</svg>
 );
 
+const RevisionsIcon = ({ size = '18px' }: { size?: string }) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
+		<path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+	</svg>
+);
+
 const DESCRIPTION_HEIGHT_MIN = 80;
 const DESCRIPTION_HEIGHT_MAX = 600;
 const DESCRIPTION_HEIGHT_DEFAULT = 300;
@@ -131,6 +137,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
 	const [descriptionHeight, setDescriptionHeight] = useState(DESCRIPTION_HEIGHT_DEFAULT);
+	const [revisions, setRevisions] = useState<any[]>([]);
+	const [revisionsLoading, setRevisionsLoading] = useState(false);
 	const resizeStartRef = useRef({ y: 0, height: 0 });
 
 	const getScheduleStateColor = (scheduleState: string) => {
@@ -156,7 +164,46 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		if (onAdditionalTabChange) {
 			onAdditionalTabChange(tab);
 		}
+
+		// Load revisions when revisions tab is selected
+		if (tab === 'revisions' && revisions.length === 0 && !revisionsLoading) {
+			loadRevisions();
+		}
 	};
+
+	const loadRevisions = useCallback(async () => {
+		setRevisionsLoading(true);
+		try {
+			if (!vscode) return;
+
+			const response = await new Promise((resolve) => {
+				const handleMessage = (event: any) => {
+					if (event.data.type === 'revisionsLoaded') {
+						window.removeEventListener('message', handleMessage);
+						resolve(event.data.revisions);
+					}
+				};
+				window.addEventListener('message', handleMessage);
+
+				vscode.postMessage({
+					command: 'getUserStoryRevisions',
+					userStoryObjectId: userStory.objectId
+				});
+
+				setTimeout(() => {
+					window.removeEventListener('message', handleMessage);
+					resolve([]);
+				}, 10000);
+			});
+
+			setRevisions(response as any[]);
+		} catch (error) {
+			console.error('Error loading revisions:', error);
+			setRevisions([]);
+		} finally {
+			setRevisionsLoading(false);
+		}
+	}, [vscode, userStory.objectId]);
 
 	const handleDescriptionResizeStart = useCallback(
 		(e: React.MouseEvent) => {
@@ -410,7 +457,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				<div style={{ gridColumn: '1 / -1', margin: '20px 0 0 0', borderTop: '1px solid var(--vscode-panel-border)' }} />
 				<h3 style={{ margin: '12px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
 				<div style={{ gridColumn: '1 / -1' }}>
-					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '12px' }}>
+					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '12px' }}>
 						<StatPill isSelected={selectedAdditionalTab === 'tasks'} onClick={() => handleTabChange('tasks')} title="Click to view tasks">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Tasks</span>
 							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
@@ -439,8 +486,67 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 								{userStory.discussionCount}
 							</span>
 						</StatPill>
+						<StatPill isSelected={selectedAdditionalTab === 'revisions'} onClick={() => handleTabChange('revisions')} title="Click to view revisions">
+							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Revisions</span>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+								<RevisionsIcon />
+								{revisions.length > 0 ? revisions.length : '—'}
+							</span>
+						</StatPill>
 					</div>
-					{additionalTabContent?.[selectedAdditionalTab] && <div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>}
+					{selectedAdditionalTab === 'revisions' && (
+						<div style={{ marginTop: '20px' }}>
+							{revisionsLoading ? (
+								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>
+									Loading revisions...
+								</div>
+							) : revisions.length === 0 ? (
+								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>
+									No revisions found
+								</div>
+							) : (
+								<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+									{revisions.map((revision, index) => (
+										<div
+											key={index}
+											style={{
+												padding: '12px',
+												backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+												border: '1px solid var(--vscode-input-border)',
+												borderRadius: '3px',
+												fontSize: '12px'
+											}}
+										>
+											<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+												<div style={{ fontWeight: '600', color: 'var(--vscode-foreground)' }}>
+													Revision #{revision.revisionNumber}
+												</div>
+												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
+													{new Date(revision.createdDate).toLocaleString()}
+												</div>
+											</div>
+											<div style={{ marginBottom: '6px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>
+												By: <strong>{revision.author}</strong>
+											</div>
+											<div
+												style={{
+													padding: '8px',
+													backgroundColor: 'var(--vscode-input-background)',
+													borderRadius: '2px',
+													color: 'var(--vscode-input-foreground)',
+													fontFamily: "monospace",
+													wordBreak: 'break-word'
+												}}
+											>
+												{revision.description}
+											</div>
+										</div>
+									))}
+								</div>
+							)}
+						</div>
+					)}
+					{additionalTabContent?.[selectedAdditionalTab] && selectedAdditionalTab !== 'revisions' && <div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>}
 				</div>
 			</div>
 		</collapsible-card>

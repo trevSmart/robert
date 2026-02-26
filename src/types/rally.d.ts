@@ -21,6 +21,7 @@ export interface UserStory {
 	discussionCount: number;
 	appgar: string;
 	scheduleState: string; // PRIMARY: Rally ScheduleState (Defined, In-Progress, Completed, New)
+	revisions?: Revision[]; // Optional - revision history of the user story
 	_ref?: string; // Optional - reference field
 }
 
@@ -79,6 +80,14 @@ export interface Discussion {
 	author: string;
 	createdDate: string;
 	userStoryId?: string;
+	_ref?: string;
+}
+
+export interface Revision {
+	revisionNumber: number;
+	description: string;
+	author: string;
+	createdDate: string;
 	_ref?: string;
 }
 

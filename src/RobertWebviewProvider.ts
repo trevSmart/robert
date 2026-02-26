@@ -18,7 +18,8 @@ import {
 	getUserStoryByObjectId,
 	getDefectByObjectId,
 	getTaskWithParent,
-	getTestCaseWithParent
+	getTestCaseWithParent,
+	getUserStoryRevisions
 } from './libs/rally/rallyServices';
 import { HolidayService } from './libs/holidayService';
 import { validateRallyConfiguration } from './libs/rally/utils';
@@ -1241,6 +1242,22 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								webview.postMessage({
 									command: 'collaborationMessagesError',
 									error: this.getCollaborationErrorMessage(error)
+								});
+							}
+							break;
+						case 'getUserStoryRevisions':
+							try {
+								this._errorHandler.logInfo(`Fetching revisions for user story: ${message.userStoryObjectId}`, 'WebviewMessageListener');
+								const result = await getUserStoryRevisions(message.userStoryObjectId);
+								webview.postMessage({
+									type: 'revisionsLoaded',
+									revisions: result.revisions
+								});
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getUserStoryRevisions');
+								webview.postMessage({
+									type: 'revisionsLoaded',
+									revisions: []
 								});
 							}
 							break;

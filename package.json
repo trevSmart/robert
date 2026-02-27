@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.2.64",
+	"version": "0.2.66",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -246,8 +246,8 @@
 	"dependencies": {
 		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",
-		"lenis": "^1.1.14",
 		"ibm-rally-node": "^0.0.17",
+		"lenis": "^1.1.14",
 		"node-fetch": "^3.3.2",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",

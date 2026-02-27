@@ -176,7 +176,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		try {
 			if (!vscode) return;
 
-			const response = await new Promise((resolve) => {
+			const response = await new Promise(resolve => {
 				const handleMessage = (event: any) => {
 					if (event.data.type === 'revisionsLoaded') {
 						window.removeEventListener('message', handleMessage);
@@ -497,13 +497,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					{selectedAdditionalTab === 'revisions' && (
 						<div style={{ marginTop: '20px' }}>
 							{revisionsLoading ? (
-								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>
-									Loading revisions...
-								</div>
+								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading revisions...</div>
 							) : revisions.length === 0 ? (
-								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>
-									No revisions found
-								</div>
+								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No revisions found</div>
 							) : (
 								<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 									{revisions.map((revision, index) => (
@@ -518,12 +514,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 											}}
 										>
 											<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-												<div style={{ fontWeight: '600', color: 'var(--vscode-foreground)' }}>
-													Revision #{revision.revisionNumber}
-												</div>
-												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
-													{new Date(revision.createdDate).toLocaleString()}
-												</div>
+												<div style={{ fontWeight: '600', color: 'var(--vscode-foreground)' }}>Revision #{revision.revisionNumber}</div>
+												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{new Date(revision.createdDate).toLocaleString()}</div>
 											</div>
 											<div style={{ marginBottom: '6px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>
 												By: <strong>{revision.author}</strong>
@@ -534,7 +526,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 													backgroundColor: 'var(--vscode-input-background)',
 													borderRadius: '2px',
 													color: 'var(--vscode-input-foreground)',
-													fontFamily: "monospace",
+													fontFamily: 'monospace',
 													wordBreak: 'break-word'
 												}}
 											>

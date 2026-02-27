@@ -2543,7 +2543,7 @@ export async function getUserStoryRevisions(objectId: string): Promise<{ revisio
 	errorHandler.logDebug(`Fetching revisions for user story: ${objectId}`, 'getUserStoryRevisions');
 
 	const rallyApi = getRallyApi();
-	
+
 	// Step 1: Get the User Story to fetch its RevisionHistory reference
 	const usResult = await rallyApi.query({
 		type: 'hierarchicalrequirement',
@@ -2574,7 +2574,7 @@ export async function getUserStoryRevisions(objectId: string): Promise<{ revisio
 	}
 
 	const revisionHistoryRef = usObject.RevisionHistory._ref;
-	
+
 	// Step 2: Get the RevisionHistory object to fetch Revisions collection
 	const rhResult = await rallyApi.query({
 		ref: revisionHistoryRef,
@@ -2582,7 +2582,7 @@ export async function getUserStoryRevisions(objectId: string): Promise<{ revisio
 	} as any);
 
 	const rhResultData = rhResult as any;
-	
+
 	if (!rhResultData.Revisions || !rhResultData.Revisions._ref) {
 		errorHandler.logDebug(`No Revisions collection found for user story: ${objectId}`, 'getUserStoryRevisions');
 		return {

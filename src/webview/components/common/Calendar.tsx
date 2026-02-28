@@ -278,13 +278,18 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		});
 		logDebug(`✅ Matched ${usForActiveSprints.length} user stories to active iterations`, 'Calendar.useEffect');
 		if (usForActiveSprints.length > 0) {
-			logDebug(`📖 User stories in active sprints: ${JSON.stringify(usForActiveSprints.map(us => ({
-				formattedId: us.formattedId,
-				name: us.name,
-				taskEstimateTotal: us.taskEstimateTotal,
-				toDo: us.toDo,
-				iteration: us.iteration
-			})))}`, 'Calendar.useEffect');
+			logDebug(
+				`📖 User stories in active sprints: ${JSON.stringify(
+					usForActiveSprints.map(us => ({
+						formattedId: us.formattedId,
+						name: us.name,
+						taskEstimateTotal: us.taskEstimateTotal,
+						toDo: us.toDo,
+						iteration: us.iteration
+					}))
+				)}`,
+				'Calendar.useEffect'
+			);
 		}
 
 		// Calculate total hours and counts
@@ -309,7 +314,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			daysUntilSprintEnd !== null && daysUntilSprintEnd >= 0 ? (daysUntilSprintEnd === 1 ? `Sprint cutoff Tomorrow! 🏁` : daysUntilSprintEnd === 0 ? `Sprint cutoff Today! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`) : `Stay focused on your current sprint objectives! 💪`,
 
 			// 2) Hours summary (use totalHours computed from user stories, or show user story count if no hours)
-			usForActiveSprints.length > 0 ? (totalHours > 0 ? `${totalHours}h total this month. ${hoursCompletionPercentage}% done! ${remainingHours}h left. 💪` : `${usForActiveSprints.length} ${usForActiveSprints.length === 1 ? 'story' : 'stories'} to work on this month. Let's get started! 🚀`) : `No work scheduled this month. That's rare! 🤔`,
+			usForActiveSprints.length > 0
+				? totalHours > 0
+					? `${totalHours}h total this month. ${hoursCompletionPercentage}% done! ${remainingHours}h left. 💪`
+					: `${usForActiveSprints.length} ${usForActiveSprints.length === 1 ? 'story' : 'stories'} to work on this month. Let's get started! 🚀`
+				: `No work scheduled this month. That's rare! 🤔`,
 
 			// 3) Holidays summary
 			holidaysThisMonth > 0 ? (holidaysThisMonth === 1 ? `Fun fact: There's 1 holiday this month. Plan accordingly! 🎉` : `Heads up: ${holidaysThisMonth} holidays this month. Time management is key! 🎉`) : `No holidays scheduled this month—time to ship! 🎯`,
@@ -649,9 +658,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		// Also treat the 2 immediately preceding non-overlapping iterations as soft conflicts
 		// to prevent consecutive sequential sprints from getting perceptually similar colors.
-		const recentNonOverlapping = orderedAllIterations
-			.slice(Math.max(0, sortedIndex - 2), sortedIndex)
-			.filter(other => !overlappingIterations.includes(other));
+		const recentNonOverlapping = orderedAllIterations.slice(Math.max(0, sortedIndex - 2), sortedIndex).filter(other => !overlappingIterations.includes(other));
 		const softConflicts = [...overlappingIterations, ...recentNonOverlapping];
 
 		// Get indices already used by overlapping iterations and recent predecessors
@@ -1027,6 +1034,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			{!!currentUser && (
 				<div
 					ref={welcomeRef}
+					onClick={rotateMessage}
 					style={{
 						textAlign: 'center',
 						padding: '12px 16px',
@@ -1034,7 +1042,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						borderRadius: '8px',
 						border: `1px solid ${lightTheme ? 'rgba(91, 155, 213, 0.12)' : 'rgba(107, 163, 232, 0.14)'}`,
 						maxWidth: '700px',
-						margin: '0 auto 32px auto'
+						margin: '0 auto 32px auto',
+						cursor: 'pointer'
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground, textAlign: 'center' }}>
@@ -1042,11 +1051,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					</div>
 					<div
 						ref={marqueeContainerRef}
-						onClick={rotateMessage}
 						style={{
 							overflow: 'hidden',
 							marginTop: '4px',
-							cursor: 'pointer',
 							maskImage: marqueeOverflow > 0 ? 'linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent)' : 'none',
 							WebkitMaskImage: marqueeOverflow > 0 ? 'linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent)' : 'none',
 							opacity: messageVisible ? 1 : 0,

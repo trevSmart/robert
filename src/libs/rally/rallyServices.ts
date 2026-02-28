@@ -617,7 +617,7 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 			toDo: userStory.ToDo ?? userStory.toDo,
 			assignee: userStory.c_Assignee ? (userStory.c_Assignee._refObjectName ?? userStory.c_Assignee.refObjectName) : userStory.c_assignee ? (userStory.c_assignee._refObjectName ?? userStory.c_assignee.refObjectName) : 'Unassigned',
 			project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
-			iteration: userStory.Iteration ? (userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName) : userStory.iteration ? (userStory.iteration._refObjectName ?? userStory.iteration.refObjectName) : null,
+			iteration: userStory.Iteration ? { objectId: userStory.Iteration.ObjectID ?? userStory.Iteration.objectId, _ref: userStory.Iteration._ref, _refObjectName: userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName } : userStory.iteration ? (typeof userStory.iteration === 'object' ? userStory.iteration : { _refObjectName: userStory.iteration }) : null,
 			blocked: userStory.Blocked ?? userStory.blocked,
 			taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
 			taskStatus: userStory.TaskStatus ?? userStory.taskStatus,

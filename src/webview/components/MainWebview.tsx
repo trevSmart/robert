@@ -1764,6 +1764,19 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 		}
 	}, [activeSection, iterations.length, iterationsLoading, iterationsError, loadIterations]);
 
+	// Load all user stories (for calendar) when navigating to home section after iterations are loaded
+	useEffect(() => {
+		if (activeSection === 'home' && iterations.length > 0 && !portfolioUserStoriesLoading && portfolioUserStories.length === 0) {
+			logDebug(`Home section: Loading all user stories for Calendar (iterations loaded: ${iterations.length})`, 'MainWebview.useEffect');
+			// Load all user stories for the home calendar view
+			sendMessage({
+				command: 'loadUserStories',
+				offset: 0
+				// Sense filtre d'iteration = carrega totes les US del projecte
+			});
+		}
+	}, [activeSection, iterations.length, portfolioUserStoriesLoading, portfolioUserStories.length, sendMessage]);
+
 	// Load iterations when navigating to portfolio section
 	useEffect(() => {
 		if (activeSection === 'portfolio' && !hasLoadedPortfolioIterations.current) {
@@ -1970,7 +1983,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 													<HomeSection
 														currentDate={homeDate}
 														iterations={iterations}
-														userStories={userStories}
+														userStories={portfolioUserStories}
 														onMonthChange={setHomeDate}
 														debugMode={debugMode}
 														currentUser={currentUser}

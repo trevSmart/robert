@@ -73,15 +73,15 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 				text: `${sprintName} Readiness`,
 				subtext: sprintName,
 				left: 'center',
-				top: 10,
+				top: 0,
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc',
-					fontSize: 16,
+					fontSize: 14,
 					fontWeight: '600'
 				},
 				subtextStyle: {
 					color: lightTheme ? '#666' : '#999',
-					fontSize: 12
+					fontSize: 11
 				}
 			},
 			tooltip: {
@@ -98,7 +98,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 			},
 			legend: {
 				orient: 'horizontal',
-				bottom: 5,
+				bottom: -5,
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc'
 				},
@@ -112,7 +112,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 								type: 'pie',
 								radius: ['20%', '25%'],
 								avoidLabelOverlap: false,
-								center: ['50%', '55%'],
+								center: ['50%', '50%'],
 								label: {
 									show: false
 								},
@@ -142,9 +142,9 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 				{
 					name: 'State',
 					type: 'pie',
-					radius: ['28%', '42%'],
+					radius: ['25%', '38%'],
 					avoidLabelOverlap: false,
-					center: ['50%', '55%'],
+					center: ['50%', '50%'],
 					label: {
 						show: true,
 						position: 'outside',
@@ -254,11 +254,11 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 				backgroundColor: 'var(--vscode-editor-background)',
 				border: '1px solid var(--vscode-panel-border)',
 				borderRadius: '12px',
-				padding: '20px'
+				padding: '12px'
 			}}
 		>
 			{showSelector && (
-				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
 					<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Next Sprint Readiness</h3>
 					<select
 						value={selectedSprint}
@@ -282,7 +282,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 					</select>
 				</div>
 			)}
-			<div ref={chartRef} style={{ width: '100%', height: '550px' }} />
+			<div ref={chartRef} style={{ width: '100%', height: '280px' }} />
 		</div>
 	);
 };

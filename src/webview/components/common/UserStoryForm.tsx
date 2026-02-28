@@ -1,4 +1,4 @@
-import { FC, useState, useCallback, useMemo, useRef, type ReactNode } from 'react';
+import { FC, useState, useCallback, useMemo, useRef, useEffect, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme } from '../../utils/themeColors';
@@ -139,6 +139,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const [descriptionHeight, setDescriptionHeight] = useState(DESCRIPTION_HEIGHT_DEFAULT);
 	const [revisions, setRevisions] = useState<any[]>([]);
 	const [revisionsLoading, setRevisionsLoading] = useState(false);
+	const [revisionsLoaded, setRevisionsLoaded] = useState(false);
 	const resizeStartRef = useRef({ y: 0, height: 0 });
 
 	const getScheduleStateColor = (scheduleState: string) => {
@@ -166,7 +167,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		}
 
 		// Load revisions when revisions tab is selected
-		if (tab === 'revisions' && revisions.length === 0 && !revisionsLoading) {
+		if (tab === 'revisions' && !revisionsLoaded && !revisionsLoading) {
 			loadRevisions();
 		}
 	};
@@ -202,8 +203,16 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			setRevisions([]);
 		} finally {
 			setRevisionsLoading(false);
+			setRevisionsLoaded(true);
 		}
 	}, [vscode, userStory.objectId]);
+
+	useEffect(() => {
+		setRevisions([]);
+		setRevisionsLoading(false);
+		setRevisionsLoaded(false);
+		loadRevisions();
+	}, [userStory.objectId, loadRevisions]);
 
 	const handleDescriptionResizeStart = useCallback(
 		(e: React.MouseEvent) => {

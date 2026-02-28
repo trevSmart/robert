@@ -1,6 +1,7 @@
 import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User, GlobalSearchResultItem } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
+import { callRally, callRallyFetch, setRallyBroadcaster } from './rallyCall';
 import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
 import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
@@ -45,6 +46,8 @@ function yieldToEventLoop(): Promise<void> {
 
 // Constants for pagination
 const PAGE_SIZE = 100;
+
+export { setRallyBroadcaster };
 
 /**
  * Sort function to order items by FormattedID in descending order
@@ -148,7 +151,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 		}
 	}
 
-	const result = await rallyApi.query(queryOptions);
+	const result = await callRally(rallyApi, queryOptions, 'Loading projects...');
 	const resultData = result as RallyApiResult;
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -219,16 +222,20 @@ export async function getCurrentUser() {
 	errorHandler.logInfo(`Executing Rally REST call to get authenticated user: ${userEndpoint}`, 'getCurrentUser');
 
 	try {
-		const response = await fetchPolyfill(`${userEndpoint}?fetch=${fetchFields}`, {
-			method: 'GET',
-			headers: {
-				zsessionid: rallyApiKey,
-				'Content-Type': 'application/json',
-				'X-RallyIntegrationName': 'IBM Robert Extension',
-				'X-RallyIntegrationVendor': 'IBM',
-				'X-RallyIntegrationVersion': '0.0.9'
-			}
-		});
+		const response = await callRallyFetch(
+			() =>
+				fetchPolyfill(`${userEndpoint}?fetch=${fetchFields}`, {
+					method: 'GET',
+					headers: {
+						zsessionid: rallyApiKey,
+						'Content-Type': 'application/json',
+						'X-RallyIntegrationName': 'IBM Robert Extension',
+						'X-RallyIntegrationVendor': 'IBM',
+						'X-RallyIntegrationVersion': '0.0.9'
+					}
+				}),
+			'Loading current user...'
+		);
 
 		if (!response.ok) {
 			throw new Error(`Rally API returned ${response.status}: ${response.statusText}`);
@@ -352,7 +359,7 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 		}
 	}
 
-	const result = await rallyApi.query(queryOptions);
+	const result = await callRally(rallyApi, queryOptions, 'Loading users...');
 	const resultData = result as RallyApiResult;
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -617,7 +624,13 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 			toDo: userStory.ToDo ?? userStory.toDo,
 			assignee: userStory.c_Assignee ? (userStory.c_Assignee._refObjectName ?? userStory.c_Assignee.refObjectName) : userStory.c_assignee ? (userStory.c_assignee._refObjectName ?? userStory.c_assignee.refObjectName) : 'Unassigned',
 			project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
-			iteration: userStory.Iteration ? { objectId: userStory.Iteration.ObjectID ?? userStory.Iteration.objectId, _ref: userStory.Iteration._ref, _refObjectName: userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName } : userStory.iteration ? (typeof userStory.iteration === 'object' ? userStory.iteration : { _refObjectName: userStory.iteration }) : null,
+			iteration: userStory.Iteration
+				? { objectId: userStory.Iteration.ObjectID ?? userStory.Iteration.objectId, _ref: userStory.Iteration._ref, _refObjectName: userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName }
+				: userStory.iteration
+					? typeof userStory.iteration === 'object'
+						? userStory.iteration
+						: { _refObjectName: userStory.iteration }
+					: null,
 			blocked: userStory.Blocked ?? userStory.blocked,
 			taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
 			taskStatus: userStory.TaskStatus ?? userStory.taskStatus,
@@ -778,7 +791,7 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 		}
 	}
 
-	const result = await rallyApi.query(queryOptions);
+	const result = await callRally(rallyApi, queryOptions, 'Loading sprints...');
 	const resultData = result as RallyApiResult;
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -898,7 +911,7 @@ export async function getUserStories(query: RallyQueryParams = {}, offset: numbe
 		}
 	}
 
-	const result = await rallyApi.query(queryOptions);
+	const result = await callRally(rallyApi, queryOptions, 'Loading user stories...');
 	const resultData = result as RallyApiResult;
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -994,7 +1007,7 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 		queryOptions.query = rallyQueries.length > 1 ? rallyQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)) : rallyQueries[0];
 	}
 
-	const result = await rallyApi.query(queryOptions);
+	const result = await callRally(rallyApi, queryOptions, 'Loading tasks...');
 	const resultData = result as RallyApiResult;
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -1124,7 +1137,7 @@ export async function getDefects(query: RallyQueryParams = {}, offset: number = 
 		}
 	}
 
-	const result = await rallyApi.query(queryOptions);
+	const result = await callRally(rallyApi, queryOptions, 'Loading defects...');
 	const resultData = result as RallyApiResult;
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -1232,7 +1245,7 @@ export async function getUserStoryTests(userStoryId: string) {
 			query: queryUtils.where('ObjectID', '=', userStoryId)
 		};
 
-		const result = await rallyApi.query(queryOptions);
+		const result = await callRally(rallyApi, queryOptions, 'Loading user story...');
 		const resultData = result as RallyApiResult;
 
 		const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -1268,7 +1281,7 @@ export async function getUserStoryTests(userStoryId: string) {
 				query: queryUtils.where('WorkProduct.ObjectID', '=', userStoryId)
 			};
 
-			const testCaseResult = await rallyApi.query(testCaseQueryOptions);
+			const testCaseResult = await callRally(rallyApi, testCaseQueryOptions, 'Loading test cases...');
 			const testCaseResultData = testCaseResult as RallyApiResult;
 			const testCaseResults = testCaseResultData.Results || testCaseResultData.QueryResult?.Results || [];
 
@@ -1345,7 +1358,7 @@ export async function getUserStoryTests(userStoryId: string) {
 			testCaseQueryOptions.query = testCaseQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
 		}
 
-		const testCaseResult = await rallyApi.query(testCaseQueryOptions);
+		const testCaseResult = await callRally(rallyApi, testCaseQueryOptions, 'Loading test cases...');
 		const testCaseResultData = testCaseResult as RallyApiResult;
 
 		const testCaseResults = testCaseResultData.Results || testCaseResultData.QueryResult?.Results || [];
@@ -1391,7 +1404,7 @@ export async function getUserStoryDefects(userStoryId: string) {
 			query: queryUtils.where('ObjectID', '=', userStoryId)
 		};
 
-		const result = await rallyApi.query(queryOptions);
+		const result = await callRally(rallyApi, queryOptions, 'Loading user story...');
 		const resultData = result as RallyApiResult;
 
 		const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -1427,7 +1440,7 @@ export async function getUserStoryDefects(userStoryId: string) {
 				query: queryUtils.where('Requirement.ObjectID', '=', userStoryId)
 			};
 
-			const defectResult = await rallyApi.query(defectQueryOptions);
+			const defectResult = await callRally(rallyApi, defectQueryOptions, 'Loading defects...');
 			const defectResultData = defectResult as RallyApiResult;
 			const defectResults = defectResultData.Results || defectResultData.QueryResult?.Results || [];
 
@@ -1504,7 +1517,7 @@ export async function getUserStoryDefects(userStoryId: string) {
 			defectQueryOptions.query = defectQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
 		}
 
-		const defectResult = await rallyApi.query(defectQueryOptions);
+		const defectResult = await callRally(rallyApi, defectQueryOptions, 'Loading defects...');
 		const defectResultData = defectResult as RallyApiResult;
 
 		const defectResults = defectResultData.Results || defectResultData.QueryResult?.Results || [];
@@ -1589,7 +1602,7 @@ export async function getUserStoryDiscussions(userStoryId: string) {
 			query: queryUtils.where('ObjectID', '=', userStoryId)
 		};
 
-		const result = await rallyApi.query(queryOptions);
+		const result = await callRally(rallyApi, queryOptions, 'Loading user story...');
 		const resultData = result as RallyApiResult;
 
 		const results = resultData.Results || resultData.QueryResult?.Results || [];
@@ -1616,7 +1629,7 @@ export async function getUserStoryDiscussions(userStoryId: string) {
 				query: queryUtils.where('Artifact.ObjectID', '=', userStoryId)
 			};
 
-			const discussionResult = await rallyApi.query(discussionQueryOptions);
+			const discussionResult = await callRally(rallyApi, discussionQueryOptions, 'Loading discussions...');
 			const discussionResultData = discussionResult as RallyApiResult;
 			const discussionResults = discussionResultData.Results || discussionResultData.QueryResult?.Results || [];
 
@@ -1693,7 +1706,7 @@ export async function getUserStoryDiscussions(userStoryId: string) {
 			discussionQueryOptions.query = discussionQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
 		}
 
-		const discussionResult = await rallyApi.query(discussionQueryOptions);
+		const discussionResult = await callRally(rallyApi, discussionQueryOptions, 'Loading discussions...');
 		const discussionResultData = discussionResult as RallyApiResult;
 
 		const discussionResults = discussionResultData.Results || discussionResultData.QueryResult?.Results || [];
@@ -2019,7 +2032,7 @@ async function getBatchTasks(userStoryIds: string[]): Promise<
 
 		errorHandler.logInfo(`Fetching tasks for ${userStoryIds.length} stories in ONE batch query`, 'rallyServices.getBatchTasks');
 
-		const result = await rallyApi.query(queryOptions);
+		const result = await callRally(rallyApi, queryOptions, 'Loading sprint tasks...');
 		const resultData = result as RallyApiResult;
 		const results = resultData.Results || resultData.QueryResult?.Results || [];
 
@@ -2381,13 +2394,17 @@ export async function globalSearch(term: string, options?: { limitPerType?: numb
 
 	const runOne = async (opts: (typeof fetchOptions)[0]): Promise<{ items: GlobalSearchResultItem[]; hasMore: boolean }> => {
 		try {
-			const result = await rallyApi.query({
-				type: opts.type,
-				fetch: opts.fetch,
-				query: searchQuery,
-				limit: pageSize,
-				start: offset + 1 // Rally API uses 1-based indexing
-			});
+			const result = await callRally(
+				rallyApi,
+				{
+					type: opts.type,
+					fetch: opts.fetch,
+					query: searchQuery,
+					limit: pageSize,
+					start: offset + 1 // Rally API uses 1-based indexing
+				},
+				'Searching Rally...'
+			);
 			const resultData = result as RallyApiResult;
 			const results = resultData.Results || resultData.QueryResult?.Results || [];
 			const hasMore = results.length > limitPerType;
@@ -2456,7 +2473,7 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 		queryOptions.query = queryUtils.where('ObjectID', '=', objectId).and(queryUtils.where('Project', '=', projectRef));
 	}
 
-	const result = await rallyApi.query(queryOptions);
+	const result = await callRally(rallyApi, queryOptions, 'Loading user story...');
 	const resultData = result as RallyApiResult;
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) return { userStory: null };
@@ -2473,11 +2490,15 @@ export async function getDefectByObjectId(objectId: string): Promise<{ defect: R
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 	const rallyApi = getRallyApi();
-	const result = await rallyApi.query({
-		type: 'defect',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
-		query: queryUtils.where('ObjectID', '=', objectId)
-	});
+	const result = await callRally(
+		rallyApi,
+		{
+			type: 'defect',
+			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
+			query: queryUtils.where('ObjectID', '=', objectId)
+		},
+		'Loading defect...'
+	);
 	const resultData = result as RallyApiResult;
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) return { defect: null };
@@ -2494,11 +2515,15 @@ export async function getTaskWithParent(objectId: string): Promise<{ task: any; 
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 	const rallyApi = getRallyApi();
-	const result = await rallyApi.query({
-		type: 'task',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID', 'Rank'],
-		query: queryUtils.where('ObjectID', '=', objectId)
-	});
+	const result = await callRally(
+		rallyApi,
+		{
+			type: 'task',
+			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID', 'Rank'],
+			query: queryUtils.where('ObjectID', '=', objectId)
+		},
+		'Loading task...'
+	);
 	const resultData = result as RallyApiResult;
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) return { task: null, userStoryObjectId: null };
@@ -2517,11 +2542,15 @@ export async function getTestCaseWithParent(objectId: string): Promise<{ testCas
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 	const rallyApi = getRallyApi();
-	const result = await rallyApi.query({
-		type: 'testcase',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Project', 'Type', 'Priority', 'TestFolder', 'ObjectID', 'WorkProduct'],
-		query: queryUtils.where('ObjectID', '=', objectId)
-	});
+	const result = await callRally(
+		rallyApi,
+		{
+			type: 'testcase',
+			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Project', 'Type', 'Priority', 'TestFolder', 'ObjectID', 'WorkProduct'],
+			query: queryUtils.where('ObjectID', '=', objectId)
+		},
+		'Loading test case...'
+	);
 	const resultData = result as RallyApiResult;
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) return { testCase: null, userStoryObjectId: null };
@@ -2545,11 +2574,15 @@ export async function getUserStoryRevisions(objectId: string): Promise<{ revisio
 	const rallyApi = getRallyApi();
 
 	// Step 1: Get the User Story to fetch its RevisionHistory reference
-	const usResult = await rallyApi.query({
-		type: 'hierarchicalrequirement',
-		fetch: ['RevisionHistory'],
-		query: queryUtils.where('ObjectID', '=', objectId)
-	});
+	const usResult = await callRally(
+		rallyApi,
+		{
+			type: 'hierarchicalrequirement',
+			fetch: ['RevisionHistory'],
+			query: queryUtils.where('ObjectID', '=', objectId)
+		},
+		'Loading revision history...'
+	);
 
 	const usResultData = usResult as RallyApiResult;
 	const usResults = usResultData.Results || usResultData.QueryResult?.Results || [];
@@ -2576,10 +2609,14 @@ export async function getUserStoryRevisions(objectId: string): Promise<{ revisio
 	const revisionHistoryRef = usObject.RevisionHistory._ref;
 
 	// Step 2: Get the RevisionHistory object to fetch Revisions collection
-	const rhResult = await rallyApi.query({
-		ref: revisionHistoryRef,
-		fetch: ['Revisions']
-	} as any);
+	const rhResult = await callRally(
+		rallyApi,
+		{
+			ref: revisionHistoryRef,
+			fetch: ['Revisions']
+		} as any,
+		'Loading revision history...'
+	);
 
 	const rhResultData = rhResult as any;
 
@@ -2593,12 +2630,16 @@ export async function getUserStoryRevisions(objectId: string): Promise<{ revisio
 	}
 
 	// Step 3: Get all revisions from the Revisions collection
-	const revisionsResult = await rallyApi.query({
-		ref: rhResultData.Revisions._ref,
-		fetch: ['RevisionNumber', 'Description', 'User', 'CreationDate'],
-		limit: 100,
-		order: 'RevisionNumber desc'
-	} as any);
+	const revisionsResult = await callRally(
+		rallyApi,
+		{
+			ref: rhResultData.Revisions._ref,
+			fetch: ['RevisionNumber', 'Description', 'User', 'CreationDate'],
+			limit: 100,
+			order: 'RevisionNumber desc'
+		} as any,
+		'Loading revision history...'
+	);
 
 	const revisionResults = revisionsResult as RallyApiResult;
 	const results = revisionResults.Results || revisionResults.QueryResult?.Results || [];

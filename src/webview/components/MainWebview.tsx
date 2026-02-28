@@ -30,6 +30,7 @@ import { type UserStory, type Defect, type Discussion, type TestCase, type Globa
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
+import { RallyLoadingIndicator } from './common/RallyLoadingIndicator';
 
 import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
@@ -466,6 +467,7 @@ interface MainWebviewProps {
 	context: string;
 	timestamp: string;
 	_rebusLogoUri: string;
+	rallyLogoUri: string;
 }
 
 interface Iteration {
@@ -478,7 +480,7 @@ interface Iteration {
 	_ref: string;
 }
 
-const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }) => {
+const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, rallyLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
@@ -615,6 +617,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 	const [globalSearchTermUsed, setGlobalSearchTermUsed] = useState('');
 	// When opening a user story from a task/testcase search result, which tab to select
 	const pendingSearchUserStoryTabRef = useRef<'tasks' | 'tests' | null>(null);
+
+	// Global Rally call state variable
+	const [rallyCallCount, setRallyCallCount] = useState(0);
 	// Ref for search input to focus when search tab is selected
 	const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -1257,6 +1262,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					logDebug('Received refresh command from extension', 'MainWebview.handleMessage');
 					// Reset all state to initial values
 					resetAllState();
+					// Reset Rally call state
+					setRallyCallCount(0);
 					// Reload iterations to populate the initial view
 					setTimeout(() => {
 						loadIterations();
@@ -1603,6 +1610,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 							sendMessage({ command: 'loadDefectByObjectId', objectId: state.selectedDefectId });
 						}
 					}
+					break;
+				case 'rallyCallStarted':
+					setRallyCallCount(prev => prev + 1);
+					break;
+				case 'rallyCallFinished':
+					setRallyCallCount(prev => Math.max(0, prev - 1));
 					break;
 			}
 		};
@@ -2119,6 +2132,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri }
 					</SmoothScrollContent>
 				</SmoothScrollWrapper>
 			</CenteredContainer>
+
+			<RallyLoadingIndicator rallyLogoUri={rallyLogoUri} visible={rallyCallCount > 0} />
 		</Container>
 	);
 };

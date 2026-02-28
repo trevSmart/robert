@@ -21,6 +21,7 @@ import {
 	getTestCaseWithParent,
 	getUserStoryRevisions
 } from './libs/rally/rallyServices';
+import { setRallyBroadcaster } from './libs/rally/rallyCall';
 import { HolidayService } from './libs/holidayService';
 import { validateRallyConfiguration } from './libs/rally/utils';
 import { SettingsManager } from './SettingsManager';
@@ -253,6 +254,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			};
 
 			this._currentView = webviewView;
+			setRallyBroadcaster(msg => this.broadcastToWebviews(msg));
 			this._errorHandler.logViewCreation('Activity Bar View', 'RobertWebviewProvider.resolveWebviewView');
 
 			// Generate unique ID for this webview instance
@@ -261,6 +263,19 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 			// Handle messages from webview
 			this._setWebviewMessageListener(webviewView.webview, webviewId);
+
+			// Handle view disposal
+			webviewView.onDidDispose(
+				() => {
+					this._currentView = undefined;
+					// Deregister broadcaster when all webviews are closed
+					if (!this._currentView && !this._currentPanel) {
+						setRallyBroadcaster(null);
+					}
+				},
+				undefined,
+				this._disposables
+			);
 		}, 'RobertWebviewProvider.resolveWebviewView');
 	}
 
@@ -285,6 +300,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				});
 
 				this._currentPanel = panel;
+				setRallyBroadcaster(msg => this.broadcastToWebviews(msg));
 				this._errorHandler.logViewCreation('Webview Panel', 'RobertWebviewProvider.createWebviewPanel');
 
 				// Generate unique ID for this webview instance
@@ -300,6 +316,10 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						this._errorHandler.logViewDestruction('Webview Panel', 'RobertWebviewProvider.createWebviewPanel');
 						// Clear reference when panel is closed
 						this._currentPanel = undefined;
+						// Deregister broadcaster when all webviews are closed
+						if (!this._currentView && !this._currentPanel) {
+							setRallyBroadcaster(null);
+						}
 					},
 					undefined,
 					this._disposables
@@ -556,13 +576,15 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._errorHandler.logInfo('Rebus logo added to main webview', 'RobertWebviewProvider._getHtmlForWebview');
 
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo.png'));
+				const rallyLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'rally-logo.webp'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this._extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this._getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',
 					__CONTEXT__: context,
 					__TIMESTAMP__: new Date().toISOString(),
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
-					__INTER_FONT_URI__: interFontUri.toString()
+					__INTER_FONT_URI__: interFontUri.toString(),
+					__RALLY_LOGO_URI__: rallyLogoUri.toString()
 				});
 			}, 'getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);

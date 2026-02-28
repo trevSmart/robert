@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
 import type { Holiday, DayEvent, CustomCalendarEvent } from '../../../types/utils';
 import type { UserStory } from '../../../types/rally';
+import { logDebug } from '../../utils/vscodeApi';
 
 interface Iteration {
 	objectId: string;
@@ -191,10 +192,33 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		return () => resizeObserver.disconnect();
 	}, [totalFr]);
 
+	// Robust helper to extract iteration id from user story (handles string or object shapes)
+	const extractIterationId = (us: any) => {
+		if (!us || !us.iteration) return null;
+		const it = us.iteration;
+		if (typeof it === 'string') return it;
+		if (typeof it === 'object') {
+			// Prefer objectId if available
+			if (it.objectId) return it.objectId;
+			// Extract ID from _ref if it matches the pattern
+			if (it._ref) {
+				const m = (it._ref as string).match(/\/iteration\/([^\/\?]+)/);
+				if (m) return m[1];
+			}
+			// Fallback to refObjectName
+			if (it._refObjectName) return it._refObjectName;
+		}
+		return null;
+	};
+
 	// Generate insight messages once and set up rotation timer
 	useEffect(() => {
 		const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
 		const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+		logDebug(`📅 Calendar generating messages for: ${monthStart.toLocaleDateString()} - ${monthEnd.toLocaleDateString()}`, 'Calendar.useEffect');
+		logDebug(`📊 Total iterations received: ${iterations.length}`, 'Calendar.useEffect');
+		logDebug(`📚 Total user stories received: ${userStories.length}`, 'Calendar.useEffect');
 
 		// Count holidays this month
 		const holidaysThisMonth = holidays.filter(h => {
@@ -209,6 +233,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			if (!startDate || !endDate) return false;
 			return startDate <= monthEnd && endDate >= monthStart;
 		});
+
+		logDebug(`📌 Active iterations: ${JSON.stringify(activeIterations.map(i => ({ name: i.name, objectId: i.objectId })))}`, 'Calendar.useEffect');
+		logDebug(`🔍 Active iteration IDs: ${JSON.stringify(activeIterations.map(i => i.objectId))}`, 'Calendar.useEffect');
 
 		// Calculate days until next sprint end
 		let daysUntilSprintEnd: number | null = null;
@@ -238,28 +265,27 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		// Get active iteration IDs for this month
 		const activeIterationIds = new Set(activeIterations.map(iter => iter.objectId));
-
-		// Robust helper to extract iteration id from user story (handles string or object shapes)
-		const extractIterationId = (us: any) => {
-			if (!us || !us.iteration) return null;
-			const it = us.iteration;
-			if (typeof it === 'string') return it;
-			if (typeof it === 'object') {
-				if (it.objectId) return it.objectId;
-				if (it._ref) {
-					const m = (it._ref as string).match(/([^/]+)(?:\?.*)?$/);
-					if (m) return m[1];
-				}
-				if (it._refObjectName) return it._refObjectName;
-			}
-			return null;
-		};
+		logDebug(`🎯 Active iteration ID set: ${JSON.stringify(Array.from(activeIterationIds))}`, 'Calendar.useEffect');
 
 		// Get user stories for active sprints (robust id matching)
 		const usForActiveSprints = userStories.filter(us => {
 			const id = extractIterationId(us as any);
-			return id && activeIterationIds.has(id);
+			const matches = id && activeIterationIds.has(id);
+			if (!matches && us.formattedId) {
+				logDebug(`❌ Story ${us.formattedId}: extracted ID="${id}", matches=${matches}, iteration raw=${JSON.stringify(us.iteration)}`, 'Calendar.useEffect');
+			}
+			return matches;
 		});
+		logDebug(`✅ Matched ${usForActiveSprints.length} user stories to active iterations`, 'Calendar.useEffect');
+		if (usForActiveSprints.length > 0) {
+			logDebug(`📖 User stories in active sprints: ${JSON.stringify(usForActiveSprints.map(us => ({
+				formattedId: us.formattedId,
+				name: us.name,
+				taskEstimateTotal: us.taskEstimateTotal,
+				toDo: us.toDo,
+				iteration: us.iteration
+			})))}`, 'Calendar.useEffect');
+		}
 
 		// Calculate total hours and counts
 		const totalHours = usForActiveSprints.reduce((sum, us) => sum + (us.taskEstimateTotal || 0), 0);
@@ -268,6 +294,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const completedUS = usForActiveSprints.filter(us => us.scheduleState === 'Completed').length;
 		const pendingUS = usForActiveSprints.length - completedUS;
 		const blockedUS = usForActiveSprints.filter(us => us.blocked).length;
+
+		logDebug(`⏱️ Hours calculation: totalHours=${totalHours}, remainingHours=${remainingHours}, completedHours=${completedHours}, usCount=${usForActiveSprints.length}`, 'Calendar.useEffect');
+		logDebug(`📈 Status counts: completedUS=${completedUS}, pendingUS=${pendingUS}, blockedUS=${blockedUS}`, 'Calendar.useEffect');
 
 		// Calculate completion percentage
 		const hoursCompletionPercentage = totalHours > 0 ? Math.round((completedHours / totalHours) * 100) : 0;
@@ -279,8 +308,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			// 1) Sprint cutoff message (if applicable)
 			daysUntilSprintEnd !== null && daysUntilSprintEnd >= 0 ? (daysUntilSprintEnd === 1 ? `Sprint cutoff Tomorrow! 🏁` : daysUntilSprintEnd === 0 ? `Sprint cutoff Today! 🏁` : `Sprint cutoff in ${daysUntilSprintEnd} days. Keep pushing! 🚀`) : `Stay focused on your current sprint objectives! 💪`,
 
-			// 2) Hours summary (use totalHours computed from user stories)
-			totalHours > 0 ? `${totalHours}h total this month. ${hoursCompletionPercentage}% done! ${remainingHours}h left. 💪` : `No work scheduled this month. That's rare! 🤔`,
+			// 2) Hours summary (use totalHours computed from user stories, or show user story count if no hours)
+			usForActiveSprints.length > 0 ? (totalHours > 0 ? `${totalHours}h total this month. ${hoursCompletionPercentage}% done! ${remainingHours}h left. 💪` : `${usForActiveSprints.length} ${usForActiveSprints.length === 1 ? 'story' : 'stories'} to work on this month. Let's get started! 🚀`) : `No work scheduled this month. That's rare! 🤔`,
 
 			// 3) Holidays summary
 			holidaysThisMonth > 0 ? (holidaysThisMonth === 1 ? `Fun fact: There's 1 holiday this month. Plan accordingly! 🎉` : `Heads up: ${holidaysThisMonth} holidays this month. Time management is key! 🎉`) : `No holidays scheduled this month—time to ship! 🎯`,
@@ -304,6 +333,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								? `Your average sprint duration is ${avgSprintDuration} days. Pace yourself! ⏱️`
 								: `Ready to break records this month? Let's go! 🏆`
 		];
+
+		logDebug(`💬 Generated messages: ${JSON.stringify(generatedMessages)}`, 'Calendar.useEffect');
+		logDebug(`🔴 PRIMARY MESSAGE (shown in banner): ${generatedMessages[0]}`, 'Calendar.useEffect');
 
 		setMessages(generatedMessages);
 	}, [currentDate, iterations, userStories, holidays, todayStart.getTime()]);
@@ -525,12 +557,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	// while maintaining deterministic assignment (same sprint = same color always)
 	// ============================================================================
 
-	// Iteration colors - reordered for maximum perceptual separation
-	// Excluded turquoise/green colors to avoid confusion with holiday events (#4cafa0)
+	// Iteration colors - 20-color palette distributed across hue wheel for maximum perceptual separation
 	const lightTheme = isLightTheme();
 	const iterationColors = lightTheme
-		? ['#1e7fa8', '#c9354b', '#6a8c3a', '#b868c9', '#d9a500', '#2d7a7f', '#c77830', '#a35a8f', '#d97a3f', '#8b5fbf', '#8a684e', '#d97f3f']
-		: ['#ffb627', '#4ecdc4', '#ff6b6b', '#d4a5ff', '#f4a261', '#6ec9d9', '#f6cf71', '#e0d1f7', '#f89c75', '#a8dadc', '#dcb0f2', '#f9b384'];
+		? ['#c9354b', '#1e7fa8', '#6a8c3a', '#b868c9', '#d9a500', '#16a085', '#c77830', '#5b6abf', '#27ae60', '#a35a8f', '#2980b9', '#d35400', '#8b5fbf', '#4a7c59', '#c0392b', '#2d7a7f', '#8e44ad', '#e67e22', '#1abc9c', '#d9534f']
+		: ['#ff6b6b', '#4ecdc4', '#f6cf71', '#7b68ee', '#ff9a3c', '#06d6a0', '#d4a5ff', '#ff6392', '#48cae4', '#f4a261', '#b5e48c', '#c77dff', '#ffb627', '#ef476f', '#70c1b3', '#e07a5f', '#a8dadc', '#ffd166', '#9b72cf', '#f9b384'];
 
 	// Helper function to check if iteration overlaps with current month
 	const doesIterationOverlapMonth = (iteration: Iteration) => {
@@ -539,20 +570,30 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 		if (!startDate || !endDate) return false;
 
-		// Check if iteration overlaps with current month
-		const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-		const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+		// Compute the actual calendar grid bounds (first visible day to last visible day)
+		// The calendar grid displays the month plus any leading/trailing days to complete the weeks
+		const firstOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+		const dayOfWeek = firstOfMonth.getDay(); // 0=Sun, 1=Mon, 2=Tue...
+		const startOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // go back to Monday
+		const gridStart = new Date(firstOfMonth);
+		gridStart.setDate(firstOfMonth.getDate() + startOffset);
+
+		const lastOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+		const lastDayOfWeek = lastOfMonth.getDay();
+		const endOffset = lastDayOfWeek === 0 ? 0 : 7 - lastDayOfWeek; // go forward to Sunday
+		const gridEnd = new Date(lastOfMonth);
+		gridEnd.setDate(lastOfMonth.getDate() + endOffset);
 
 		// Reset time for date comparison - need to do this before assignment
 		const iterStartDate = new Date(startDate);
 		const iterEndDate = new Date(endDate);
 		iterStartDate.setHours(0, 0, 0, 0);
 		iterEndDate.setHours(23, 59, 59, 999);
-		monthStart.setHours(0, 0, 0, 0);
-		monthEnd.setHours(23, 59, 59, 999);
+		gridStart.setHours(0, 0, 0, 0);
+		gridEnd.setHours(23, 59, 59, 999);
 
-		// Check for overlap: iteration starts before month ends AND iteration ends after month starts
-		return iterStartDate <= monthEnd && iterEndDate >= monthStart;
+		// Check for overlap with the actual visible calendar grid bounds
+		return iterStartDate <= gridEnd && iterEndDate >= gridStart;
 	};
 
 	// Helper function to check if two iterations overlap temporally
@@ -606,8 +647,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		// Find all previous iterations that overlap with current one
 		const overlappingIterations = orderedAllIterations.slice(0, sortedIndex).filter(other => doIterationsOverlap(iteration, other));
 
-		// Get indices already used by overlapping iterations
-		const usedIndices = new Set(overlappingIterations.map(other => assignedIndices.get(other.objectId)).filter((idx): idx is number => idx !== undefined));
+		// Also treat the 2 immediately preceding non-overlapping iterations as soft conflicts
+		// to prevent consecutive sequential sprints from getting perceptually similar colors.
+		const recentNonOverlapping = orderedAllIterations
+			.slice(Math.max(0, sortedIndex - 2), sortedIndex)
+			.filter(other => !overlappingIterations.includes(other));
+		const softConflicts = [...overlappingIterations, ...recentNonOverlapping];
+
+		// Get indices already used by overlapping iterations and recent predecessors
+		const usedIndices = new Set(softConflicts.map(other => assignedIndices.get(other.objectId)).filter((idx): idx is number => idx !== undefined));
 
 		// Start with natural index, but use adaptive stride if conflicts exist
 		let colorIndex = sortedIndex % iterationColors.length;

@@ -1,5 +1,11 @@
 // Shared types for Rally-related data structures
 
+export interface IterationRef {
+	objectId?: string;
+	_ref?: string;
+	_refObjectName?: string;
+}
+
 export interface UserStory {
 	objectId: string;
 	formattedId: string;
@@ -11,7 +17,7 @@ export interface UserStory {
 	owner: string;
 	assignee?: string; // Optional - not all contexts have this
 	project: string | null;
-	iteration: string | null;
+	iteration: string | IterationRef | null;
 	blocked: boolean;
 	taskEstimateTotal: number;
 	taskStatus?: string; // Deprecated - use scheduleState instead

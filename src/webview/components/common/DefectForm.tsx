@@ -217,6 +217,24 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						</div>
 
 						<div>
+							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Sprint</label>
+							<input
+								type="text"
+								value={defect.iteration || 'N/A'}
+								readOnly
+								style={{
+									width: '100%',
+									padding: '6px 8px',
+									backgroundColor: 'var(--vscode-input-background)',
+									color: 'var(--vscode-input-foreground)',
+									border: '1px solid var(--vscode-input-border)',
+									borderRadius: '3px',
+									fontSize: '13px'
+								}}
+							/>
+						</div>
+
+						<div>
 							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
 							<StatusPill isBlocked={defect.blocked}>{defect.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
 						</div>

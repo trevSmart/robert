@@ -13,12 +13,32 @@ import { errorHandler } from './middleware/errorHandler';
 // Load environment variables
 dotenv.config();
 
+function getAllowedOrigin(): string | string[] | false {
+	const envOrigin = process.env.CORS_ORIGIN;
+
+	if (!envOrigin) {
+		// No CORS_ORIGIN configured: disable CORS rather than falling back to '*'
+		return false;
+	}
+
+	const origins = envOrigin
+		.split(',')
+		.map(origin => origin.trim())
+		.filter(origin => origin.length > 0);
+
+	if (origins.length === 0) {
+		return false;
+	}
+
+	return origins.length === 1 ? origins[0] : origins;
+}
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-	origin: process.env.CORS_ORIGIN || '*',
+	origin: getAllowedOrigin(),
 	credentials: true
 }));
 app.use(express.json());

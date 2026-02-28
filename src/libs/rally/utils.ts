@@ -2,6 +2,7 @@ import rally from 'ibm-rally-node';
 
 import { SettingsManager } from '../../SettingsManager';
 import { ErrorHandler } from '../../ErrorHandler';
+import { callRally } from './rallyCall';
 
 const errorHandler = ErrorHandler.getInstance();
 
@@ -78,12 +79,18 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 	try {
 		const rallyApi = getRallyApi();
 		errorHandler.logDebug('Making test query to Rally API...', 'rallyUtils.validateRallyConfiguration');
-		const result = await rallyApi.query({
-			type: 'project',
-			fetch: ['ObjectID', 'Name'],
-			limit: 1
-		});
-		errorHandler.logDebug(`Test query successful, found ${result.length || 0} projects`, 'rallyUtils.validateRallyConfiguration');
+		const result = await callRally(
+			rallyApi,
+			{
+				type: 'project',
+				fetch: ['ObjectID', 'Name'],
+				limit: 1
+			},
+			'Validating Rally configuration...'
+		);
+		const resultData = result as { Results?: unknown[]; QueryResult?: { Results?: unknown[] } };
+		const results = resultData.Results || resultData.QueryResult?.Results || [];
+		errorHandler.logDebug(`Test query successful, found ${results.length} projects`, 'rallyUtils.validateRallyConfiguration');
 	} catch (error: unknown) {
 		errorHandler.logDebug('Test query failed with error', 'rallyUtils.validateRallyConfiguration');
 		const errorMessage = error instanceof Error ? error.message : String(error);
@@ -121,11 +128,15 @@ export async function getProjectId(): Promise<string> {
 
 	const rallyApi = getRallyApi();
 
-	const result = await rallyApi.query({
-		type: 'project',
-		fetch: ['ObjectID', 'Name'],
-		query: queryUtils.where('Name', '=', rallyProjectName)
-	});
+	const result = await callRally(
+		rallyApi,
+		{
+			type: 'project',
+			fetch: ['ObjectID', 'Name'],
+			query: queryUtils.where('Name', '=', rallyProjectName)
+		},
+		'Resolving Rally project...'
+	);
 
 	const resultData = result as { Results?: Array<{ ObjectID: string; Name?: string }> };
 	if (!resultData.Results || resultData.Results.length === 0) {

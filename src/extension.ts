@@ -279,8 +279,9 @@ function getStatusBarIdleContent(): { text: string; daysLeft: number | null } {
 
 		const endDate = new Date(currentSprint.endDate);
 		endDate.setHours(0, 0, 0, 0);
-		const daysLeft = Math.round((endDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
-		const sprintLabel = `${STATUS_BAR_SPRINT_ICON} ${currentSprint.name} · ${daysLeft} days left`;
+		const daysLeft = Math.ceil((endDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000));
+		const daysLeftLabel = daysLeft === 0 ? 'Last day!' : daysLeft === 1 ? '1 day left' : `${daysLeft} days left`;
+		const sprintLabel = `${STATUS_BAR_SPRINT_ICON} ${currentSprint.name} · ${daysLeftLabel}`;
 		return { text: sprintLabel, daysLeft };
 	} catch {
 		return { text: STATUS_BAR_NO_SPRINT_TEXT, daysLeft: null };
@@ -300,7 +301,8 @@ function updateStatusBarItem(item: vscode.StatusBarItem, state: string, errorHan
 			case 'idle': {
 				const { text: idleText, daysLeft } = getStatusBarIdleContent();
 				item.text = idleText;
-				item.tooltip = idleText === STATUS_BAR_NO_SPRINT_TEXT ? `Robert Extension - Ready | Click to open panel` : `Sprint cutoff in ${daysLeft !== null ? `${daysLeft} days` : '0 days'} | Click to open panel`;
+				const tooltipSprint = daysLeft === 0 ? `Sprint cutoff Today!` : daysLeft === 1 ? `Sprint cutoff Tomorrow!` : `Sprint cutoff in ${daysLeft} days`;
+				item.tooltip = idleText === STATUS_BAR_NO_SPRINT_TEXT ? `Robert Extension - Ready | Click to open panel` : `${tooltipSprint} | Click to open panel`;
 				item.backgroundColor = getStatusBarIdleBackgroundColor(daysLeft);
 				break;
 			}

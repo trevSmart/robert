@@ -76,8 +76,16 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
 		res.status(201).json({ event });
 	} catch (error) {
-		const err = error as Error;
-		throw createError(err.message, 500);
+		const err = error as { message?: string; statusCode?: number };
+
+		// If this is an application error with an existing statusCode (e.g., from createError),
+		// rethrow it so the global error handler can use the original status.
+		if (err.statusCode) {
+			throw error;
+		}
+
+		// For unexpected errors without a statusCode, wrap as 500.
+		throw createError(err.message || 'Internal server error', 500);
 	}
 });
 

@@ -154,10 +154,6 @@ export class WebSocketClient {
 		this.send({ type: 'subscribe:notifications' });
 	}
 
-	public subscribeCalendarEvents(): void {
-		this._errorHandler.logWarning('Calendar WebSocket subscription is not supported by the current server API', 'WebSocketClient.subscribeCalendarEvents');
-	}
-
 	public subscribeUserStory(userStoryId: string): void {
 		this.send({
 			type: 'subscribe:userStory',
@@ -210,6 +206,18 @@ export class WebSocketClient {
 
 			case 'message:deleted':
 				this.emit('message:deleted', data);
+				break;
+
+			case 'collab:calendar:new':
+				this.emit('collab:calendar:new', data);
+				break;
+
+			case 'collab:calendar:updated':
+				this.emit('collab:calendar:updated', data);
+				break;
+
+			case 'collab:calendar:deleted':
+				this.emit('collab:calendar:deleted', data);
 				break;
 
 			case 'error':

@@ -94,7 +94,6 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const projectsCacheMgr = getProjectsCacheManager();
 	const cachedProjects = projectsCacheMgr.get(cacheKey);
 	if (cachedProjects) {
-		errorHandler.logDebug('Projects retrieved from TTL cache', 'rallyServices.getProjects');
 		return {
 			projects: cachedProjects,
 			source: 'ttl-cache',
@@ -194,14 +193,11 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 export async function getCurrentUser() {
 	// If we already have the current user from prefetch, return it
 	if (rallyData.currentUser) {
-		errorHandler.logInfo(`Returning cached current user: ${rallyData.currentUser.displayName || rallyData.currentUser.userName}`, 'getCurrentUser');
 		return {
 			user: rallyData.currentUser,
 			source: 'cache'
 		};
 	}
-
-	errorHandler.logInfo('No cached current user found, fetching from Rally API', 'getCurrentUser');
 
 	// Validem la configuració de Rally abans de fer la crida
 	const validation = await validateRallyConfiguration();
@@ -218,8 +214,6 @@ export async function getCurrentUser() {
 
 	const userEndpoint = `${rallyInstance}/slm/webservice/v2.0/user`;
 	const fetchFields = 'ObjectID,UserName,DisplayName,EmailAddress,FirstName,LastName,Disabled';
-
-	errorHandler.logInfo(`Executing Rally REST call to get authenticated user: ${userEndpoint}`, 'getCurrentUser');
 
 	try {
 		const response = await callRallyFetch(
@@ -242,14 +236,11 @@ export async function getCurrentUser() {
 		}
 
 		const data = await response.json();
-		errorHandler.logInfo(`Rally user response received. Status: ${response.status}`, 'getCurrentUser');
 
 		// The response should contain a User object
 		const user = data.User;
 
 		if (user) {
-			errorHandler.logInfo(`User data retrieved successfully. DisplayName: ${user.DisplayName || user.displayName || 'N/A'}, UserName: ${user.UserName || user.userName || 'N/A'}`, 'getCurrentUser');
-
 			// Extract ObjectID with fallback to _ref parsing
 			let objectId = user.ObjectID ?? user.objectId;
 			if (!objectId && user._ref && typeof user._ref === 'string') {
@@ -284,8 +275,6 @@ export async function getCurrentUser() {
 
 			// Cache the user data
 			rallyData.currentUser = userData;
-
-			errorHandler.logInfo(`Processed and cached user data: ${JSON.stringify(userData)}`, 'getCurrentUser');
 
 			return {
 				user: userData,
@@ -613,6 +602,14 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 	for (let i = 0; i < results.length; i++) {
 		const userStory: any = results[i];
 
+		// Extract revisions count from RevisionHistory
+		let revisionsCount = 0;
+		if (userStory.RevisionHistory && userStory.RevisionHistory._ref) {
+			// Note: We need to fetch the RevisionHistory details separately to get Revisions.Count
+			// For now, we'll set it to 0 and it will be loaded lazily when the tab is opened
+			revisionsCount = 0;
+		}
+
 		formatted.push({
 			objectId: userStory.ObjectID ?? userStory.objectId,
 			formattedId: userStory.FormattedID ?? userStory.formattedId,
@@ -639,6 +636,7 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 			testCasesCount: userStory.TestCases?.Count ?? userStory.testCases?.count ?? 0,
 			defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
 			discussionCount: userStory.Discussion?.Count ?? userStory.discussion?.count ?? 0,
+			revisionsCount: revisionsCount,
 			appgar: userStory.c_Appgar ?? userStory.appgar
 		});
 
@@ -697,7 +695,7 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 function buildUserStoryQueryOptions(query: RallyQueryParams, offset: number = 0) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project', 'RevisionHistory'],
 		order: 'FormattedID desc' // Order by FormattedID descending to get proper pagination
 	};
 
@@ -2464,7 +2462,7 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 	const rallyApi = getRallyApi();
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project'],
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project', 'RevisionHistory'],
 		query: queryUtils.where('ObjectID', '=', objectId)
 	};
 
@@ -2563,6 +2561,71 @@ export async function getTestCaseWithParent(objectId: string): Promise<{ testCas
 /**
  * Fetch revisions for a user story by querying RevisionHistory directly
  */
+/**
+ * Gets only the count of revisions for a user story (lightweight operation)
+ * Returns the total count from RevisionHistory.Revisions.Count
+ */
+export async function getUserStoryRevisionsCount(objectId: string): Promise<{ count: number; source: string }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+
+	errorHandler.logDebug(`Fetching revisions count for user story: ${objectId}`, 'getUserStoryRevisionsCount');
+
+	const rallyApi = getRallyApi();
+
+	// Step 1: Get the User Story to fetch its RevisionHistory reference
+	const usResult = await callRally(
+		rallyApi,
+		{
+			type: 'hierarchicalrequirement',
+			fetch: ['RevisionHistory'],
+			query: queryUtils.where('ObjectID', '=', objectId)
+		},
+		'Loading revision count...'
+	);
+
+	const usResultData = usResult as RallyApiResult;
+	const usResults = usResultData.Results || usResultData.QueryResult?.Results || [];
+
+	if (!usResults.length) {
+		errorHandler.logDebug(`No user story found: ${objectId}`, 'getUserStoryRevisionsCount');
+		return { count: 0, source: 'api' };
+	}
+
+	const usObject = usResults[0] as any;
+	if (!usObject.RevisionHistory || !usObject.RevisionHistory._ref) {
+		errorHandler.logDebug(`No RevisionHistory found for user story: ${objectId}`, 'getUserStoryRevisionsCount');
+		return { count: 0, source: 'api' };
+	}
+
+	const revisionHistoryRef = usObject.RevisionHistory._ref;
+
+	// Step 2: Get the RevisionHistory object to fetch Revisions collection
+	const rhResult = await callRally(
+		rallyApi,
+		{
+			ref: revisionHistoryRef,
+			fetch: ['Revisions']
+		} as any,
+		'Loading revision count...'
+	);
+
+	const rhResultData = rhResult as any;
+
+	if (!rhResultData.Revisions) {
+		errorHandler.logDebug(`No Revisions collection found for user story: ${objectId}`, 'getUserStoryRevisionsCount');
+		return { count: 0, source: 'api' };
+	}
+
+	// Return the total count from Revisions collection
+	const totalCount = rhResultData.Revisions.Count ?? 0;
+	errorHandler.logDebug(`Retrieved revisions count for user story: ${objectId} - Total: ${totalCount}`, 'getUserStoryRevisionsCount');
+
+	return { count: totalCount, source: 'api' };
+}
+
 export async function getUserStoryRevisions(objectId: string): Promise<{ revisions: any[]; source: string; count: number }> {
 	const validation = await validateRallyConfiguration();
 	if (!validation.isValid) {

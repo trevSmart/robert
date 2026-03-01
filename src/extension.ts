@@ -6,10 +6,6 @@ import type { RallyData, Iteration } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
 import { clearAllRallyCaches } from './libs/rally/rallyServices';
 
-// Immediate logging when module is loaded
-const immediateOutput = OutputChannelManager.getInstance();
-immediateOutput.appendLine('[Robert] 📦 Module loaded - extension.ts imported');
-
 // Rally data cache - centralized state management
 export const rallyData: RallyData = {
 	projects: [],
@@ -77,10 +73,7 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	// Get the centralized output channel manager
 	const outputManager = OutputChannelManager.getInstance();
-	outputManager.appendLine('[Robert] 🚀 Extension activate() function called');
-	outputManager.appendLine('[Robert] Extension activated');
 	context.subscriptions.push(outputManager);
 
 	// Store global context for reload functionality
@@ -88,15 +81,12 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Detect if running in debug mode
 	const isDebugMode = detectDebugMode(context);
-	outputManager.appendLine(`[Robert] Debug mode detected: ${isDebugMode}`);
 
 	// Close any previously opened Robert editors to avoid accumulation
 	closeExistingRobertEditors(outputManager);
 
 	// Initialize error handler
-	outputManager.appendLine('[Robert] 🔧 Initializing ErrorHandler');
 	const errorHandler = ErrorHandler.getInstance();
-	outputManager.appendLine('[Robert] ✅ ErrorHandler initialized successfully');
 
 	// Get settings manager to check if should show output channel on startup
 	const settingsManager = SettingsManager.getInstance();
@@ -104,13 +94,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Auto-show output channel if setting is enabled or if in debug mode
 	if (showOutputOnStartup || isDebugMode) {
-		const reason = isDebugMode ? 'debug mode enabled' : 'showOutputChannelOnStartup setting enabled';
-		outputManager.appendLine(`[Robert] 📺 Showing output channel on startup (${reason})`);
 		outputManager.show();
 	}
 
 	// Register the webview provider for activity bar
-	outputManager.appendLine('[Robert] 📋 Registering webview provider for activity bar');
 	const webviewProvider = new RobertWebviewProvider(context.extensionUri, context);
 	globalWebviewProvider = webviewProvider;
 	context.subscriptions.push(
@@ -118,14 +105,12 @@ export function activate(context: vscode.ExtensionContext) {
 			webviewOptions: { retainContextWhenHidden: true }
 		})
 	);
-	outputManager.appendLine('[Robert] ✅ Webview provider registered successfully');
 
 	// Prefetch Rally data on activation to warm the cache; refresh status bar when done
 	webviewProvider.prefetchRallyData('activation').then(() => updateStatusBarItem(statusBarItem, 'idle', errorHandler));
 
 	// If in debug mode, perform additional actions
 	if (isDebugMode) {
-		outputManager.appendLine('[Robert] Running in debug mode - enabling additional features');
 		enableDebugFeatures(context, outputManager, webviewProvider);
 	}
 
@@ -140,8 +125,6 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register command to open main view
 	const openMainViewCommand = vscode.commands.registerCommand('robert.openMainView', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: openMainView');
-			// Open the main view in the activity bar
 			await vscode.commands.executeCommand('workbench.view.extension.robert');
 		}, 'robert.openMainView command');
 	});
@@ -150,7 +133,7 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register command to reload extension (without reloading the entire IDE)
 	const reloadCommand = vscode.commands.registerCommand('robert.reload', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: reload - Starting extension reload');
+			outputManager.appendLine('[Robert] 🔄 Reloading extension...');
 			await reloadExtension(outputManager, errorHandler);
 		}, 'robert.reload command');
 	});
@@ -159,17 +142,14 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register command to open in editor
 	const openInEditorCommand = vscode.commands.registerCommand('robert.openInEditor', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: openInEditor');
 			await webviewProvider.createWebviewPanel();
-		}, 'robert.openInEditor command');
+		}, 'robert.openInEditor');
 	});
 	context.subscriptions.push(openInEditorCommand);
 
 	// Register command used by the status bar to open a small, lightweight popover
 	const openStatusPanelCommand = vscode.commands.registerCommand('robert.openStatusPanel', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			outputManager.appendLine('[Robert] Command: openStatusPanel');
-			// Mostra la view lateral de l'activity bar
 			await vscode.commands.executeCommand('workbench.view.extension.robert');
 		}, 'robert.openStatusPanel command');
 	});
@@ -222,7 +202,7 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	// Log successful activation
-	errorHandler.logInfo('Extension activated successfully', 'Extension Activation');
+	errorHandler.logWarning('Extension activated', 'Extension Activation');
 }
 
 function createStatusBarItem(context: vscode.ExtensionContext, errorHandler: ErrorHandler): vscode.StatusBarItem {
@@ -426,19 +406,10 @@ function detectDebugMode(context: vscode.ExtensionContext): boolean {
 /**
  * Enable additional features when running in debug mode
  */
-function enableDebugFeatures(context: vscode.ExtensionContext, outputManager: OutputChannelManager, webviewProvider: RobertWebviewProvider): void {
-	// Log detailed extension information
+function enableDebugFeatures(context: vscode.ExtensionContext, outputManager: OutputChannelManager, _webviewProvider: RobertWebviewProvider): void {
 	outputManager.appendLine(`[Robert] Extension Path: ${context.extensionPath}`);
 	outputManager.appendLine(`[Robert] Extension Mode: ${vscode.ExtensionMode[context.extensionMode]}`);
-	outputManager.appendLine(`[Robert] Extension URI: ${context.extensionUri}`);
-	outputManager.appendLine(`[Robert] Global Storage URI: ${context.globalStorageUri}`);
-	outputManager.appendLine(`[Robert] Logs URI: ${context.logUri}`);
-
-	// Enable verbose logging
-	outputManager.appendLine('[Robert] Debug mode: Verbose logging enabled');
-
-	// Pass debug mode information to webview provider
-	webviewProvider.setDebugMode(true);
+	outputManager.appendLine(`[Robert] Debug mode: Verbose logging enabled`);
 }
 
 export function deactivate() {

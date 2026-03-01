@@ -1348,16 +1348,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				case 'customEventDeleted':
 					setCustomCalendarEvents(message.allEvents || []);
 					break;
-				case 'collab:calendar:new':
-				case 'collab:calendar:updated':
-					setPublicCalendarEvents(prev => {
-						const filtered = prev.filter(e => e.id !== (message.event as CustomCalendarEvent).id);
-						return [...filtered, message.event as CustomCalendarEvent];
-					});
-					break;
-				case 'collab:calendar:deleted':
-					setPublicCalendarEvents(prev => prev.filter(e => e.id !== message.eventId));
-					break;
 				case 'userStoriesLoaded':
 					// Determine context using iteration field from backend
 					const isSprintContext = message.iteration !== null && message.iteration !== undefined;

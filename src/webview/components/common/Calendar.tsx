@@ -817,9 +817,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const event: CustomCalendarEvent = {
 			id: editingEvent?.id || crypto.randomUUID(),
 			date: modalForm.date,
-			time: modalForm.time || undefined,
+			time: modalForm.time,
 			title: modalForm.title.trim(),
-			description: modalForm.description.trim() || undefined,
+			description: modalForm.description.trim(),
 			color: modalForm.color,
 			isPublic: modalForm.isPublic
 		};

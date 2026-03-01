@@ -44,8 +44,10 @@ export const getRallyApi = () => {
 const VALIDATION_CACHE_TTL_MS = 5 * 60 * 1000;
 let _validationCache: { result: { isValid: boolean; errors: string[] }; timestamp: number; settingsKey: string } | null = null;
 
-// Cache for the resolved project ObjectID (stable within a session).
-let _projectIdCache: { projectId: string; projectName: string } | null = null;
+// Cache for the resolved project ObjectID.
+// Keyed on a settings fingerprint (instance + apiKey + projectName) so that a change to
+// any of those values invalidates the cached ID automatically.
+let _projectIdCache: { projectId: string; settingsKey: string } | null = null;
 
 /**
  * Clear all module-level caches in utils (Rally API instance, validation result, project ID).
@@ -159,7 +161,7 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 
 /**
  * Obté l'ID del projecte especificat a la configuració de l'extensió
- * The result is cached for the lifetime of the session; it is cleared by clearUtilsCaches().
+ * The result is cached keyed on (instance, apiKey, projectName) and cleared by clearUtilsCaches().
  * @returns {Promise<string>} - L'ID del projecte
  */
 export async function getProjectId(): Promise<string> {
@@ -170,8 +172,12 @@ export async function getProjectId(): Promise<string> {
 		throw new Error('Rally project name configuration not found');
 	}
 
-	// Return cached project ID if the project name hasn't changed
-	if (_projectIdCache && _projectIdCache.projectName === rallyProjectName) {
+	const rallyInstance = settingsManager.getSetting('rallyInstance');
+	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
+	const settingsKey = `${rallyInstance}|${rallyApiKey}|${rallyProjectName}`;
+
+	// Return cached project ID if all relevant settings are unchanged
+	if (_projectIdCache && _projectIdCache.settingsKey === settingsKey) {
 		errorHandler.logDebug(`Returning cached project ID for "${rallyProjectName}"`, 'rallyUtils.getProjectId');
 		return _projectIdCache.projectId;
 	}
@@ -194,6 +200,6 @@ export async function getProjectId(): Promise<string> {
 	}
 
 	const projectId = resultData.Results[0].ObjectID;
-	_projectIdCache = { projectId, projectName: rallyProjectName };
+	_projectIdCache = { projectId, settingsKey };
 	return projectId;
 }

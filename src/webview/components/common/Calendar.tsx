@@ -1681,7 +1681,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					}
 					return null;
 				})()}
-			{!hoveredEvent && (hoveredDay || hoveredIteration) &&
+			{!hoveredEvent &&
+				(hoveredDay || hoveredIteration) &&
 				(() => {
 					const tooltipOffset = 10;
 					const wouldClip = mousePosition.x + tooltipOffset + 200 > window.innerWidth;

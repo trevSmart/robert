@@ -85,7 +85,10 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
 router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		const { date, time, title, description, color } = req.body;
-		const userId = req.user!.userId;
+
+		// Resolve DB user id
+		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
+		const userId = user.id;
 
 		// Get existing event to verify ownership
 		const existingEvent = await getCalendarEventById(req.params.id);
@@ -126,7 +129,9 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 // DELETE /api/calendar-events/:id
 router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
 	try {
-		const userId = req.user!.userId;
+		// Resolve DB user id
+		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
+		const userId = user.id;
 
 		// Get existing event to verify ownership
 		const existingEvent = await getCalendarEventById(req.params.id);

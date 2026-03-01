@@ -254,7 +254,7 @@ export function broadcastCalendarEventNew(event: CalendarEvent): void {
 
 	globalWss.clients.forEach((ws) => {
 		const client = ws as WebSocketServerClient;
-		if (client.readyState === WebSocket.OPEN) {
+		if (client.readyState === WebSocket.OPEN && client.userId) {
 			client.send(JSON.stringify(eventData));
 		}
 	});
@@ -270,7 +270,7 @@ export function broadcastCalendarEventUpdated(event: CalendarEvent): void {
 
 	globalWss.clients.forEach((ws) => {
 		const client = ws as WebSocketServerClient;
-		if (client.readyState === WebSocket.OPEN) {
+		if (client.readyState === WebSocket.OPEN && client.userId) {
 			client.send(JSON.stringify(eventData));
 		}
 	});
@@ -286,7 +286,7 @@ export function broadcastCalendarEventDeleted(eventId: string): void {
 
 	globalWss.clients.forEach((ws) => {
 		const client = ws as WebSocketServerClient;
-		if (client.readyState === WebSocket.OPEN) {
+		if (client.readyState === WebSocket.OPEN && client.userId) {
 			client.send(JSON.stringify(eventData));
 		}
 	});

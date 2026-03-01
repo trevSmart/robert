@@ -483,16 +483,12 @@ interface Iteration {
 const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, rallyLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
-	const [collaborationClient, setCollaborationClient] = useState<any>(null);
+	const [collaborationClient] = useState<any>(null);
 
-	// Initialize collaboration client after component mount (when vscode is available)
+	// CollaborationClient is configured and used on the extension host side.
+	// Avoid instantiating it directly in the webview to prevent misconfiguration.
 	useEffect(() => {
-		try {
-			const { CollaborationClient } = require('../../libs/collaboration/collaborationClient');
-			setCollaborationClient(CollaborationClient.getInstance());
-		} catch (err) {
-			logDebug(`Error initializing collaboration client: ${err instanceof Error ? err.message : String(err)}`);
-		}
+		logDebug('MainWebview mounted; collaboration client is managed by the extension host.');
 	}, []);
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
 
@@ -697,18 +693,22 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			command: 'loadIterations'
 		});
 		sendMessage({ command: 'loadCustomEvents' });
-		// Load public calendar events from collaboration server
-		if (collaborationClient) {
-			collaborationClient
-				.getCalendarEvents()
-				.then(events => {
-					setPublicCalendarEvents(events);
-				})
-				.catch(err => {
-					logDebug(`Error loading public calendar events: ${err instanceof Error ? err.message : String(err)}`);
-				});
+	}, [sendMessage]);
+
+	// Load public calendar events from collaboration server once the client is available
+	useEffect(() => {
+		if (!collaborationClient) {
+			return;
 		}
-	}, [sendMessage, collaborationClient]);
+		collaborationClient
+			.getCalendarEvents()
+			.then((events: CustomCalendarEvent[]) => {
+				setPublicCalendarEvents(events);
+			})
+			.catch((err: unknown) => {
+				logDebug(`Error loading public calendar events: ${err instanceof Error ? err.message : String(err)}`);
+			});
+	}, [collaborationClient]);
 
 	const loadTeamMembers = useCallback(
 		(iterationId?: string) => {
@@ -1347,16 +1347,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					break;
 				case 'customEventDeleted':
 					setCustomCalendarEvents(message.allEvents || []);
-					break;
-				case 'collab:calendar:new':
-				case 'collab:calendar:updated':
-					setPublicCalendarEvents(prev => {
-						const filtered = prev.filter(e => e.id !== (message.event as CustomCalendarEvent).id);
-						return [...filtered, message.event as CustomCalendarEvent];
-					});
-					break;
-				case 'collab:calendar:deleted':
-					setPublicCalendarEvents(prev => prev.filter(e => e.id !== message.eventId));
 					break;
 				case 'userStoriesLoaded':
 					// Determine context using iteration field from backend
@@ -2038,7 +2028,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 														customEvents={[...customCalendarEvents, ...publicCalendarEvents]}
 														onSaveCustomEvent={async (event: CustomCalendarEvent) => {
 															if (event.isPublic && collaborationClient) {
-																const saved = await collaborationClient.createCalendarEvent(event);
+																const existingPublicEvent = publicCalendarEvents.find(e => e.id === event.id);
+																const saved = existingPublicEvent || event.id ? await collaborationClient.updateCalendarEvent(event) : await collaborationClient.createCalendarEvent(event);
 																if (saved) {
 																	setPublicCalendarEvents(prev => [...prev.filter(e => e.id !== saved.id), saved]);
 																}

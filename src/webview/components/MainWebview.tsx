@@ -483,7 +483,7 @@ interface Iteration {
 const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, rallyLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
-	const [collaborationClient, setCollaborationClient] = useState<any>(null);
+	const [collaborationClient] = useState<any>(null);
 
 	// CollaborationClient is configured and used on the extension host side.
 	// Avoid instantiating it directly in the webview to prevent misconfiguration.
@@ -693,18 +693,22 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			command: 'loadIterations'
 		});
 		sendMessage({ command: 'loadCustomEvents' });
-		// Load public calendar events from collaboration server
-		if (collaborationClient) {
-			collaborationClient
-				.getCalendarEvents()
-				.then(events => {
-					setPublicCalendarEvents(events);
-				})
-				.catch(err => {
-					logDebug(`Error loading public calendar events: ${err instanceof Error ? err.message : String(err)}`);
-				});
+	}, [sendMessage]);
+
+	// Load public calendar events from collaboration server once the client is available
+	useEffect(() => {
+		if (!collaborationClient) {
+			return;
 		}
-	}, [sendMessage, collaborationClient]);
+		collaborationClient
+			.getCalendarEvents()
+			.then((events: CustomCalendarEvent[]) => {
+				setPublicCalendarEvents(events);
+			})
+			.catch((err: unknown) => {
+				logDebug(`Error loading public calendar events: ${err instanceof Error ? err.message : String(err)}`);
+			});
+	}, [collaborationClient]);
 
 	const loadTeamMembers = useCallback(
 		(iterationId?: string) => {
@@ -2025,9 +2029,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 														onSaveCustomEvent={async (event: CustomCalendarEvent) => {
 															if (event.isPublic && collaborationClient) {
 																const existingPublicEvent = publicCalendarEvents.find(e => e.id === event.id);
-																const saved = existingPublicEvent || event.id
-																	? await collaborationClient.updateCalendarEvent(event)
-																	: await collaborationClient.createCalendarEvent(event);
+																const saved = existingPublicEvent || event.id ? await collaborationClient.updateCalendarEvent(event) : await collaborationClient.createCalendarEvent(event);
 																if (saved) {
 																	setPublicCalendarEvents(prev => [...prev.filter(e => e.id !== saved.id), saved]);
 																}

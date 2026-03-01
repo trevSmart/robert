@@ -14,11 +14,12 @@ export class ErrorHandler {
 	private static instance: ErrorHandler;
 	private outputManager: OutputChannelManager;
 	private minLogLevel: LogLevel = LogLevel.INFO;
+	private logLevelInitialized: boolean = false;
 
 	private constructor() {
 		this.outputManager = OutputChannelManager.getInstance();
 		this.setupGlobalErrorHandling();
-		this.updateLogLevel();
+		// Don't call updateLogLevel here to avoid circular dependency with SettingsManager
 	}
 
 	public static getInstance(): ErrorHandler {
@@ -29,12 +30,26 @@ export class ErrorHandler {
 	}
 
 	private updateLogLevel(): void {
-		const settingsManager = SettingsManager.getInstance();
-		const debugMode = settingsManager.getSetting('debugMode');
-		this.minLogLevel = debugMode ? LogLevel.DEBUG : LogLevel.INFO;
+		// Only update once and avoid circular dependency
+		if (this.logLevelInitialized) return;
+		this.logLevelInitialized = true;
+
+		try {
+			const settingsManager = SettingsManager.getInstance();
+			const debugMode = settingsManager.getSetting('debugMode');
+			this.minLogLevel = debugMode ? LogLevel.DEBUG : LogLevel.INFO;
+		} catch (error) {
+			// If we can't get settings, just use INFO level
+			this.minLogLevel = LogLevel.INFO;
+		}
 	}
 
 	private shouldLog(level: LogLevel): boolean {
+		// Lazy initialization to handle circular dependencies
+		if (!this.logLevelInitialized) {
+			this.updateLogLevel();
+		}
+
 		const levels = [LogLevel.CRITICAL, LogLevel.ERROR, LogLevel.WARNING, LogLevel.INFO, LogLevel.DEBUG];
 		return levels.indexOf(level) <= levels.indexOf(this.minLogLevel);
 	}

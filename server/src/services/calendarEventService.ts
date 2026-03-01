@@ -47,16 +47,6 @@ export async function updateCalendarEvent(
 	creatorId: string,
 	input: UpdateCalendarEventInput
 ): Promise<CalendarEvent | null> {
-	// Verify creator owns this event
-	const existingResult = await query(`SELECT creator_id FROM calendar_events WHERE id = $1`, [id]);
-	if (existingResult.rows.length === 0) {
-		return null;
-	}
-
-	if (existingResult.rows[0].creator_id !== creatorId) {
-		return null; // Not owner
-	}
-
 	// Build update query dynamically
 	const updates: string[] = [];
 	const values: unknown[] = [];
@@ -84,17 +74,22 @@ export async function updateCalendarEvent(
 	}
 
 	if (updates.length === 0) {
-		// No updates provided, return existing event
-		return getCalendarEventById(id);
+		// No updates provided, return existing event only if owned by creator
+		const existing = await query(
+			`SELECT * FROM calendar_events WHERE id = $1 AND creator_id = $2`,
+			[id, creatorId]
+		);
+		return existing.rows.length > 0 ? mapRowToCalendarEvent(existing.rows[0]) : null;
 	}
 
 	updates.push(`updated_at = NOW()`);
-	values.push(id);
+	// id and creator_id come after the SET values
+	values.push(id, creatorId);
 
 	const result = await query(
 		`UPDATE calendar_events
 		 SET ${updates.join(', ')}
-		 WHERE id = $${paramCount}
+		 WHERE id = $${paramCount} AND creator_id = $${paramCount + 1}
 		 RETURNING *`,
 		values
 	);
@@ -107,17 +102,10 @@ export async function updateCalendarEvent(
 }
 
 export async function deleteCalendarEvent(id: string, creatorId: string): Promise<boolean> {
-	// Verify creator owns this event
-	const existingResult = await query(`SELECT creator_id FROM calendar_events WHERE id = $1`, [id]);
-	if (existingResult.rows.length === 0) {
-		return false;
-	}
-
-	if (existingResult.rows[0].creator_id !== creatorId) {
-		return false; // Not owner
-	}
-
-	const result = await query(`DELETE FROM calendar_events WHERE id = $1`, [id]);
+	const result = await query(
+		`DELETE FROM calendar_events WHERE id = $1 AND creator_id = $2`,
+		[id, creatorId]
+	);
 
 	return result.rowCount > 0;
 }

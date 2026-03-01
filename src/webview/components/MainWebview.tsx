@@ -1990,6 +1990,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		setUserStoriesError(null);
 	};
 
+	// Merge local and public calendar events, deduplicating by id.
+	// Local events take precedence so a public→private conversion is reflected immediately.
+	const mergedCalendarEvents = useMemo(() => {
+		const map = new Map<string, CustomCalendarEvent>();
+		for (const e of publicCalendarEvents) map.set(e.id, e);
+		for (const e of customCalendarEvents) map.set(e.id, e);
+		return Array.from(map.values());
+	}, [customCalendarEvents, publicCalendarEvents]);
+
 	// Memoize SubTabsBar to prevent unnecessary re-renders
 	const portfolioSubTabsBar = useMemo(() => {
 		if (activeSection !== 'portfolio') return null;
@@ -2059,11 +2068,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 														currentUser={currentUser}
 														holidays={holidays}
 														onIterationClick={handleIterationClickFromHome}
-														customEvents={[...customCalendarEvents, ...publicCalendarEvents]}
+														customEvents={mergedCalendarEvents}
 														onSaveCustomEvent={(event: CustomCalendarEvent) => {
+															const wasPublic = publicCalendarEvents.some(e => e.id === event.id);
 															if (event.isPublic) {
 																sendMessage('savePublicCalendarEvent', { event });
 															} else {
+																if (wasPublic) {
+																	// Converting public → private: remove the server copy first
+																	sendMessage('deletePublicCalendarEvent', { eventId: event.id });
+																}
 																sendMessage('saveCustomEvent', { event });
 															}
 														}}

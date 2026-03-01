@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.2.76",
+	"version": "0.2.77",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -24,62 +24,15 @@
 		"configuration": {
 			"title": "Robert",
 			"properties": {
-				"robert.apiEndpoint": {
-					"type": "string",
-					"default": "https://rally.example.com",
-					"description": "API endpoint for Robert extension"
-				},
-				"robert.refreshInterval": {
-					"type": "number",
-					"default": 30,
-					"minimum": 5,
-					"maximum": 3600,
-					"description": "Refresh interval in seconds"
-				},
-				"robert.theme": {
-					"type": "string",
-					"enum": [
-						"auto",
-						"light",
-						"dark",
-						"high-contrast"
-					],
-					"default": "auto",
-					"description": "Theme preference for Robert extension"
-				},
 				"robert.autoRefresh": {
 					"type": "boolean",
 					"default": true,
 					"description": "Enable automatic refresh"
 				},
-				"robert.notifications": {
-					"type": "boolean",
-					"default": true,
-					"description": "Show notifications"
-				},
 				"robert.debugMode": {
 					"type": "boolean",
 					"default": false,
 					"description": "Enable debug mode"
-				},
-				"robert.advancedFeatures": {
-					"type": "boolean",
-					"default": false,
-					"description": "Enable advanced features"
-				},
-				"robert.maxResults": {
-					"type": "number",
-					"default": 100,
-					"minimum": 10,
-					"maximum": 1000,
-					"description": "Maximum number of results to display"
-				},
-				"robert.timeout": {
-					"type": "number",
-					"default": 5000,
-					"minimum": 1000,
-					"maximum": 60000,
-					"description": "Request timeout in milliseconds"
 				},
 				"robert.rallyInstance": {
 					"type": "string",
@@ -104,7 +57,7 @@
 				"robert.collaboration.enabled": {
 					"type": "boolean",
 					"default": false,
-					"description": "Enable collaboration features"
+					"description": "Enable collaboration features. Changing this setting requires restarting the extension to take effect."
 				},
 				"robert.collaboration.autoConnect": {
 					"type": "boolean",

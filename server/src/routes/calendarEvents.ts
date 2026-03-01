@@ -86,22 +86,21 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		const { date, time, title, description, color } = req.body;
 
-		// Resolve DB user id
-		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
-		const userId = user.id;
-
 		// Get existing event to verify ownership
 		const existingEvent = await getCalendarEventById(req.params.id);
 		if (!existingEvent) {
 			throw createError('Event not found', 404);
 		}
 
-		if (existingEvent.creatorId !== userId) {
+		// Resolve DB user id
+		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
+
+		if (existingEvent.creatorId !== user.id) {
 			throw createError('Forbidden: You can only edit your own events', 403);
 		}
 
 		// Update event
-		const event = await updateCalendarEvent(req.params.id, userId, {
+		const event = await updateCalendarEvent(req.params.id, user.id, {
 			date: date !== undefined ? date : undefined,
 			time: time !== undefined ? time : undefined,
 			title: title !== undefined ? title.trim() : undefined,
@@ -129,22 +128,21 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 // DELETE /api/calendar-events/:id
 router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
 	try {
-		// Resolve DB user id
-		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
-		const userId = user.id;
-
 		// Get existing event to verify ownership
 		const existingEvent = await getCalendarEventById(req.params.id);
 		if (!existingEvent) {
 			throw createError('Event not found', 404);
 		}
 
-		if (existingEvent.creatorId !== userId) {
+		// Resolve DB user id
+		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
+
+		if (existingEvent.creatorId !== user.id) {
 			throw createError('Forbidden: You can only delete your own events', 403);
 		}
 
 		// Delete event
-		const deleted = await deleteCalendarEvent(req.params.id, userId);
+		const deleted = await deleteCalendarEvent(req.params.id, user.id);
 
 		if (!deleted) {
 			throw createError('Event not found', 404);

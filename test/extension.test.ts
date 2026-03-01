@@ -37,7 +37,8 @@ vi.mock('vscode', () => ({
 	workspace: {
 		getConfiguration: vi.fn(() => ({
 			get: vi.fn((key: string, defaultValue: unknown) => defaultValue)
-		}))
+		})),
+		onDidChangeConfiguration: vi.fn(() => ({ dispose: vi.fn() }))
 	},
 	Uri: {
 		file: vi.fn((path: string) => ({ fsPath: path, path })),
@@ -57,11 +58,9 @@ vi.mock('vscode', () => ({
 		});
 		return this;
 	}),
-	Disposable: {
-		from: vi.fn((...disposables: unknown[]) => ({
-			dispose: vi.fn()
-		}))
-	}
+	Disposable: vi.fn(function (this: any, callback?: () => void) {
+		return { dispose: callback || vi.fn() };
+	}),
 }));
 
 // Mock rally services to avoid actual Rally API calls

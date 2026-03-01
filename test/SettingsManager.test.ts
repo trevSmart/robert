@@ -1,26 +1,21 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SettingsManager } from '../src/SettingsManager.js';
 
-// Mock vscode module
 vi.mock('vscode', () => ({
 	workspace: {
 		getConfiguration: vi.fn(() => ({
 			get: vi.fn((key: string, defaultValue: unknown) => {
-				// Return default values for testing
 				const defaults: Record<string, unknown> = {
-					apiEndpoint: 'https://rally.example.com',
-					refreshInterval: 30,
 					autoRefresh: true,
 					debugMode: false,
-					advancedFeatures: false,
-					maxResults: 100,
 					rallyInstance: 'https://rally1.rallydev.com',
 					rallyApiKey: '',
 					rallyProjectName: '',
 					'collaboration.serverUrl': 'https://robert-8vdt.onrender.com',
 					'collaboration.enabled': false,
 					'collaboration.autoConnect': true,
-					showOutputChannelOnStartup: false
+					showOutputChannelOnStartup: false,
+					statusBarShowSprintDaysLeft: true
 				};
 				return defaults[key] ?? defaultValue;
 			}),
@@ -65,12 +60,8 @@ describe('SettingsManager', () => {
 			const settings = settingsManager.getSettings();
 			
 			expect(settings).toBeDefined();
-			expect(settings.apiEndpoint).toBeDefined();
-			expect(settings.refreshInterval).toBeDefined();
 			expect(settings.autoRefresh).toBeDefined();
 			expect(settings.debugMode).toBeDefined();
-			expect(settings.advancedFeatures).toBeDefined();
-			expect(settings.maxResults).toBeDefined();
 			expect(settings.rallyInstance).toBeDefined();
 			expect(settings.rallyApiKey).toBeDefined();
 			expect(settings.rallyProjectName).toBeDefined();
@@ -79,12 +70,8 @@ describe('SettingsManager', () => {
 		it('should return valid setting types', () => {
 			const settings = settingsManager.getSettings();
 			
-			expect(typeof settings.apiEndpoint).toBe('string');
-			expect(typeof settings.refreshInterval).toBe('number');
 			expect(typeof settings.autoRefresh).toBe('boolean');
 			expect(typeof settings.debugMode).toBe('boolean');
-			expect(typeof settings.advancedFeatures).toBe('boolean');
-			expect(typeof settings.maxResults).toBe('number');
 			expect(typeof settings.rallyInstance).toBe('string');
 			expect(typeof settings.rallyApiKey).toBe('string');
 			expect(typeof settings.rallyProjectName).toBe('string');
@@ -92,18 +79,6 @@ describe('SettingsManager', () => {
 	});
 
 	describe('getSetting', () => {
-		it('should get specific setting value', () => {
-			const apiEndpoint = settingsManager.getSetting('apiEndpoint');
-			expect(typeof apiEndpoint).toBe('string');
-		});
-
-		it('should get refreshInterval setting', () => {
-			const refreshInterval = settingsManager.getSetting('refreshInterval');
-			expect(typeof refreshInterval).toBe('number');
-			expect(refreshInterval).toBeGreaterThanOrEqual(5);
-			expect(refreshInterval).toBeLessThanOrEqual(3600);
-		});
-
 		it('should get boolean settings', () => {
 			const autoRefresh = settingsManager.getSetting('autoRefresh');
 			const debugMode = settingsManager.getSetting('debugMode');
@@ -116,30 +91,11 @@ describe('SettingsManager', () => {
 	describe('validateSettings', () => {
 		it('should validate correct settings', () => {
 			const result = settingsManager.validateSettings({
-				refreshInterval: 30,
-				maxResults: 100
+				rallyInstance: 'https://rally1.rallydev.com'
 			});
 			
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
-		});
-
-		it('should reject invalid refreshInterval', () => {
-			const result = settingsManager.validateSettings({
-				refreshInterval: 3
-			});
-			
-			expect(result.isValid).toBe(false);
-			expect(result.errors.length).toBeGreaterThan(0);
-		});
-
-		it('should reject invalid maxResults', () => {
-			const result = settingsManager.validateSettings({
-				maxResults: 5000
-			});
-			
-			expect(result.isValid).toBe(false);
-			expect(result.errors.length).toBeGreaterThan(0);
 		});
 
 		it('should reject non-HTTPS Rally instance', () => {
@@ -180,8 +136,6 @@ describe('SettingsManager', () => {
 
 		it('should accept multiple valid settings', () => {
 			const result = settingsManager.validateSettings({
-				refreshInterval: 60,
-				maxResults: 200,
 				rallyInstance: 'https://rally1.rallydev.com',
 				collaborationServerUrl: 'https://robert-8vdt.onrender.com'
 			});

@@ -1,4 +1,5 @@
 import rally from 'ibm-rally-node';
+import type { RallyApi } from 'ibm-rally-node';
 
 import { SettingsManager } from '../../SettingsManager';
 import { ErrorHandler } from '../../ErrorHandler';
@@ -10,10 +11,18 @@ export const {
 	util: { query: queryUtils }
 } = rally;
 
+// Memoized Rally API instance – reused as long as instance URL and API key don't change
+let _rallyApiCache: { api: RallyApi; instance: string; apiKey: string } | null = null;
+
 export const getRallyApi = () => {
 	const settingsManager = SettingsManager.getInstance();
 	const rallyInstance = settingsManager.getSetting('rallyInstance');
 	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
+
+	// Return cached instance when settings have not changed
+	if (_rallyApiCache && _rallyApiCache.instance === rallyInstance && _rallyApiCache.apiKey === rallyApiKey) {
+		return _rallyApiCache.api;
+	}
 
 	const rallyApi = rally({
 		apiKey: rallyApiKey,
@@ -27,8 +36,29 @@ export const getRallyApi = () => {
 		}
 	});
 
+	_rallyApiCache = { api: rallyApi, instance: rallyInstance, apiKey: rallyApiKey };
 	return rallyApi;
 };
+
+// Cache for the last successful validation result.  TTL: 5 minutes.
+const VALIDATION_CACHE_TTL_MS = 5 * 60 * 1000;
+let _validationCache: { result: { isValid: boolean; errors: string[] }; timestamp: number; settingsKey: string } | null = null;
+
+// Cache for the resolved project ObjectID.
+// Keyed on a settings fingerprint (instance + apiKey + projectName) so that a change to
+// any of those values invalidates the cached ID automatically.
+let _projectIdCache: { projectId: string; settingsKey: string } | null = null;
+
+/**
+ * Clear all module-level caches in utils (Rally API instance, validation result, project ID).
+ * Should be called whenever Rally settings change or the extension reloads.
+ */
+export function clearUtilsCaches(): void {
+	_rallyApiCache = null;
+	_validationCache = null;
+	_projectIdCache = null;
+	errorHandler.logDebug('Utils caches cleared (rallyApi, validation, projectId)', 'rallyUtils.clearUtilsCaches');
+}
 
 /**
  * Valida la configuració de Rally abans de fer crides a l'API
@@ -44,6 +74,16 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 	const rallyInstance = settingsManager.getSetting('rallyInstance');
 	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
 	const rallyProjectName = settingsManager.getSetting('rallyProjectName');
+
+	// Build a lightweight key that uniquely identifies the current settings
+	const settingsKey = `${rallyInstance}|${rallyApiKey}|${rallyProjectName}`;
+
+	// Return cached result if settings haven't changed and the entry is still fresh
+	const now = Date.now();
+	if (_validationCache && _validationCache.settingsKey === settingsKey && now - _validationCache.timestamp < VALIDATION_CACHE_TTL_MS) {
+		errorHandler.logDebug('Returning cached validation result', 'rallyUtils.validateRallyConfiguration');
+		return _validationCache.result;
+	}
 
 	// Log current Rally configuration for debugging
 	errorHandler.logDebug('Rally Configuration Check:', 'rallyUtils.validateRallyConfiguration');
@@ -111,11 +151,17 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 
 	errorHandler.logDebug(`Validation result: isValid=${result.isValid}, errors=[${result.errors.join(', ')}]`, 'rallyUtils.validateRallyConfiguration');
 
+	// Cache the result only when configuration is valid (avoid caching transient network errors)
+	if (result.isValid) {
+		_validationCache = { result, timestamp: Date.now(), settingsKey };
+	}
+
 	return result;
 }
 
 /**
  * Obté l'ID del projecte especificat a la configuració de l'extensió
+ * The result is cached keyed on (instance, apiKey, projectName) and cleared by clearUtilsCaches().
  * @returns {Promise<string>} - L'ID del projecte
  */
 export async function getProjectId(): Promise<string> {
@@ -124,6 +170,16 @@ export async function getProjectId(): Promise<string> {
 
 	if (!rallyProjectName) {
 		throw new Error('Rally project name configuration not found');
+	}
+
+	const rallyInstance = settingsManager.getSetting('rallyInstance');
+	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
+	const settingsKey = `${rallyInstance}|${rallyApiKey}|${rallyProjectName}`;
+
+	// Return cached project ID if all relevant settings are unchanged
+	if (_projectIdCache && _projectIdCache.settingsKey === settingsKey) {
+		errorHandler.logDebug(`Returning cached project ID for "${rallyProjectName}"`, 'rallyUtils.getProjectId');
+		return _projectIdCache.projectId;
 	}
 
 	const rallyApi = getRallyApi();
@@ -143,5 +199,7 @@ export async function getProjectId(): Promise<string> {
 		throw new Error(`No project found with name "${rallyProjectName}"`);
 	}
 
-	return resultData.Results[0].ObjectID;
+	const projectId = resultData.Results[0].ObjectID;
+	_projectIdCache = { projectId, settingsKey };
+	return projectId;
 }

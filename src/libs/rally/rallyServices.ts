@@ -1,10 +1,10 @@
 import { rallyData } from '../../extension.js';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User, GlobalSearchResultItem } from '../../types/rally';
-import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId } from './utils';
+import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId, clearUtilsCaches } from './utils';
 import { callRally, callRallyFetch, setRallyBroadcaster } from './rallyCall';
 import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
-import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
+import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, getUsersCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
 
 // Polyfill for fetch in older VS Code versions (< 1.77, Node.js < 18)
 // Use dynamic import to avoid errors in environments where fetch is available
@@ -298,7 +298,19 @@ export async function getCurrentUser() {
 }
 
 export async function getUsers(query: RallyQueryParams = {}, limit: number | null = null) {
-	const rallyApi = getRallyApi();
+	// Generate cache key from query
+	const cacheKey = `users:${JSON.stringify(query)}:limit:${limit ?? 'all'}`;
+
+	// Check TTL cache first
+	const usersCacheMgr = getUsersCacheManager();
+	const cachedUsers = usersCacheMgr.get(cacheKey);
+	if (cachedUsers) {
+		return {
+			users: cachedUsers,
+			source: 'ttl-cache',
+			count: cachedUsers.length
+		};
+	}
 
 	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
 	if (Object.keys(query).length && rallyData.users && rallyData.users.length) {
@@ -323,6 +335,8 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 
 	//Si no hi ha filtres (demandem tots els usuaris) o no tenim dades suficients,
 	//hem d'anar a l'API per obtenir la llista completa
+
+	const rallyApi = getRallyApi();
 
 	const queryOptions: RallyQueryOptions = {
 		type: 'user',
@@ -353,6 +367,7 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) {
+		usersCacheMgr.set(cacheKey, []);
 		return {
 			users: [],
 			source: 'api',
@@ -378,6 +393,9 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 			rallyData.users[existingUserIndex] = newUser;
 		}
 	}
+
+	// Store in TTL cache
+	usersCacheMgr.set(cacheKey, users);
 
 	return {
 		users: users,
@@ -2298,6 +2316,8 @@ export function clearAllRallyCaches(): void {
 		getProjectsCacheManager().clear();
 		getIterationsCacheManager().clear();
 		getTeamMembersCacheManager().clear();
+		getUsersCacheManager().clear();
+		clearUtilsCaches();
 		errorHandler.logInfo('All Rally caches cleared', 'rallyServices.clearAllRallyCaches');
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.clearAllRallyCaches');

@@ -124,7 +124,11 @@ const DiscussionsIcon = ({ size = '18px' }: { size?: string }) => (
 
 const RevisionsIcon = ({ size = '18px' }: { size?: string }) => (
 	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: size, height: size }}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+		<path
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+		/>
 	</svg>
 );
 
@@ -138,6 +142,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
 	const [descriptionHeight, setDescriptionHeight] = useState(DESCRIPTION_HEIGHT_DEFAULT);
 	const [revisions, setRevisions] = useState<any[]>([]);
+	const [revisionsCount, setRevisionsCount] = useState<number | null>(null);
 	const [revisionsLoading, setRevisionsLoading] = useState(false);
 	const [revisionsLoaded, setRevisionsLoaded] = useState(false);
 	const resizeStartRef = useRef({ y: 0, height: 0 });
@@ -171,6 +176,37 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			loadRevisions();
 		}
 	};
+
+	const loadRevisionsCount = useCallback(async () => {
+		try {
+			if (!vscode) return;
+
+			const response = await new Promise<number>(resolve => {
+				const handleMessage = (event: any) => {
+					if (event.data.type === 'revisionsCountLoaded' && event.data.objectId === userStory.objectId) {
+						window.removeEventListener('message', handleMessage);
+						resolve(event.data.count ?? 0);
+					}
+				};
+				window.addEventListener('message', handleMessage);
+
+				vscode.postMessage({
+					command: 'getUserStoryRevisionsCount',
+					userStoryObjectId: userStory.objectId
+				});
+
+				setTimeout(() => {
+					window.removeEventListener('message', handleMessage);
+					resolve(0);
+				}, 5000);
+			});
+
+			setRevisionsCount(response);
+		} catch (error) {
+			console.error('Error loading revisions count:', error);
+			setRevisionsCount(0);
+		}
+	}, [vscode, userStory.objectId]);
 
 	const loadRevisions = useCallback(async () => {
 		setRevisionsLoading(true);
@@ -211,8 +247,10 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		setRevisions([]);
 		setRevisionsLoading(false);
 		setRevisionsLoaded(false);
-		loadRevisions();
-	}, [userStory.objectId, loadRevisions]);
+		setRevisionsCount(null);
+		// Load revisions count immediately when user story changes
+		loadRevisionsCount();
+	}, [userStory.objectId, loadRevisionsCount]);
 
 	const handleDescriptionResizeStart = useCallback(
 		(e: React.MouseEvent) => {
@@ -499,7 +537,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Revisions</span>
 							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
 								<RevisionsIcon />
-								{revisions.length > 0 ? revisions.length : '—'}
+								{revisionsCount !== null ? revisionsCount : '—'}
 							</span>
 						</StatPill>
 					</div>
@@ -511,6 +549,11 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No revisions found</div>
 							) : (
 								<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+									{revisionsCount !== null && revisions.length > 0 && revisionsCount > revisions.length && (
+										<div style={{ padding: '8px 12px', backgroundColor: 'color(srgb 0.2 0.5 0.8 / 0.12)', borderRadius: '3px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)', borderLeft: '3px solid color(srgb 0.2 0.5 0.8 / 0.5)' }}>
+											Showing latest {revisions.length} of {revisionsCount} revisions
+										</div>
+									)}
 									{revisions.map((revision, index) => (
 										<div
 											key={index}

@@ -37,13 +37,11 @@ export class WebSocketClient {
 
 	public setServerUrl(url: string): void {
 		this._serverUrl = url;
-		this._errorHandler.logInfo(`WebSocket server URL set to: ${url}`, 'WebSocketClient');
 	}
 
 	public setUserInfo(rallyUserId: string, displayName: string): void {
 		this._rallyUserId = rallyUserId;
 		this._displayName = displayName;
-		this._errorHandler.logInfo(`WebSocket user info set: ${rallyUserId} (${displayName})`, 'WebSocketClient');
 	}
 
 	private getWebSocketUrl(): string {
@@ -76,13 +74,11 @@ export class WebSocketClient {
 
 			try {
 				const wsUrl = this.getWebSocketUrl();
-				this._errorHandler.logInfo(`Connecting to WebSocket: ${wsUrl}`, 'WebSocketClient');
 
 				const ws = new WebSocket(wsUrl);
 				this._ws = ws;
 
 				ws.onopen = () => {
-					this._errorHandler.logInfo('WebSocket connected', 'WebSocketClient');
 					this._isConnecting = false;
 					this._reconnectAttempts = 0;
 
@@ -114,7 +110,6 @@ export class WebSocketClient {
 				};
 
 				ws.onclose = event => {
-					this._errorHandler.logInfo(`WebSocket closed: code=${event.code}, reason=${event.reason || 'none'}`, 'WebSocketClient');
 					this._isConnecting = false;
 					this._ws = null;
 
@@ -140,8 +135,6 @@ export class WebSocketClient {
 			this._ws.close(1000, 'Client disconnect');
 			this._ws = null;
 		}
-
-		this._errorHandler.logInfo('WebSocket disconnected', 'WebSocketClient');
 	}
 
 	public send(message: WebSocketMessage): void {

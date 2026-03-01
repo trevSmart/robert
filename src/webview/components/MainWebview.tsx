@@ -483,6 +483,17 @@ interface Iteration {
 const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, rallyLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
+	const [collaborationClient, setCollaborationClient] = useState<any>(null);
+
+	// Initialize collaboration client after component mount (when vscode is available)
+	useEffect(() => {
+		try {
+			const { CollaborationClient } = require('../../libs/collaboration/collaborationClient');
+			setCollaborationClient(CollaborationClient.getInstance());
+		} catch (err) {
+			logDebug(`Error initializing collaboration client: ${err instanceof Error ? err.message : String(err)}`);
+		}
+	}, []);
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
 
 	const sendMessage = useCallback(
@@ -523,6 +534,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [currentUser, setCurrentUser] = useState<RallyUser | null>(null);
 	const [holidays, setHolidays] = useState<Holiday[]>([]);
 	const [customCalendarEvents, setCustomCalendarEvents] = useState<CustomCalendarEvent[]>([]);
+	const [publicCalendarEvents, setPublicCalendarEvents] = useState<CustomCalendarEvent[]>([]);
 	const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
 	const [_showTutorial, setShowTutorial] = useState<boolean>(false);
 
@@ -685,7 +697,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			command: 'loadIterations'
 		});
 		sendMessage({ command: 'loadCustomEvents' });
-	}, [sendMessage]);
+		// Load public calendar events from collaboration server
+		if (collaborationClient) {
+			collaborationClient
+				.getCalendarEvents()
+				.then(events => {
+					setPublicCalendarEvents(events);
+				})
+				.catch(err => {
+					logDebug(`Error loading public calendar events: ${err instanceof Error ? err.message : String(err)}`);
+				});
+		}
+	}, [sendMessage, collaborationClient]);
 
 	const loadTeamMembers = useCallback(
 		(iterationId?: string) => {
@@ -1324,6 +1347,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					break;
 				case 'customEventDeleted':
 					setCustomCalendarEvents(message.allEvents || []);
+					break;
+				case 'collab:calendar:new':
+				case 'collab:calendar:updated':
+					setPublicCalendarEvents(prev => {
+						const filtered = prev.filter(e => e.id !== (message.event as CustomCalendarEvent).id);
+						return [...filtered, message.event as CustomCalendarEvent];
+					});
+					break;
+				case 'collab:calendar:deleted':
+					setPublicCalendarEvents(prev => prev.filter(e => e.id !== message.eventId));
 					break;
 				case 'userStoriesLoaded':
 					// Determine context using iteration field from backend
@@ -2002,9 +2035,26 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 														currentUser={currentUser}
 														holidays={holidays}
 														onIterationClick={handleIterationClickFromHome}
-														customEvents={customCalendarEvents}
-														onSaveCustomEvent={(event: CustomCalendarEvent) => sendMessage('saveCustomEvent', { event })}
-														onDeleteCustomEvent={(eventId: string) => sendMessage('deleteCustomEvent', { eventId })}
+														customEvents={[...customCalendarEvents, ...publicCalendarEvents]}
+														onSaveCustomEvent={async (event: CustomCalendarEvent) => {
+															if (event.isPublic && collaborationClient) {
+																const saved = await collaborationClient.createCalendarEvent(event);
+																if (saved) {
+																	setPublicCalendarEvents(prev => [...prev.filter(e => e.id !== saved.id), saved]);
+																}
+															} else {
+																sendMessage('saveCustomEvent', { event });
+															}
+														}}
+														onDeleteCustomEvent={async (eventId: string) => {
+															const isPublicEvent = publicCalendarEvents.some(e => e.id === eventId);
+															if (isPublicEvent && collaborationClient) {
+																await collaborationClient.deleteCalendarEvent(eventId);
+																setPublicCalendarEvents(prev => prev.filter(e => e.id !== eventId));
+															} else {
+																sendMessage('deleteCustomEvent', { eventId });
+															}
+														}}
 													/>
 												)}
 											</>

@@ -154,6 +154,10 @@ export class WebSocketClient {
 		this.send({ type: 'subscribe:notifications' });
 	}
 
+	public subscribeCalendarEvents(): void {
+		this.send({ type: 'subscribe:calendar' });
+	}
+
 	public subscribeUserStory(userStoryId: string): void {
 		this.send({
 			type: 'subscribe:userStory',

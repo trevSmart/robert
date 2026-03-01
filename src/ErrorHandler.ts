@@ -2,13 +2,23 @@ import * as vscode from 'vscode';
 import { OutputChannelManager } from './utils/OutputChannelManager';
 import { SettingsManager } from './SettingsManager';
 
+export enum LogLevel {
+	CRITICAL = 'CRITICAL',
+	ERROR = 'ERROR',
+	WARNING = 'WARNING',
+	INFO = 'INFO',
+	DEBUG = 'DEBUG'
+}
+
 export class ErrorHandler {
 	private static instance: ErrorHandler;
 	private outputManager: OutputChannelManager;
+	private minLogLevel: LogLevel = LogLevel.INFO;
 
 	private constructor() {
 		this.outputManager = OutputChannelManager.getInstance();
 		this.setupGlobalErrorHandling();
+		this.updateLogLevel();
 	}
 
 	public static getInstance(): ErrorHandler {
@@ -16,6 +26,17 @@ export class ErrorHandler {
 			ErrorHandler.instance = new ErrorHandler();
 		}
 		return ErrorHandler.instance;
+	}
+
+	private updateLogLevel(): void {
+		const settingsManager = SettingsManager.getInstance();
+		const debugMode = settingsManager.getSetting('debugMode');
+		this.minLogLevel = debugMode ? LogLevel.DEBUG : LogLevel.INFO;
+	}
+
+	private shouldLog(level: LogLevel): boolean {
+		const levels = [LogLevel.CRITICAL, LogLevel.ERROR, LogLevel.WARNING, LogLevel.INFO, LogLevel.DEBUG];
+		return levels.indexOf(level) <= levels.indexOf(this.minLogLevel);
 	}
 
 	/**
@@ -35,7 +56,6 @@ export class ErrorHandler {
 		const stackTrace = error instanceof Error ? error.stack : '';
 		const timestamp = new Date().toISOString();
 
-		// Log to output channel
 		this.outputManager.appendLine(`[Robert] ❌ ERROR in ${context}:`);
 		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
 		this.outputManager.appendLine(`[Robert] Message: ${errorMessage}`);
@@ -45,7 +65,6 @@ export class ErrorHandler {
 		}
 		this.outputManager.appendLine(`[Robert] ---`);
 
-		// Show error notification for our extension errors
 		vscode.window.showErrorMessage(`Robert Extension Error: ${errorMessage}`);
 	}
 
@@ -53,8 +72,9 @@ export class ErrorHandler {
 	 * Log errors to the output channel without showing user notifications
 	 */
 	public logError(message: string, context: string = 'Unknown'): void {
-		const timestamp = new Date().toISOString();
+		if (!this.shouldLog(LogLevel.ERROR)) return;
 
+		const timestamp = new Date().toISOString();
 		this.outputManager.appendLine(`[Robert] ❌ ERROR in ${context}:`);
 		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
 		this.outputManager.appendLine(`[Robert] Message: ${message}`);
@@ -65,8 +85,9 @@ export class ErrorHandler {
 	 * Log warnings to the output channel
 	 */
 	public logWarning(message: string, context: string = 'Unknown'): void {
-		const timestamp = new Date().toISOString();
+		if (!this.shouldLog(LogLevel.WARNING)) return;
 
+		const timestamp = new Date().toISOString();
 		this.outputManager.appendLine(`[Robert] ⚠️ WARNING in ${context}:`);
 		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
 		this.outputManager.appendLine(`[Robert] Message: ${message}`);
@@ -77,8 +98,9 @@ export class ErrorHandler {
 	 * Log info messages to the output channel
 	 */
 	public logInfo(message: string, context: string = 'Unknown'): void {
-		const timestamp = new Date().toISOString();
+		if (!this.shouldLog(LogLevel.INFO)) return;
 
+		const timestamp = new Date().toISOString();
 		this.outputManager.appendLine(`[Robert] ℹ️ INFO in ${context}:`);
 		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
 		this.outputManager.appendLine(`[Robert] Message: ${message}`);
@@ -89,15 +111,9 @@ export class ErrorHandler {
 	 * Log debug messages to the output channel only if debug mode is enabled
 	 */
 	public logDebug(message: string, context: string = 'Unknown'): void {
-		const settingsManager = SettingsManager.getInstance();
-		const debugMode = settingsManager.getSetting('debugMode');
-
-		if (!debugMode) {
-			return; // Don't log anything if debug mode is disabled
-		}
+		if (!this.shouldLog(LogLevel.DEBUG)) return;
 
 		const timestamp = new Date().toISOString();
-
 		this.outputManager.appendLine(`[Robert] 🐞 DEBUG in ${context}:`);
 		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
 		this.outputManager.appendLine(`[Robert] Message: ${message}`);

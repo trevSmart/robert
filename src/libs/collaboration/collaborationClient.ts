@@ -92,13 +92,11 @@ export class CollaborationClient {
 
 	public setServerUrl(url: string): void {
 		this._serverUrl = url;
-		this._errorHandler.logInfo(`Collaboration server URL set to: ${url}`, 'CollaborationClient');
 	}
 
-	public setUserInfo(rallyUserId: string, displayName: string): void {
+	public setUserInfo(rallyUserId: string, _displayName: string): void {
 		this._rallyUserId = rallyUserId;
-		this._displayName = displayName;
-		this._errorHandler.logInfo(`User info set: ${rallyUserId} (${displayName})`, 'CollaborationClient');
+		this._displayName = _displayName;
 	}
 
 	private getServerUrl(): string {

@@ -227,7 +227,13 @@ export class WebSocketClient {
 				break;
 
 			case 'error':
-				this._errorHandler.logWarning(`WebSocket error: ${(data as { message?: string }).message || 'Unknown error'}`, 'WebSocketClient');
+				const errorMessage = (data as { message?: string }).message || 'Unknown error';
+				// "Not authenticated" is expected during initial connection - log as debug instead
+				if (errorMessage === 'Not authenticated') {
+					this._errorHandler.logDebug('WebSocket authentication pending - credentials will be sent after handshake', 'WebSocketClient');
+				} else {
+					this._errorHandler.logWarning(`WebSocket error: ${errorMessage}`, 'WebSocketClient');
+				}
 				this.emit('error', data);
 				break;
 

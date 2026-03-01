@@ -2024,7 +2024,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 														customEvents={[...customCalendarEvents, ...publicCalendarEvents]}
 														onSaveCustomEvent={async (event: CustomCalendarEvent) => {
 															if (event.isPublic && collaborationClient) {
-																const saved = await collaborationClient.createCalendarEvent(event);
+																const existingPublicEvent = publicCalendarEvents.find(e => e.id === event.id);
+																const saved = existingPublicEvent || event.id
+																	? await collaborationClient.updateCalendarEvent(event)
+																	: await collaborationClient.createCalendarEvent(event);
 																if (saved) {
 																	setPublicCalendarEvents(prev => [...prev.filter(e => e.id !== saved.id), saved]);
 																}

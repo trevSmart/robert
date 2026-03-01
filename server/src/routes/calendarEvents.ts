@@ -109,7 +109,12 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
 			date: date !== undefined ? date : undefined,
 			time: time !== undefined ? time : undefined,
 			title: title !== undefined ? title.trim() : undefined,
-			description: description !== undefined ? (description ? description.trim() : undefined) : undefined,
+			description:
+				description === null || description === ''
+					? null
+					: description !== undefined
+						? description.trim()
+						: undefined,
 			color: color !== undefined ? color : undefined
 		});
 

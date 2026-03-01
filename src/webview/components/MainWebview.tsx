@@ -524,6 +524,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [holidays, setHolidays] = useState<Holiday[]>([]);
 	const [customCalendarEvents, setCustomCalendarEvents] = useState<CustomCalendarEvent[]>([]);
 	const [publicCalendarEvents, setPublicCalendarEvents] = useState<CustomCalendarEvent[]>([]);
+	const [collaborationClient, setCollaborationClient] = useState<any>(null);
 	const [selectedTutorial, setSelectedTutorial] = useState<Tutorial | null>(null);
 	const [_showTutorial, setShowTutorial] = useState<boolean>(false);
 
@@ -686,7 +687,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			command: 'loadIterations'
 		});
 		sendMessage({ command: 'loadCustomEvents' });
-		sendMessage({ command: 'loadPublicCalendarEvents' });
+		// loadPublicCalendarEvents is now loaded via collaborationClient in a separate useEffect
 	}, [sendMessage]);
 
 	const loadTeamMembers = useCallback(
@@ -1126,6 +1127,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			command: 'getState'
 		});
 
+		// Initialize collaboration client
+		try {
+			// Defer require() to runtime to avoid Vite build issues
+			// eslint-disable-next-line global-require
+			const { CollaborationClient } = require('../libs/collaboration/collaborationClient');
+			setCollaborationClient(CollaborationClient.getInstance());
+		} catch (error) {
+			logDebug(`Failed to initialize CollaborationClient: ${error}`, 'MainWebview');
+		}
+
 		// Load iterations for home section on initial mount
 		// Since activeSection defaults to 'home', we should load iterations immediately
 		setTimeout(() => {
@@ -1136,6 +1147,39 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		}, 200); // Small delay to ensure webview is fully initialized
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Only run once on mount
+
+	// Load public calendar events after collaborationClient is initialized
+	useEffect(() => {
+		if (!collaborationClient || !currentUser) {
+			return;
+		}
+
+		// Subscribe to calendar event updates via WebSocket
+		collaborationClient.subscribeCalendarEvents(
+			(event: CustomCalendarEvent) => {
+				// collab:calendar:new or collab:calendar:updated
+				setPublicCalendarEvents(prev => {
+					const filtered = prev.filter(e => e.id !== event.id);
+					return [...filtered, event];
+				});
+			},
+			(eventId: string) => {
+				// collab:calendar:deleted
+				setPublicCalendarEvents(prev => prev.filter(e => e.id !== eventId));
+			}
+		);
+
+		// Load initial calendar events from server
+		(async () => {
+			try {
+				const events = await collaborationClient.getCalendarEvents();
+				setPublicCalendarEvents(events || []);
+			} catch (error) {
+				logDebug(`Failed to load public calendar events: ${error}`, 'MainWebview');
+				setPublicCalendarEvents([]);
+			}
+		})();
+	}, [collaborationClient, currentUser]);
 
 	// Helper function to reset all state to initial values
 	const resetAllState = useCallback(() => {

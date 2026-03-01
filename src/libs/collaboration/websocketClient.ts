@@ -210,14 +210,20 @@ export class WebSocketClient {
 
 			case 'collab:calendar:new':
 				this.emit('collab:calendar:new', data);
+				// Also emit a higher-level event so existing calendar handlers can react
+				this.emit('publicCalendarEventSaved', data);
 				break;
 
 			case 'collab:calendar:updated':
 				this.emit('collab:calendar:updated', data);
+				// Treat updates as "saved" for consumers expecting a unified save event
+				this.emit('publicCalendarEventSaved', data);
 				break;
 
 			case 'collab:calendar:deleted':
 				this.emit('collab:calendar:deleted', data);
+				// Emit a corresponding deleted event for existing calendar handlers
+				this.emit('publicCalendarEventDeleted', data);
 				break;
 
 			case 'error':

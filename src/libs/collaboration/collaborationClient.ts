@@ -1,5 +1,6 @@
 import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
+import { CustomCalendarEvent } from '../../types/utils';
 
 export interface MessageAttendee {
 	id: string;
@@ -305,5 +306,46 @@ export class CollaborationClient {
 			this._errorHandler.logWarning(`Server health check failed: ${error instanceof Error ? error.message : String(error)}`, 'CollaborationClient.checkServerHealth');
 			return false;
 		}
+	}
+
+	// Calendar Events API
+	public async getCalendarEvents(): Promise<CustomCalendarEvent[]> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
+			const response = await this.makeRequest<{ events: CustomCalendarEvent[] }>('/api/calendar-events');
+			return response.events;
+		}, 'CollaborationClient.getCalendarEvents');
+		return result ?? [];
+	}
+
+	public async createCalendarEvent(event: Omit<CustomCalendarEvent, 'id' | 'creatorRallyUserId' | 'creatorDisplayName'>): Promise<CustomCalendarEvent | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
+			const response = await this.makeRequest<{ event: CustomCalendarEvent }>('/api/calendar-events', {
+				method: 'POST',
+				body: JSON.stringify(event)
+			});
+			return response.event;
+		}, 'CollaborationClient.createCalendarEvent');
+		return result ?? null;
+	}
+
+	public async updateCalendarEvent(id: string, event: Partial<Omit<CustomCalendarEvent, 'id' | 'creatorRallyUserId' | 'creatorDisplayName'>>): Promise<CustomCalendarEvent | null> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
+			const response = await this.makeRequest<{ event: CustomCalendarEvent }>(`/api/calendar-events/${id}`, {
+				method: 'PUT',
+				body: JSON.stringify(event)
+			});
+			return response.event;
+		}, 'CollaborationClient.updateCalendarEvent');
+		return result ?? null;
+	}
+
+	public async deleteCalendarEvent(id: string): Promise<boolean> {
+		const result = await this._errorHandler.executeWithErrorHandling(async () => {
+			await this.makeRequest(`/api/calendar-events/${id}`, {
+				method: 'DELETE'
+			});
+			return true;
+		}, 'CollaborationClient.deleteCalendarEvent');
+		return result ?? false;
 	}
 }

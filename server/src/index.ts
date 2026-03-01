@@ -8,6 +8,7 @@ import { setupWebSocket } from './services/websocketService';
 import messageRoutes from './routes/messages';
 import notificationRoutes from './routes/notifications';
 import userRoutes from './routes/users';
+import calendarEventsRoutes from './routes/calendarEvents';
 import { errorHandler } from './middleware/errorHandler';
 
 // Load environment variables
@@ -53,6 +54,7 @@ app.get('/health', (req, res) => {
 app.use('/api/messages', messageRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/calendar-events', calendarEventsRoutes);
 
 // Error handling middleware
 app.use(errorHandler);

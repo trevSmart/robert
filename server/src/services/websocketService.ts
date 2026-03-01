@@ -1,6 +1,7 @@
 import { WebSocketServer, WebSocket } from 'ws';
 import { getOrCreateUser } from './userService';
 import { getMessageById } from './messageService';
+import { CalendarEvent } from '../models/CalendarEvent';
 
 // Remove the unused WebSocketClient interface since we're using WebSocketServerClient
 
@@ -239,6 +240,54 @@ export async function broadcastNotification(userId: string, notification: any): 
 		const client = ws as WebSocketServerClient;
 		if (client.readyState === WebSocket.OPEN && client.userId === userId) {
 			client.send(JSON.stringify(notificationData));
+		}
+	});
+}
+
+export function broadcastCalendarEventNew(event: CalendarEvent): void {
+	if (!globalWss) return;
+
+	const eventData = {
+		type: 'collab:calendar:new',
+		event
+	};
+
+	globalWss.clients.forEach((ws) => {
+		const client = ws as WebSocketServerClient;
+		if (client.readyState === WebSocket.OPEN && client.userId) {
+			client.send(JSON.stringify(eventData));
+		}
+	});
+}
+
+export function broadcastCalendarEventUpdated(event: CalendarEvent): void {
+	if (!globalWss) return;
+
+	const eventData = {
+		type: 'collab:calendar:updated',
+		event
+	};
+
+	globalWss.clients.forEach((ws) => {
+		const client = ws as WebSocketServerClient;
+		if (client.readyState === WebSocket.OPEN && client.userId) {
+			client.send(JSON.stringify(eventData));
+		}
+	});
+}
+
+export function broadcastCalendarEventDeleted(eventId: string): void {
+	if (!globalWss) return;
+
+	const eventData = {
+		type: 'collab:calendar:deleted',
+		eventId
+	};
+
+	globalWss.clients.forEach((ws) => {
+		const client = ws as WebSocketServerClient;
+		if (client.readyState === WebSocket.OPEN && client.userId) {
+			client.send(JSON.stringify(eventData));
 		}
 	});
 }

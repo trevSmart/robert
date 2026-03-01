@@ -24,13 +24,18 @@ interface DayInfo {
 	events: DayEvent[];
 }
 
+interface CalendarCurrentUser {
+	objectId: string;
+	rallyUserId?: string;
+}
+
 interface CalendarProps {
 	currentDate?: Date;
 	iterations?: Iteration[];
 	userStories?: UserStory[];
 	onMonthChange?: (date: Date) => void;
 	debugMode?: boolean;
-	currentUser?: unknown;
+	currentUser?: CalendarCurrentUser | null;
 	holidays?: Holiday[];
 	onIterationClick?: (iteration: Iteration) => void;
 	customEvents?: CustomCalendarEvent[];
@@ -52,9 +57,10 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const [modalClosing, setModalClosing] = useState(false);
 	const [modalEntered, setModalEntered] = useState(false);
 	const [editingEvent, setEditingEvent] = useState<CustomCalendarEvent | null>(null);
-	const [modalForm, setModalForm] = useState({ date: '', time: '', title: '', description: '', color: '#52a0e0' });
+	const [modalForm, setModalForm] = useState({ date: '', time: '', title: '', description: '', color: '#52a0e0', isPublic: false });
 	const modalTransitionMs = 220;
 	const [hoveredIteration, setHoveredIteration] = useState<Iteration | null>(null);
+	const [hoveredEvent, setHoveredEvent] = useState<DayEvent | null>(null);
 	const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
 	const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 800);
 	const [calendarGridWidth, setCalendarGridWidth] = useState(800);
@@ -780,11 +786,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const openModal = (event: CustomCalendarEvent | null, prefillDate?: string) => {
 		if (event) {
 			setEditingEvent(event);
-			setModalForm({ date: event.date, time: event.time || '', title: event.title, description: event.description || '', color: event.color });
+			setModalForm({ date: event.date, time: event.time || '', title: event.title, description: event.description || '', color: event.color, isPublic: event.isPublic || false });
 		} else {
 			setEditingEvent(null);
 			const defaultDate = prefillDate || `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-			setModalForm({ date: defaultDate, time: '', title: '', description: '', color: '#52a0e0' });
+			setModalForm({ date: defaultDate, time: '', title: '', description: '', color: '#52a0e0', isPublic: false });
 		}
 		setModalClosing(false);
 		setModalEntered(false);
@@ -802,6 +808,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			setModalClosing(false);
 			setModalEntered(false);
 			setEditingEvent(null);
+			setModalForm({ date: '', time: '', title: '', description: '', color: '#52a0e0', isPublic: false });
 		}
 	};
 
@@ -810,10 +817,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const event: CustomCalendarEvent = {
 			id: editingEvent?.id || crypto.randomUUID(),
 			date: modalForm.date,
-			time: modalForm.time || undefined,
+			time: modalForm.time,
 			title: modalForm.title.trim(),
-			description: modalForm.description.trim() || undefined,
-			color: modalForm.color
+			description: modalForm.description.trim(),
+			color: modalForm.color,
+			isPublic: modalForm.isPublic
 		};
 		onSaveCustomEvent?.(event);
 		closeModal();
@@ -876,9 +884,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		// Add custom user events
 		const dayCustomEvents = customEvents.filter(e => e != null && e.date === dateStr);
 		for (const ce of dayCustomEvents) {
+			// For public events, include creator info in display
+			const displayText = ce.time ? `${ce.time} ${ce.title}` : ce.title;
+			const creatorInfo = ce.isPublic && ce.creatorDisplayName ? ` (${ce.creatorDisplayName})` : '';
 			events.push({
 				type: 'customEvent',
-				displayText: ce.time ? `${ce.time} ${ce.title}` : ce.title,
+				displayText: displayText + creatorInfo,
 				tooltip: ce.description || ce.title,
 				color: ce.color,
 				opacity: 0.85,
@@ -1387,6 +1398,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 															}
 														: undefined
 												}
+												onMouseEnter={e => {
+													setHoveredEvent(event);
+													setMousePosition({ x: e.clientX, y: e.clientY });
+												}}
+												onMouseMove={e => {
+													setMousePosition({ x: e.clientX, y: e.clientY });
+												}}
+												onMouseLeave={() => setHoveredEvent(null)}
 												style={{
 													backgroundColor: `rgba(${colorRgb}, ${event.opacity})`,
 													color: 'white',
@@ -1404,10 +1423,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													WebkitLineClamp: 2,
 													whiteSpace: 'normal',
 													wordBreak: 'break-word',
-													pointerEvents: isCustomEvent ? 'auto' : 'none',
+													pointerEvents: 'auto',
 													cursor: isCustomEvent ? 'pointer' : 'default'
 												}}
-												title={event.tooltip}
 											>
 												{event.displayText}
 											</div>
@@ -1613,7 +1631,63 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					</div>
 				</div>
 			)}
-			{(hoveredDay || hoveredIteration) &&
+			{hoveredEvent &&
+				!modalOpen &&
+				(() => {
+					const tooltipOffset = 10;
+					const wouldClip = mousePosition.x + tooltipOffset + 240 > window.innerWidth;
+					const tooltipPos = wouldClip ? { right: window.innerWidth - mousePosition.x + tooltipOffset, left: undefined } : { left: mousePosition.x + tooltipOffset, right: undefined };
+					const tooltipStyle = {
+						position: 'fixed' as const,
+						...tooltipPos,
+						top: mousePosition.y - 30,
+						backgroundColor: 'var(--vscode-quickInput-background)',
+						color: 'var(--vscode-quickInput-foreground)',
+						border: '1px solid var(--vscode-panel-border)',
+						borderRadius: '4px',
+						padding: '6px 10px',
+						fontSize: '12px',
+						pointerEvents: 'none' as const,
+						zIndex: 1001,
+						boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+						maxWidth: '240px',
+						wordWrap: 'break-word' as const
+					};
+
+					if (hoveredEvent.type === 'customEvent') {
+						const ce = hoveredEvent.data as CustomCalendarEvent;
+						const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+						const [y, m, d] = ce.date.split('-').map(Number);
+						const dateStr = `${d} ${monthNames[m - 1]} ${y}`;
+						const dateTime = ce.time ? `${dateStr} · ${ce.time}` : dateStr;
+						return (
+							<div style={tooltipStyle}>
+								<div style={{ fontWeight: '600', fontSize: '13px', marginBottom: '3px' }}>{ce.title}</div>
+								<div style={{ fontSize: '11px', color: themeColors.descriptionForeground, marginBottom: ce.description ? '4px' : '0' }}>{dateTime}</div>
+								{ce.description && <div style={{ fontSize: '11px', color: themeColors.foreground, whiteSpace: 'pre-wrap' }}>{ce.description}</div>}
+							</div>
+						);
+					}
+
+					if (hoveredEvent.type === 'holiday') {
+						return (
+							<div style={tooltipStyle}>
+								<div style={{ fontWeight: '600', fontSize: '13px' }}>{hoveredEvent.tooltip}</div>
+							</div>
+						);
+					}
+
+					if (hoveredEvent.tooltip) {
+						return (
+							<div style={tooltipStyle}>
+								<div style={{ fontWeight: '600', fontSize: '13px' }}>{hoveredEvent.tooltip}</div>
+							</div>
+						);
+					}
+					return null;
+				})()}
+			{!hoveredEvent &&
+				(hoveredDay || hoveredIteration) &&
 				(() => {
 					const tooltipOffset = 10;
 					const wouldClip = mousePosition.x + tooltipOffset + 200 > window.innerWidth;
@@ -1810,59 +1884,75 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							</div>
 						</div>
 
-						{/* Action buttons */}
-						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
-							<div>
-								{editingEvent && (
-									<button
-										onClick={deleteModal}
-										style={{
-											padding: '6px 14px',
-											borderRadius: '4px',
-											border: 'none',
-											cursor: 'pointer',
-											backgroundColor: 'var(--vscode-inputValidation-errorBackground, #5a1d1d)',
-											color: 'var(--vscode-errorForeground, #f48771)',
-											fontSize: '12px'
-										}}
-									>
-										Delete
-									</button>
-								)}
-							</div>
-							<div style={{ display: 'flex', gap: '8px' }}>
-								<button
-									onClick={closeModal}
-									style={{
-										padding: '6px 14px',
-										borderRadius: '4px',
-										border: '1px solid var(--vscode-panel-border)',
-										cursor: 'pointer',
-										backgroundColor: 'transparent',
-										color: themeColors.foreground,
-										fontSize: '12px'
-									}}
-								>
-									Cancel
-								</button>
-								<button
-									onClick={saveModal}
-									disabled={!modalForm.title.trim() || !modalForm.date}
-									style={{
-										padding: '6px 14px',
-										borderRadius: '4px',
-										border: 'none',
-										cursor: !modalForm.title.trim() || !modalForm.date ? 'not-allowed' : 'pointer',
-										backgroundColor: 'var(--vscode-button-background)',
-										color: 'var(--vscode-button-foreground)',
-										fontSize: '12px',
-										opacity: !modalForm.title.trim() || !modalForm.date ? 0.5 : 1
-									}}
-								>
-									Save
-								</button>
-							</div>
+						{/* Public/Private Checkbox */}
+						<div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '8px' }}>
+							<input type="checkbox" id="isPublicCheckbox" checked={modalForm.isPublic} onChange={e => setModalForm(f => ({ ...f, isPublic: e.target.checked }))} style={{ cursor: 'pointer' }} />
+							<label htmlFor="isPublicCheckbox" style={{ fontSize: '12px', cursor: 'pointer', userSelect: 'none' }}>
+								Share with team
+							</label>
 						</div>
+
+						{/* Action buttons */}
+						{(() => {
+							// Check if editing a public event from another user (read-only mode)
+							const isReadOnly = editingEvent && editingEvent.isPublic && editingEvent.creatorRallyUserId && currentUser?.objectId !== editingEvent.creatorRallyUserId;
+
+							return (
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+									<div>
+										{editingEvent && !isReadOnly && (
+											<button
+												onClick={deleteModal}
+												style={{
+													padding: '6px 14px',
+													borderRadius: '4px',
+													border: 'none',
+													cursor: 'pointer',
+													backgroundColor: 'var(--vscode-inputValidation-errorBackground, #5a1d1d)',
+													color: 'var(--vscode-errorForeground, #f48771)',
+													fontSize: '12px'
+												}}
+											>
+												Delete
+											</button>
+										)}
+										{isReadOnly && <span style={{ fontSize: '12px', color: themeColors.descriptionForeground }}>Read-only</span>}
+									</div>
+									<div style={{ display: 'flex', gap: '8px' }}>
+										<button
+											onClick={closeModal}
+											style={{
+												padding: '6px 14px',
+												borderRadius: '4px',
+												border: '1px solid var(--vscode-panel-border)',
+												cursor: 'pointer',
+												backgroundColor: 'transparent',
+												color: themeColors.foreground,
+												fontSize: '12px'
+											}}
+										>
+											Cancel
+										</button>
+										<button
+											onClick={saveModal}
+											disabled={!modalForm.title.trim() || !modalForm.date || isReadOnly}
+											style={{
+												padding: '6px 14px',
+												borderRadius: '4px',
+												border: 'none',
+												cursor: !modalForm.title.trim() || !modalForm.date || isReadOnly ? 'not-allowed' : 'pointer',
+												backgroundColor: 'var(--vscode-button-background)',
+												color: 'var(--vscode-button-foreground)',
+												fontSize: '12px',
+												opacity: !modalForm.title.trim() || !modalForm.date || isReadOnly ? 0.5 : 1
+											}}
+										>
+											Save
+										</button>
+									</div>
+								</div>
+							);
+						})()}
 					</div>
 				</div>
 			)}

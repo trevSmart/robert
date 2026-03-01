@@ -1895,7 +1895,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						{/* Action buttons */}
 						{(() => {
 							// Check if editing a public event from another user (read-only mode)
-							const isReadOnly = editingEvent && editingEvent.isPublic && editingEvent.creatorRallyUserId && currentUser?.rallyUserId !== editingEvent.creatorRallyUserId;
+							const isReadOnly = editingEvent && editingEvent.isPublic && editingEvent.creatorRallyUserId && currentUser?.objectId !== editingEvent.creatorRallyUserId;
 
 							return (
 								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>

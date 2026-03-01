@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
 import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress } from '../../libs/rally/rallyServices';
 import { HolidayService } from '../../libs/holidayService';
+import { SettingsManager } from '../../SettingsManager';
 
 /**
  * Handles all Rally API-related webview messages
@@ -97,11 +98,13 @@ export class RallyMessageHandler {
 			const [iterationsResult, userResult, holidays] = await Promise.all([getIterations(), getCurrentUser(), holidayService.getHolidays(currentYear, 'ES')]);
 
 			if (iterationsResult?.iterations) {
+				const collaborationEnabled = SettingsManager.getInstance().getSetting('collaborationEnabled');
 				webview.postMessage({
 					command: 'iterationsLoaded',
 					iterations: iterationsResult.iterations,
 					currentUser: userResult?.user || null,
-					holidays: holidays || []
+					holidays: holidays || [],
+					collaborationEnabled: collaborationEnabled || false
 				});
 				this.errorHandler.logInfo(`Iterations loaded successfully: ${iterationsResult.count} iterations`, 'RallyMessageHandler');
 				if (userResult?.user) {

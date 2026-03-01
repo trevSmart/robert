@@ -15,9 +15,9 @@ const Wrapper = styled.div<{ $visible: boolean }>`
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 30px;
-	height: 30px;
-	padding: 6px;
+	width: 44px;
+	height: 44px;
+	padding: 3px;
 	border-radius: 8px;
 	background: rgba(15, 18, 25, 0.35);
 	backdrop-filter: blur(6px);
@@ -31,8 +31,8 @@ const Wrapper = styled.div<{ $visible: boolean }>`
 `;
 
 const Logo = styled.img`
-	width: 16px;
-	height: 16px;
+	width: 24px;
+	height: 24px;
 	object-fit: contain;
 	animation: ${softPulse} 1.2s ease-in-out infinite;
 `;

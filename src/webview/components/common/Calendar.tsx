@@ -24,13 +24,18 @@ interface DayInfo {
 	events: DayEvent[];
 }
 
+interface CalendarCurrentUser {
+	objectId: string;
+	rallyUserId?: string;
+}
+
 interface CalendarProps {
 	currentDate?: Date;
 	iterations?: Iteration[];
 	userStories?: UserStory[];
 	onMonthChange?: (date: Date) => void;
 	debugMode?: boolean;
-	currentUser?: unknown;
+	currentUser?: CalendarCurrentUser | null;
 	holidays?: Holiday[];
 	onIterationClick?: (iteration: Iteration) => void;
 	customEvents?: CustomCalendarEvent[];

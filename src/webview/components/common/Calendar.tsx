@@ -1672,6 +1672,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						);
 					}
 
+					if (hoveredEvent.tooltip) {
+						return (
+							<div style={tooltipStyle}>
+								<div style={{ fontWeight: '600', fontSize: '13px' }}>{hoveredEvent.tooltip}</div>
+							</div>
+						);
+					}
 					return null;
 				})()}
 			{!hoveredEvent && (hoveredDay || hoveredIteration) &&

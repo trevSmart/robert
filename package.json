@@ -114,7 +114,7 @@
 				"robert.showOutputChannelOnStartup": {
 					"type": "boolean",
 					"default": false,
-					"description": "Show the Robert output channel when the extension starts up"
+					"description": "For development purposes. Show the extension's output channel when the extension starts up"
 				},
 				"robert.statusBarShowSprintDaysLeft": {
 					"type": "boolean",

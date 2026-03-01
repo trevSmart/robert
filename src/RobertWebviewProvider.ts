@@ -1617,7 +1617,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						case 'savePublicCalendarEvent': {
 							try {
 								const incoming = (message.data?.event ?? message.event) as import('./types/utils').CustomCalendarEvent;
-								const saved = incoming.id
+								const saved = incoming.creatorRallyUserId
 									? await this._collaborationClient.updateCalendarEvent(incoming.id, {
 											date: incoming.date,
 											time: incoming.time,

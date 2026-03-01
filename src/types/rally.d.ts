@@ -25,6 +25,7 @@ export interface UserStory {
 	testCasesCount: number;
 	defectsCount: number;
 	discussionCount: number;
+	revisionsCount: number;
 	appgar: string;
 	scheduleState: string; // PRIMARY: Rally ScheduleState (Defined, In-Progress, Completed, New)
 	revisions?: Revision[]; // Optional - revision history of the user story

@@ -19,7 +19,8 @@ import {
 	getDefectByObjectId,
 	getTaskWithParent,
 	getTestCaseWithParent,
-	getUserStoryRevisions
+	getUserStoryRevisions,
+	getUserStoryRevisionsCount
 } from './libs/rally/rallyServices';
 import { setRallyBroadcaster } from './libs/rally/rallyCall';
 import { HolidayService } from './libs/holidayService';
@@ -63,7 +64,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		this._collaborationClient = CollaborationClient.getInstance();
 		this._websocketClient = WebSocketClient.getInstance();
 
-		this._errorHandler.logInfo('WebviewProvider initialized', 'RobertWebviewProvider.constructor');
 		this.initializeCollaboration();
 	}
 
@@ -194,9 +194,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	/**
 	 * Set debug mode state
 	 */
-	public setDebugMode(isDebug: boolean): void {
-		this._isDebugMode = isDebug;
-		this._errorHandler.logInfo(`Debug mode set to: ${isDebug}`, 'RobertWebviewProvider.setDebugMode');
+	public setDebugMode(_isDebug: boolean): void {
+		this._isDebugMode = _isDebug;
 	}
 
 	/**
@@ -204,7 +203,6 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 */
 	public async resolveCustomTextEditor(document: vscode.TextDocument, _webviewPanel: vscode.WebviewPanel, _token: vscode.CancellationToken): Promise<void> {
 		await this._errorHandler.executeWithErrorHandling(async () => {
-			this._errorHandler.logInfo(`Resolving custom text editor for: ${document.uri.fsPath}`, 'RobertWebviewProvider.resolveCustomTextEditor');
 			// This is a placeholder implementation; not currently used
 		}, 'resolveCustomTextEditor');
 	}
@@ -216,32 +214,21 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			const settings = this._settingsManager.getSettings();
 			if (!settings.autoRefresh) {
-				this._errorHandler.logInfo('Auto refresh disabled; skipping Rally prefetch', 'RobertWebviewProvider.prefetchRallyData');
 				return;
 			}
 
-			this._errorHandler.logInfo(`Prefetching Rally data (${trigger})`, 'RobertWebviewProvider.prefetchRallyData');
+			this._errorHandler.logDebug(`Prefetching Rally data (${trigger})`, 'RobertWebviewProvider.prefetchRallyData');
 
-			// Log current Rally settings for debugging
-			const rallyInstance = this._settingsManager.getSetting('rallyInstance');
-			const rallyApiKey = this._settingsManager.getSetting('rallyApiKey');
-			const rallyProjectName = this._settingsManager.getSetting('rallyProjectName')?.trim();
-			this._errorHandler.logInfo(`Rally Settings - Instance: ${rallyInstance || '(not set)'}, API Key: ${rallyApiKey ? '***' + rallyApiKey.slice(-4) : '(not set)'}, Project: ${rallyProjectName || '(not set)'}`, 'RobertWebviewProvider.prefetchRallyData');
-
-			this._errorHandler.logInfo('Starting Rally configuration validation...', 'RobertWebviewProvider.prefetchRallyData');
+			this._errorHandler.logDebug('Starting Rally configuration validation...', 'RobertWebviewProvider.prefetchRallyData');
 			const validation = await validateRallyConfiguration();
-			this._errorHandler.logInfo(`Validation completed: isValid=${validation.isValid}, errors=${validation.errors.length}`, 'RobertWebviewProvider.prefetchRallyData');
 
 			if (!validation.isValid) {
 				this._errorHandler.logWarning(`Skipping Rally prefetch: ${validation.errors.join(', ')}`, 'RobertWebviewProvider.prefetchRallyData');
 				return;
 			}
 
-			this._errorHandler.logInfo('Validation passed, starting data fetch...', 'RobertWebviewProvider.prefetchRallyData');
-
-			this._errorHandler.logInfo('Starting parallel fetch of projects, iterations and current user...', 'RobertWebviewProvider.prefetchRallyData');
 			const [projectsResult, iterationsResult, userResult] = await Promise.all([getProjects(), getIterations(), getCurrentUser()]);
-			this._errorHandler.logInfo(`Prefetch completed: ${projectsResult?.count ?? 0} projects, ${iterationsResult?.count ?? 0} iterations, user: ${userResult?.user ? 'loaded' : 'not loaded'}`, 'RobertWebviewProvider.prefetchRallyData');
+			this._errorHandler.logDebug(`Prefetch completed: ${projectsResult?.count ?? 0} projects, ${iterationsResult?.count ?? 0} iterations`, 'RobertWebviewProvider.prefetchRallyData');
 		}, 'RobertWebviewProvider.prefetchRallyData');
 	}
 
@@ -1264,6 +1251,24 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 								webview.postMessage({
 									command: 'collaborationMessagesError',
 									error: this.getCollaborationErrorMessage(error)
+								});
+							}
+							break;
+						case 'getUserStoryRevisionsCount':
+							try {
+								this._errorHandler.logInfo(`Fetching revisions count for user story: ${message.userStoryObjectId}`, 'WebviewMessageListener');
+								const result = await getUserStoryRevisionsCount(message.userStoryObjectId);
+								webview.postMessage({
+									type: 'revisionsCountLoaded',
+									objectId: message.userStoryObjectId,
+									count: result.count
+								});
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getUserStoryRevisionsCount');
+								webview.postMessage({
+									type: 'revisionsCountLoaded',
+									objectId: message.userStoryObjectId,
+									count: 0
 								});
 							}
 							break;

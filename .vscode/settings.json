@@ -108,6 +108,12 @@
 			"path": "https://open-vsx.org/extension/trevSmart/robert",
 			"description": "",
 			"type": "link"
+		},
+		{
+			"name": "Render Dashboard",
+			"path": "https://dashboard.render.com/project/prj-d5s3i77fte5s73cjp1fg",
+			"description": "",
+			"type": "link"
 		}
 	],
 	"debug.enableStatusBarColor": false,

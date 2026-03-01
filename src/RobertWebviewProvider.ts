@@ -1604,6 +1604,54 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 							webview.postMessage({ command: 'customEventDeleted', allEvents: filtered });
 							break;
 						}
+						case 'loadPublicCalendarEvents': {
+							try {
+								const events = (await this._collaborationClient.getCalendarEvents()).map(e => ({ ...e, isPublic: true }));
+								webview.postMessage({ command: 'publicCalendarEventsLoaded', events });
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadPublicCalendarEvents');
+								webview.postMessage({ command: 'publicCalendarEventsLoaded', events: [] });
+							}
+							break;
+						}
+						case 'savePublicCalendarEvent': {
+							try {
+								const incoming = (message.data?.event ?? message.event) as import('./types/utils').CustomCalendarEvent;
+								const saved = incoming.creatorRallyUserId
+									? await this._collaborationClient.updateCalendarEvent(incoming.id, {
+											date: incoming.date,
+											time: incoming.time,
+											title: incoming.title,
+											description: incoming.description,
+											color: incoming.color
+										})
+									: await this._collaborationClient.createCalendarEvent(incoming);
+								if (saved) {
+									webview.postMessage({ command: 'publicCalendarEventSaved', event: { ...saved, isPublic: true } });
+								}
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'savePublicCalendarEvent');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: this.getCollaborationErrorMessage(error)
+								});
+							}
+							break;
+						}
+						case 'deletePublicCalendarEvent': {
+							try {
+								const eventId = message.data?.eventId ?? message.eventId;
+								await this._collaborationClient.deleteCalendarEvent(eventId);
+								webview.postMessage({ command: 'publicCalendarEventDeleted', eventId });
+							} catch (error) {
+								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'deletePublicCalendarEvent');
+								webview.postMessage({
+									command: 'collaborationMessagesError',
+									error: this.getCollaborationErrorMessage(error)
+								});
+							}
+							break;
+						}
 						default:
 							this._errorHandler.logWarning(`Unknown message command: ${message.command}`, 'WebviewMessageListener');
 							break;

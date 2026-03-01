@@ -208,8 +208,32 @@ export class WebSocketClient {
 				this.emit('message:deleted', data);
 				break;
 
+			case 'collab:calendar:new':
+				this.emit('collab:calendar:new', data);
+				// Also emit a higher-level event so existing calendar handlers can react
+				this.emit('publicCalendarEventSaved', data);
+				break;
+
+			case 'collab:calendar:updated':
+				this.emit('collab:calendar:updated', data);
+				// Treat updates as "saved" for consumers expecting a unified save event
+				this.emit('publicCalendarEventSaved', data);
+				break;
+
+			case 'collab:calendar:deleted':
+				this.emit('collab:calendar:deleted', data);
+				// Emit a corresponding deleted event for existing calendar handlers
+				this.emit('publicCalendarEventDeleted', data);
+				break;
+
 			case 'error':
-				this._errorHandler.logWarning(`WebSocket error: ${(data as { message?: string }).message || 'Unknown error'}`, 'WebSocketClient');
+				const errorMessage = (data as { message?: string }).message || 'Unknown error';
+				// "Not authenticated" is expected during initial connection - log as debug instead
+				if (errorMessage === 'Not authenticated') {
+					this._errorHandler.logDebug('WebSocket authentication pending - credentials will be sent after handshake', 'WebSocketClient');
+				} else {
+					this._errorHandler.logWarning(`WebSocket error: ${errorMessage}`, 'WebSocketClient');
+				}
 				this.emit('error', data);
 				break;
 

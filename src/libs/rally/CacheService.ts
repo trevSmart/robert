@@ -10,7 +10,7 @@
 
 import { CacheManager } from '../cache/CacheManager';
 import { ErrorHandler } from '../../ErrorHandler';
-import type { RallyUserStory, RallyProject, RallyIteration } from '../../types/rally';
+import type { RallyUserStory, RallyProject, RallyIteration, RallyUser } from '../../types/rally';
 
 const errorHandler = ErrorHandler.getInstance();
 
@@ -19,6 +19,7 @@ let userStoriesCacheManager: CacheManager<RallyUserStory[]> | null = null;
 let projectsCacheManager: CacheManager<RallyProject[]> | null = null;
 let iterationsCacheManager: CacheManager<RallyIteration[]> | null = null;
 let teamMembersCacheManager: CacheManager<string[]> | null = null;
+let usersCacheManager: CacheManager<RallyUser[]> | null = null;
 
 const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes - persists through Portfolio navigation
 
@@ -67,6 +68,17 @@ export function getTeamMembersCacheManager(): CacheManager<string[]> {
 }
 
 /**
+ * Get or initialize the users cache manager
+ */
+export function getUsersCacheManager(): CacheManager<RallyUser[]> {
+	if (!usersCacheManager) {
+		usersCacheManager = new CacheManager<RallyUser[]>(CACHE_TTL_MS);
+		errorHandler.logDebug('Users cache manager initialized', 'CacheService.getUsersCacheManager');
+	}
+	return usersCacheManager;
+}
+
+/**
  * Clear all cache managers
  * Used when extension needs to reload/reset all data
  */
@@ -83,6 +95,9 @@ export function clearAllCaches(): void {
 		}
 		if (teamMembersCacheManager) {
 			teamMembersCacheManager.clear();
+		}
+		if (usersCacheManager) {
+			usersCacheManager.clear();
 		}
 		errorHandler.logInfo('All cache managers cleared', 'CacheService.clearAllCaches');
 	} catch (error) {
@@ -112,6 +127,10 @@ export function destroyAllCaches(): void {
 			teamMembersCacheManager.destroy();
 			teamMembersCacheManager = null;
 		}
+		if (usersCacheManager) {
+			usersCacheManager.destroy();
+			usersCacheManager = null;
+		}
 		errorHandler.logInfo('All cache managers destroyed', 'CacheService.destroyAllCaches');
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'CacheService.destroyAllCaches');
@@ -126,6 +145,7 @@ export function getCacheStats() {
 		userStories: userStoriesCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
 		projects: projectsCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
 		iterations: iterationsCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
-		teamMembers: teamMembersCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 }
+		teamMembers: teamMembersCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
+		users: usersCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 }
 	};
 }

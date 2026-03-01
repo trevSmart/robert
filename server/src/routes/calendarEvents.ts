@@ -86,14 +86,14 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		const { date, time, title, description, color } = req.body;
 
-		// Resolve DB user id
-		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
-
 		// Get existing event to verify ownership
 		const existingEvent = await getCalendarEventById(req.params.id);
 		if (!existingEvent) {
 			throw createError('Event not found', 404);
 		}
+
+		// Resolve DB user id
+		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
 
 		if (existingEvent.creatorId !== user.id) {
 			throw createError('Forbidden: You can only edit your own events', 403);
@@ -128,14 +128,14 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 // DELETE /api/calendar-events/:id
 router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
 	try {
-		// Resolve DB user id
-		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
-
 		// Get existing event to verify ownership
 		const existingEvent = await getCalendarEventById(req.params.id);
 		if (!existingEvent) {
 			throw createError('Event not found', 404);
 		}
+
+		// Resolve DB user id
+		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
 
 		if (existingEvent.creatorId !== user.id) {
 			throw createError('Forbidden: You can only delete your own events', 403);

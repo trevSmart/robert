@@ -94,20 +94,10 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		const { date, time, title, description, color } = req.body;
 
-		// Get existing event to verify ownership
-		const existingEvent = await getCalendarEventById(req.params.id);
-		if (!existingEvent) {
-			throw createError('Event not found', 404);
-		}
-
 		// Resolve DB user id
 		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
 
-		if (existingEvent.creatorId !== user.id) {
-			throw createError('Forbidden: You can only edit your own events', 403);
-		}
-
-		// Update event
+		// Attempt update directly; WHERE id AND creator_id filters ownership in one round-trip
 		const event = await updateCalendarEvent(req.params.id, user.id, {
 			date: date !== undefined ? date : undefined,
 			time: time !== undefined ? time : undefined,
@@ -117,7 +107,12 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 		});
 
 		if (!event) {
-			throw createError('Event not found', 404);
+			// Single follow-up SELECT only to distinguish 404 vs 403
+			const existing = await getCalendarEventById(req.params.id);
+			if (!existing) {
+				throw createError('Event not found', 404);
+			}
+			throw createError('Forbidden: You can only edit your own events', 403);
 		}
 
 		// Broadcast update to all connected clients

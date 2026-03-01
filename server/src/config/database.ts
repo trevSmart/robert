@@ -120,6 +120,23 @@ async function runMigrations(): Promise<void> {
 			)
 		`);
 
+		// Create calendar_events table for team collaboration
+		await client.query(`
+			CREATE TABLE IF NOT EXISTS calendar_events (
+				id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+				creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+				creator_rally_user_id VARCHAR(255) NOT NULL,
+				creator_display_name VARCHAR(255) NOT NULL,
+				date VARCHAR(10) NOT NULL,
+				time VARCHAR(5),
+				title TEXT NOT NULL,
+				description TEXT,
+				color VARCHAR(7) NOT NULL DEFAULT '#52a0e0',
+				created_at TIMESTAMP DEFAULT NOW(),
+				updated_at TIMESTAMP DEFAULT NOW()
+			)
+		`);
+
 		// Create indexes for better performance
 		await client.query(`
 			CREATE INDEX IF NOT EXISTS idx_messages_user_story_id ON messages(user_story_id)
@@ -147,6 +164,12 @@ async function runMigrations(): Promise<void> {
 		`);
 		await client.query(`
 			CREATE INDEX IF NOT EXISTS idx_message_reads_user_id ON message_reads(user_id)
+		`);
+		await client.query(`
+			CREATE INDEX IF NOT EXISTS idx_calendar_events_date ON calendar_events(date)
+		`);
+		await client.query(`
+			CREATE INDEX IF NOT EXISTS idx_calendar_events_creator ON calendar_events(creator_id)
 		`);
 
 		await client.query('COMMIT');

@@ -520,6 +520,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const [debugMode, setDebugMode] = useState<boolean>(false);
+	const [collaborationEnabled, setCollaborationEnabled] = useState<boolean>(false);
 	const [currentUser, setCurrentUser] = useState<RallyUser | null>(null);
 	const [holidays, setHolidays] = useState<Holiday[]>([]);
 	const [customCalendarEvents, setCustomCalendarEvents] = useState<CustomCalendarEvent[]>([]);
@@ -679,6 +680,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	// Track if we've loaded velocity data for metrics (reset when leaving metrics)
 	const hasLoadedVelocityDataForMetrics = useRef(false);
+
+	// Track if we've loaded all defects for metrics (reset when leaving metrics)
+	const hasLoadedAllDefectsForMetrics = useRef(false);
 
 	const loadIterations = useCallback(() => {
 		setIterationsLoading(true);
@@ -1293,6 +1297,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		attemptedUserStoryDiscussions.current.clear();
 		attemptedUserStoryTests.current.clear();
 		hasLoadedVelocityDataForMetrics.current = false;
+		hasLoadedAllDefectsForMetrics.current = false;
 		pendingSearchUserStoryTabRef.current = null;
 
 		logDebug('All state reset complete', 'MainWebview.resetAllState');
@@ -1324,6 +1329,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						setIterations(message.iterations);
 						setIterationsError(null);
 						setDebugMode(message.debugMode || false);
+						setCollaborationEnabled(message.collaborationEnabled || false);
 						setCurrentUser(message.currentUser || null);
 						setHolidays(message.holidays || []);
 
@@ -1846,6 +1852,34 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			});
 		}
 	}, [activeSection, iterations.length, portfolioUserStoriesLoading, portfolioUserStories.length, sendMessage]);
+
+	// Load all defects recursively when navigating to metrics section (needed for accurate defects trend chart)
+	useEffect(() => {
+		if (activeSection !== 'metrics') {
+			hasLoadedAllDefectsForMetrics.current = false;
+			return;
+		}
+
+		// If we haven't loaded all defects yet and there are more to load
+		if (!hasLoadedAllDefectsForMetrics.current && defectsHasMore) {
+			logDebug(`Metrics section: Loading more defects (offset: ${defectsOffset})`, 'MainWebview.useEffect');
+			sendMessage({
+				command: 'loadDefects',
+				offset: defectsOffset
+			});
+		} else if (!hasLoadedAllDefectsForMetrics.current && !defectsHasMore && defects.length > 0) {
+			// All defects have been loaded
+			hasLoadedAllDefectsForMetrics.current = true;
+			logDebug(`Metrics section: All defects loaded (total: ${defects.length})`, 'MainWebview.useEffect');
+		} else if (!hasLoadedAllDefectsForMetrics.current && defects.length === 0 && !defectsLoading) {
+			// Initial load of defects
+			logDebug('Metrics section: Initiating defects load', 'MainWebview.useEffect');
+			sendMessage({
+				command: 'loadDefects',
+				offset: 0
+			});
+		}
+	}, [activeSection, defectsHasMore, defectsOffset, defects.length, defectsLoading, sendMessage]);
 
 	// Load iterations when navigating to portfolio section
 	useEffect(() => {

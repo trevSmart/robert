@@ -48,8 +48,6 @@ suite('Extension Integration Test Suite', () => {
 	test('Configuration should have expected properties', () => {
 		const config = vscode.workspace.getConfiguration('robert');
 		
-		assert.ok(config.has('apiEndpoint'));
-		assert.ok(config.has('refreshInterval'));
 		assert.ok(config.has('autoRefresh'));
 		assert.ok(config.has('debugMode'));
 		assert.ok(config.has('rallyInstance'));
@@ -60,9 +58,6 @@ suite('Extension Integration Test Suite', () => {
 	test('Configuration defaults should be correct', () => {
 		const config = vscode.workspace.getConfiguration('robert');
 
-		// Use inspect().defaultValue so the test is independent of user/workspace overrides
-		assert.strictEqual(config.inspect('apiEndpoint')?.defaultValue, 'https://rally.example.com');
-		assert.strictEqual(config.inspect('refreshInterval')?.defaultValue, 30);
 		assert.strictEqual(config.inspect('autoRefresh')?.defaultValue, true);
 		assert.strictEqual(config.inspect('debugMode')?.defaultValue, false);
 	});
@@ -80,13 +75,10 @@ suite('Settings Manager Integration Tests', () => {
 	test('Should be able to update settings', async () => {
 		const config = vscode.workspace.getConfiguration('robert');
 
-		// Store original value
 		const originalValue = config.get('debugMode');
 
-		// Update setting
 		await config.update('debugMode', true, vscode.ConfigurationTarget.Global);
 
-		// Wait for configuration change event so the in-memory config is updated
 		await new Promise<void>((resolve) => {
 			const disposable = vscode.workspace.onDidChangeConfiguration((e) => {
 				if (e.affectsConfiguration('robert.debugMode')) {
@@ -94,26 +86,12 @@ suite('Settings Manager Integration Tests', () => {
 					resolve();
 				}
 			});
-			setTimeout(resolve, 500); // Fallback in case event does not fire
+			setTimeout(resolve, 500);
 		});
 
-		// Verify update
 		assert.strictEqual(vscode.workspace.getConfiguration('robert').get('debugMode'), true);
 
-		// Restore original value
 		await config.update('debugMode', originalValue, vscode.ConfigurationTarget.Global);
-	});
-
-	test('Should validate refreshInterval range', async () => {
-		const config = vscode.workspace.getConfiguration('robert');
-		
-		// Get the inspect result to check constraints
-		const inspection = config.inspect('refreshInterval');
-		assert.ok(inspection);
-		
-		// The value should be within the allowed range
-		const value = config.get<number>('refreshInterval');
-		assert.ok(value !== undefined && value >= 5 && value <= 3600);
 	});
 });
 

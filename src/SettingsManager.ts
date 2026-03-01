@@ -2,12 +2,8 @@ import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
 
 export interface RobertSettings {
-	apiEndpoint: string;
-	refreshInterval: number;
 	autoRefresh: boolean;
 	debugMode: boolean;
-	advancedFeatures: boolean;
-	maxResults: number;
 	rallyInstance: string;
 	rallyApiKey: string;
 	rallyProjectName: string;
@@ -43,12 +39,8 @@ export class SettingsManager {
 				const config = vscode.workspace.getConfiguration('robert');
 
 				const settings: RobertSettings = {
-					apiEndpoint: this.resolveSettingWithFallback('apiEndpoint', config.get<string>('apiEndpoint', ''), 'ROBERT_API_ENDPOINT', 'https://rally.example.com'),
-					refreshInterval: this.resolveNumericSettingWithFallback('refreshInterval', config.get<number>('refreshInterval') ?? 0, 'ROBERT_REFRESH_INTERVAL', 30),
 					autoRefresh: this.resolveBooleanSettingWithFallback('autoRefresh', config.get<boolean>('autoRefresh'), 'ROBERT_AUTO_REFRESH', true),
 					debugMode: this.resolveBooleanSettingWithFallback('debugMode', config.get<boolean>('debugMode'), 'ROBERT_DEBUG_MODE', false),
-					advancedFeatures: this.resolveBooleanSettingWithFallback('advancedFeatures', config.get<boolean>('advancedFeatures'), 'ROBERT_ADVANCED_FEATURES', false),
-					maxResults: this.resolveNumericSettingWithFallback('maxResults', config.get<number>('maxResults') ?? 0, 'ROBERT_MAX_RESULTS', 100),
 					rallyInstance: this.resolveSettingWithFallback('rallyInstance', config.get<string>('rallyInstance', ''), 'ROBERT_RALLY_INSTANCE', 'https://rally1.rallydev.com'),
 					rallyApiKey: this.resolveSettingWithFallback('rallyApiKey', config.get<string>('rallyApiKey', ''), 'ROBERT_RALLY_API_KEY', ''),
 					rallyProjectName: this.resolveSettingWithFallback('rallyProjectName', config.get<string>('rallyProjectName', ''), 'ROBERT_RALLY_PROJECT_NAME', ''),
@@ -71,24 +63,11 @@ export class SettingsManager {
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			const config = vscode.workspace.getConfiguration('robert');
 
-			// Update each setting individually
-			if (settings.apiEndpoint !== undefined) {
-				await config.update('apiEndpoint', settings.apiEndpoint, vscode.ConfigurationTarget.Global);
-			}
-			if (settings.refreshInterval !== undefined) {
-				await config.update('refreshInterval', settings.refreshInterval, vscode.ConfigurationTarget.Global);
-			}
 			if (settings.autoRefresh !== undefined) {
 				await config.update('autoRefresh', settings.autoRefresh, vscode.ConfigurationTarget.Global);
 			}
 			if (settings.debugMode !== undefined) {
 				await config.update('debugMode', settings.debugMode, vscode.ConfigurationTarget.Global);
-			}
-			if (settings.advancedFeatures !== undefined) {
-				await config.update('advancedFeatures', settings.advancedFeatures, vscode.ConfigurationTarget.Global);
-			}
-			if (settings.maxResults !== undefined) {
-				await config.update('maxResults', settings.maxResults, vscode.ConfigurationTarget.Global);
 			}
 			if (settings.rallyInstance !== undefined) {
 				await config.update('rallyInstance', settings.rallyInstance, vscode.ConfigurationTarget.Global);
@@ -127,13 +106,8 @@ export class SettingsManager {
 			const config = vscode.workspace.getConfiguration('robert');
 			const defaultSettings = this.getDefaultSettings();
 
-			// Reset each setting to its default value
-			await config.update('apiEndpoint', defaultSettings.apiEndpoint, vscode.ConfigurationTarget.Global);
-			await config.update('refreshInterval', defaultSettings.refreshInterval, vscode.ConfigurationTarget.Global);
 			await config.update('autoRefresh', defaultSettings.autoRefresh, vscode.ConfigurationTarget.Global);
 			await config.update('debugMode', defaultSettings.debugMode, vscode.ConfigurationTarget.Global);
-			await config.update('advancedFeatures', defaultSettings.advancedFeatures, vscode.ConfigurationTarget.Global);
-			await config.update('maxResults', defaultSettings.maxResults, vscode.ConfigurationTarget.Global);
 			await config.update('rallyInstance', defaultSettings.rallyInstance, vscode.ConfigurationTarget.Global);
 			await config.update('rallyApiKey', defaultSettings.rallyApiKey, vscode.ConfigurationTarget.Global);
 			await config.update('rallyProjectName', defaultSettings.rallyProjectName, vscode.ConfigurationTarget.Global);
@@ -156,7 +130,6 @@ export class SettingsManager {
 				const config = vscode.workspace.getConfiguration('robert');
 				const defaultValue = this.getDefaultSettings()[key];
 
-				// Handle nested settings
 				if (key === 'collaborationServerUrl') {
 					const vscodeVal = config.get('collaboration.serverUrl', '');
 					return this.resolveSettingWithFallback('collaboration.serverUrl', vscodeVal, 'ROBERT_COLLABORATION_SERVER_URL', defaultValue as string) as RobertSettings[K];
@@ -170,7 +143,6 @@ export class SettingsManager {
 					return this.resolveBooleanSettingWithFallback('collaboration.autoConnect', vscodeVal, 'ROBERT_COLLABORATION_AUTO_CONNECT', defaultValue as boolean) as RobertSettings[K];
 				}
 
-				// Handle Rally connection settings with environment variable fallback
 				if (key === 'rallyApiKey') {
 					const vscodeVal = config.get<string>(key, '');
 					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_API_KEY', defaultValue as string) as RobertSettings[K];
@@ -184,21 +156,12 @@ export class SettingsManager {
 					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_PROJECT_NAME', defaultValue as string) as RobertSettings[K];
 				}
 
-				// For numeric settings
-				if (typeof defaultValue === 'number') {
-					const vscodeVal = config.get<number>(key) ?? 0;
-					const envVarName = `ROBERT_${key.toUpperCase()}`;
-					return this.resolveNumericSettingWithFallback(key, vscodeVal, envVarName, defaultValue as number) as RobertSettings[K];
-				}
-
-				// For boolean settings
 				if (typeof defaultValue === 'boolean') {
 					const vscodeVal = config.get<boolean>(key);
 					const envVarName = `ROBERT_${key.toUpperCase()}`;
 					return this.resolveBooleanSettingWithFallback(key, vscodeVal, envVarName, defaultValue as boolean) as RobertSettings[K];
 				}
 
-				// For string settings
 				const vscodeVal = config.get<string>(key, '');
 				const envVarName = `ROBERT_${key.toUpperCase()}`;
 				return this.resolveSettingWithFallback(key, vscodeVal, envVarName, defaultValue as string) as RobertSettings[K];
@@ -233,12 +196,8 @@ export class SettingsManager {
 	 */
 	private getDefaultSettings(): RobertSettings {
 		return {
-			apiEndpoint: 'https://rally.example.com',
-			refreshInterval: 30,
 			autoRefresh: true,
 			debugMode: false,
-			advancedFeatures: false,
-			maxResults: 100,
 			rallyInstance: 'https://rally1.rallydev.com',
 			rallyApiKey: '',
 			rallyProjectName: '',
@@ -258,46 +217,16 @@ export class SettingsManager {
 	 * @param defaultValue - Fallback default value
 	 */
 	private resolveSettingWithFallback(settingKey: string, vscodeValue: string, envVarName: string, defaultValue: string): string {
-		// Priority 1: VS Code setting (if not empty)
 		if (vscodeValue && vscodeValue.trim() !== '') {
 			return vscodeValue;
 		}
 
-		// Priority 2: Environment variable
 		const envValue = process.env[envVarName];
 		if (envValue && envValue.trim() !== '') {
 			this._errorHandler.logDebug(`Setting '${settingKey}' loaded from environment variable '${envVarName}'`, 'SettingsManager.resolveSettingWithFallback');
 			return envValue;
 		}
 
-		// Priority 3: Default value
-		return defaultValue;
-	}
-
-	/**
-	 * Resolve numeric setting with priority: VS Code setting > Environment variable > Default
-	 * @param settingKey - The configuration key
-	 * @param vscodeValue - Value from VS Code config
-	 * @param envVarName - Environment variable name to check
-	 * @param defaultValue - Fallback default value
-	 */
-	private resolveNumericSettingWithFallback(settingKey: string, vscodeValue: number, envVarName: string, defaultValue: number): number {
-		// Priority 1: VS Code setting (if not 0)
-		if (vscodeValue > 0) {
-			return vscodeValue;
-		}
-
-		// Priority 2: Environment variable
-		const envValue = process.env[envVarName];
-		if (envValue && envValue.trim() !== '') {
-			const parsed = parseInt(envValue, 10);
-			if (!isNaN(parsed)) {
-				this._errorHandler.logDebug(`Setting '${settingKey}' loaded from environment variable '${envVarName}' (value: ${parsed})`, 'SettingsManager.resolveNumericSettingWithFallback');
-				return parsed;
-			}
-		}
-
-		// Priority 3: Default value
 		return defaultValue;
 	}
 
@@ -331,16 +260,6 @@ export class SettingsManager {
 	 */
 	public validateSettings(settings: Partial<RobertSettings>): { isValid: boolean; errors: string[] } {
 		const errors: string[] = [];
-
-		if (settings.refreshInterval !== undefined && (settings.refreshInterval < 5 || settings.refreshInterval > 3600)) {
-			errors.push('Refresh interval must be between 5 and 3600 seconds');
-		}
-
-		if (settings.maxResults !== undefined && (settings.maxResults < 10 || settings.maxResults > 1000)) {
-			errors.push('Max results must be between 10 and 1000');
-		}
-
-		// ...existing code...
 
 		if (settings.rallyInstance !== undefined && !settings.rallyInstance.startsWith('https://')) {
 			errors.push('Rally instance must be a valid HTTPS URL');

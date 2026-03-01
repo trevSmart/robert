@@ -1606,7 +1606,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						}
 						case 'loadPublicCalendarEvents': {
 							try {
-								const events = await this._collaborationClient.getCalendarEvents();
+								const events = (await this._collaborationClient.getCalendarEvents()).map(e => ({ ...e, isPublic: true }));
 								webview.postMessage({ command: 'publicCalendarEventsLoaded', events });
 							} catch (error) {
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadPublicCalendarEvents');
@@ -1627,7 +1627,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 										})
 									: await this._collaborationClient.createCalendarEvent(incoming);
 								if (saved) {
-									webview.postMessage({ command: 'publicCalendarEventSaved', event: saved });
+									webview.postMessage({ command: 'publicCalendarEventSaved', event: { ...saved, isPublic: true } });
 								}
 							} catch (error) {
 								this._errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'savePublicCalendarEvent');

@@ -155,7 +155,10 @@ export class WebSocketClient {
 	}
 
 	public subscribeCalendarEvents(): void {
-		this.send({ type: 'subscribe:calendar' });
+		this._errorHandler.logWarning(
+			'Calendar WebSocket subscription is not supported by the current server API',
+			'WebSocketClient.subscribeCalendarEvents'
+		);
 	}
 
 	public subscribeUserStory(userStoryId: string): void {

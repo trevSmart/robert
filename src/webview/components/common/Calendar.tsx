@@ -1883,7 +1883,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						<div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '8px' }}>
 							<input type="checkbox" id="isPublicCheckbox" checked={modalForm.isPublic} onChange={e => setModalForm(f => ({ ...f, isPublic: e.target.checked }))} style={{ cursor: 'pointer' }} />
 							<label htmlFor="isPublicCheckbox" style={{ fontSize: '12px', cursor: 'pointer', userSelect: 'none' }}>
-								Compartir amb l'equip
+								Share with team
 							</label>
 						</div>
 

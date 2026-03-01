@@ -485,14 +485,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const hasVsCodeApi = Boolean(vscode);
 	const [collaborationClient, setCollaborationClient] = useState<any>(null);
 
-	// Initialize collaboration client after component mount (when vscode is available)
+	// CollaborationClient is configured and used on the extension host side.
+	// Avoid instantiating it directly in the webview to prevent misconfiguration.
 	useEffect(() => {
-		try {
-			const { CollaborationClient } = require('../../libs/collaboration/collaborationClient');
-			setCollaborationClient(CollaborationClient.getInstance());
-		} catch (err) {
-			logDebug(`Error initializing collaboration client: ${err instanceof Error ? err.message : String(err)}`);
-		}
+		logDebug('MainWebview mounted; collaboration client is managed by the extension host.');
 	}, []);
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
 

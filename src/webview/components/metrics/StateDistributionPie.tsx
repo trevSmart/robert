@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, themeColors } from '../../utils/themeColors';
 import type { StateDistribution, BlockedDistribution } from '../../utils/metricsUtils';
 
 interface IterationOption {
@@ -212,15 +212,15 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 		return (
 			<div
 				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
+					backgroundColor: themeColors.background,
+					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					padding: '20px',
 					height: '400px',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
+					color: themeColors.descriptionForeground
 				}}
 			>
 				Loading state distribution...
@@ -232,15 +232,15 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 		return (
 			<div
 				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
+					backgroundColor: themeColors.background,
+					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					padding: '20px',
 					height: '400px',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
+					color: themeColors.descriptionForeground
 				}}
 			>
 				No state data available
@@ -251,24 +251,24 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 	return (
 		<div
 			style={{
-				backgroundColor: 'var(--vscode-editor-background)',
-				border: '1px solid var(--vscode-panel-border)',
+				backgroundColor: themeColors.background,
+				border: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '12px',
 				padding: '12px'
 			}}
 		>
 			{showSelector && (
 				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-					<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Next Sprint Readiness</h3>
+					<h3 style={{ margin: 0, color: themeColors.foreground, fontSize: '18px', fontWeight: '600' }}>Next Sprint Readiness</h3>
 					<select
 						value={selectedSprint}
 						onChange={e => onSprintChange?.(e.target.value)}
 						style={{
 							padding: '4px 8px',
 							borderRadius: '4px',
-							backgroundColor: 'var(--vscode-dropdown-background)',
-							color: 'var(--vscode-dropdown-foreground)',
-							border: '1px solid var(--vscode-dropdown-border)',
+							backgroundColor: themeColors.inputBackground,
+							color: themeColors.inputForeground,
+							border: `1px solid ${themeColors.inputBorder}`,
 							cursor: 'pointer',
 							fontSize: '12px'
 						}}

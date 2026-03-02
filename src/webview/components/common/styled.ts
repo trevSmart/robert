@@ -7,7 +7,7 @@ export const GlobalStyle = createGlobalStyle`
 	}
 
 	html, body {
-		background: var(--vscode-editor-background);
+		background: ${themeColors.background};
 		margin: 0;
 		padding: 0;
 		height: 100%;
@@ -42,7 +42,7 @@ export const TabFadeWrapper = styled.div<{ $leaving?: boolean }>`
 	display: flex;
 	flex-direction: column;
 	flex: 1;
-	animation: ${({ $leaving }) => ($leaving ? 'tab-fade-out' : 'tab-fade-in')} 84ms ${({ $leaving }) => ($leaving ? 'ease-out' : 'ease-in')};
+	animation: ${({ $leaving }) => ($leaving ? 'tab-fade-out' : 'tab-fade-in')} 42ms ${({ $leaving }) => ($leaving ? 'ease-out' : 'ease-in')};
 	will-change: opacity;
 `;
 
@@ -56,7 +56,7 @@ export const Container = styled.div`
 		'Segoe UI',
 		sans-serif;
 	color: ${themeColors.foreground};
-	background-color: var(--vscode-editor-background);
+	background-color: ${themeColors.background};
 	margin: 0;
 	height: 100vh;
 	display: flex;
@@ -78,7 +78,7 @@ export const StickyNav = styled.div`
 	position: sticky;
 	top: 0;
 	z-index: 1;
-	background: var(--vscode-panel-background);
+	background: ${themeColors.panelBackground};
 `;
 
 export const SettingsContainer = styled.div`
@@ -312,8 +312,8 @@ export const SpinnerContainer = styled.div`
 export const Spinner = styled.div`
 	width: 24px;
 	height: 24px;
-	border: 2px solid var(--vscode-panel-border);
-	border-top: 2px solid var(--vscode-progressBar-background);
+	border: 2px solid ${themeColors.panelBorder};
+	border-top: 2px solid ${themeColors.progressBarBackground};
 	border-radius: 50%;
 	animation: spin 1s linear infinite;
 `;

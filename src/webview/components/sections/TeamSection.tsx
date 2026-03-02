@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import { themeColors } from '../../utils/themeColors';
 
 export interface TeamMember {
 	name: string;
@@ -64,8 +65,8 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		<div style={{ padding: '20px' }}>
 			{/* Team Header */}
 			<div style={{ marginBottom: '30px', textAlign: 'center' }}>
-				<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '600' }}>Team Dashboard</h2>
-				<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Monitor team activity, collaboration, and project progress</p>
+				<h2 style={{ margin: '0 0 8px 0', color: themeColors.foreground, fontSize: '24px', fontWeight: '600' }}>Team Dashboard</h2>
+				<p style={{ margin: 0, color: themeColors.descriptionForeground, fontSize: '14px' }}>Monitor team activity, collaboration, and project progress</p>
 			</div>
 
 			{/* Loading Spinner */}
@@ -73,15 +74,15 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
 					<div
 						style={{
-							border: '2px solid var(--vscode-panel-border)',
-							borderTop: '2px solid var(--vscode-progressBar-background)',
+							border: `2px solid ${themeColors.panelBorder}`,
+							borderTop: `2px solid ${themeColors.progressBarBackground}`,
 							borderRadius: '50%',
 							width: '24px',
 							height: '24px',
 							animation: 'spin 1s linear infinite'
 						}}
 					/>
-					<p style={{ color: 'var(--vscode-descriptionForeground)' }}>Loading team data...</p>
+					<p style={{ color: themeColors.descriptionForeground }}>Loading team data...</p>
 				</div>
 			)}
 
@@ -90,16 +91,16 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 				<>
 					<div style={{ marginBottom: '20px' }}>
 						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-							<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+							<h3 style={{ margin: 0, color: themeColors.foreground, fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
 							<select
 								value={selectedTeamIteration}
 								onChange={e => onTeamIterationChange(e.target.value)}
 								style={{
 									padding: '4px 8px',
 									borderRadius: '4px',
-									backgroundColor: 'var(--vscode-dropdown-background)',
-									color: 'var(--vscode-dropdown-foreground)',
-									border: '1px solid var(--vscode-dropdown-border)',
+									backgroundColor: themeColors.inputBackground,
+									color: themeColors.inputForeground,
+									border: `1px solid ${themeColors.inputBorder}`,
 									cursor: 'pointer',
 									fontSize: '12px'
 								}}
@@ -113,9 +114,9 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 							</select>
 						</div>
 
-						{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
+						{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: themeColors.errorForeground }}>{teamMembersError}</div>}
 
-						{!teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
+						{!teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: themeColors.descriptionForeground }}>No team members found in the last 6 sprints</div>}
 
 						{!teamMembersError && teamMembers.length > 0 && (
 							<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -125,7 +126,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 										<h4
 											style={{
 												margin: '0 0 12px 0',
-												color: 'var(--vscode-foreground)',
+												color: themeColors.foreground,
 												fontSize: '13px',
 												fontWeight: '600',
 												textTransform: 'uppercase',
@@ -150,14 +151,14 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 													.slice(0, 2);
 
 												const percentage = member.progress.percentage;
-												const progressColor = percentage >= 75 ? 'var(--vscode-charts-green, #4caf50)' : percentage >= 50 ? 'var(--vscode-charts-orange, #ff9800)' : percentage >= 25 ? 'var(--vscode-charts-yellow, #ffc107)' : 'var(--vscode-charts-red, #f44336)';
+												const progressColor = percentage >= 75 ? 'var(--green-9)' : percentage >= 50 ? 'var(--amber-9)' : percentage >= 25 ? 'var(--yellow-9)' : 'var(--red-9)';
 
 												return (
 													<div
 														key={member.name}
 														style={{
-															backgroundColor: 'var(--vscode-editor-background)',
-															border: '1px solid var(--vscode-panel-border)',
+															backgroundColor: themeColors.background,
+															border: `1px solid ${themeColors.panelBorder}`,
 															borderRadius: '8px',
 															padding: '12px',
 															display: 'flex',
@@ -188,7 +189,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 																	transform: 'rotate(-90deg)'
 																}}
 															>
-																<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
+																<circle cx="32" cy="32" r="28" stroke={themeColors.panelBorder} strokeWidth="3" fill="none" />
 																<circle
 																	cx="32"
 																	cy="32"
@@ -226,9 +227,9 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 														{/* Member Info */}
 														<div style={{ width: '100%' }}>
 															<div style={{ marginBottom: '6px' }}>
-																<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
-																<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
-																<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
+																<h4 style={{ margin: '0 0 2px 0', color: themeColors.foreground, fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
+																<div style={{ fontSize: '12px', color: themeColors.descriptionForeground, marginTop: '4px' }}>{percentage}% complete</div>
+																<div style={{ fontSize: '10px', color: themeColors.descriptionForeground, marginTop: '2px' }}>
 																	{member.progress.completedHours}h / {member.progress.totalHours}h
 																</div>
 															</div>
@@ -246,7 +247,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 										<h4
 											style={{
 												margin: '0 0 12px 0',
-												color: 'var(--vscode-foreground)',
+												color: themeColors.foreground,
 												fontSize: '13px',
 												fontWeight: '600',
 												textTransform: 'uppercase',
@@ -274,8 +275,8 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 													<div
 														key={member.name}
 														style={{
-															backgroundColor: 'var(--vscode-editor-background)',
-															border: '1px solid var(--vscode-panel-border)',
+															backgroundColor: themeColors.background,
+															border: `1px solid ${themeColors.panelBorder}`,
 															borderRadius: '8px',
 															padding: '12px',
 															display: 'flex',
@@ -305,7 +306,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 																	left: '-6px'
 																}}
 															>
-																<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
+																<circle cx="24" cy="24" r="21" stroke={themeColors.panelBorder} strokeWidth="3" fill="none" />
 															</svg>
 															<div
 																style={{
@@ -329,7 +330,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 														{/* Member Info */}
 														<div style={{ width: '100%' }}>
 															<div style={{ marginBottom: '6px' }}>
-																<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
+																<h4 style={{ margin: '0', color: themeColors.foreground, fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
 															</div>
 														</div>
 													</div>

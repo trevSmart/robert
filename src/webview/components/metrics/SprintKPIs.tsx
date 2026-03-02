@@ -1,4 +1,5 @@
 import React from 'react';
+import { themeColors } from '../../utils/themeColors';
 
 interface SprintKPIsProps {
 	averageVelocity: number;
@@ -23,15 +24,15 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 					<div
 						key={i}
 						style={{
-							background: 'var(--vscode-editor-background)',
+							background: themeColors.background,
 							borderRadius: '8px',
 							padding: '12px',
 							textAlign: 'center',
-							border: '1px solid var(--vscode-panel-border)'
+							border: `1px solid ${themeColors.panelBorder}`
 						}}
 					>
-						<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px', color: 'var(--vscode-descriptionForeground)' }}>...</div>
-						<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)' }}>Loading...</div>
+						<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px', color: themeColors.descriptionForeground }}>...</div>
+						<div style={{ fontSize: '10px', color: themeColors.descriptionForeground }}>Loading...</div>
 					</div>
 				))}
 			</div>

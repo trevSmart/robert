@@ -1,138 +1,118 @@
 /**
- * VS Code Theme Colors for Robert Extension
- * Maps hardcoded colors to VS Code CSS custom properties
- * Reference: https://code.visualstudio.com/api/references/theme-color
+ * Robert theme colors – semantic tokens backed by Radix Colors (--robert-*).
+ * Theme class (robert-light-theme / robert-dark-theme) is applied to the document by the extension from VS Code activeColorTheme.
  */
 
 export const themeColors = {
 	// ============================================================================
 	// FOREGROUND & BACKGROUND
 	// ============================================================================
-	foreground: 'var(--vscode-foreground)',
-	background: 'var(--vscode-editor-background)',
-	descriptionForeground: 'var(--vscode-descriptionForeground)',
+	foreground: 'var(--robert-foreground)',
+	background: 'var(--robert-background)',
+	descriptionForeground: 'var(--robert-descriptionForeground)',
 
 	// ============================================================================
 	// PANEL & CONTAINER BACKGROUNDS
 	// ============================================================================
-	// Panel (sections, cards, containers)
-	panelBackground: 'var(--vscode-input-background)',
-	panelBorder: 'var(--vscode-panel-border)',
+	panelBackground: 'var(--robert-panelBackground)',
+	panelBorder: 'var(--robert-panelBorder)',
 
 	// ============================================================================
 	// TEXT COLORS (HIERARCHY)
 	// ============================================================================
-	// Primary text (settings titles, section headers)
-	textPrimary: 'var(--vscode-foreground)',
-	// Secondary text (descriptions, secondary info)
-	textSecondary: 'var(--vscode-descriptionForeground)',
-	// Tertiary text (less important, disabled states)
-	textTertiary: 'var(--vscode-tab-inactiveForeground)',
+	textPrimary: 'var(--robert-textPrimary)',
+	textSecondary: 'var(--robert-textSecondary)',
+	textTertiary: 'var(--robert-textTertiary)',
 
 	// ============================================================================
 	// INTERACTIVE ELEMENTS
 	// ============================================================================
-	// Buttons
-	buttonBackground: 'var(--vscode-button-background)',
-	buttonForeground: 'var(--vscode-button-foreground)',
-	buttonSecondaryBackground: 'var(--vscode-button-secondaryBackground)',
-	buttonSecondaryForeground: 'var(--vscode-button-secondaryForeground)',
-	buttonHoverBackground: 'var(--vscode-button-hoverBackground)',
+	buttonBackground: 'var(--robert-buttonBackground)',
+	buttonForeground: 'var(--robert-buttonForeground)',
+	buttonSecondaryBackground: 'var(--robert-buttonSecondaryBackground)',
+	buttonSecondaryForeground: 'var(--robert-buttonSecondaryForeground)',
+	buttonHoverBackground: 'var(--robert-buttonHoverBackground)',
 
 	// ============================================================================
 	// INPUT & FORM ELEMENTS
 	// ============================================================================
-	inputBackground: 'var(--vscode-input-background)',
-	inputForeground: 'var(--vscode-foreground)',
-	inputBorder: 'var(--vscode-input-border)',
-	inputPlaceholderForeground: 'var(--vscode-input-placeholderForeground)',
+	inputBackground: 'var(--robert-inputBackground)',
+	inputForeground: 'var(--robert-inputForeground)',
+	inputBorder: 'var(--robert-inputBorder)',
+	inputPlaceholderForeground: 'var(--robert-inputPlaceholderForeground)',
 
 	// ============================================================================
 	// TABS & NAVIGATION
 	// ============================================================================
-	tabActiveBackground: 'var(--vscode-tab-activeBackground)',
-	tabActiveForeground: 'var(--vscode-tab-activeForeground)',
-	// tabInactiveBackground: 'var(--vscode-tab-inactiveBackground)',
-	tabInactiveForeground: 'var(--vscode-tab-inactiveForeground)',
-	tabBorder: 'var(--vscode-tab-border)',
-	tabActiveBorder: 'var(--vscode-tab-activeBorder)',
+	tabActiveBackground: 'var(--robert-tabActiveBackground)',
+	tabActiveForeground: 'var(--robert-tabActiveForeground)',
+	tabInactiveForeground: 'var(--robert-tabInactiveForeground)',
+	tabBorder: 'var(--robert-tabBorder)',
+	tabActiveBorder: 'var(--robert-tabActiveBorder)',
 
 	// ============================================================================
 	// STATUS & STATES
 	// ============================================================================
-	// Progress bar / Active indicator
-	progressBarBackground: 'var(--vscode-progressBar-background)',
+	progressBarBackground: 'var(--robert-progressBarBackground)',
 
-	// List / Selection
-	listActiveSelectionBackground: 'var(--vscode-list-activeSelectionBackground)',
-	listActiveSelectionForeground: 'var(--vscode-list-activeSelectionForeground)',
-	listHoverBackground: 'var(--vscode-list-hoverBackground)',
-	listFocusBackground: 'var(--vscode-list-focusBackground)',
-	listFocusForeground: 'var(--vscode-list-focusForeground)',
+	listActiveSelectionBackground: 'var(--robert-listActiveSelectionBackground)',
+	listActiveSelectionForeground: 'var(--robert-listActiveSelectionForeground)',
+	listHoverBackground: 'var(--robert-listHoverBackground)',
+	listFocusBackground: 'var(--robert-listFocusBackground)',
+	listFocusForeground: 'var(--robert-listFocusForeground)',
 
 	// ============================================================================
 	// VALIDATION & NOTIFICATIONS
 	// ============================================================================
-	// Error
-	errorForeground: 'var(--vscode-errorForeground)',
-	errorBackground: 'var(--vscode-inputValidation-errorBackground)',
-	errorBorder: 'var(--vscode-inputValidation-errorBorder)',
+	errorForeground: 'var(--robert-errorForeground)',
+	errorBackground: 'var(--robert-errorBackground)',
+	errorBorder: 'var(--robert-errorBorder)',
 
-	// Warning
-	warningForeground: 'var(--vscode-notificationCenterHeader-foreground)',
-	warningBackground: 'var(--vscode-inputValidation-warningBackground)',
-	warningBorder: 'var(--vscode-inputValidation-warningBorder)',
+	warningForeground: 'var(--robert-warningForeground)',
+	warningBackground: 'var(--robert-warningBackground)',
+	warningBorder: 'var(--robert-warningBorder)',
 
-	// Info
-	infoForeground: 'var(--vscode-notificationCenterHeader-foreground)',
-	infoBackground: 'var(--vscode-inputValidation-infoBackground)',
-	infoBorder: 'var(--vscode-inputValidation-infoBorder)',
+	infoForeground: 'var(--robert-infoForeground)',
+	infoBackground: 'var(--robert-infoBackground)',
+	infoBorder: 'var(--robert-infoBorder)',
 
-	// Success (use info color as fallback since success not in official theme)
-	successForeground: 'var(--vscode-notificationCenterHeader-foreground)',
-	successBackground: 'var(--vscode-inputValidation-infoBackground)',
-	successBorder: 'var(--vscode-inputValidation-infoBorder)',
+	successForeground: 'var(--robert-successForeground)',
+	successBackground: 'var(--robert-successBackground)',
+	successBorder: 'var(--robert-successBorder)',
 
 	// ============================================================================
 	// TITLE BAR
 	// ============================================================================
-	titleBarActiveBackground: 'var(--vscode-titleBar-activeBackground)',
-	titleBarActiveForeground: 'var(--vscode-titleBar-activeForeground)',
+	titleBarActiveBackground: 'var(--robert-titleBarActiveBackground)',
+	titleBarActiveForeground: 'var(--robert-titleBarActiveForeground)',
 
 	// ============================================================================
 	// TOOLBAR & HOVER STATES
 	// ============================================================================
-	toolbarHoverBackground: 'var(--vscode-toolbar-hoverBackground)',
-	toolbarActiveBackground: 'var(--vscode-toolbar-activeBackground)',
+	toolbarHoverBackground: 'var(--robert-toolbarHoverBackground)',
+	toolbarActiveBackground: 'var(--robert-toolbarActiveBackground)',
 
 	// ============================================================================
 	// FONT
 	// ============================================================================
-	fontFamily: 'var(--vscode-font-family)'
+	fontFamily: 'var(--robert-fontFamily)',
+
+	focusBorder: 'var(--robert-focusBorder)',
+	quickInputBackground: 'var(--robert-quickInputBackground)',
+	quickInputForeground: 'var(--robert-quickInputForeground)'
 };
 
 /**
  * Semantic color mappings - use these for specific UI purposes
  */
 export const semanticColors = {
-	// Section/Card containers
 	sectionBackground: themeColors.panelBackground,
 	sectionBorder: themeColors.panelBorder,
-
-	// Section titles and labels
 	sectionTitleColor: themeColors.textPrimary,
-
-	// Secondary text in sections
 	sectionDescriptionColor: themeColors.descriptionForeground,
-
-	// Form backgrounds
 	formBackground: themeColors.background,
 	formSectionBackground: themeColors.panelBackground,
-
-	// Dividers
 	dividerColor: themeColors.panelBorder,
-
-	// Text hierarchy
 	headingColor: themeColors.textPrimary,
 	bodyColor: themeColors.textPrimary,
 	mutedColor: themeColors.descriptionForeground
@@ -140,14 +120,8 @@ export const semanticColors = {
 
 /**
  * Generate RGBA color from CSS variable for transparency effects
- * Usage: `background-color: rgba-var(--vscode-foreground, 0.1)`
- *
- * Note: This is a CSS function that can be used in template literals
- * For true dynamic RGBA with opacity, use the opacity helper instead
  */
 export const createOpacityVariant = (variable: string, opacity: number): string => {
-	// This creates a CSS-compatible string for use in styled-components
-	// The actual color conversion happens in the browser
 	return `${variable} / ${opacity}`;
 };
 
@@ -159,16 +133,16 @@ export const createHoverState = (color: string, opacity: number = 0.1): string =
 };
 
 /**
- * Detect if current theme is light or dark
+ * Detect if current theme is light (Robert theme class is set by extension from VS Code theme).
  */
 export const isLightTheme = (): boolean => {
-	const body = document.body;
-	return body.classList.contains('vscode-light') || body.getAttribute('data-vscode-theme-kind') === 'light';
+	const el = document.body;
+	return el.classList.contains('robert-light-theme');
 };
 
 /**
  * Get adaptive input border color based on theme
  */
 export const getInputBorderColor = (): string => {
-	return isLightTheme() ? '#b0b0b0' : themeColors.inputBorder;
+	return themeColors.inputBorder;
 };

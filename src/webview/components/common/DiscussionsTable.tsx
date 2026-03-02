@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { themeColors } from '../../utils/themeColors';
 import { Discussion } from '../../../types/rally';
 
 const ChatContainer = styled.div<{ embedded?: boolean }>`
@@ -8,8 +9,8 @@ const ChatContainer = styled.div<{ embedded?: boolean }>`
 	gap: 12px;
 	margin-top: ${props => (props.embedded ? '0' : '10px')};
 	padding: ${props => (props.embedded ? '0' : '16px')};
-	background: ${props => (props.embedded ? 'transparent' : 'var(--vscode-editor-background)')};
-	border: ${props => (props.embedded ? 'none' : '1px solid var(--vscode-panel-border)')};
+	background: ${props => (props.embedded ? 'transparent' : themeColors.background)};
+	border: ${props => (props.embedded ? 'none' : `1px solid ${themeColors.panelBorder}`)};
 	border-radius: ${props => (props.embedded ? '0' : '6px')};
 	max-height: 500px;
 	overflow-y: auto;
@@ -20,9 +21,9 @@ const MessageBubble = styled.div`
 	flex-direction: column;
 	gap: 6px;
 	padding: 12px 16px;
-	background: color-mix(in srgb, var(--vscode-panel-background) 80%, var(--vscode-editor-background));
+	background: color-mix(in srgb, ${themeColors.panelBackground} 80%, ${themeColors.background});
 	border-radius: 12px;
-	border: 1px solid var(--vscode-panel-border);
+	border: 1px solid ${themeColors.panelBorder};
 	max-width: 100%;
 `;
 
@@ -36,17 +37,17 @@ const MessageHeader = styled.div`
 const AuthorName = styled.span`
 	font-size: 13px;
 	font-weight: 600;
-	color: var(--vscode-textLink-foreground);
+	color: ${themeColors.progressBarBackground};
 `;
 
 const MessageDate = styled.span`
 	font-size: 11px;
-	color: var(--vscode-descriptionForeground);
+	color: ${themeColors.descriptionForeground};
 `;
 
 const MessageText = styled.div`
 	font-size: 13px;
-	color: var(--vscode-foreground);
+	color: ${themeColors.foreground};
 	line-height: 1.5;
 	white-space: pre-wrap;
 	word-break: break-word;
@@ -62,8 +63,8 @@ const LoadingContainer = styled.div`
 `;
 
 const Spinner = styled.div`
-	border: 2px solid var(--vscode-panel-border);
-	border-top: 2px solid var(--vscode-progressBar-background);
+	border: 2px solid ${themeColors.panelBorder};
+	border-top: 2px solid ${themeColors.progressBarBackground};
 	border-radius: 50%;
 	width: 24px;
 	height: 24px;
@@ -80,14 +81,14 @@ const Spinner = styled.div`
 `;
 
 const EmptyState = styled.div`
-	color: var(--vscode-descriptionForeground);
+	color: ${themeColors.descriptionForeground};
 	padding: 40px 20px;
 	text-align: center;
 	font-size: 13px;
 `;
 
 const ErrorState = styled.div`
-	color: var(--vscode-errorForeground);
+	color: ${themeColors.errorForeground};
 	padding: 20px;
 	text-align: center;
 	font-size: 13px;
@@ -105,7 +106,7 @@ const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loadin
 		return (
 			<LoadingContainer>
 				<Spinner />
-				<p style={{ color: 'var(--vscode-foreground)', margin: 0 }}>Loading discussions...</p>
+				<p style={{ color: themeColors.foreground, margin: 0 }}>Loading discussions...</p>
 			</LoadingContainer>
 		);
 	}

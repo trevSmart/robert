@@ -108,7 +108,7 @@ class CollapsibleCard extends HTMLElement {
 
 				.container {
 					background-color: var(--collapsible-card-bg);
-					border: 1px solid var(--vscode-panel-border);
+					border: 1px solid ${themeColors.panelBorder};
 					border-radius: 6px;
 					overflow: hidden;
 					backdrop-filter: blur(4px);
@@ -118,14 +118,14 @@ class CollapsibleCard extends HTMLElement {
 					display: flex;
 					align-items: center;
 					padding: 12px 16px;
-					background-color: ${themeColors.backgroundHover};
+					background-color: ${themeColors.listHoverBackground};
 					cursor: pointer;
 					user-select: none;
-					border-bottom: 1px solid ${themeColors.border};
+					border-bottom: 1px solid ${themeColors.panelBorder};
 				}
 
 				.header:hover {
-					background-color: ${themeColors.backgroundHover};
+					background-color: ${themeColors.listHoverBackground};
 					opacity: 0.95;
 				}
 
@@ -138,14 +138,14 @@ class CollapsibleCard extends HTMLElement {
 					justify-content: center;
 					width: 16px;
 					height: 16px;
-					color: ${themeColors.text};
+					color: ${themeColors.foreground};
 					flex-shrink: 0;
 				}
 
 				.title {
 					font-size: 13.2px;
 					font-weight: 300;
-					color: ${themeColors.text};
+					color: ${themeColors.foreground};
 					margin: 0;
 					flex: 1;
 				}

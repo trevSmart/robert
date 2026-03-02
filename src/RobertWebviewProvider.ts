@@ -509,11 +509,21 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	}
 
 	private async _getHtmlForLogo(webview: vscode.Webview): Promise<string> {
-		return this._contentManager.getHtmlForLogo(webview);
+		return this._contentManager.getHtmlForLogo(webview, this._getRobertThemeClass());
 	}
 
 	private async _getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
-		return this._contentManager.getHtmlForWebview(webview, context, webviewId);
+		return this._contentManager.getHtmlForWebview(webview, context, webviewId, this._getRobertThemeClass());
+	}
+
+	/**
+	 * Returns the theme class for the webview body based on VS Code active color theme.
+	 * Used so Robert UI follows light/dark from the editor while using Radix Colors.
+	 */
+	private _getRobertThemeClass(): string {
+		const kind = vscode.window.activeColorTheme.kind;
+		const isLight = kind === vscode.ColorThemeKind.Light || kind === vscode.ColorThemeKind.HighContrastLight;
+		return isLight ? 'robert-light-theme' : 'robert-dark-theme dark';
 	}
 
 	private _setLoadingScreenMessageListener(webview: vscode.Webview) {

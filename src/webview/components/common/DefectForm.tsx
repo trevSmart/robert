@@ -1,6 +1,6 @@
 import { FC } from 'react';
 import styled from 'styled-components';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, themeColors } from '../../utils/themeColors';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -77,7 +77,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 			case 'closed':
 				return '#495057'; // Gris fosc
 			default:
-				return 'var(--vscode-descriptionForeground)';
+				return themeColors.descriptionForeground;
 		}
 	};
 
@@ -121,9 +121,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 							style={{
 								width: '100%',
 								padding: '6px 8px',
-								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
+								backgroundColor: `color-mix(in srgb, ${themeColors.inputBackground} 60%, ${themeColors.panelBackground})`,
+								color: themeColors.inputForeground,
+								border: `1px solid ${themeColors.inputBorder}`,
 								borderRadius: '3px',
 								fontSize: '13px'
 							}}
@@ -140,8 +140,8 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						}}
 					>
 						{/* Basic Information */}
-						<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-						<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Status & Priority</h3>
+						<h3 style={{ margin: '0 0 10px 0', color: themeColors.foreground, fontSize: '14px' }}>Basic Information</h3>
+						<h3 style={{ margin: '0 0 10px 0', color: themeColors.foreground, fontSize: '14px' }}>Status & Priority</h3>
 
 						<div style={{ display: 'flex', gap: '16px' }}>
 							<div style={{ flex: '1' }}>
@@ -153,9 +153,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 									style={{
 										width: '100%',
 										padding: '6px 8px',
-										backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-										color: 'var(--vscode-input-foreground)',
-										border: '1px solid var(--vscode-input-border)',
+										backgroundColor: `color-mix(in srgb, ${themeColors.inputBackground} 60%, ${themeColors.panelBackground})`,
+										color: themeColors.inputForeground,
+										border: `1px solid ${themeColors.inputBorder}`,
 										borderRadius: '3px',
 										fontSize: '13px'
 									}}
@@ -170,9 +170,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 									style={{
 										width: '100%',
 										padding: '6px 8px',
-										backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-										color: 'var(--vscode-input-foreground)',
-										border: '1px solid var(--vscode-input-border)',
+										backgroundColor: `color-mix(in srgb, ${themeColors.inputBackground} 60%, ${themeColors.panelBackground})`,
+										color: themeColors.inputForeground,
+										border: `1px solid ${themeColors.inputBorder}`,
 										borderRadius: '3px',
 										fontSize: '13px'
 									}}
@@ -189,9 +189,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 								style={{
 									width: '100%',
 									padding: '6px 8px',
-									backgroundColor: 'var(--vscode-input-background)',
-									color: 'var(--vscode-input-foreground)',
-									border: '1px solid var(--vscode-input-border)',
+									backgroundColor: themeColors.inputBackground,
+									color: themeColors.inputForeground,
+									border: `1px solid ${themeColors.inputBorder}`,
 									borderRadius: '3px',
 									fontSize: '13px'
 								}}
@@ -207,9 +207,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 								style={{
 									width: '100%',
 									padding: '6px 8px',
-									backgroundColor: 'var(--vscode-input-background)',
-									color: 'var(--vscode-input-foreground)',
-									border: '1px solid var(--vscode-input-border)',
+									backgroundColor: themeColors.inputBackground,
+									color: themeColors.inputForeground,
+									border: `1px solid ${themeColors.inputBorder}`,
 									borderRadius: '3px',
 									fontSize: '13px'
 								}}
@@ -225,9 +225,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 								style={{
 									width: '100%',
 									padding: '6px 8px',
-									backgroundColor: 'var(--vscode-input-background)',
-									color: 'var(--vscode-input-foreground)',
-									border: '1px solid var(--vscode-input-border)',
+									backgroundColor: themeColors.inputBackground,
+									color: themeColors.inputForeground,
+									border: `1px solid ${themeColors.inputBorder}`,
 									borderRadius: '3px',
 									fontSize: '13px'
 								}}
@@ -241,21 +241,21 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 
 						{/* Description */}
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-							<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+							<h3 style={{ margin: '0 0 10px 0', color: themeColors.foreground, fontSize: '14px' }}>Description</h3>
 
 							<div
 								dangerouslySetInnerHTML={{
-									__html: defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+									__html: defect.description || `<p style="color: ${themeColors.descriptionForeground}; font-style: italic;">No description available</p>`
 								}}
 								style={{
 									width: '100%',
 									padding: '12px',
-									backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-									color: 'var(--vscode-input-foreground)',
-									border: '1px solid var(--vscode-input-border)',
+									backgroundColor: `color-mix(in srgb, ${themeColors.inputBackground} 60%, ${themeColors.panelBackground})`,
+									color: themeColors.inputForeground,
+									border: `1px solid ${themeColors.inputBorder}`,
 									borderRadius: '3px',
 									fontSize: '13px',
-									fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+									fontFamily: `'Inter', ${themeColors.fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif`,
 									lineHeight: '1.6',
 									minHeight: '120px',
 									overflow: 'auto'

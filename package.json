@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.2.77",
+	"version": "0.2.87",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -197,6 +197,8 @@
 		"vitest": "^4.0.18"
 	},
 	"dependencies": {
+		"@radix-ui/colors": "^3.0.0",
+		"@radix-ui/themes": "^3.3.0",
 		"@vscode/codicons": "^0.0.44",
 		"echarts": "^6.0.0",
 		"ibm-rally-node": "^0.0.17",

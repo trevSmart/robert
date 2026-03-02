@@ -1,5 +1,6 @@
 import React, { type FC } from 'react';
 import { type ComponentType } from 'react';
+import { themeColors } from '../../utils/themeColors';
 
 // Tutorial type
 export interface Tutorial {
@@ -63,8 +64,8 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 					onClick={onTutorialClose}
 					style={{
 						padding: '8px 16px',
-						backgroundColor: 'var(--vscode-button-background)',
-						color: 'var(--vscode-button-foreground)',
+						backgroundColor: themeColors.buttonBackground,
+						color: themeColors.buttonForeground,
 						border: 'none',
 						borderRadius: '4px',
 						cursor: 'pointer',

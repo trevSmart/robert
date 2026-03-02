@@ -1,6 +1,6 @@
 import type { FC, ReactNode } from 'react';
 import { useState, useMemo } from 'react';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, themeColors } from '../../utils/themeColors';
 
 export interface SubTabConfig {
 	id: string;
@@ -23,10 +23,10 @@ const SubTabsBar: FC<SubTabsBarProps> = ({ subTabs, activeSubTabId, onSubTabChan
 	const getSubTabStyles = (isActive: boolean, index: number, totalTabs: number, isHovered: boolean): React.CSSProperties => ({
 		padding: '10px 16px 6px',
 		border: 'none',
-		borderBottom: isActive ? (lightTheme ? '2px solid #007acc' : '2px solid var(--vscode-progressBar-background)') : '2px solid transparent',
+		borderBottom: isActive ? (lightTheme ? '2px solid #007acc' : `2px solid ${themeColors.progressBarBackground}`) : '2px solid transparent',
 		borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
 		backgroundColor: !isActive && isHovered ? hoverBackgroundColor : 'transparent',
-		color: isActive ? (lightTheme ? '#1e1e1e' : 'var(--vscode-tab-activeForeground)') : lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)',
+		color: isActive ? (lightTheme ? '#1e1e1e' : themeColors.tabActiveForeground) : lightTheme ? '#333333' : themeColors.tabInactiveForeground,
 		cursor: isActive ? 'default' : 'pointer',
 		display: 'flex',
 		alignItems: 'center',
@@ -42,7 +42,7 @@ const SubTabsBar: FC<SubTabsBarProps> = ({ subTabs, activeSubTabId, onSubTabChan
 		<div
 			style={{
 				display: 'flex',
-				borderBottom: '1px solid var(--vscode-panel-border)',
+				borderBottom: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '6px 6px 0 0'
 			}}
 		>

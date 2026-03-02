@@ -1,7 +1,7 @@
 import { FC, useState, useCallback, useMemo, useRef, useEffect, type ReactNode } from 'react';
 import styled from 'styled-components';
 import { type UserStory } from '../../../types/rally';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, themeColors } from '../../utils/themeColors';
 import { getVsCodeApi } from '../../utils/vscodeApi';
 import './CollapsibleCard';
 
@@ -39,7 +39,7 @@ const StatPill: FC<{
 			minHeight: '56px',
 			padding: '10px 12px',
 			borderRadius: '10px',
-			border: isSelected ? '1px solid var(--vscode-textLink-foreground)' : lightTheme ? '1px solid rgba(0, 0, 0, 0.12)' : '1px solid color(srgb 0.8 0.8 0.8 / 0.08)',
+			border: isSelected ? `1px solid ${themeColors.progressBarBackground}` : lightTheme ? '1px solid rgba(0, 0, 0, 0.12)' : '1px solid color(srgb 0.8 0.8 0.8 / 0.08)',
 			background: isSelected ? 'color(srgb 0.2 0.6 0.35 / 0.12)' : lightTheme ? 'rgba(0, 0, 0, 0.04)' : 'color(srgb 0.2 0.2 0.2 / 0.6)',
 			cursor: 'pointer',
 			transition: 'all 0.2s ease'
@@ -55,12 +55,12 @@ const StatPill: FC<{
 			onMouseEnter={e => {
 				const button = e.currentTarget;
 				button.style.background = isSelected ? 'color(srgb 0.2 0.6 0.35 / 0.18)' : lightTheme ? 'rgba(0, 0, 0, 0.08)' : 'color(srgb 0.2 0.2 0.2 / 0.8)';
-				button.style.borderColor = 'var(--vscode-textLink-foreground)';
+				button.style.borderColor = themeColors.progressBarBackground;
 			}}
 			onMouseLeave={e => {
 				const button = e.currentTarget;
 				button.style.background = isSelected ? 'color(srgb 0.2 0.6 0.35 / 0.12)' : lightTheme ? 'rgba(0, 0, 0, 0.04)' : 'color(srgb 0.2 0.2 0.2 / 0.6)';
-				button.style.borderColor = isSelected ? 'var(--vscode-textLink-foreground)' : lightTheme ? 'rgba(0, 0, 0, 0.12)' : 'color(srgb 0.8 0.8 0.8 / 0.08)';
+				button.style.borderColor = isSelected ? 'themeColors.progressBarBackground' : lightTheme ? 'rgba(0, 0, 0, 0.12)' : 'color(srgb 0.8 0.8 0.8 / 0.08)';
 			}}
 		>
 			{children}
@@ -162,7 +162,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			case 'closed':
 				return '#495057'; // Gris fosc
 			default:
-				return 'var(--vscode-descriptionForeground)';
+				return themeColors.descriptionForeground;
 		}
 	};
 
@@ -340,8 +340,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							alignItems: 'center',
 							gap: '6px',
 							padding: '6px 12px',
-							backgroundColor: requestSupportLoading ? 'var(--vscode-button-secondaryBackground)' : 'var(--vscode-button-background)',
-							color: requestSupportLoading ? 'var(--vscode-button-secondaryForeground)' : 'var(--vscode-button-foreground)',
+							backgroundColor: requestSupportLoading ? themeColors.buttonSecondaryBackground : themeColors.buttonBackground,
+							color: requestSupportLoading ? themeColors.buttonSecondaryForeground : themeColors.buttonForeground,
 							border: 'none',
 							borderRadius: '3px',
 							fontSize: '12px',
@@ -352,12 +352,12 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						}}
 						onMouseEnter={e => {
 							if (!requestSupportLoading) {
-								e.currentTarget.style.backgroundColor = 'var(--vscode-button-hoverBackground)';
+								e.currentTarget.style.backgroundColor = themeColors.buttonHoverBackground;
 							}
 						}}
 						onMouseLeave={e => {
 							if (!requestSupportLoading) {
-								e.currentTarget.style.backgroundColor = 'var(--vscode-button-background)';
+								e.currentTarget.style.backgroundColor = themeColors.buttonBackground;
 							}
 						}}
 					>
@@ -387,9 +387,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					style={{
 						width: '100%',
 						padding: '6px 8px',
-						backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-						color: 'var(--vscode-input-foreground)',
-						border: '1px solid var(--vscode-input-border)',
+						backgroundColor: `color-mix(in srgb, ${themeColors.inputBackground} 60%, ${themeColors.panelBackground})`,
+						color: themeColors.inputForeground,
+						border: `1px solid ${themeColors.inputBorder}`,
 						borderRadius: '3px',
 						fontSize: '13px'
 					}}
@@ -406,8 +406,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				}}
 			>
 				{/* Basic Information */}
-				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
+				<h3 style={{ margin: '0 0 10px 0', color: themeColors.foreground, fontSize: '14px' }}>Basic Information</h3>
+				<h3 style={{ margin: '0 0 10px 0', color: themeColors.foreground, fontSize: '14px' }}>Estimates & Status</h3>
 
 				<div>
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Plan Estimate</label>
@@ -418,9 +418,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						style={{
 							width: '100%',
 							padding: '6px 8px',
-							backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
+							backgroundColor: `color-mix(in srgb, ${themeColors.inputBackground} 60%, ${themeColors.panelBackground})`,
+							color: themeColors.inputForeground,
+							border: `1px solid ${themeColors.inputBorder}`,
 							borderRadius: '3px',
 							fontSize: '13px'
 						}}
@@ -436,9 +436,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						style={{
 							width: '100%',
 							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
+							backgroundColor: themeColors.inputBackground,
+							color: themeColors.inputForeground,
+							border: `1px solid ${themeColors.inputBorder}`,
 							borderRadius: '3px',
 							fontSize: '13px'
 						}}
@@ -452,12 +452,12 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 
 				{/* Description */}
 				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+					<h3 style={{ margin: '0 0 10px 0', color: themeColors.foreground, fontSize: '14px' }}>Description</h3>
 
-					<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
+					<div style={{ display: 'flex', flexDirection: 'column', border: `1px solid ${themeColors.inputBorder}`, borderRadius: '3px', overflow: 'hidden' }}>
 						<div
 							dangerouslySetInnerHTML={{
-								__html: userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+								__html: userStory.description || `<p style="color: ${themeColors.descriptionForeground}; font-style: italic;">No description available</p>`
 							}}
 							style={{
 								width: '100%',
@@ -465,10 +465,10 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 								maxHeight: `${descriptionHeight}px`,
 								boxSizing: 'border-box',
 								padding: '12px',
-								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-								color: 'var(--vscode-input-foreground)',
+								backgroundColor: `color-mix(in srgb, ${themeColors.inputBackground} 60%, ${themeColors.panelBackground})`,
+								color: themeColors.inputForeground,
 								fontSize: '13px',
-								fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+								fontFamily: "'Inter', ${themeColors.fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 								lineHeight: '1.6',
 								overflow: 'auto'
 							}}
@@ -479,7 +479,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							onMouseDown={handleDescriptionResizeStart}
 							style={{
 								height: '8px',
-								backgroundColor: 'var(--vscode-panel-border)',
+								backgroundColor: themeColors.panelBorder,
 								cursor: 'ns-resize',
 								display: 'flex',
 								alignItems: 'center',
@@ -492,7 +492,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 									width: '32px',
 									height: '3px',
 									borderRadius: '2px',
-									backgroundColor: 'var(--vscode-descriptionForeground)',
+									backgroundColor: themeColors.descriptionForeground,
 									opacity: 0.6
 								}}
 							/>
@@ -501,41 +501,41 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				</div>
 
 				{/* Additional Information */}
-				<div style={{ gridColumn: '1 / -1', margin: '20px 0 0 0', borderTop: '1px solid var(--vscode-panel-border)' }} />
-				<h3 style={{ margin: '12px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
+				<div style={{ gridColumn: '1 / -1', margin: '20px 0 0 0', borderTop: `1px solid ${themeColors.panelBorder}` }} />
+				<h3 style={{ margin: '12px 0 10px 0', color: themeColors.foreground, fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
 				<div style={{ gridColumn: '1 / -1' }}>
 					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '12px' }}>
 						<StatPill isSelected={selectedAdditionalTab === 'tasks'} onClick={() => handleTabChange('tasks')} title="Click to view tasks">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Tasks</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>
 								<TasksIcon />
 								{userStory.tasksCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'tests'} onClick={() => handleTabChange('tests')} title="Click to view test cases">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Test cases</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>
 								<TestsIcon />
 								{userStory.testCasesCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'defects'} onClick={() => handleTabChange('defects')} title="Click to view defects">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Defects</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>
 								<DefectsIcon />
 								{userStory.defectsCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'discussions'} onClick={() => handleTabChange('discussions')} title="Click to view discussions">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Discussions</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>
 								<DiscussionsIcon />
 								{userStory.discussionCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'revisions'} onClick={() => handleTabChange('revisions')} title="Click to view revisions">
 							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Revisions</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>
 								<RevisionsIcon />
 								{revisionsCount !== null ? revisionsCount : '—'}
 							</span>
@@ -544,13 +544,13 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					{selectedAdditionalTab === 'revisions' && (
 						<div style={{ marginTop: '20px' }}>
 							{revisionsLoading ? (
-								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading revisions...</div>
+								<div style={{ padding: '12px', textAlign: 'center', color: themeColors.descriptionForeground }}>Loading revisions...</div>
 							) : revisions.length === 0 ? (
-								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No revisions found</div>
+								<div style={{ padding: '12px', textAlign: 'center', color: themeColors.descriptionForeground }}>No revisions found</div>
 							) : (
 								<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
 									{revisionsCount !== null && revisions.length > 0 && revisionsCount > revisions.length && (
-										<div style={{ padding: '8px 12px', backgroundColor: 'color(srgb 0.2 0.5 0.8 / 0.12)', borderRadius: '3px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)', borderLeft: '3px solid color(srgb 0.2 0.5 0.8 / 0.5)' }}>
+										<div style={{ padding: '8px 12px', backgroundColor: 'color(srgb 0.2 0.5 0.8 / 0.12)', borderRadius: '3px', fontSize: '12px', color: themeColors.descriptionForeground, borderLeft: '3px solid color(srgb 0.2 0.5 0.8 / 0.5)' }}>
 											Showing latest {revisions.length} of {revisionsCount} revisions
 										</div>
 									)}
@@ -559,15 +559,15 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 											key={index}
 											style={{
 												padding: '12px',
-												backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-												border: '1px solid var(--vscode-input-border)',
+												backgroundColor: `color-mix(in srgb, ${themeColors.inputBackground} 60%, ${themeColors.panelBackground})`,
+												border: `1px solid ${themeColors.inputBorder}`,
 												borderRadius: '3px',
 												fontSize: '12px'
 											}}
 										>
 											<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-												<div style={{ fontWeight: '600', color: 'var(--vscode-foreground)' }}>Revision #{revision.revisionNumber}</div>
-												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{new Date(revision.createdDate).toLocaleString()}</div>
+												<div style={{ fontWeight: '600', color: themeColors.foreground }}>Revision #{revision.revisionNumber}</div>
+												<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{new Date(revision.createdDate).toLocaleString()}</div>
 											</div>
 											<div style={{ marginBottom: '6px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>
 												By: <strong>{revision.author}</strong>
@@ -575,9 +575,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 											<div
 												style={{
 													padding: '8px',
-													backgroundColor: 'var(--vscode-input-background)',
+													backgroundColor: themeColors.inputBackground,
 													borderRadius: '2px',
-													color: 'var(--vscode-input-foreground)',
+													color: themeColors.inputForeground,
 													fontFamily: 'monospace',
 													wordBreak: 'break-word'
 												}}

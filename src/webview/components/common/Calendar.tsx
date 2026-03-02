@@ -1058,7 +1058,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground, textAlign: 'center' }}>
-						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>!
+						Welcome, <span style={{ fontWeight: 'bold', color: themeColors.foreground }}>{getUserFirstName(currentUser)}</span>!
 					</div>
 					<div
 						ref={marqueeContainerRef}
@@ -1297,7 +1297,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								padding: '8px',
 								backgroundColor: !dayInfo.isCurrentMonth ? (lightTheme ? 'rgba(230, 230, 230, 0.18)' : 'rgba(0, 0, 0, 0.18)') : isWeekend && dayInfo.isCurrentMonth ? (lightTheme ? 'rgba(200, 200, 200, 0.12)' : 'rgba(0, 0, 0, 0.18)') : lightTheme ? 'rgba(250, 250, 250, 0.6)' : 'transparent',
 								color: dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
-								borderBottom: index < calendarDays.length - 7 ? '1px solid var(--vscode-panel-border)' : 'none',
+								borderBottom: index < calendarDays.length - 7 ? `1px solid ${themeColors.panelBorder}` : 'none',
 								display: 'flex',
 								flexDirection: 'column',
 								alignItems: 'flex-start',
@@ -1506,7 +1506,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 														key={iteration.objectId}
 														style={{
 															height: getSprintBarHeight(calendarGridWidth) + 'px',
-															backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+															backgroundColor: iterationColorMap.get(iteration.objectId) || themeColors.progressBarBackground,
 															filter: lightTheme ? 'saturate(77%) brightness(162%) contrast(87%)' : 'saturate(72%) brightness(79%) contrast(90%)',
 															opacity: sprintBarsAnimated ? 1 : 0,
 															transform: sprintBarsAnimated ? 'scaleX(1)' : 'scaleX(0)',
@@ -1577,7 +1577,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 											width: '7px',
 											height: '7px',
 											borderRadius: '50%',
-											backgroundColor: iterationColorMap.get(iteration.objectId) || 'var(--vscode-progressBar-background)',
+											backgroundColor: iterationColorMap.get(iteration.objectId) || themeColors.progressBarBackground,
 											opacity: 0.9,
 											flexShrink: 0
 										}}
@@ -1641,9 +1641,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						position: 'fixed' as const,
 						...tooltipPos,
 						top: mousePosition.y - 30,
-						backgroundColor: 'var(--vscode-quickInput-background)',
-						color: 'var(--vscode-quickInput-foreground)',
-						border: '1px solid var(--vscode-panel-border)',
+						backgroundColor: themeColors.quickInputBackground,
+						color: themeColors.quickInputForeground,
+						border: `1px solid ${themeColors.panelBorder}`,
 						borderRadius: '4px',
 						padding: '6px 10px',
 						fontSize: '12px',
@@ -1696,9 +1696,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						position: 'fixed' as const,
 						...tooltipPos,
 						top: mousePosition.y - 30,
-						backgroundColor: 'var(--vscode-quickInput-background)',
-						color: 'var(--vscode-quickInput-foreground)',
-						border: '1px solid var(--vscode-panel-border)',
+						backgroundColor: themeColors.quickInputBackground,
+						color: themeColors.quickInputForeground,
+						border: `1px solid ${themeColors.panelBorder}`,
 						borderRadius: '4px',
 						padding: '6px 10px',
 						fontSize: '12px',
@@ -1755,8 +1755,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					<div
 						onClick={e => e.stopPropagation()}
 						style={{
-							backgroundColor: 'var(--vscode-editor-background)',
-							border: '1px solid var(--vscode-panel-border)',
+							backgroundColor: themeColors.background,
+							border: `1px solid ${themeColors.panelBorder}`,
 							borderRadius: '8px',
 							padding: '24px',
 							width: '360px',
@@ -1781,9 +1781,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									value={modalForm.date}
 									onChange={e => setModalForm(f => ({ ...f, date: e.target.value }))}
 									style={{
-										background: 'var(--vscode-input-background)',
-										color: 'var(--vscode-input-foreground)',
-										border: '1px solid var(--vscode-input-border, var(--vscode-panel-border))',
+										background: themeColors.inputBackground,
+										color: themeColors.inputForeground,
+										border: `1px solid ${themeColors.inputBorder}`,
 										borderRadius: '4px',
 										padding: '5px 8px',
 										fontSize: '12px',
@@ -1800,9 +1800,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									value={modalForm.time}
 									onChange={e => setModalForm(f => ({ ...f, time: e.target.value }))}
 									style={{
-										background: 'var(--vscode-input-background)',
-										color: 'var(--vscode-input-foreground)',
-										border: '1px solid var(--vscode-input-border, var(--vscode-panel-border))',
+										background: themeColors.inputBackground,
+										color: themeColors.inputForeground,
+										border: `1px solid ${themeColors.inputBorder}`,
 										borderRadius: '4px',
 										padding: '5px 8px',
 										fontSize: '12px',
@@ -1823,9 +1823,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								onChange={e => setModalForm(f => ({ ...f, title: e.target.value }))}
 								placeholder="Event title"
 								style={{
-									background: 'var(--vscode-input-background)',
-									color: 'var(--vscode-input-foreground)',
-									border: '1px solid var(--vscode-input-border, var(--vscode-panel-border))',
+									background: themeColors.inputBackground,
+									color: themeColors.inputForeground,
+									border: `1px solid ${themeColors.inputBorder}`,
 									borderRadius: '4px',
 									padding: '5px 8px',
 									fontSize: '12px',
@@ -1844,9 +1844,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								placeholder="Optional description..."
 								rows={3}
 								style={{
-									background: 'var(--vscode-input-background)',
-									color: 'var(--vscode-input-foreground)',
-									border: '1px solid var(--vscode-input-border, var(--vscode-panel-border))',
+									background: themeColors.inputBackground,
+									color: themeColors.inputForeground,
+									border: `1px solid ${themeColors.inputBorder}`,
 									borderRadius: '4px',
 									padding: '5px 8px',
 									fontSize: '12px',
@@ -1871,7 +1871,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 											height: '22px',
 											borderRadius: '50%',
 											backgroundColor: c,
-											border: modalForm.color === c ? '2px solid var(--vscode-focusBorder)' : '2px solid transparent',
+											border: modalForm.color === c ? `2px solid ${themeColors.focusBorder}` : '2px solid transparent',
 											cursor: 'pointer',
 											outline: 'none',
 											padding: 0,
@@ -1908,8 +1908,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													borderRadius: '4px',
 													border: 'none',
 													cursor: 'pointer',
-													backgroundColor: 'var(--vscode-inputValidation-errorBackground, #5a1d1d)',
-													color: 'var(--vscode-errorForeground, #f48771)',
+													backgroundColor: themeColors.errorBackground,
+													color: themeColors.errorForeground,
 													fontSize: '12px'
 												}}
 											>
@@ -1924,7 +1924,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 											style={{
 												padding: '6px 14px',
 												borderRadius: '4px',
-												border: '1px solid var(--vscode-panel-border)',
+												border: `1px solid ${themeColors.panelBorder}`,
 												cursor: 'pointer',
 												backgroundColor: 'transparent',
 												color: themeColors.foreground,
@@ -1941,8 +1941,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												borderRadius: '4px',
 												border: 'none',
 												cursor: !modalForm.title.trim() || !modalForm.date || isReadOnly ? 'not-allowed' : 'pointer',
-												backgroundColor: 'var(--vscode-button-background)',
-												color: 'var(--vscode-button-foreground)',
+												backgroundColor: themeColors.buttonBackground,
+												color: themeColors.buttonForeground,
 												fontSize: '12px',
 												opacity: !modalForm.title.trim() || !modalForm.date || isReadOnly ? 0.5 : 1
 											}}

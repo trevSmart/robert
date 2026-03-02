@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, themeColors } from '../../utils/themeColors';
 import type { VelocityData } from '../../utils/metricsUtils';
 
 interface VelocityTrendChartProps {
@@ -180,15 +180,15 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 		return (
 			<div
 				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
+					backgroundColor: themeColors.background,
+					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					padding: '20px',
 					height: '300px',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
+					color: themeColors.descriptionForeground
 				}}
 			>
 				Loading velocity data...
@@ -200,15 +200,15 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 		return (
 			<div
 				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
+					backgroundColor: themeColors.background,
+					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					padding: '20px',
 					height: '300px',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
+					color: themeColors.descriptionForeground
 				}}
 			>
 				No velocity data available
@@ -219,8 +219,8 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 	return (
 		<div
 			style={{
-				backgroundColor: 'var(--vscode-editor-background)',
-				border: '1px solid var(--vscode-panel-border)',
+				backgroundColor: themeColors.background,
+				border: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '12px',
 				padding: '20px',
 				marginBottom: '20px'

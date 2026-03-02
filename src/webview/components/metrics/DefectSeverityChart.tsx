@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, themeColors } from '../../utils/themeColors';
 import type { DefectsBySeverity } from '../../utils/metricsUtils';
 
 interface DefectSeverityChartProps {
@@ -190,15 +190,15 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 		return (
 			<div
 				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
+					backgroundColor: themeColors.background,
+					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					padding: '20px',
 					height: '350px',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
+					color: themeColors.descriptionForeground
 				}}
 			>
 				Loading defects data...
@@ -210,15 +210,15 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 		return (
 			<div
 				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
+					backgroundColor: themeColors.background,
+					border: `1px solid ${themeColors.panelBorder}`,
 					borderRadius: '12px',
 					padding: '20px',
 					height: '350px',
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
+					color: themeColors.descriptionForeground
 				}}
 			>
 				No defects data available
@@ -229,8 +229,8 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 	return (
 		<div
 			style={{
-				backgroundColor: 'var(--vscode-editor-background)',
-				border: '1px solid var(--vscode-panel-border)',
+				backgroundColor: themeColors.background,
+				border: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '12px',
 				padding: '20px'
 			}}

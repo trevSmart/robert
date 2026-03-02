@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import styled, { css, keyframes } from 'styled-components';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, themeColors } from '../../utils/themeColors';
 
 // Animation keyframes for dropdown
 const fadeInScale = keyframes`
@@ -19,8 +19,8 @@ const baseNavButtonStyles = css<{ $isActive: boolean; $lightTheme: boolean }>`
 	padding: 10px 16px 6px;
 	border: none;
 	background-color: ${props => (props.$isActive ? 'transparent' : props.$lightTheme ? 'rgba(0, 0, 0, 0.06)' : 'rgba(0, 0, 0, 0.22)')};
-	color: ${props => (props.$isActive ? (props.$lightTheme ? '#1e1e1e' : 'var(--vscode-tab-activeForeground)') : props.$lightTheme ? '#333333' : 'var(--vscode-tab-inactiveForeground)')};
-	border-bottom: ${props => (props.$isActive ? (props.$lightTheme ? '2px solid #007acc' : '2px solid var(--vscode-progressBar-background)') : '2px solid transparent')};
+	color: ${props => (props.$isActive ? (props.$lightTheme ? '#1e1e1e' : themeColors.tabActiveForeground) : props.$lightTheme ? '#333333' : themeColors.tabInactiveForeground)};
+	border-bottom: ${props => (props.$isActive ? (props.$lightTheme ? '2px solid #007acc' : `2px solid ${themeColors.progressBarBackground}`) : '2px solid transparent')};
 	font-size: 12.4px;
 	font-weight: ${props => (props.$isActive ? '600' : '400')};
 	transition: all 0.2s ease;
@@ -53,8 +53,8 @@ const NavOverflowItem = styled.button<{ $isActive: boolean }>`
 	width: 100%;
 	padding: 8px 14px;
 	border: none;
-	background-color: ${props => (props.$isActive ? 'var(--vscode-list-activeSelectionBackground)' : 'transparent')};
-	color: ${props => (props.$isActive ? 'var(--vscode-list-activeSelectionForeground)' : 'var(--vscode-foreground)')};
+	background-color: ${props => (props.$isActive ? themeColors.listActiveSelectionBackground : 'transparent')};
+	color: ${props => (props.$isActive ? themeColors.listActiveSelectionForeground : themeColors.foreground)};
 	cursor: pointer;
 	text-align: left;
 	display: flex;
@@ -63,7 +63,7 @@ const NavOverflowItem = styled.button<{ $isActive: boolean }>`
 	font-size: 12px;
 
 	&:hover {
-		background-color: var(--vscode-list-hoverBackground);
+		background-color: ${themeColors.listHoverBackground};
 	}
 `;
 
@@ -72,8 +72,8 @@ const NavOverflowMenu = styled.div`
 	right: 0;
 	top: 100%;
 	margin-top: 6px;
-	background-color: var(--vscode-editor-background);
-	border: 1px solid var(--vscode-panel-border);
+	background-color: ${themeColors.background};
+	border: 1px solid ${themeColors.panelBorder};
 	border-radius: 6px;
 	box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
 	z-index: 10;
@@ -346,9 +346,9 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		<div
 			style={{
 				display: 'flex',
-				borderBottom: '1px solid var(--vscode-panel-border)',
+				borderBottom: `1px solid ${themeColors.panelBorder}`,
 				width: '100%',
-				backgroundColor: 'var(--vscode-panel-background)'
+				backgroundColor: themeColors.panelBackground
 			}}
 		>
 			<div

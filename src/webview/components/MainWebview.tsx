@@ -28,7 +28,7 @@ import { useSmoothScroll } from '../hooks/useSmoothScroll';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem } from '../../types/rally';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
-import { isLightTheme } from '../utils/themeColors';
+import { isLightTheme, themeColors } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 import { RallyLoadingIndicator } from './common/RallyLoadingIndicator';
 
@@ -412,17 +412,17 @@ const PortfolioViewSelector: FC<{
 			borderBottom: isActive
 				? lightTheme
 					? '2px solid #007acc' // Darker blue for better visibility in light themes
-					: '2px solid var(--vscode-progressBar-background)' // Standard color for dark themes
+					: `2px solid ${themeColors.progressBarBackground}` // Standard color for dark themes
 				: '2px solid transparent',
 			borderRadius: index === 0 ? '6px 0 0 0' : index === totalTabs - 1 ? '0 6px 0 0' : '0',
 			backgroundColor: !isActive && isHovered ? hoverBackgroundColor : 'transparent',
 			color: isActive
 				? lightTheme
 					? '#1e1e1e' // Dark color to ensure contrast in light themes
-					: 'var(--vscode-tab-activeForeground)' // Standard color for dark themes
+					: themeColors.tabActiveForeground // Standard color for dark themes
 				: lightTheme
 					? '#333333'
-					: 'var(--vscode-tab-inactiveForeground)',
+					: themeColors.tabInactiveForeground,
 			cursor: isActive ? 'default' : 'pointer',
 			display: 'flex',
 			alignItems: 'center',
@@ -440,7 +440,7 @@ const PortfolioViewSelector: FC<{
 			style={{
 				marginBottom: '20px',
 				display: 'flex',
-				borderBottom: '1px solid var(--vscode-panel-border)',
+				borderBottom: `1px solid ${themeColors.panelBorder}`,
 				borderRadius: '6px 6px 0 0'
 			}}
 		>
@@ -635,7 +635,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const portfolioActiveViewType = (activeSubTabBySection['portfolio'] ?? 'bySprints') as PortfolioViewType;
 
 	// Tab transition state: displayedKey tracks what's currently rendered, isLeaving triggers fade-out
-	const TAB_FADE_MS = 84;
+	const TAB_FADE_MS = 42;
 	const tabFadeKey = `${activeSection}__${activeSubTabBySection['portfolio'] ?? ''}__${currentScreen}`;
 	const [displayedKey, setDisplayedKey] = useState(tabFadeKey);
 	const [isLeaving, setIsLeaving] = useState(false);

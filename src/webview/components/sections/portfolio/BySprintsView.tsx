@@ -1,6 +1,7 @@
 /// <reference path="../../common/CollapsibleCard.d.ts" />
 import type { FC } from 'react';
 import { useState } from 'react';
+import { themeColors } from '../../../utils/themeColors';
 import UserStoriesTable, { IterationsTable } from '../../common/UserStoriesTable';
 import UserStoryForm from '../../common/UserStoryForm';
 import TasksTable from '../../common/TasksTable';
@@ -131,7 +132,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						<SprintDetailsForm iteration={selectedIteration} />
 					</collapsible-card>
 					{sprintUserStories.length === 0 ? (
-						<div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>
+						<div style={{ padding: '20px', textAlign: 'center', color: themeColors.descriptionForeground }}>
 							<p>This sprint has no user stories</p>
 						</div>
 					) : (

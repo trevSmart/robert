@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import { themeColors } from '../../utils/themeColors';
 import SprintKPIs from '../metrics/SprintKPIs';
 import VelocityTrendChart from '../metrics/VelocityTrendChart';
 import StateDistributionPie from '../metrics/StateDistributionPie';
@@ -45,8 +46,8 @@ const MetricsSection: FC<MetricsSectionProps> = ({
 	<div style={{ padding: '20px' }}>
 		{/* Metrics Header */}
 		<div style={{ marginBottom: '30px', textAlign: 'center' }}>
-			<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '600' }}>Project Analytics</h2>
-			<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Real-time insights from Rally</p>
+			<h2 style={{ margin: '0 0 8px 0', color: themeColors.foreground, fontSize: '24px', fontWeight: '600' }}>Project Analytics</h2>
+			<p style={{ margin: 0, color: themeColors.descriptionForeground, fontSize: '14px' }}>Real-time insights from Rally</p>
 		</div>
 
 		{/* Sprint KPIs */}

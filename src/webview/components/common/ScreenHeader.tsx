@@ -1,4 +1,5 @@
 import type React from 'react';
+import { themeColors } from '../../utils/themeColors';
 
 interface ScreenHeaderProps {
 	title: string;
@@ -20,16 +21,16 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButt
 				marginBottom: '20px',
 				paddingTop: stickyHeader ? '12px' : 0,
 				paddingBottom: '10px',
-				borderBottom: '1px solid var(--vscode-panel-border)',
+				borderBottom: `1px solid ${themeColors.panelBorder}`,
 				fontSize: '14px',
 				fontWeight: 'bold',
-				color: 'var(--vscode-foreground)',
+				color: themeColors.foreground,
 				...(stickyHeader
 					? {
 							position: 'sticky',
 							top: 0,
 							zIndex: 2,
-							backgroundColor: 'var(--vscode-editor-background)'
+							backgroundColor: themeColors.background
 						}
 					: {})
 			}}
@@ -42,7 +43,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButt
 						style={{
 							backgroundColor: 'transparent',
 							border: 'none',
-							color: 'var(--vscode-foreground)',
+							color: themeColors.foreground,
 							cursor: 'pointer',
 							padding: '4px 8px',
 							marginRight: '12px',
@@ -53,7 +54,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButt
 							borderRadius: '3px'
 						}}
 						onMouseEnter={e => {
-							e.currentTarget.style.backgroundColor = 'var(--vscode-toolbar-hoverBackground)';
+							e.currentTarget.style.backgroundColor = themeColors.toolbarHoverBackground;
 						}}
 						onMouseLeave={e => {
 							e.currentTarget.style.backgroundColor = 'transparent';

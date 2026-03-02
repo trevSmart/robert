@@ -14,9 +14,10 @@ export class WebviewContentManager {
 	) {}
 
 	/**
-	 * Generate HTML for main webview with placeholders resolved
+	 * Generate HTML for main webview with placeholders resolved.
+	 * themeClass should be derived from vscode.window.activeColorTheme.kind (e.g. 'robert-light-theme' or 'robert-dark-theme dark').
 	 */
-	public async getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
+	public async getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string, themeClass?: string): Promise<string> {
 		return (
 			(await this.errorHandler.executeWithErrorHandling(async () => {
 				this.errorHandler.logInfo(`Main webview content rendered for context: ${context}`, 'WebviewContentManager.getHtmlForWebview');
@@ -31,7 +32,8 @@ export class WebviewContentManager {
 					__TIMESTAMP__: new Date().toISOString(),
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
 					__INTER_FONT_URI__: interFontUri.toString(),
-					__RALLY_LOGO_URI__: rallyLogoUri.toString()
+					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
+					__ROBERT_THEME_CLASS__: themeClass ?? 'robert-dark-theme dark'
 				});
 			}, 'WebviewContentManager.getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);
@@ -51,9 +53,10 @@ export class WebviewContentManager {
 	}
 
 	/**
-	 * Generate HTML for logo screen
+	 * Generate HTML for logo screen.
+	 * themeClass should be derived from vscode.window.activeColorTheme.kind.
 	 */
-	public async getHtmlForLogo(webview: vscode.Webview): Promise<string> {
+	public async getHtmlForLogo(webview: vscode.Webview, themeClass?: string): Promise<string> {
 		return (
 			(await this.errorHandler.executeWithErrorHandling(async () => {
 				this.errorHandler.logInfo('Logo webview content rendered from build HTML', 'WebviewContentManager.getHtmlForLogo');
@@ -61,7 +64,8 @@ export class WebviewContentManager {
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 				return this.getHtmlFromBuild(webview, 'logo.html', {
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
-					__INTER_FONT_URI__: interFontUri.toString()
+					__INTER_FONT_URI__: interFontUri.toString(),
+					__ROBERT_THEME_CLASS__: themeClass ?? 'robert-dark-theme dark'
 				});
 			}, 'WebviewContentManager.getHtmlForLogo')) || '<html><body><p>Error loading logo</p></body></html>'
 		);

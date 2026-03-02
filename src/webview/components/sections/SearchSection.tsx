@@ -1,5 +1,6 @@
 import React, { FC, RefObject, useState, useEffect } from 'react';
 import { type GlobalSearchResultItem } from '../../../types/rally';
+import { themeColors } from '../../utils/themeColors';
 import SearchWithTypeFilter, { type SearchType } from '../common/SearchWithTypeFilter';
 
 // Small icons for global search result entity type badges
@@ -109,19 +110,19 @@ const SearchSection: FC<SearchSectionProps> = ({ globalSearchTerm, onSearchTermC
 				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', flex: 1, minHeight: '200px' }}>
 					<div
 						style={{
-							border: `2px solid var(--vscode-panel-border)`,
-							borderTop: `2px solid var(--vscode-progressBar-background)`,
+							border: `2px solid ${themeColors.panelBorder}`,
+							borderTop: `2px solid ${themeColors.progressBarBackground}`,
 							borderRadius: '50%',
 							width: '24px',
 							height: '24px',
 							animation: 'spin 1s linear infinite'
 						}}
 					/>
-					<div style={{ fontSize: '13px', color: 'var(--vscode-descriptionForeground)' }}>Searching...</div>
+					<div style={{ fontSize: '13px', color: themeColors.descriptionForeground }}>Searching...</div>
 				</div>
 			)}
 
-			{globalSearchError && !globalSearchLoading && <div style={{ color: 'var(--vscode-errorForeground)', fontSize: '13px' }}>{globalSearchError}</div>}
+			{globalSearchError && !globalSearchLoading && <div style={{ color: themeColors.errorForeground, fontSize: '13px' }}>{globalSearchError}</div>}
 
 			{!globalSearchLoading && globalSearchResults.length > 0 && (
 				<div
@@ -130,12 +131,12 @@ const SearchSection: FC<SearchSectionProps> = ({ globalSearchTerm, onSearchTermC
 						minHeight: 0,
 						display: 'flex',
 						flexDirection: 'column',
-						border: '1px solid var(--vscode-panel-border)',
+						border: `1px solid ${themeColors.panelBorder}`,
 						borderRadius: '6px',
 						overflow: 'hidden'
 					}}
 				>
-					<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', padding: '8px 12px', borderBottom: '1px solid var(--vscode-panel-border)', flexShrink: 0 }}>
+					<div style={{ fontSize: '12px', color: themeColors.descriptionForeground, padding: '8px 12px', borderBottom: `1px solid ${themeColors.panelBorder}`, flexShrink: 0 }}>
 						{globalSearchResults.length} result{globalSearchResults.length !== 1 ? 's' : ''}
 					</div>
 					<ul
@@ -149,7 +150,7 @@ const SearchSection: FC<SearchSectionProps> = ({ globalSearchTerm, onSearchTermC
 						}}
 					>
 						{globalSearchResults.map((item, idx) => (
-							<li key={`${item.entityType}-${item.objectId}-${idx}`} style={{ margin: 0, padding: 0, borderBottom: '1px solid var(--vscode-panel-border)' }}>
+							<li key={`${item.entityType}-${item.objectId}-${idx}`} style={{ margin: 0, padding: 0, borderBottom: `1px solid ${themeColors.panelBorder}` }}>
 								<button
 									type="button"
 									className="search-result-button"
@@ -170,7 +171,7 @@ const SearchSection: FC<SearchSectionProps> = ({ globalSearchTerm, onSearchTermC
 										transition: 'background-color 0.15s ease'
 									}}
 									onMouseEnter={e => {
-										e.currentTarget.style.backgroundColor = 'var(--vscode-list-hoverBackground)';
+										e.currentTarget.style.backgroundColor = themeColors.listHoverBackground;
 									}}
 									onMouseLeave={e => {
 										e.currentTarget.style.backgroundColor = 'transparent';
@@ -183,8 +184,8 @@ const SearchSection: FC<SearchSectionProps> = ({ globalSearchTerm, onSearchTermC
 											padding: '5px 6px',
 											borderRadius: '8px',
 											backgroundColor: 'rgba(128, 128, 128, 0.1)',
-											color: 'var(--vscode-descriptionForeground)',
-											border: '1px solid var(--vscode-panel-border)',
+											color: themeColors.descriptionForeground,
+											border: `1px solid ${themeColors.panelBorder}`,
 											textTransform: 'capitalize',
 											display: 'inline-flex',
 											alignItems: 'center',
@@ -197,21 +198,21 @@ const SearchSection: FC<SearchSectionProps> = ({ globalSearchTerm, onSearchTermC
 										{item.entityType === 'defect' && <SearchResultDefectIcon />}
 										{item.entityType === 'userstory' ? 'User Story' : item.entityType}
 									</span>
-									<span style={{ fontWeight: 600, color: 'var(--vscode-foreground)' }}>{highlightMatch(item.formattedId)}</span>
-									<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{highlightMatch(item.name || '\u2014')}</span>
+									<span style={{ fontWeight: 600, color: themeColors.foreground }}>{highlightMatch(item.formattedId)}</span>
+									<span style={{ color: themeColors.descriptionForeground, flex: 1 }}>{highlightMatch(item.name || '\u2014')}</span>
 								</button>
 							</li>
 						))}
 					</ul>
 					{globalSearchHasMore && (
-						<div style={{ textAlign: 'center', padding: '15px', borderTop: '1px solid var(--vscode-panel-border)', flexShrink: 0 }}>
+						<div style={{ textAlign: 'center', padding: '15px', borderTop: `1px solid ${themeColors.panelBorder}`, flexShrink: 0 }}>
 							<button
 								onClick={() => onLoadMoreResults?.(globalSearchTerm, searchType)}
 								disabled={globalSearchLoadingMore}
 								style={{
 									padding: '8px 16px',
-									backgroundColor: 'var(--vscode-button-background)',
-									color: 'var(--vscode-button-foreground)',
+									backgroundColor: themeColors.buttonBackground,
+									color: themeColors.buttonForeground,
 									border: 'none',
 									borderRadius: '4px',
 									cursor: globalSearchLoadingMore ? 'not-allowed' : 'pointer',

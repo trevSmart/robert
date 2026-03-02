@@ -50,16 +50,21 @@ export class TemplateManager {
     <title>Robert - Error</title>
     <style>
         body {
-            font-family: 'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            color: var(--vscode-foreground);
-            background-color: var(--vscode-editor-background);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #1e1e1e;
+            background-color: #f3f3f3;
             padding: 20px;
             text-align: center;
         }
+        body.dark {
+            color: #eeeeee;
+            background-color: #1e1e1e;
+        }
         .error {
-            color: var(--vscode-errorForeground);
+            color: #c72222;
             margin: 20px 0;
         }
+        body.dark .error { color: #f48771; }
     </style>
 </head>
 <body>

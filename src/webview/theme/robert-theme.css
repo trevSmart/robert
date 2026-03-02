@@ -1,0 +1,152 @@
+/**
+ * Robert theme layer using Radix Colors – Blue template.
+ * Uses slate (blue-tinted gray) + blue accent per Radix "natural pairing" for blue.
+ * Light/dark is controlled by class on document (injected from extension from VS Code theme).
+ */
+
+@import "@radix-ui/colors/slate.css";
+@import "@radix-ui/colors/slate-dark.css";
+@import "@radix-ui/colors/blue.css";
+@import "@radix-ui/colors/blue-dark.css";
+@import "@radix-ui/colors/red.css";
+@import "@radix-ui/colors/red-dark.css";
+@import "@radix-ui/colors/green.css";
+@import "@radix-ui/colors/green-dark.css";
+@import "@radix-ui/colors/amber.css";
+@import "@radix-ui/colors/amber-dark.css";
+@import "@radix-ui/colors/yellow.css";
+@import "@radix-ui/colors/yellow-dark.css";
+
+/* Semantic variables – Blue template, light theme */
+.robert-light-theme {
+	--robert-foreground: var(--slate-12);
+	--robert-background: var(--slate-1);
+	--robert-descriptionForeground: var(--slate-11);
+
+	--robert-panelBackground: var(--slate-2);
+	--robert-panelBorder: var(--slate-6);
+
+	--robert-textPrimary: var(--slate-12);
+	--robert-textSecondary: var(--slate-11);
+	--robert-textTertiary: var(--slate-10);
+
+	--robert-buttonBackground: var(--blue-9);
+	--robert-buttonForeground: white;
+	--robert-buttonSecondaryBackground: var(--slate-3);
+	--robert-buttonSecondaryForeground: var(--slate-12);
+	--robert-buttonHoverBackground: var(--blue-10);
+
+	--robert-inputBackground: var(--slate-2);
+	--robert-inputForeground: var(--slate-12);
+	--robert-inputBorder: var(--slate-7);
+	--robert-inputPlaceholderForeground: var(--slate-9);
+
+	--robert-tabActiveBackground: var(--slate-2);
+	--robert-tabActiveForeground: var(--slate-12);
+	--robert-tabInactiveForeground: var(--slate-11);
+	--robert-tabBorder: var(--slate-6);
+	--robert-tabActiveBorder: var(--blue-9);
+
+	--robert-progressBarBackground: var(--blue-9);
+
+	--robert-listActiveSelectionBackground: var(--blue-4);
+	--robert-listActiveSelectionForeground: var(--blue-12);
+	--robert-listHoverBackground: var(--slate-3);
+	--robert-listFocusBackground: var(--blue-4);
+	--robert-listFocusForeground: var(--blue-12);
+
+	--robert-errorForeground: var(--red-11);
+	--robert-errorBackground: var(--red-3);
+	--robert-errorBorder: var(--red-7);
+
+	--robert-warningForeground: var(--slate-12);
+	--robert-warningBackground: var(--amber-3);
+	--robert-warningBorder: var(--amber-7);
+
+	--robert-infoForeground: var(--blue-11);
+	--robert-infoBackground: var(--blue-3);
+	--robert-infoBorder: var(--blue-7);
+
+	--robert-successForeground: var(--green-11);
+	--robert-successBackground: var(--green-3);
+	--robert-successBorder: var(--green-7);
+
+	--robert-titleBarActiveBackground: var(--slate-2);
+	--robert-titleBarActiveForeground: var(--slate-12);
+
+	--robert-toolbarHoverBackground: var(--slate-3);
+	--robert-toolbarActiveBackground: var(--slate-4);
+
+	--robert-focusBorder: var(--blue-8);
+	--robert-quickInputBackground: var(--slate-2);
+	--robert-quickInputForeground: var(--slate-12);
+
+	--robert-fontFamily: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+/* Semantic variables – Blue template, dark theme */
+.robert-dark-theme {
+	--robert-foreground: var(--slate-12);
+	--robert-background: var(--slate-1);
+	--robert-descriptionForeground: var(--slate-11);
+
+	--robert-panelBackground: var(--slate-2);
+	--robert-panelBorder: var(--slate-6);
+
+	--robert-textPrimary: var(--slate-12);
+	--robert-textSecondary: var(--slate-11);
+	--robert-textTertiary: var(--slate-10);
+
+	--robert-buttonBackground: var(--blue-9);
+	--robert-buttonForeground: white;
+	--robert-buttonSecondaryBackground: var(--slate-3);
+	--robert-buttonSecondaryForeground: var(--slate-12);
+	--robert-buttonHoverBackground: var(--blue-10);
+
+	--robert-inputBackground: var(--slate-2);
+	--robert-inputForeground: var(--slate-12);
+	--robert-inputBorder: var(--slate-7);
+	--robert-inputPlaceholderForeground: var(--slate-9);
+
+	--robert-tabActiveBackground: var(--slate-2);
+	--robert-tabActiveForeground: var(--slate-12);
+	--robert-tabInactiveForeground: var(--slate-11);
+	--robert-tabBorder: var(--slate-6);
+	--robert-tabActiveBorder: var(--blue-9);
+
+	--robert-progressBarBackground: var(--blue-9);
+
+	--robert-listActiveSelectionBackground: var(--blue-4);
+	--robert-listActiveSelectionForeground: var(--blue-12);
+	--robert-listHoverBackground: var(--slate-4);
+	--robert-listFocusBackground: var(--blue-4);
+	--robert-listFocusForeground: var(--blue-12);
+
+	--robert-errorForeground: var(--red-11);
+	--robert-errorBackground: var(--red-3);
+	--robert-errorBorder: var(--red-7);
+
+	--robert-warningForeground: var(--slate-12);
+	--robert-warningBackground: var(--amber-4);
+	--robert-warningBorder: var(--amber-7);
+
+	--robert-infoForeground: var(--blue-11);
+	--robert-infoBackground: var(--blue-3);
+	--robert-infoBorder: var(--blue-7);
+
+	--robert-successForeground: var(--green-11);
+	--robert-successBackground: var(--green-3);
+	--robert-successBorder: var(--green-7);
+
+	--robert-titleBarActiveBackground: var(--slate-2);
+	--robert-titleBarActiveForeground: var(--slate-12);
+
+	--robert-toolbarHoverBackground: var(--slate-4);
+	--robert-toolbarActiveBackground: var(--slate-5);
+
+	--robert-focusBorder: var(--blue-8);
+	--robert-quickInputBackground: var(--slate-2);
+	--robert-quickInputForeground: var(--slate-12);
+
+	--robert-fontFamily: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}

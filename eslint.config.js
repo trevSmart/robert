@@ -16,7 +16,6 @@ module.exports = [
       ".github/",
       ".cursor/",
       ".claude/",
-      ".sfdx/",
       ".vscode/",
       "resources/",
       "tmp/",

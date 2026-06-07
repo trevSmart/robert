@@ -1,25 +1,12 @@
 import * as vscode from 'vscode';
 import { OutputChannelManager } from './utils/OutputChannelManager';
-import { SettingsManager } from './SettingsManager';
-
-export enum LogLevel {
-	CRITICAL = 'CRITICAL',
-	ERROR = 'ERROR',
-	WARNING = 'WARNING',
-	INFO = 'INFO',
-	DEBUG = 'DEBUG'
-}
 
 export class ErrorHandler {
 	private static instance: ErrorHandler;
 	private outputManager: OutputChannelManager;
-	private minLogLevel: LogLevel = LogLevel.INFO;
-	private logLevelInitialized: boolean = false;
 
 	private constructor() {
 		this.outputManager = OutputChannelManager.getInstance();
-		this.setupGlobalErrorHandling();
-		// Don't call updateLogLevel here to avoid circular dependency with SettingsManager
 	}
 
 	public static getInstance(): ErrorHandler {
@@ -29,139 +16,39 @@ export class ErrorHandler {
 		return ErrorHandler.instance;
 	}
 
-	private updateLogLevel(): void {
-		// Only update once and avoid circular dependency
-		if (this.logLevelInitialized) return;
-		this.logLevelInitialized = true;
-
-		try {
-			const settingsManager = SettingsManager.getInstance();
-			const debugMode = settingsManager.getSetting('debugMode');
-			this.minLogLevel = debugMode ? LogLevel.DEBUG : LogLevel.INFO;
-		} catch (error) {
-			// If we can't get settings, just use INFO level
-			this.minLogLevel = LogLevel.INFO;
-		}
-	}
-
-	private shouldLog(level: LogLevel): boolean {
-		// Lazy initialization to handle circular dependencies
-		if (!this.logLevelInitialized) {
-			this.updateLogLevel();
-		}
-
-		const levels = [LogLevel.CRITICAL, LogLevel.ERROR, LogLevel.WARNING, LogLevel.INFO, LogLevel.DEBUG];
-		return levels.indexOf(level) <= levels.indexOf(this.minLogLevel);
-	}
-
-	/**
-	 * Setup global error handling for uncaught errors
-	 * NOTE: Global listeners removed to avoid capturing errors from other extensions
-	 */
-	private setupGlobalErrorHandling(): void {
-		// Global error listeners removed to prevent capturing errors from other extensions
-		// Only handle errors that originate from our extension code
-	}
-
-	/**
-	 * Handle errors and log them to the output channel
-	 */
 	public handleError(error: Error | string, context: string = 'Unknown'): void {
 		const errorMessage = typeof error === 'string' ? error : error.message;
 		const stackTrace = error instanceof Error ? error.stack : '';
-		const timestamp = new Date().toISOString();
 
-		this.outputManager.appendLine(`[Robert] ❌ ERROR in ${context}:`);
-		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
-		this.outputManager.appendLine(`[Robert] Message: ${errorMessage}`);
-		if (stackTrace) {
-			this.outputManager.appendLine(`[Robert] Stack Trace:`);
-			this.outputManager.appendLine(`[Robert] ${stackTrace}`);
-		}
-		this.outputManager.appendLine(`[Robert] ---`);
+		this.outputManager.error(`ERROR in ${context}: ${errorMessage}${stackTrace ? `\n${stackTrace}` : ''}`);
 
 		vscode.window.showErrorMessage(`Robert Extension Error: ${errorMessage}`);
 	}
 
-	/**
-	 * Log errors to the output channel without showing user notifications
-	 */
 	public logError(message: string, context: string = 'Unknown'): void {
-		if (!this.shouldLog(LogLevel.ERROR)) return;
-
-		const timestamp = new Date().toISOString();
-		this.outputManager.appendLine(`[Robert] ❌ ERROR in ${context}:`);
-		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
-		this.outputManager.appendLine(`[Robert] Message: ${message}`);
-		this.outputManager.appendLine(`[Robert] ---`);
+		this.outputManager.error(`[${context}] ${message}`);
 	}
 
-	/**
-	 * Log warnings to the output channel
-	 */
 	public logWarning(message: string, context: string = 'Unknown'): void {
-		if (!this.shouldLog(LogLevel.WARNING)) return;
-
-		const timestamp = new Date().toISOString();
-		this.outputManager.appendLine(`[Robert] ⚠️ WARNING in ${context}:`);
-		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
-		this.outputManager.appendLine(`[Robert] Message: ${message}`);
-		this.outputManager.appendLine(`[Robert] ---`);
+		this.outputManager.warn(`[${context}] ${message}`);
 	}
 
-	/**
-	 * Log info messages to the output channel
-	 */
 	public logInfo(message: string, context: string = 'Unknown'): void {
-		if (!this.shouldLog(LogLevel.INFO)) return;
-
-		const timestamp = new Date().toISOString();
-		this.outputManager.appendLine(`[Robert] ℹ️ INFO in ${context}:`);
-		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
-		this.outputManager.appendLine(`[Robert] Message: ${message}`);
-		this.outputManager.appendLine(`[Robert] ---`);
+		this.outputManager.info(`[${context}] ${message}`);
 	}
 
-	/**
-	 * Log debug messages to the output channel only if debug mode is enabled
-	 */
 	public logDebug(message: string, context: string = 'Unknown'): void {
-		if (!this.shouldLog(LogLevel.DEBUG)) return;
-
-		const timestamp = new Date().toISOString();
-		this.outputManager.appendLine(`[Robert] 🐞 DEBUG in ${context}:`);
-		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
-		this.outputManager.appendLine(`[Robert] Message: ${message}`);
-		this.outputManager.appendLine(`[Robert] ---`);
+		this.outputManager.debug(`[${context}] ${message}`);
 	}
 
-	/**
-	 * Log view destruction events to the output channel with special formatting
-	 */
 	public logViewDestruction(viewType: string, context: string = 'Unknown'): void {
-		const timestamp = new Date().toISOString();
-
-		this.outputManager.appendLine(`[Robert] 🗑️ VIEW DESTROYED in ${context}:`);
-		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
-		this.outputManager.appendLine(`[Robert] View Type: ${viewType}`);
-		this.outputManager.appendLine(`[Robert] ---`);
+		this.outputManager.info(`[${context}] VIEW DESTROYED: ${viewType}`);
 	}
 
-	/**
-	 * Log view creation/opening events to the output channel with special formatting
-	 */
 	public logViewCreation(viewType: string, context: string = 'Unknown'): void {
-		const timestamp = new Date().toISOString();
-
-		this.outputManager.appendLine(`[Robert] 🆕 VIEW CREATED in ${context}:`);
-		this.outputManager.appendLine(`[Robert] Time: ${timestamp}`);
-		this.outputManager.appendLine(`[Robert] View Type: ${viewType}`);
-		this.outputManager.appendLine(`[Robert] ---`);
+		this.outputManager.info(`[${context}] VIEW CREATED: ${viewType}`);
 	}
 
-	/**
-	 * Execute a function with error handling
-	 */
 	public async executeWithErrorHandling<T>(fn: () => Promise<T> | T, context: string = 'Unknown', fallback?: T): Promise<T | undefined> {
 		try {
 			return await fn();
@@ -171,9 +58,6 @@ export class ErrorHandler {
 		}
 	}
 
-	/**
-	 * Execute a function with error handling (synchronous version)
-	 */
 	public executeWithErrorHandlingSync<T>(fn: () => T, context: string = 'Unknown', fallback?: T): T | undefined {
 		try {
 			return fn();
@@ -184,9 +68,6 @@ export class ErrorHandler {
 	}
 }
 
-/**
- * Decorator to automatically handle errors in methods
- */
 export function handleErrors(context?: string) {
 	return (target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
 		const originalMethod = descriptor.value;
@@ -198,7 +79,7 @@ export function handleErrors(context?: string) {
 				const errorHandler = ErrorHandler.getInstance();
 				const methodContext = context || `${(target as { constructor?: { name?: string } }).constructor?.name || 'Unknown'}.${propertyKey}`;
 				errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), methodContext);
-				throw error; // Re-throw to maintain original behavior
+				throw error;
 			}
 		};
 
@@ -206,9 +87,6 @@ export function handleErrors(context?: string) {
 	};
 }
 
-/**
- * Decorator to automatically handle errors in synchronous methods
- */
 export function handleErrorsSync(context?: string) {
 	return (target: unknown, propertyKey: string, descriptor: PropertyDescriptor) => {
 		const originalMethod = descriptor.value;
@@ -220,7 +98,7 @@ export function handleErrorsSync(context?: string) {
 				const errorHandler = ErrorHandler.getInstance();
 				const methodContext = context || `${(target as { constructor?: { name?: string } }).constructor?.name || 'Unknown'}.${propertyKey}`;
 				errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), methodContext);
-				throw error; // Re-throw to maintain original behavior
+				throw error;
 			}
 		};
 

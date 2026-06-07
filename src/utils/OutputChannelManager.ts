@@ -1,20 +1,13 @@
 import * as vscode from 'vscode';
 
-/**
- * Centralized output channel manager for the Robert extension
- * Ensures only one output channel is created and reused throughout the extension
- */
 export class OutputChannelManager {
 	private static instance: OutputChannelManager;
-	private outputChannel: vscode.OutputChannel;
+	private outputChannel: vscode.LogOutputChannel;
 
 	private constructor() {
-		this.outputChannel = vscode.window.createOutputChannel('Robert');
+		this.outputChannel = vscode.window.createOutputChannel('Robert', { log: true });
 	}
 
-	/**
-	 * Get the singleton instance of OutputChannelManager
-	 */
 	public static getInstance(): OutputChannelManager {
 		if (!OutputChannelManager.instance) {
 			OutputChannelManager.instance = new OutputChannelManager();
@@ -22,44 +15,46 @@ export class OutputChannelManager {
 		return OutputChannelManager.instance;
 	}
 
-	/**
-	 * Get the output channel instance
-	 */
-	public getOutputChannel(): vscode.OutputChannel {
+	public getOutputChannel(): vscode.LogOutputChannel {
 		return this.outputChannel;
 	}
 
-	/**
-	 * Show the output channel
-	 */
 	public show(): void {
 		this.outputChannel.show(true);
 	}
 
-	/**
-	 * Append a line to the output channel
-	 */
+	public trace(message: string): void {
+		this.outputChannel.trace(message);
+	}
+
+	public debug(message: string): void {
+		this.outputChannel.debug(message);
+	}
+
+	public info(message: string): void {
+		this.outputChannel.info(message);
+	}
+
+	public warn(message: string): void {
+		this.outputChannel.warn(message);
+	}
+
+	public error(message: string | Error): void {
+		this.outputChannel.error(message);
+	}
+
 	public appendLine(line: string): void {
-		this.outputChannel.appendLine(line);
+		this.outputChannel.info(line);
 	}
 
-	/**
-	 * Append text to the output channel (without newline)
-	 */
 	public append(text: string): void {
-		this.outputChannel.append(text);
+		this.outputChannel.info(text);
 	}
 
-	/**
-	 * Clear the output channel
-	 */
 	public clear(): void {
 		this.outputChannel.clear();
 	}
 
-	/**
-	 * Dispose the output channel
-	 */
 	public dispose(): void {
 		this.outputChannel.dispose();
 	}

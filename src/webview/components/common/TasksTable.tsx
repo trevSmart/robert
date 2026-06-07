@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { themeColors } from '../../utils/themeColors';
 import { useColumnResize } from '../../hooks/useColumnResize';
 import { useTableSort } from '../../hooks/useTableSort';
+import { AvatarWithName } from './Avatar';
 
 interface Task {
 	objectId: string;
@@ -230,7 +231,9 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.name}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.state}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.owner || 'N/A'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+									<AvatarWithName name={task.owner || ''} size={20} emptyLabel="N/A" />
+								</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center' }}>{task.estimate || 0}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center' }}>{task.toDo}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center' }}>{task.timeSpent}</td>

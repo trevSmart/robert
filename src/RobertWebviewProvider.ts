@@ -607,11 +607,18 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private _postDevModeInit(webview: vscode.Webview): void {
 		const send = () => {
 			const debugMode = this._settingsManager.getSetting('debugMode');
-			void webview.postMessage({
-				command: 'devModeInit',
-				devMode: isTestTabEnabled(),
-				debugMode
-			});
+			void webview
+				.postMessage({
+					command: 'devModeInit',
+					devMode: isTestTabEnabled(),
+					debugMode
+				})
+				.then(undefined, error => {
+					this._errorHandler.logDebug(
+						`Failed to post devModeInit: ${error instanceof Error ? error.message : String(error)}`,
+						'RobertWebviewProvider._postDevModeInit'
+					);
+				});
 		};
 
 		send();

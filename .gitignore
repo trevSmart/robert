@@ -51,6 +51,7 @@ jspm_packages/
 
 # IDE files
 .idea/
+.vscode/launch.json
 *.swp
 *.swo
 *~
@@ -87,10 +88,9 @@ tmp/
 *.backup
 *.bak
 
-# Salesforce CLI (local config and metadata cache)
+# Salesforce CLI (local artifacts — this is not an SFDX project)
 .sf/
 .sfdx/
 sfdx-project.json
 .forceignore
-
-.env
+force-app/

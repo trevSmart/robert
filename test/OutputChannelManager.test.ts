@@ -9,7 +9,11 @@ vi.mock('vscode', () => ({
 			append: vi.fn(),
 			show: vi.fn(),
 			clear: vi.fn(),
-			dispose: vi.fn()
+			dispose: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+			error: vi.fn(),
+			debug: vi.fn()
 		}))
 	}
 }));
@@ -43,11 +47,11 @@ describe('OutputChannelManager', () => {
 		it('should append line to output channel', () => {
 			const manager = OutputChannelManager.getInstance();
 			const channel = manager.getOutputChannel();
-			const appendLineSpy = vi.spyOn(channel, 'appendLine');
-			
+			const infoSpy = vi.spyOn(channel, 'info');
+
 			manager.appendLine('Test message');
-			
-			expect(appendLineSpy).toHaveBeenCalledWith('Test message');
+
+			expect(infoSpy).toHaveBeenCalledWith('Test message');
 		});
 	});
 
@@ -55,11 +59,11 @@ describe('OutputChannelManager', () => {
 		it('should append text to output channel', () => {
 			const manager = OutputChannelManager.getInstance();
 			const channel = manager.getOutputChannel();
-			const appendSpy = vi.spyOn(channel, 'append');
-			
+			const infoSpy = vi.spyOn(channel, 'info');
+
 			manager.append('Test text');
-			
-			expect(appendSpy).toHaveBeenCalledWith('Test text');
+
+			expect(infoSpy).toHaveBeenCalledWith('Test text');
 		});
 	});
 

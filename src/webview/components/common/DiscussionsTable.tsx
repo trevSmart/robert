@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import DOMPurify from 'dompurify';
 import { Discussion } from '../../../types/rally';
 import Avatar from './Avatar';
 
@@ -49,8 +50,18 @@ const MessageText = styled.div`
 	font-size: 13px;
 	color: var(--vscode-foreground);
 	line-height: 1.5;
-	white-space: pre-wrap;
 	word-break: break-word;
+	overflow-wrap: anywhere;
+
+	p {
+		margin: 0 0 8px;
+	}
+	p:last-child {
+		margin-bottom: 0;
+	}
+	a {
+		color: var(--vscode-textLink-foreground);
+	}
 `;
 
 const LoadingContainer = styled.div`
@@ -161,7 +172,7 @@ const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loadin
 						<AuthorName>{discussion.author || 'Unknown'}</AuthorName>
 						<MessageDate>{formatDate(discussion.createdDate)}</MessageDate>
 					</MessageHeader>
-					<MessageText>{discussion.text}</MessageText>
+					<MessageText dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(discussion.text || '') }} />
 				</MessageBubble>
 			))}
 		</ChatContainer>

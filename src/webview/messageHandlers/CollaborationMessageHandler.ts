@@ -99,10 +99,15 @@ export class CollaborationMessageHandler {
 				});
 			}
 		} catch (error) {
-			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadCollaborationMessages');
+			const errorMessage = this.getCollaborationErrorMessage(error);
+			if (/HTTP 502|502 Bad Gateway|HTTP 503|503 Service Unavailable|HTTP 504|504 Gateway Timeout|fetch failed|ECONNREFUSED|ENOTFOUND/i.test(errorMessage)) {
+				this.errorHandler.logWarning(`Collaboration service unavailable: ${errorMessage}`, 'loadCollaborationMessages');
+			} else {
+				this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadCollaborationMessages');
+			}
 			webview.postMessage({
 				command: 'collaborationMessagesError',
-				error: this.getCollaborationErrorMessage(error)
+				error: errorMessage
 			});
 		}
 	}

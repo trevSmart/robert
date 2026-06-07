@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
+import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { isLightTheme } from '../../utils/themeColors';
 import type { VelocityData } from '../../utils/metricsUtils';
 
@@ -10,17 +11,11 @@ interface VelocityTrendChartProps {
 
 const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
-	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
 	useEffect(() => {
 		if (!chartRef.current || loading || data.length === 0) return;
 
-		// Initialize chart
-		if (!chartInstanceRef.current) {
-			chartInstanceRef.current = echarts.init(chartRef.current);
-		}
-
-		const chart = chartInstanceRef.current;
+		const chart = initChart(chartRef.current);
 		const lightTheme = isLightTheme();
 
 		// Preparar dades
@@ -54,6 +49,7 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 			},
 			tooltip: {
 				trigger: 'axis',
+				enterable: false,
 				axisPointer: {
 					type: 'cross',
 					crossStyle: {
@@ -153,9 +149,8 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 			]
 		};
 
-		chart.setOption(option);
+		setChartOption(chart, option);
 
-		// Handle resize
 		const handleResize = () => {
 			chart.resize();
 		};
@@ -163,18 +158,9 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			disposeChart(chart);
 		};
 	}, [data, loading]);
-
-	// Cleanup on unmount
-	useEffect(() => {
-		return () => {
-			if (chartInstanceRef.current) {
-				chartInstanceRef.current.dispose();
-				chartInstanceRef.current = null;
-			}
-		};
-	}, []);
 
 	if (loading) {
 		return (

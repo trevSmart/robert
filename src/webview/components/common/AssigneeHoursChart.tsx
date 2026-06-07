@@ -1,6 +1,7 @@
-import { type FC, useEffect, useRef, useCallback } from 'react';
-import * as echarts from 'echarts';
+import { type FC, useEffect, useRef, useCallback, useMemo } from 'react';
+import type * as echarts from 'echarts';
 import { aggregateUserStoriesByAssignee, getMemberColor, isLightVscodeTheme } from '../../utils/chartUtils';
+import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { themeColors } from '../../utils/themeColors';
 import { type UserStory } from '../../../types/rally';
 
@@ -8,9 +9,10 @@ interface AssigneeHoursChartProps {
 	userStories: UserStory[];
 }
 
+const TOOLTIP_SHOW_DELAY_MS = 200;
+
 const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
-	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
 	const getStoryColor = useCallback((storyId: string): string => {
 		return getMemberColor(storyId);
@@ -19,34 +21,31 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	const barHeight = 20; // Height per bar in pixels
 	const separatorHeight = 15; // Extra space for visual separator after Unassigned
 
-	// Include all stories (with and without assignees)
-	const allAssigneeData = aggregateUserStoriesByAssignee(
-		userStories.map(story => ({
-			...story,
-			assignee: story.assignee || 'Unassigned'
-		})) as Array<UserStory & { assignee: string }>
-	);
+	const assigneeData = useMemo(() => {
+		const allAssigneeData = aggregateUserStoriesByAssignee(
+			userStories.map(story => ({
+				...story,
+				assignee: story.assignee || 'Unassigned'
+			})) as Array<UserStory & { assignee: string }>
+		);
 
-	// Separate Unassigned from the rest and reorder: Unassigned first, then others sorted by hours
-	const unassignedData = allAssigneeData.filter(item => item.name === 'Unassigned');
-	const assignedData = allAssigneeData.filter(item => item.name !== 'Unassigned');
-	const hasUnassigned = unassignedData.length > 0;
+		const unassignedData = allAssigneeData.filter(item => item.name === 'Unassigned');
+		const assignedData = allAssigneeData.filter(item => item.name !== 'Unassigned');
+		const hasUnassigned = unassignedData.length > 0;
 
-	// Combine: Unassigned first (if exists), then separator placeholder, then assigned
-	const assigneeData = hasUnassigned
-		? [...unassignedData, { name: '', userStories: [], totalHours: 0 }, ...assignedData] // Empty item as separator
-		: assignedData;
+		return hasUnassigned
+			? [...unassignedData, { name: '', userStories: [], totalHours: 0 }, ...assignedData]
+			: assignedData;
+	}, [userStories]);
 
+	const hasUnassigned = assigneeData.some(item => item.name === 'Unassigned');
 	const numBars = assigneeData.length;
 	const chartHeight = Math.max(300, numBars * barHeight + (hasUnassigned ? separatorHeight : 0) + 70); // Min 300px, add 70px for title and margins
 
 	useEffect(() => {
 		if (!chartRef.current) return;
 
-		// Initialize chart
-		if (!chartInstanceRef.current) {
-			chartInstanceRef.current = echarts.init(chartRef.current);
-		}
+		const chart = initChart(chartRef.current);
 
 		// Data is already ordered: Unassigned first (if exists), separator, then assigned sorted by hours
 		// We don't re-sort here to preserve that ordering
@@ -146,11 +145,13 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			},
 			tooltip: {
 				trigger: 'axis',
-				triggerOn: 'mousemove',
+				// Delay is handled manually so it can be cancelled when the pointer leaves.
+				triggerOn: 'none',
 				axisPointer: {
 					type: 'shadow'
 				},
-				showDelay: 200,
+				confine: true,
+				showDelay: 0,
 				hideDelay: 0,
 				enterable: false,
 				position: ((point: [number, number], params: echarts.TooltipComponentFormatterCallbackParams, dom: HTMLElement, rect: unknown, size: { viewSize: [number, number]; contentSize: [number, number] }): [number, number] => {
@@ -206,7 +207,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 					color: themeColors.foreground,
 					fontSize: 11.5
 				},
-				extraCssText: 'backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);'
+				extraCssText: 'pointer-events: none; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);'
 			},
 			grid: {
 				left: '3%',
@@ -259,37 +260,133 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			series: series
 		};
 
-		chartInstanceRef.current?.setOption(option);
+		let pointerInside = false;
+		let tooltipVisible = false;
+		let showDelayTimer: ReturnType<typeof setTimeout> | null = null;
+		let lastPointer = { x: 0, y: 0 };
 
-		// Explicitly hide the tooltip when the pointer leaves the chart.
-		// ECharts' globalout can be unreliable with a custom position + showDelay,
-		// so we also listen on the DOM container's mouseleave as a fallback.
-		const hideTooltip = () => {
-			chartInstanceRef.current?.dispatchAction({ type: 'hideTip' });
+		const cancelPendingShow = () => {
+			if (showDelayTimer !== null) {
+				clearTimeout(showDelayTimer);
+				showDelayTimer = null;
+			}
 		};
-		chartInstanceRef.current?.on('globalout', hideTooltip);
+
+		const hideTooltip = () => {
+			if (chart.isDisposed()) return;
+			pointerInside = false;
+			tooltipVisible = false;
+			cancelPendingShow();
+			chart.dispatchAction({ type: 'updateAxisPointer', currTrigger: 'leave' });
+			chart.dispatchAction({ type: 'hideTip' });
+		};
+
+		const showTooltipAtPointer = () => {
+			if (!pointerInside || chart.isDisposed()) return;
+			chart.dispatchAction({
+				type: 'updateAxisPointer',
+				currTrigger: 'mousemove',
+				x: lastPointer.x,
+				y: lastPointer.y
+			});
+		};
+
+		const scheduleTooltipShow = (x: number, y: number) => {
+			lastPointer = { x, y };
+			cancelPendingShow();
+			if (!pointerInside) return;
+
+			const delay = tooltipVisible ? 0 : TOOLTIP_SHOW_DELAY_MS;
+			showDelayTimer = setTimeout(() => {
+				showDelayTimer = null;
+				showTooltipAtPointer();
+			}, delay);
+		};
+
+		const handlePointerMove = (x: number, y: number) => {
+			pointerInside = true;
+			scheduleTooltipShow(x, y);
+		};
+
+		setChartOption(chart, option);
+
+		const handleShowTip = () => {
+			tooltipVisible = true;
+		};
+		const handleHideTip = () => {
+			tooltipVisible = false;
+		};
+		const handleZrMouseMove = (event: { offsetX: number; offsetY: number }) => {
+			handlePointerMove(event.offsetX, event.offsetY);
+		};
+		const handleMouseEnter = () => {
+			pointerInside = true;
+		};
+
+		chart.on('showTip', handleShowTip);
+		chart.on('hideTip', handleHideTip);
+
+		// ECharts globalout can be unreliable inside scrollable webviews; use layered fallbacks.
+		chart.on('globalout', hideTooltip);
+		const zr = chart.getZr();
+		zr.on('globalout', hideTooltip);
+		zr.on('mousemove', handleZrMouseMove);
+
 		const containerEl = chartRef.current;
+		containerEl?.addEventListener('mouseenter', handleMouseEnter);
 		containerEl?.addEventListener('mouseleave', hideTooltip);
 
-		// Handle resize
+		const handleScroll = () => hideTooltip();
+		window.addEventListener('scroll', handleScroll, true);
+
+		let mouseCheckRaf: number | null = null;
+		const handleDocumentMouseMove = (event: MouseEvent) => {
+			if (!containerEl) return;
+			if (mouseCheckRaf !== null) return;
+			mouseCheckRaf = requestAnimationFrame(() => {
+				mouseCheckRaf = null;
+				const rect = containerEl.getBoundingClientRect();
+				const inside =
+					event.clientX >= rect.left &&
+					event.clientX <= rect.right &&
+					event.clientY >= rect.top &&
+					event.clientY <= rect.bottom;
+				if (!inside) {
+					hideTooltip();
+				} else {
+					pointerInside = true;
+					const relativeX = event.clientX - rect.left;
+					const relativeY = event.clientY - rect.top;
+					scheduleTooltipShow(relativeX, relativeY);
+				}
+			});
+		};
+		document.addEventListener('mousemove', handleDocumentMouseMove);
+
 		const handleResize = () => {
-			chartInstanceRef.current?.resize();
+			hideTooltip();
+			chart.resize();
 		};
 		window.addEventListener('resize', handleResize);
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
-			chartInstanceRef.current?.off('globalout', hideTooltip);
+			window.removeEventListener('scroll', handleScroll, true);
+			document.removeEventListener('mousemove', handleDocumentMouseMove);
+			if (mouseCheckRaf !== null) {
+				cancelAnimationFrame(mouseCheckRaf);
+			}
+			cancelPendingShow();
+			chart.off('showTip', handleShowTip);
+			chart.off('hideTip', handleHideTip);
+			chart.off('globalout', hideTooltip);
+			zr.off('globalout', hideTooltip);
+			zr.off('mousemove', handleZrMouseMove);
+			containerEl?.removeEventListener('mouseenter', handleMouseEnter);
 			containerEl?.removeEventListener('mouseleave', hideTooltip);
+			disposeChart(chart);
 		};
 	}, [userStories, assigneeData, getStoryColor]);
-
-	// Cleanup on unmount
-	useEffect(() => {
-		return () => {
-			chartInstanceRef.current?.dispose();
-		};
-	}, []);
 
 	return (
 		<div

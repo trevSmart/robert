@@ -2003,9 +2003,21 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			return;
 		}
 
+		const shouldIgnoreWebviewError = (message: string) => {
+			const normalized = message.trim();
+			if (!normalized || normalized === 'Unspecified webview error' || normalized === 'Script error.') {
+				return true;
+			}
+			return /ResizeObserver loop/i.test(normalized);
+		};
+
 		const handleError = (event: ErrorEvent) => {
+			if (shouldIgnoreWebviewError(event.message)) {
+				return;
+			}
 			sendMessage({
 				command: 'webviewError',
+				webviewId,
 				errorMessage: event.message,
 				errorStack: event.error instanceof Error ? event.error.stack : undefined,
 				source: event.filename,
@@ -2014,9 +2026,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		};
 
 		const handleRejection = (event: PromiseRejectionEvent) => {
+			const message = event.reason instanceof Error ? event.reason.message : String(event.reason);
+			if (shouldIgnoreWebviewError(message)) {
+				return;
+			}
 			sendMessage({
 				command: 'webviewError',
-				errorMessage: event.reason instanceof Error ? event.reason.message : String(event.reason),
+				webviewId,
+				errorMessage: message,
 				errorStack: event.reason instanceof Error ? event.reason.stack : undefined,
 				type: 'unhandledrejection'
 			});

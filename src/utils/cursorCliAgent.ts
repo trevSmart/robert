@@ -66,7 +66,7 @@ function runAgentProcess(agentPath: string, args: string[], cwd: string, token?:
 			}
 			settled = true;
 			clearTimeout(timeout);
-			token?.onCancellationRequested(() => undefined);
+			// Cancellation listener is registered below; don't register additional handlers here.
 			if (error) {
 				reject(error);
 			} else {

@@ -3,6 +3,7 @@ import { themeColors } from '../../utils/themeColors';
 import type { TestCase } from '../../../types/rally';
 import { useColumnResize } from '../../hooks/useColumnResize';
 import { useTableSort } from '../../hooks/useTableSort';
+import { AvatarWithName } from './Avatar';
 
 interface TestCasesTableProps {
 	testCases: TestCase[];
@@ -216,7 +217,9 @@ const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading = fa
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.state}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.type || '—'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.priority || '—'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.owner || 'N/A'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+									<AvatarWithName name={tc.owner || ''} size={20} emptyLabel="N/A" />
+								</td>
 							</tr>
 						))}
 					</tbody>

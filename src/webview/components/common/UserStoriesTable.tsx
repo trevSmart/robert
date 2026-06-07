@@ -3,6 +3,7 @@ import { themeColors, isLightTheme } from '../../utils/themeColors';
 import { type UserStory } from '../../../types/rally';
 import { useTableSort, type SortConfig } from '../../hooks/useTableSort';
 import { useColumnResize } from '../../hooks/useColumnResize';
+import { AvatarWithName } from './Avatar';
 
 // Icon components
 const TasksIcon = () => (
@@ -312,7 +313,9 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 							>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: userStory.assignee ? themeColors.foreground : '#6c757d', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.assignee || 'Unassigned'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+										<AvatarWithName name={userStory.assignee || ''} size={20} emptyLabel="Unassigned" />
+									</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: getScheduleStateColor(userStory.scheduleState || 'new'), overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.scheduleState || 'N/A'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center', overflow: 'hidden' }}>

@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Discussion } from '../../../types/rally';
+import Avatar from './Avatar';
 
 const ChatContainer = styled.div<{ embedded?: boolean }>`
 	display: flex;
@@ -156,6 +157,7 @@ const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loadin
 			{sortedDiscussions.map(discussion => (
 				<MessageBubble key={discussion.objectId}>
 					<MessageHeader>
+						<Avatar name={discussion.author || ''} size={20} />
 						<AuthorName>{discussion.author || 'Unknown'}</AuthorName>
 						<MessageDate>{formatDate(discussion.createdDate)}</MessageDate>
 					</MessageHeader>

@@ -47,6 +47,9 @@ export class RallyMessageHandler {
 			case 'loadTeamMembers':
 				await this.handleLoadTeamMembers(webview, message);
 				return true;
+			case 'getRallyCurrentUser':
+				await this.handleGetRallyCurrentUser(webview);
+				return true;
 			default:
 				return false;
 		}
@@ -136,6 +139,22 @@ export class RallyMessageHandler {
 					error: 'Failed to load iterations'
 				});
 			}
+		}
+	}
+
+	private async handleGetRallyCurrentUser(webview: vscode.Webview): Promise<void> {
+		try {
+			const userResult = await getCurrentUser();
+			webview.postMessage({
+				command: 'rallyCurrentUser',
+				user: userResult?.user || null
+			});
+		} catch (error) {
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getRallyCurrentUser');
+			webview.postMessage({
+				command: 'rallyCurrentUser',
+				user: null
+			});
 		}
 	}
 

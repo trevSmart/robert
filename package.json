@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.2.84",
+	"version": "0.3.0",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -22,7 +22,7 @@
 	],
 	"contributes": {
 		"configuration": {
-			"title": "Robert",
+			"title": "IBM Robert",
 			"properties": {
 				"robert.autoRefresh": {
 					"type": "boolean",
@@ -63,11 +63,6 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Automatically connect to collaboration server on startup"
-				},
-				"robert.showOutputChannelOnStartup": {
-					"type": "boolean",
-					"default": false,
-					"description": "For development purposes. Show the extension's output channel when the extension starts up"
 				},
 				"robert.statusBarShowSprintDaysLeft": {
 					"type": "boolean",
@@ -154,6 +149,7 @@
 		"build:webview": "vite build",
 		"lint": "eslint src/**/*.{ts,tsx} --ext .ts,.tsx",
 		"lint:fix": "node scripts/lint-fix.cjs",
+		"knip": "knip",
 		"format": "prettier --write \"src/**/*.{ts,tsx,json,js,md}\"",
 		"test": "vitest run",
 		"test:coverage": "vitest run --coverage",
@@ -172,7 +168,6 @@
 		"publish:pre-release": "vsce publish --pre-release"
 	},
 	"devDependencies": {
-		"@types/dompurify": "^3.0.5",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "^25.6.0",
 		"@types/react": "^19.2.14",
@@ -186,10 +181,9 @@
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.9.1",
 		"eslint": "^10.2.0",
-		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-prettier": "^5.5.5",
 		"eslint-plugin-react-hooks": "^7.1.1",
 		"glob": "^13.0.6",
+		"knip": "^6.16.1",
 		"mocha": "^11.7.5",
 		"prettier": "^3.8.3",
 		"typescript": "^6.0.2",

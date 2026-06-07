@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getTestCaseWithParent, getUserStoryRevisions, getUserStoryRevisionsCount } from '../../libs/rally/rallyServices';
+import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getTestCaseWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchRallyImageAsBase64 } from '../../libs/rally/rallyServices';
 
 /**
  * Handles search and lookup-related webview messages
@@ -31,6 +31,9 @@ export class SearchMessageHandler {
 				return true;
 			case 'getUserStoryRevisions':
 				await this.handleGetUserStoryRevisions(webview, message);
+				return true;
+			case 'fetchRallyImage':
+				await this.handleFetchRallyImage(webview, message);
 				return true;
 			default:
 				return false;
@@ -169,5 +172,15 @@ export class SearchMessageHandler {
 				revisions: []
 			});
 		}
+	}
+
+	private async handleFetchRallyImage(webview: vscode.Webview, message: any): Promise<void> {
+		const result = await fetchRallyImageAsBase64(message.url);
+		webview.postMessage({
+			type: 'rallyImageFetched',
+			url: message.url,
+			requestId: message.requestId,
+			...result
+		});
 	}
 }

@@ -40,7 +40,8 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	onDefectSelected,
 	onBackToUserStories,
 	onActiveUserStoryTabChange,
-	loadMoreUserStories
+	loadMoreUserStories,
+	collaborationEnabled
 }) => {
 	const additionalTabContent = selectedUserStory
 		? {
@@ -84,7 +85,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
 					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} collaborationEnabled={collaborationEnabled} />
 				</>
 			)}
 		</div>

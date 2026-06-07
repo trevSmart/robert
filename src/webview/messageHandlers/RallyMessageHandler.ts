@@ -465,7 +465,7 @@ export class RallyMessageHandler {
 
 	private async handleLoadTeamMembers(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading team members from last 6 sprints', 'RallyMessageHandler');
+			this.errorHandler.logDebug('Loading team members from last 6 sprints', 'RallyMessageHandler');
 			this.errorHandler.logDebug('Webview received loadTeamMembers command', 'RallyMessageHandler');
 
 			const teamMembersResult = await getRecentTeamMembers(6);

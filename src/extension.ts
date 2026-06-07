@@ -101,10 +101,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 	// Get settings manager to check if should show output channel on startup
 	const settingsManager = SettingsManager.getInstance();
-	const showOutputOnStartup = settingsManager.getSetting('showOutputChannelOnStartup');
-
-	// Auto-show output channel if setting is enabled or if in debug mode
-	if (showOutputOnStartup || isDebugMode) {
+	// Auto-show output channel if debug mode is enabled
+	if (isDebugMode) {
 		outputManager.show();
 	}
 

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/webview/main.tsx",
+    "src/webview/logo.tsx",
+    "src/webview/main.html",
+    "src/webview/logo.html",
+    "test/runTest.ts",
+    "test/suite/index.ts",
+    ".vscode-test.js"
+  ],
+  "project": [
+    "src/**/*.{ts,tsx}",
+    "test/**/*.ts"
+  ],
+  "ignore": [
+    "src/webview/types/**"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreUnresolved": [
+    "collaborationClient$",
+    "/types/rally$"
+  ],
+  "rules": {
+    "exports": "off",
+    "types": "off",
+    "duplicates": "off",
+    "unresolved": "warn"
+  },
+  "ignoreDependencies": []
+}

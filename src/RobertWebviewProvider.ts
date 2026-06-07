@@ -614,10 +614,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					debugMode
 				})
 				.then(undefined, error => {
-					this._errorHandler.logDebug(
-						`Failed to post devModeInit: ${error instanceof Error ? error.message : String(error)}`,
-						'RobertWebviewProvider._postDevModeInit'
-					);
+					this._errorHandler.logDebug(`Failed to post devModeInit: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider._postDevModeInit');
 				});
 		};
 

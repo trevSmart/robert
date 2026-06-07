@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
+import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { isLightTheme } from '../../utils/themeColors';
 import type { StateDistribution, BlockedDistribution } from '../../utils/metricsUtils';
 
@@ -22,17 +23,11 @@ interface StateDistributionPieProps {
 
 const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, blockedData = [], sprintName = 'Next Sprint', loading = false, selectedSprint = 'next', onSprintChange, iterations = [], showSelector = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
-	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
 	useEffect(() => {
 		if (!chartRef.current || loading || data.length === 0) return;
 
-		// Initialize chart
-		if (!chartInstanceRef.current) {
-			chartInstanceRef.current = echarts.init(chartRef.current);
-		}
-
-		const chart = chartInstanceRef.current;
+		const chart = initChart(chartRef.current);
 		const lightTheme = isLightTheme();
 
 		// Colors per cada estat - Versió Viva
@@ -86,6 +81,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 			},
 			tooltip: {
 				trigger: 'item',
+				enterable: false,
 				backgroundColor: lightTheme ? 'rgba(255, 255, 255, 0.9)' : 'rgba(50, 50, 50, 0.9)',
 				borderColor: lightTheme ? '#ccc' : '#555',
 				borderWidth: 1,
@@ -178,9 +174,8 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 			]
 		};
 
-		chart.setOption(option);
+		setChartOption(chart, option);
 
-		// Handle resize
 		const handleResize = () => {
 			chart.resize();
 		};
@@ -188,25 +183,9 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			disposeChart(chart);
 		};
 	}, [data, blockedData, sprintName, loading]);
-
-	// Cleanup when data becomes empty or on unmount
-	useEffect(() => {
-		if (data.length === 0 || loading) {
-			if (chartInstanceRef.current) {
-				chartInstanceRef.current.dispose();
-				chartInstanceRef.current = null;
-			}
-		}
-
-		return () => {
-			if (chartInstanceRef.current) {
-				chartInstanceRef.current.dispose();
-				chartInstanceRef.current = null;
-			}
-		};
-	}, [data.length, loading]);
 
 	if (loading) {
 		return (

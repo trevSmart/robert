@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import * as echarts from 'echarts';
+import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { isLightTheme } from '../../utils/themeColors';
 import type { DefectsBySeverity } from '../../utils/metricsUtils';
 
@@ -10,17 +11,11 @@ interface DefectSeverityChartProps {
 
 const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
-	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
 	useEffect(() => {
 		if (!chartRef.current || loading || data.length === 0) return;
 
-		// Initialize chart
-		if (!chartInstanceRef.current) {
-			chartInstanceRef.current = echarts.init(chartRef.current);
-		}
-
-		const chart = chartInstanceRef.current;
+		const chart = initChart(chartRef.current);
 		const lightTheme = isLightTheme();
 
 		// Extreure sprints únics
@@ -88,6 +83,7 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 			},
 			tooltip: {
 				trigger: 'axis',
+				enterable: false,
 				axisPointer: {
 					type: 'shadow'
 				},
@@ -163,9 +159,8 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 			series: series
 		};
 
-		chart.setOption(option);
+		setChartOption(chart, option);
 
-		// Handle resize
 		const handleResize = () => {
 			chart.resize();
 		};
@@ -173,18 +168,9 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			disposeChart(chart);
 		};
 	}, [data, loading]);
-
-	// Cleanup on unmount
-	useEffect(() => {
-		return () => {
-			if (chartInstanceRef.current) {
-				chartInstanceRef.current.dispose();
-				chartInstanceRef.current = null;
-			}
-		};
-	}, []);
 
 	if (loading) {
 		return (

@@ -1,5 +1,6 @@
 import { FC, useState, useCallback, useMemo, useRef, useEffect, type ReactNode } from 'react';
 import styled from 'styled-components';
+import { AvatarFormField } from './Avatar';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme } from '../../utils/themeColors';
 import { getVsCodeApi } from '../../utils/vscodeApi';
@@ -429,20 +430,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 
 				<div>
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Assigned To</label>
-					<input
-						type="text"
-						value={userStory.assignee || 'N/A'}
-						readOnly
-						style={{
-							width: '100%',
-							padding: '6px 8px',
-							backgroundColor: 'var(--vscode-input-background)',
-							color: 'var(--vscode-input-foreground)',
-							border: '1px solid var(--vscode-input-border)',
-							borderRadius: '3px',
-							fontSize: '13px'
-						}}
-					/>
+					<AvatarFormField name={userStory.assignee || ''} emptyLabel="N/A" />
 				</div>
 
 				<div>

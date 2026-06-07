@@ -114,6 +114,35 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 
 export default Avatar;
 
+interface AvatarFormFieldProps {
+	name: string;
+	emptyLabel?: string;
+}
+
+export const AvatarFormField: FC<AvatarFormFieldProps> = ({ name, emptyLabel = 'N/A' }) => {
+	const isEmpty = !name || !name.trim();
+	return (
+		<div
+			style={{
+				display: 'flex',
+				alignItems: 'center',
+				gap: '8px',
+				width: '100%',
+				padding: '6px 8px',
+				backgroundColor: 'var(--vscode-input-background)',
+				border: '1px solid var(--vscode-input-border)',
+				borderRadius: '3px',
+				fontSize: '13px',
+				color: isEmpty ? '#6c757d' : 'var(--vscode-input-foreground)',
+				boxSizing: 'border-box'
+			}}
+		>
+			<Avatar name={name} size={18} />
+			<span>{isEmpty ? emptyLabel : name}</span>
+		</div>
+	);
+};
+
 interface AvatarWithNameProps {
 	name: string;
 	size?: number;

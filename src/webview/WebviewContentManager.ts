@@ -34,7 +34,7 @@ export class WebviewContentManager {
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
 					__INTER_FONT_URI__: interFontUri.toString(),
 					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
-					__TEST_TAB_ENABLED__: String(isTestTabEnabled())
+					__TEST_TAB_ENABLED__: String(testTabEnabled)
 				});
 			}, 'WebviewContentManager.getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);

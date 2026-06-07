@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import DOMPurify from 'dompurify';
 import styled from 'styled-components';
 import { AvatarFormField } from './Avatar';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
@@ -216,7 +217,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 
 							<div
 								dangerouslySetInnerHTML={{
-									__html: defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+									__html: DOMPurify.sanitize(defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>')
 								}}
 								style={{
 									width: '100%',

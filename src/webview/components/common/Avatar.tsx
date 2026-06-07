@@ -1,6 +1,6 @@
 import { FC } from 'react';
 
-const EMPTY_SENTINELS = new Set(['unassigned', 'sense assignat', 'n/a', 'unknown', '-', '—']);
+const EMPTY_SENTINELS = new Set(['unassigned', 'sense assignat', 'sense propietari', 'n/a', 'unknown', '-', '—']);
 
 function isEmpty(name: string): boolean {
 	return !name || !name.trim() || EMPTY_SENTINELS.has(name.trim().toLowerCase());

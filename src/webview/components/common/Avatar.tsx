@@ -2,7 +2,7 @@ import { FC } from 'react';
 
 function getAvatarColor(name: string): string {
 	if (!name || !name.trim()) {
-		return 'hsl(0, 0%, 35%)';
+		return 'transparent';
 	}
 	let sum = 0;
 	for (let i = 0; i < name.length; i++) {
@@ -14,7 +14,7 @@ function getAvatarColor(name: string): string {
 
 function getInitials(name: string): string {
 	if (!name || !name.trim()) {
-		return '?';
+		return '✕';
 	}
 	const parts = name.trim().split(/\s+/);
 	if (parts.length === 1) {
@@ -33,9 +33,13 @@ interface AvatarProps {
 }
 
 const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgress = 0, ringColor = 'var(--vscode-charts-green, #4caf50)', fontSize }) => {
+	const isEmpty = !name || !name.trim();
 	const bg = getAvatarColor(name);
 	const initials = getInitials(name);
 	const fs = fontSize ?? Math.round(size * 0.38);
+	const fw = size >= 32 ? 'bold' : '400';
+	const color = isEmpty ? '#6c757d' : 'white';
+	const border = isEmpty ? '1px dashed #6c757d' : undefined;
 
 	if (!showRing) {
 		return (
@@ -45,13 +49,15 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 					height: `${size}px`,
 					borderRadius: '50%',
 					background: bg,
+					border,
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					color: 'white',
-					fontWeight: 'bold',
+					color,
+					fontWeight: fw,
 					fontSize: `${fs}px`,
-					flexShrink: 0
+					flexShrink: 0,
+					boxSizing: 'border-box'
 				}}
 			>
 				{initials}
@@ -89,13 +95,15 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 					height: `${size}px`,
 					borderRadius: '50%',
 					background: bg,
+					border,
 					display: 'flex',
 					alignItems: 'center',
 					justifyContent: 'center',
-					color: 'white',
-					fontWeight: 'bold',
+					color,
+					fontWeight: fw,
 					fontSize: `${fs}px`,
-					flexShrink: 0
+					flexShrink: 0,
+					boxSizing: 'border-box'
 				}}
 			>
 				{initials}

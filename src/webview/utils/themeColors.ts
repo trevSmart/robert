@@ -172,3 +172,29 @@ export const isLightTheme = (): boolean => {
 export const getInputBorderColor = (): string => {
 	return isLightTheme() ? '#b0b0b0' : themeColors.inputBorder;
 };
+
+/**
+ * Theme-aware color for a schedule/workflow state label rendered as plain text.
+ * Light theme uses darker, more saturated variants so the text stays legible on
+ * the light editor background (e.g. yellow/light-gray are unreadable otherwise).
+ */
+export const getScheduleStateColor = (scheduleState?: string): string => {
+	const light = isLightTheme();
+	switch (scheduleState?.toLowerCase()) {
+		case 'new':
+		case 'idea':
+			return light ? '#5a6268' : '#9aa3ad'; // Gris
+		case 'defined':
+			return light ? '#d35400' : '#fd7e14'; // Taronja
+		case 'in-progress':
+			return light ? '#b8860b' : '#ffc107'; // Groc → daurat fosc en clar
+		case 'completed':
+			return light ? '#0a58ca' : '#4ea3f5'; // Blau
+		case 'accepted':
+			return light ? '#157347' : '#3fc97e'; // Verd
+		case 'closed':
+			return light ? '#343a40' : '#adb5bd'; // Gris fosc / clar
+		default:
+			return themeColors.descriptionForeground;
+	}
+};

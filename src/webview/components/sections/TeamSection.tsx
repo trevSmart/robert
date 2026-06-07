@@ -49,6 +49,12 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
 		.slice(0, 12);
 
+	// Resolve the name of the currently selected sprint for the header
+	const selectedSprintName =
+		selectedTeamIteration === 'current'
+			? currentIterationName || 'Current Sprint'
+			: iterations.find(it => it.objectId === selectedTeamIteration)?.name || currentIterationName || 'Current Sprint';
+
 	// Split members into active and inactive
 	const activeMembers = teamMembers.filter(m => {
 		const hasStories = (m.progress as any).userStoriesCount > 0;
@@ -131,15 +137,16 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 												fontWeight: '600',
 												textTransform: 'uppercase',
 												letterSpacing: '0.5px',
-												opacity: 0.7
+												opacity: 0.7,
+												textAlign: 'center'
 											}}
 										>
-											Active in Sprint
+											Collaborating in {selectedSprintName}
 										</h4>
 										<div
 											style={{
 												display: 'grid',
-												gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+												gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
 												gap: '12px'
 											}}
 										>
@@ -174,16 +181,16 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 														{/* Avatar with Progress Ring */}
 														<Avatar
 															name={member.name}
-															size={48}
+															size={40}
 															showRing={true}
 															ringProgress={percentage}
 															ringColor={progressColor}
 														/>
 
 														{/* Member Info */}
-														<div style={{ width: '100%' }}>
-															<div style={{ marginBottom: '6px' }}>
-																<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '14px', fontWeight: '400' }}>{member.name}</h4>
+														<div style={{ width: '100%', minWidth: 0 }}>
+															<div style={{ marginBottom: '6px', marginTop: '8px' }}>
+																<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '13px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
 																<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
 																<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
 																	{member.progress.completedHours}h / {member.progress.totalHours}h
@@ -208,7 +215,8 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 												fontWeight: '600',
 												textTransform: 'uppercase',
 												letterSpacing: '0.5px',
-												opacity: 0.7
+												opacity: 0.7,
+												textAlign: 'center'
 											}}
 										>
 											Other Team Members
@@ -216,7 +224,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 										<div
 											style={{
 												display: 'grid',
-												gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+												gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
 												gap: '12px'
 											}}
 										>
@@ -249,9 +257,9 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 														<Avatar name={member.name} size={36} />
 
 														{/* Member Info */}
-														<div style={{ width: '100%' }}>
-															<div style={{ marginBottom: '6px' }}>
-																<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400' }}>{member.name}</h4>
+														<div style={{ width: '100%', minWidth: 0 }}>
+															<div style={{ marginBottom: '6px', marginTop: '8px' }}>
+																<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
 															</div>
 														</div>
 													</div>

@@ -155,10 +155,10 @@ class CollapsibleCard extends HTMLElement {
 					padding-right: 16px;
 					padding-top: ${this.collapsed ? '0' : '16px'};
 					padding-bottom: ${this.collapsed ? '0' : '16px'};
-					max-height: ${this.collapsed ? '0' : '2000px'};
+					max-height: ${this.collapsed ? '0' : 'none'};
 					opacity: ${this.collapsed ? '0' : '1'};
-					overflow: hidden;
-					transition: max-height 0.3s ease, opacity 0.25s ease, padding-top 0.3s ease, padding-bottom 0.3s ease;
+					overflow: ${this.collapsed ? 'hidden' : 'visible'};
+					transition: opacity 0.25s ease, padding-top 0.3s ease, padding-bottom 0.3s ease;
 				}
 
 				svg {

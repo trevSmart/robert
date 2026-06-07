@@ -140,9 +140,19 @@ export const AvatarWithName: FC<AvatarWithNameProps> = ({
 }) => {
   const isEmpty = !name || !name.trim();
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
       <Avatar name={name} size={size} />
-      <span style={{ color: isEmpty ? '#6c757d' : undefined }}>
+      <span
+        style={{
+          color: isEmpty ? '#6c757d' : undefined,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+          minWidth: 0,
+          flex: '1 1 auto',
+          display: 'block'
+        }}
+      >
         {isEmpty ? emptyLabel : name}
       </span>
     </div>

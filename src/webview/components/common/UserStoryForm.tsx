@@ -429,7 +429,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
 						<div
 							dangerouslySetInnerHTML={{
-								__html: userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+								__html: DOMPurify.sanitize(userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>')
 							}}
 							style={{
 								width: '100%',

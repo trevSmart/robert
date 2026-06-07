@@ -10,9 +10,15 @@ vi.mock('vscode', () => ({
 	window: {
 		createOutputChannel: vi.fn(() => ({
 			appendLine: vi.fn(),
+			append: vi.fn(),
 			show: vi.fn(),
 			hide: vi.fn(),
-			dispose: vi.fn()
+			clear: vi.fn(),
+			dispose: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+			error: vi.fn(),
+			debug: vi.fn()
 		})),
 		createStatusBarItem: vi.fn(() => ({
 			text: '',

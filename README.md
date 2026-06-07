@@ -9,9 +9,7 @@ Robert is a VS Code extension that integrates with Rally (Agile project manageme
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- npm (v9 or higher)
-- VS Code (v1.74.0 or higher)
+- VS Code (v1.105.1 or higher)
 
 ### Installation from Source
 

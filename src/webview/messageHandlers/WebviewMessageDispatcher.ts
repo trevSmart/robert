@@ -5,12 +5,24 @@ import { SearchMessageHandler } from './SearchMessageHandler';
 import { CollaborationMessageHandler } from './CollaborationMessageHandler';
 import { CalendarMessageHandler } from './CalendarMessageHandler';
 import { CollaborationClient } from '../../libs/collaboration/collaborationClient';
+import { SettingsManager } from '../../SettingsManager';
+import { isTestTabEnabled } from '../../utils/devMode';
+import { DEFAULT_CURSOR_AGENT_PROMPT, openCursorAgentWithPrompt } from '../../utils/cursorAgent';
+import { CURSOR_CLI_POC_PROMPT, requestCursorCliInsights } from '../../utils/cursorCliAgent';
+import { requestLanguageModelInsights } from '../../utils/languageModel';
+
+/** Navigation state synced between webviews within the same extension-host session. */
+export type NavigationState = Record<string, unknown>;
+
+const LEGACY_NAVIGATION_STATE_KEY = 'robert.navigationState';
 
 /**
  * Central dispatcher for all webview messages
  * Routes messages to appropriate handlers based on command type
  */
 export class WebviewMessageDispatcher {
+	private static sessionNavigationState: NavigationState | undefined;
+
 	private rallyHandler: RallyMessageHandler;
 	private searchHandler: SearchMessageHandler;
 	private collaborationHandler: CollaborationMessageHandler;
@@ -25,6 +37,16 @@ export class WebviewMessageDispatcher {
 		this.searchHandler = new SearchMessageHandler(errorHandler);
 		this.collaborationHandler = new CollaborationMessageHandler(errorHandler, collaborationClient);
 		this.calendarHandler = new CalendarMessageHandler(errorHandler, collaborationClient, context);
+	}
+
+	/** Clears in-session navigation state (e.g. on extension reload). */
+	public static clearSessionNavigationState(): void {
+		WebviewMessageDispatcher.sessionNavigationState = undefined;
+	}
+
+	/** Removes navigation state persisted across sessions by older versions. */
+	public static clearLegacyPersistedNavigationState(context: vscode.ExtensionContext): void {
+		void context.globalState.update(LEGACY_NAVIGATION_STATE_KEY, undefined);
 	}
 
 	/**
@@ -62,6 +84,11 @@ export class WebviewMessageDispatcher {
 		switch (command) {
 			case 'webviewReady':
 				this.errorHandler.logInfo(`Webview ready: context=${message.context}`, 'WebviewMessageDispatcher');
+				await webview.postMessage({
+					command: 'devModeInit',
+					devMode: isTestTabEnabled(),
+					debugMode: SettingsManager.getInstance().getSetting('debugMode')
+				});
 				return true;
 
 			case 'hello':
@@ -81,12 +108,12 @@ export class WebviewMessageDispatcher {
 
 			case 'saveState':
 				if (message.state) {
-					this.context.globalState.update('robert.navigationState', message.state);
+					WebviewMessageDispatcher.sessionNavigationState = message.state as NavigationState;
 				}
 				return true;
 
 			case 'getState':
-				const savedState = this.context.globalState.get('robert.navigationState');
+				const savedState = WebviewMessageDispatcher.sessionNavigationState;
 				if (savedState) {
 					webview.postMessage({
 						command: 'restoreState',
@@ -125,6 +152,76 @@ export class WebviewMessageDispatcher {
 			case 'logDebug':
 				if (message.message && message.context) {
 					this.errorHandler.logDebug(message.message as string, message.context as string);
+				}
+				return true;
+
+			case 'openCursorAgentPrompt':
+				if (!isTestTabEnabled()) {
+					return true;
+				}
+				try {
+					const prompt = typeof message.prompt === 'string' && message.prompt.trim() ? message.prompt : DEFAULT_CURSOR_AGENT_PROMPT;
+					const target = await openCursorAgentWithPrompt(prompt);
+					const label = target === 'cursor' ? 'Cursor agent' : 'VS Code chat';
+					vscode.window.showInformationMessage(`Prompt prepared in ${label}. Review and submit when ready.`);
+					this.errorHandler.logInfo(`Opened ${label} with prepared prompt`, 'WebviewMessageDispatcher.openCursorAgentPrompt');
+				} catch (error) {
+					const err = error instanceof Error ? error : new Error(String(error));
+					this.errorHandler.handleError(err, 'WebviewMessageDispatcher.openCursorAgentPrompt');
+					vscode.window.showErrorMessage(`Could not open agent chat: ${err.message}`);
+				}
+				return true;
+
+			case 'requestLanguageModelInsights':
+				if (!isTestTabEnabled()) {
+					return true;
+				}
+				try {
+					const prompt = typeof message.prompt === 'string' && message.prompt.trim() ? message.prompt : DEFAULT_CURSOR_AGENT_PROMPT;
+					const result = await requestLanguageModelInsights(prompt);
+					await webview.postMessage({
+						command: 'languageModelInsightsResult',
+						text: result.text,
+						modelName: result.modelName
+					});
+					this.errorHandler.logInfo(`Language model insights received (${result.modelName})`, 'WebviewMessageDispatcher.requestLanguageModelInsights');
+				} catch (error) {
+					const err = error instanceof Error ? error : new Error(String(error));
+					this.errorHandler.handleError(err, 'WebviewMessageDispatcher.requestLanguageModelInsights');
+					await webview.postMessage({
+						command: 'languageModelInsightsError',
+						error: err.message
+					});
+				}
+				return true;
+
+			case 'requestCursorCliInsights':
+				if (!isTestTabEnabled()) {
+					await webview.postMessage({
+						command: 'cursorCliInsightsError',
+						error: 'Test tab handlers are disabled. Enable robert.debugMode or run the extension from F5 (Extension Development Host).'
+					});
+					return true;
+				}
+				try {
+					const prompt = typeof message.prompt === 'string' && message.prompt.trim() ? message.prompt : CURSOR_CLI_POC_PROMPT;
+					await webview.postMessage({ command: 'cursorCliInsightsStarted' });
+					this.errorHandler.logInfo('Cursor CLI insights request started', 'WebviewMessageDispatcher.requestCursorCliInsights');
+					const result = await requestCursorCliInsights(prompt);
+					await webview.postMessage({
+						command: 'cursorCliInsightsResult',
+						text: result.text,
+						agentPath: result.agentPath,
+						model: result.model
+					});
+					this.errorHandler.logInfo(`Cursor CLI insights received (${result.agentPath})`, 'WebviewMessageDispatcher.requestCursorCliInsights');
+				} catch (error) {
+					const err = error instanceof Error ? error : new Error(String(error));
+					this.errorHandler.handleError(err, 'WebviewMessageDispatcher.requestCursorCliInsights');
+					await webview.postMessage({
+						command: 'cursorCliInsightsError',
+						error: err.message
+					});
 				}
 				return true;
 

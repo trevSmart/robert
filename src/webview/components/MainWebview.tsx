@@ -24,6 +24,7 @@ import PortfolioSection, { type PortfolioViewType } from './sections/PortfolioSe
 import MetricsSection from './sections/MetricsSection';
 import SearchSection from './sections/SearchSection';
 import TeamSection from './sections/TeamSection';
+import TestSection from './sections/TestSection';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem } from '../../types/rally';
@@ -36,7 +37,7 @@ import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollCon
 import { getVsCodeApi } from '../utils/vscodeApi';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
-type SectionType = 'search' | 'home' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration';
+type SectionType = 'search' | 'home' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration' | 'test';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
 
 interface PortfolioViewConfig {
@@ -519,7 +520,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [iterationsLoading, setIterationsLoading] = useState(true);
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
-	const [debugMode, setDebugMode] = useState<boolean>(false);
+	const initialTestTabEnabled = typeof window !== 'undefined' && window.testTabEnabled === true;
+	const [debugMode, setDebugMode] = useState<boolean>(initialTestTabEnabled);
+	const [devMode, setDevMode] = useState<boolean>(initialTestTabEnabled);
+	const showTestTab = devMode || debugMode;
 	const [collaborationEnabled, setCollaborationEnabled] = useState<boolean>(false);
 	const [currentUser, setCurrentUser] = useState<RallyUser | null>(null);
 	const [holidays, setHolidays] = useState<Holiday[]>([]);
@@ -625,6 +629,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [rallyCallCount, setRallyCallCount] = useState(0);
 	// Ref for search input to focus when search tab is selected
 	const searchInputRef = useRef<HTMLInputElement>(null);
+	const previousSectionBeforeSearchRef = useRef<SectionType>('home');
 
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('home');
@@ -661,6 +666,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	// Track if we've already loaded team members to avoid redundant fetches
 	const hasLoadedTeamMembers = useRef(false);
+	const loadedTeamIterationRef = useRef<string | null>(null);
+	const pendingTeamIterationRef = useRef<string | null>(null);
+	const teamMembersLoadingRef = useRef(false);
 
 	// Track if this is the first time navigating to portfolio section
 	// (should auto-navigate to detail; subsequent times stay on list)
@@ -696,6 +704,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	const loadTeamMembers = useCallback(
 		(iterationId?: string) => {
+			const iterationKey = iterationId ?? 'current';
+			if (loadedTeamIterationRef.current === iterationKey || teamMembersLoadingRef.current) {
+				return;
+			}
+			teamMembersLoadingRef.current = true;
+			pendingTeamIterationRef.current = iterationKey;
 			setTeamMembersLoading(true);
 			setTeamMembersError(null);
 			sendMessage({
@@ -999,6 +1013,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
+			if (section === 'search' && activeSection !== 'search') {
+				previousSectionBeforeSearchRef.current = activeSection;
+			}
 			setActiveSection(section);
 			if (section === 'portfolio' || section === 'home') {
 				// Load iterations only if we don't already have them and we're not already loading / in error
@@ -1026,15 +1043,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				}
 			}
 		},
-		[loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories, selectedTeamIteration]
+		[activeSection, loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories, selectedTeamIteration]
 	);
 
-	// Reload team members when selected iteration changes (only if already loaded)
+	const handleSearchEscapeWhenEmpty = useCallback(() => {
+		handleSectionChange(previousSectionBeforeSearchRef.current);
+	}, [handleSectionChange]);
+
+	// Reload team members only when the selected iteration changes (not when navigating back to Team)
 	useEffect(() => {
-		if (activeSection === 'team' && hasLoadedTeamMembers.current) {
-			loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
-		}
-	}, [selectedTeamIteration, activeSection, loadTeamMembers]);
+		if (!hasLoadedTeamMembers.current) return;
+		loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
+	}, [selectedTeamIteration, loadTeamMembers]);
 
 	const findCurrentIteration = useCallback((iterations: Iteration[]): Iteration | null => {
 		const today = new Date();
@@ -1280,8 +1300,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		setGlobalSearchLoading(false);
 		setGlobalSearchError(null);
 
-		// Reset other state
-		setDebugMode(false);
+		// Reset other state (keep debugMode/devMode — extension settings, not session data)
 		setCurrentUser(null);
 		setHolidays([]);
 		setSelectedTutorial(null);
@@ -1291,6 +1310,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		hasLoadedPortfolioIterations.current = false;
 		hasLoadedHomeIterations.current = false;
 		hasLoadedTeamMembers.current = false;
+		loadedTeamIterationRef.current = null;
+		pendingTeamIterationRef.current = null;
+		teamMembersLoadingRef.current = false;
 		isFirstPortfolioNavigation.current = true;
 		loadedViews.current.clear();
 		attemptedUserStoryDefects.current.clear();
@@ -1309,6 +1331,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			const message = event.data;
 
 			switch (message.command) {
+				case 'devModeInit': {
+					const debugModeEnabled = Boolean(message.debugMode);
+					setDebugMode(debugModeEnabled);
+					setDevMode(Boolean(message.devMode) || debugModeEnabled);
+					break;
+				}
 				case 'refresh':
 					logDebug('Received refresh command from extension', 'MainWebview.handleMessage');
 					// Reset all state to initial values
@@ -1328,7 +1356,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					if (message.iterations) {
 						setIterations(message.iterations);
 						setIterationsError(null);
-						setDebugMode(message.debugMode || false);
+						const debugModeEnabled = Boolean(message.debugMode);
+						setDebugMode(debugModeEnabled);
+						setDevMode(Boolean(message.devMode) || debugModeEnabled);
 						setCollaborationEnabled(message.collaborationEnabled || false);
 						setCurrentUser(message.currentUser || null);
 						setHolidays(message.holidays || []);
@@ -1542,15 +1572,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					setUserStoryTestCasesError(message.error || 'Error loading test cases');
 					break;
 				case 'teamMembersLoaded':
+					teamMembersLoadingRef.current = false;
 					setTeamMembersLoading(false);
 					if (message.teamMembers) {
 						setTeamMembers(message.teamMembers);
 						setTeamMembersError(null);
+						loadedTeamIterationRef.current = pendingTeamIterationRef.current;
 					} else {
 						setTeamMembersError('Failed to load team members');
 					}
 					break;
 				case 'teamMembersError':
+					teamMembersLoadingRef.current = false;
 					setTeamMembersLoading(false);
 					setTeamMembersError(message.error || 'Error loading team members');
 					break;
@@ -1706,6 +1739,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			searchInputRef.current.select();
 		}
 	}, [activeSection]);
+
+	// Dev-only tab must not stay active outside Extension Development Host
+	useEffect(() => {
+		if (!showTestTab && activeSection === 'test') {
+			setActiveSection('home');
+		}
+	}, [showTestTab, activeSection]);
 
 	// Save navigation state to backend whenever it changes (syncs across webviews)
 	useEffect(() => {
@@ -2060,7 +2100,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			<GlobalStyle />
 			<CenteredContainer>
 				<StickyNav>
-					<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} />
+					<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} />
 					{portfolioSubTabsBar}
 				</StickyNav>
 				<SmoothScrollWrapper ref={wrapperRef}>
@@ -2083,6 +2123,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 												globalSearchLoadingMore={globalSearchLoadingMore}
 												onLoadMoreResults={loadMoreSearchResults}
 												globalSearchTermUsed={globalSearchTermUsed}
+												onEscapeWhenEmpty={handleSearchEscapeWhenEmpty}
 											/>
 										)}
 										{renderedSection === 'home' && (
@@ -2186,6 +2227,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 										)}
 
 										{renderedSection === 'collaboration' && <CollaborationSection selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />}
+
+										{renderedSection === 'test' && <TestSection devMode={showTestTab} sendMessage={sendMessage} />}
 
 										{renderedSection === 'portfolio' && (
 											<PortfolioSection

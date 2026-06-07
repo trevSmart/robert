@@ -5,6 +5,8 @@ import { SettingsManager } from './SettingsManager';
 import type { RallyData, Iteration } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
 import { clearAllRallyCaches } from './libs/rally/rallyServices';
+import { detectDebugMode, getTestTabEnabledReason, initDevMode, isTestTabEnabled } from './utils/devMode';
+import { WebviewMessageDispatcher } from './webview/messageHandlers/WebviewMessageDispatcher';
 
 // Rally data cache - centralized state management
 export const rallyData: RallyData = {
@@ -51,6 +53,8 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 		rallyData.defects = [];
 		rallyData.currentUser = undefined;
 
+		WebviewMessageDispatcher.clearSessionNavigationState();
+
 		// Step 3: Refresh webview provider (no need to re-register, just refresh data)
 		if (globalWebviewProvider) {
 			outputManager.appendLine('[Robert] 🔄 Refreshing webview provider...');
@@ -80,13 +84,20 @@ export function activate(context: vscode.ExtensionContext) {
 	_globalExtensionContext = context;
 
 	// Detect if running in debug mode
+	initDevMode(context);
 	const isDebugMode = detectDebugMode(context);
+	outputManager.appendLine(`[Robert] Test tab: ${isTestTabEnabled() ? 'enabled' : 'hidden'} (${getTestTabEnabledReason()})`);
+	outputManager.appendLine(`[Robert] Extension path: ${context.extensionPath}`);
 
 	// Close any previously opened Robert editors to avoid accumulation
 	closeExistingRobertEditors(outputManager);
 
 	// Initialize error handler
 	const errorHandler = ErrorHandler.getInstance();
+
+	// Navigation state is session-only; clear any legacy cross-session persistence
+	WebviewMessageDispatcher.clearLegacyPersistedNavigationState(context);
+	WebviewMessageDispatcher.clearSessionNavigationState();
 
 	// Get settings manager to check if should show output channel on startup
 	const settingsManager = SettingsManager.getInstance();
@@ -168,6 +179,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.workspace.onDidChangeConfiguration(e => {
 			if (e.affectsConfiguration('robert.statusBarShowSprintDaysLeft')) {
 				updateStatusBarItem(statusBarItem, 'idle', errorHandler);
+			}
+			if (e.affectsConfiguration('robert.debugMode')) {
+				webviewProvider.broadcastTestTabVisibility();
 			}
 		})
 	);
@@ -380,27 +394,6 @@ function closeExistingRobertEditors(outputManager: OutputChannelManager): void {
 	} catch (error) {
 		outputManager.appendLine(`[Robert] ⚠️  Error while checking for existing Robert editors: ${error instanceof Error ? error.message : String(error)}`);
 	}
-}
-
-/**
- * Detect if the extension is running in debug mode
- */
-function detectDebugMode(context: vscode.ExtensionContext): boolean {
-	// Method 1: Check if extension is running from development host
-	const isDevelopmentHost = context.extensionMode === vscode.ExtensionMode.Development;
-
-	// Method 2: Check if running in Extension Development Host
-	const isExtensionDevelopmentHost = process.env.VSCODE_EXTENSION_DEVELOPMENT === 'true';
-
-	// Method 3: Check if running from source (not packaged)
-	const isRunningFromSource = !context.extensionPath.includes('.vscode/extensions');
-
-	// Method 4: Check if debug configuration is active
-	const isDebugConfiguration = vscode.workspace.getConfiguration('robert').get('debugMode', false);
-
-	const debugMode = isDevelopmentHost || isExtensionDevelopmentHost || isRunningFromSource || isDebugConfiguration;
-
-	return debugMode;
 }
 
 /**

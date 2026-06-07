@@ -16,6 +16,7 @@ declare global {
 		timestamp?: string;
 		extensionUri?: string;
 		rebusLogoUri?: string;
+		testTabEnabled?: boolean;
 	}
 
 	// Web API globals

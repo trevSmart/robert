@@ -3,6 +3,7 @@ import { ErrorHandler } from '../../ErrorHandler';
 import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress } from '../../libs/rally/rallyServices';
 import { HolidayService } from '../../libs/holidayService';
 import { SettingsManager } from '../../SettingsManager';
+import { isTestTabEnabled } from '../../utils/devMode';
 
 /**
  * Handles all Rally API-related webview messages
@@ -104,7 +105,9 @@ export class RallyMessageHandler {
 					iterations: iterationsResult.iterations,
 					currentUser: userResult?.user || null,
 					holidays: holidays || [],
-					collaborationEnabled: collaborationEnabled || false
+					collaborationEnabled: collaborationEnabled || false,
+					devMode: isTestTabEnabled(),
+					debugMode: SettingsManager.getInstance().getSetting('debugMode')
 				});
 				this.errorHandler.logInfo(`Iterations loaded successfully: ${iterationsResult.count} iterations`, 'RallyMessageHandler');
 				if (userResult?.user) {

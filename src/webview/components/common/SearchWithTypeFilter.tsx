@@ -25,6 +25,7 @@ interface SearchWithTypeFilterProps {
 	onTypeChange: (type: SearchType) => void;
 	onSearchClick?: () => void;
 	onClear?: () => void;
+	onEscapeWhenEmpty?: () => void;
 	disableButton?: boolean;
 	inputRef?: React.RefObject<HTMLInputElement>;
 }
@@ -39,7 +40,7 @@ const typeLabels: Record<SearchType, string> = {
 
 const typeOptions: SearchType[] = ['all', 'user-stories', 'defects', 'tasks', 'test-cases'];
 
-const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder = 'Search...', value, onChange, selectedType, onTypeChange, onSearchClick, onClear, disableButton = false, inputRef }) => {
+const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder = 'Search...', value, onChange, selectedType, onTypeChange, onSearchClick, onClear, onEscapeWhenEmpty, disableButton = false, inputRef }) => {
 	const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
 	const [selectWidth, setSelectWidth] = useState('auto');
 	const selectRef = React.useRef<HTMLSelectElement>(null);
@@ -143,9 +144,13 @@ const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder
 						if (e.key === 'Enter' && value.trim() && onSearchClick) {
 							e.preventDefault();
 							onSearchClick();
-						} else if (e.key === 'Escape' && onClear) {
+						} else if (e.key === 'Escape') {
 							e.preventDefault();
-							onClear();
+							if (value.trim()) {
+								onClear?.();
+							} else {
+								onEscapeWhenEmpty?.();
+							}
 						}
 					}}
 					style={{

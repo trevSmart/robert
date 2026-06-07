@@ -7,7 +7,9 @@
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"/Users/marcpla/Documents/Projectes/REDACTED"
+				"/Users/marcpla/Documents/Projectes/REDACTED",
+				"--disable-extension=salesforce.salesforcedx-vscode-core",
+				"--disable-extension=salesforce.salesforcedx-vscode-apex-testing"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/src/**/*.js"

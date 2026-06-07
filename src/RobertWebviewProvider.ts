@@ -8,6 +8,7 @@ import { CollaborationClient } from './libs/collaboration/collaborationClient';
 import { WebSocketClient } from './libs/collaboration/websocketClient';
 import { WebviewContentManager } from './webview/WebviewContentManager';
 import { WebviewMessageDispatcher } from './webview/messageHandlers/WebviewMessageDispatcher';
+import { isTestTabEnabled } from './utils/devMode';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -223,6 +224,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 			// Handle messages from webview
 			this._setWebviewMessageListener(webviewView.webview, webviewId);
+			this._postDevModeInit(webviewView.webview);
 
 			// Handle view disposal
 			webviewView.onDidDispose(
@@ -269,6 +271,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				// Handle messages from webview
 				this._setWebviewMessageListener(panel.webview, webviewId);
+				this._postDevModeInit(panel.webview);
 
 				// Handle panel close
 				panel.onDidDispose(
@@ -601,6 +604,31 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		return `${context}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 	}
 
+	private _postDevModeInit(webview: vscode.Webview): void {
+		const send = () => {
+			const debugMode = this._settingsManager.getSetting('debugMode');
+			void webview.postMessage({
+				command: 'devModeInit',
+				devMode: isTestTabEnabled(),
+				debugMode
+			});
+		};
+
+		send();
+		// React may not be listening yet; retry after mount (retainContextWhenHidden can skip re-init).
+		setTimeout(send, 400);
+		setTimeout(send, 1200);
+	}
+
+	public broadcastTestTabVisibility(): void {
+		const debugMode = this._settingsManager.getSetting('debugMode');
+		this.broadcastToWebviews({
+			command: 'devModeInit',
+			devMode: isTestTabEnabled(),
+			debugMode
+		});
+	}
+
 	/**
 	 * Reset and refresh all webviews after extension reload
 	 * Sends a refresh message to all active webviews to reload their data
@@ -635,6 +663,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				}
 			}
 
+			this.broadcastTestTabVisibility();
 			this._errorHandler.logInfo('Webview refresh messages sent successfully', 'RobertWebviewProvider.resetAndRefreshWebviews');
 		}, 'RobertWebviewProvider.resetAndRefreshWebviews');
 	}

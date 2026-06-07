@@ -1,4 +1,4 @@
-import React from 'react';
+import { FC } from 'react';
 
 function getAvatarColor(name: string): string {
   if (!name || !name.trim()) {
@@ -32,7 +32,7 @@ interface AvatarProps {
   fontSize?: number;
 }
 
-const Avatar: React.FC<AvatarProps> = ({
+const Avatar: FC<AvatarProps> = ({
   name,
   size = 24,
   showRing = false,
@@ -112,7 +112,6 @@ const Avatar: React.FC<AvatarProps> = ({
           color: 'white',
           fontWeight: 'bold',
           fontSize: `${fs}px`,
-          marginBottom: '6px',
           flexShrink: 0,
         }}
       >
@@ -130,7 +129,7 @@ interface AvatarWithNameProps {
   emptyLabel?: string;
 }
 
-export const AvatarWithName: React.FC<AvatarWithNameProps> = ({
+export const AvatarWithName: FC<AvatarWithNameProps> = ({
   name,
   size = 20,
   emptyLabel = 'Unassigned',

@@ -1,6 +1,5 @@
 const typescript = require("@typescript-eslint/eslint-plugin");
 const typescriptParser = require("@typescript-eslint/parser");
-const react = require("eslint-plugin-react");
 const reactHooks = require("eslint-plugin-react-hooks");
 
 module.exports = [
@@ -58,12 +57,10 @@ module.exports = [
     },
     plugins: {
       "@typescript-eslint": typescript,
-      react,
       "react-hooks": reactHooks,
     },
     rules: {
       ...typescript.configs.recommended.rules,
-      ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }],
       "@typescript-eslint/no-explicit-any": "warn",
@@ -71,15 +68,6 @@ module.exports = [
       "no-console": ["warn", { allow: ["error"] }],
       "no-debugger": "warn",
       "no-unused-vars": "off",
-      "react/prop-types": "off",
-      "react/react-in-jsx-scope": "off",
-      "react/jsx-uses-react": "off",
-      "react/jsx-uses-vars": "error",
-    },
-    settings: {
-      react: {
-        version: "detect",
-      },
     },
   },
 ];

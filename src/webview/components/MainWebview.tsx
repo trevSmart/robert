@@ -668,6 +668,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const hasLoadedTeamMembers = useRef(false);
 	const loadedTeamIterationRef = useRef<string | null>(null);
 	const pendingTeamIterationRef = useRef<string | null>(null);
+	const requestedTeamIterationRef = useRef<string | null>(null);
 	const teamMembersLoadingRef = useRef(false);
 
 	// Track if this is the first time navigating to portfolio section
@@ -705,6 +706,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const loadTeamMembers = useCallback(
 		(iterationId?: string) => {
 			const iterationKey = iterationId ?? 'current';
+			requestedTeamIterationRef.current = iterationKey;
 			if (loadedTeamIterationRef.current === iterationKey || teamMembersLoadingRef.current) {
 				return;
 			}
@@ -1571,22 +1573,36 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					setUserStoryTestCasesLoading(false);
 					setUserStoryTestCasesError(message.error || 'Error loading test cases');
 					break;
-				case 'teamMembersLoaded':
+				case 'teamMembersLoaded': {
+					const completedTeamIteration = pendingTeamIterationRef.current;
+					const requestedTeamIteration = requestedTeamIterationRef.current;
+					pendingTeamIterationRef.current = null;
 					teamMembersLoadingRef.current = false;
 					setTeamMembersLoading(false);
 					if (message.teamMembers) {
 						setTeamMembers(message.teamMembers);
 						setTeamMembersError(null);
-						loadedTeamIterationRef.current = pendingTeamIterationRef.current;
+						loadedTeamIterationRef.current = completedTeamIteration;
 					} else {
 						setTeamMembersError('Failed to load team members');
 					}
+					if (requestedTeamIteration && requestedTeamIteration !== completedTeamIteration) {
+						loadTeamMembers(requestedTeamIteration === 'current' ? undefined : requestedTeamIteration);
+					}
 					break;
-				case 'teamMembersError':
+				}
+				case 'teamMembersError': {
+					const failedTeamIteration = pendingTeamIterationRef.current;
+					const requestedTeamIterationAfterError = requestedTeamIterationRef.current;
+					pendingTeamIterationRef.current = null;
 					teamMembersLoadingRef.current = false;
 					setTeamMembersLoading(false);
 					setTeamMembersError(message.error || 'Error loading team members');
+					if (requestedTeamIterationAfterError && requestedTeamIterationAfterError !== failedTeamIteration) {
+						loadTeamMembers(requestedTeamIterationAfterError === 'current' ? undefined : requestedTeamIterationAfterError);
+					}
 					break;
+				}
 				case 'globalSearchResults':
 					setGlobalSearchLoading(false);
 					setGlobalSearchError(null);
@@ -1718,7 +1734,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, iterations, resetAllState, activeSection]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, loadTeamMembers, iterations, resetAllState, activeSection]); // Only include dependencies needed by handleMessage
 
 	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
 	useEffect(() => {

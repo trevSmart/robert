@@ -70,13 +70,17 @@ const Avatar: FC<AvatarProps> = ({
   const svgSize = size + margin * 2;
   const cx = svgSize / 2;
   const cy = svgSize / 2;
+  const margin = 8;
+  const svgSize = size + margin * 2;
+  const cx = svgSize / 2;
+  const cy = svgSize / 2;
   const r = cx - 4;
+  const progress = Math.min(100, Math.max(0, ringProgress));
   const circumference = 2 * Math.PI * r;
-  const offset = circumference * (1 - ringProgress / 100);
+  const offset = circumference * (1 - progress / 100);
 
   return (
-    <div role="progressbar" aria-valuenow={ringProgress} aria-valuemin={0} aria-valuemax={100} style={{ position: 'relative' }}>
-      <svg
+    <div role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={'Progress: ' + progress + '%'} style={{ position: 'relative' }}>
         width={svgSize}
         height={svgSize}
         style={{

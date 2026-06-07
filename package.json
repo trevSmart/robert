@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.2.77",
+	"version": "0.2.84",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -11,7 +11,7 @@
 		"url": "https://github.com/trevSmart/robert.git"
 	},
 	"engines": {
-		"vscode": "^1.64.3"
+		"vscode": "^1.105.1"
 	},
 	"categories": [
 		"Other"
@@ -173,10 +173,10 @@
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
-		"@types/node": "^25.3.3",
+		"@types/node": "^25.6.0",
 		"@types/react": "^19.2.14",
 		"@types/react-dom": "^19.2.3",
-		"@types/vscode": "^1.115.0",
+		"@types/vscode": "^1.105.1",
 		"@typescript-eslint/eslint-plugin": "^8.58.1",
 		"@typescript-eslint/parser": "^8.57.0",
 		"@vitejs/plugin-react": "^6.0.1",
@@ -184,15 +184,13 @@
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.7.1",
-		"eslint": "^10.0.3",
+		"eslint": "^10.2.0",
 		"eslint-config-prettier": "^10.1.8",
-		"eslint-plugin-import": "^2.32.0",
 		"eslint-plugin-prettier": "^5.5.5",
-		"eslint-plugin-react": "^7.37.5",
-		"eslint-plugin-react-hooks": "^7.0.1",
+		"eslint-plugin-react-hooks": "^7.1.1",
 		"glob": "^13.0.6",
 		"mocha": "^11.7.5",
-		"prettier": "^3.8.1",
+		"prettier": "^3.8.3",
 		"typescript": "^6.0.2",
 		"vitest": "^4.0.18"
 	},
@@ -200,7 +198,7 @@
 		"@vscode/codicons": "^0.0.45",
 		"echarts": "^6.0.0",
 		"ibm-rally-node": "^0.0.17",
-		"lenis": "^1.3.18",
+		"lenis": "^1.3.23",
 		"node-fetch": "^3.3.2",
 		"react": "^19.2.4",
 		"react-dom": "^19.2.4",

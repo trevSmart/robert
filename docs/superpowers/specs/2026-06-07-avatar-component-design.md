@@ -91,10 +91,7 @@ Renders `[Avatar] Name` as a flex row, `gap: 6px`, vertically centered. Used in 
 |---|---|
 | `src/webview/components/sections/TeamSection.tsx` | Replace inline avatar JSX (active ~L179–224, inactive ~L297–327) with `<Avatar>` |
 | `src/webview/components/common/UserStoriesTable.tsx` | L315: replace plain text with `<AvatarWithName>` |
-| `src/webview/components/common/TasksTable.tsx` | L233: replace plain text with `<AvatarWithName>` |
-| `src/webview/components/common/TestCasesTable.tsx` | L219: replace plain text with `<AvatarWithName>` |
-| `src/webview/components/common/DiscussionsTable.tsx` | L159: replace plain text with `<AvatarWithName>` |
-
+| `src/webview/components/common/DiscussionsTable.tsx` | L159: prepend `<Avatar>` before the author name in `MessageHeader` |
 ---
 
 ## Behaviour Details

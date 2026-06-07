@@ -851,16 +851,16 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			const regionName = regionCode ? regionCode.split('-')[1] : null;
 			const displayText = isRegional && regionName ? `${holiday.localName || holiday.name} (${regionName})` : holiday.localName || holiday.name;
 
-			// Make national holidays slightly more opaque (+4 percentage points)
-			const nationalBaseOpacity = 0.53;
-			const nationalOpacity = Math.min(1, nationalBaseOpacity + 0.04); // 0.57
+			// In light theme use higher opacity so teal is readable on white background
+			const regionalOpacity = lightTheme ? 0.65 : 0.36;
+			const nationalOpacity = lightTheme ? 0.80 : 0.57;
 
 			events.push({
 				type: 'holiday',
 				displayText,
 				tooltip: `${holiday.localName || holiday.name}${isRegional ? ' (Regional)' : ' (National)'}`,
 				color: '#4cafa0', // Turquoise
-				opacity: isRegional ? 0.36 : nationalOpacity,
+				opacity: isRegional ? regionalOpacity : nationalOpacity,
 				data: holiday
 			});
 		}
@@ -1408,7 +1408,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												onMouseLeave={() => setHoveredEvent(null)}
 												style={{
 													backgroundColor: `rgba(${colorRgb}, ${event.opacity})`,
-													color: 'white',
+													color: lightTheme ? '#1a1a1a' : 'white',
 													fontSize: '10px',
 													fontWeight: 'normal',
 													padding: '3px 4px',
@@ -1435,7 +1435,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										<div
 											style={{
 												fontSize: '9px',
-												color: 'rgba(100, 100, 100, 0.8)',
+												color: lightTheme ? 'rgba(50, 50, 50, 0.8)' : 'rgba(180, 180, 180, 0.8)',
 												padding: '1px 4px',
 												marginLeft: '2px',
 												marginRight: '2px'
@@ -1789,7 +1789,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										fontSize: '12px',
 										width: '100%',
 										boxSizing: 'border-box',
-										colorScheme: 'dark'
+										colorScheme: lightTheme ? 'light' : 'dark'
 									}}
 								/>
 							</div>
@@ -1808,7 +1808,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										fontSize: '12px',
 										width: '100%',
 										boxSizing: 'border-box',
-										colorScheme: 'dark'
+										colorScheme: lightTheme ? 'light' : 'dark'
 									}}
 								/>
 							</div>

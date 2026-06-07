@@ -91,7 +91,27 @@ export async function processRallyHtmlImages(html: string, rallyBaseUrl?: string
 
 function isRallyUrl(url: string, rallyBaseUrl?: string): boolean {
 	if (!url || url.startsWith('data:')) return false;
-	if (rallyBaseUrl && url.startsWith(rallyBaseUrl)) return true;
-	// Rally URLs typically contain /slm/ or rally.com or rally1.rallydev.com
-	return url.includes('/slm/') || url.includes('rallydev.com') || url.includes('rally.com');
+
+	const isAllowedHost = (host: string, domain: string): boolean => host === domain || host.endsWith(`.${domain}`);
+
+	try {
+		// Support absolute and relative URLs.
+		const parsedUrl = new URL(url, 'https://placeholder.local');
+		const host = parsedUrl.hostname.toLowerCase();
+		const path = parsedUrl.pathname.toLowerCase();
+
+		if (rallyBaseUrl) {
+			try {
+				const baseHost = new URL(rallyBaseUrl).hostname.toLowerCase();
+				if (isAllowedHost(host, baseHost)) return true;
+			} catch {
+				// Ignore invalid rallyBaseUrl and continue with default host checks.
+			}
+		}
+
+		// Rally URLs typically contain /slm/ path or belong to rallydev.com / rally.com domains.
+		return path.includes('/slm/') || isAllowedHost(host, 'rallydev.com') || isAllowedHost(host, 'rally.com');
+	} catch {
+		return false;
+	}
 }

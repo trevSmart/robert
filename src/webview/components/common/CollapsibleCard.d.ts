@@ -11,6 +11,7 @@ declare global {
 				},
 				HTMLElement
 			>;
+		'collapsible-card-header-actions': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
 		}
 	}
 }

@@ -28,7 +28,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 				rowGap: '16px'
 			}}
 		>
-			<div>
+			<div style={{ minWidth: 0 }}>
 				<label
 					style={{
 						display: 'block',
@@ -45,6 +45,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 					readOnly
 					style={{
 						width: '100%',
+						boxSizing: 'border-box',
 						padding: '6px 8px',
 						backgroundColor: 'var(--vscode-editor-background)',
 						color: themeColors.inputForeground,
@@ -55,7 +56,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 				/>
 			</div>
 
-			<div>
+			<div style={{ minWidth: 0 }}>
 				<label
 					style={{
 						display: 'block',
@@ -72,6 +73,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 					readOnly
 					style={{
 						width: '100%',
+						boxSizing: 'border-box',
 						padding: '6px 8px',
 						backgroundColor: 'var(--vscode-editor-background)',
 						color: themeColors.inputForeground,
@@ -82,7 +84,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 				/>
 			</div>
 
-			<div>
+			<div style={{ minWidth: 0 }}>
 				<label
 					style={{
 						display: 'block',
@@ -99,6 +101,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 					readOnly
 					style={{
 						width: '100%',
+						boxSizing: 'border-box',
 						padding: '6px 8px',
 						backgroundColor: 'var(--vscode-editor-background)',
 						color: themeColors.inputForeground,
@@ -109,7 +112,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 				/>
 			</div>
 
-			<div>
+			<div style={{ minWidth: 0 }}>
 				<label
 					style={{
 						display: 'block',
@@ -126,6 +129,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 					readOnly
 					style={{
 						width: '100%',
+						boxSizing: 'border-box',
 						padding: '6px 8px',
 						backgroundColor: 'var(--vscode-editor-background)',
 						color: themeColors.inputForeground,
@@ -136,7 +140,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 				/>
 			</div>
 
-			<div>
+			<div style={{ minWidth: 0 }}>
 				<label
 					style={{
 						display: 'block',
@@ -153,6 +157,7 @@ const SprintDetailsForm: React.FC<SprintDetailsFormProps> = ({ iteration }) => {
 					readOnly
 					style={{
 						width: '100%',
+						boxSizing: 'border-box',
 						padding: '6px 8px',
 						backgroundColor: 'var(--vscode-editor-background)',
 						color: themeColors.inputForeground,

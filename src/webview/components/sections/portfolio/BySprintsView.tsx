@@ -54,7 +54,8 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	onBackToIterations,
 	onBackToUserStories,
 	onBackToDefects,
-	onActiveUserStoryTabChange
+	onActiveUserStoryTabChange,
+	collaborationEnabled
 }) => {
 	const [showOnlyThreeFutureSprints, setShowOnlyThreeFutureSprints] = useState(true);
 
@@ -158,7 +159,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
 					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} collaborationEnabled={collaborationEnabled} />
 				</>
 			)}
 		</div>

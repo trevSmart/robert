@@ -11,15 +11,15 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 24px;
-	padding: 0 8px;
-	border-radius: 999px;
+	min-height: 20px;
+	padding: 1px 8px;
+	border-radius: 6px;
 	font-size: 11px;
 	font-weight: 600;
 	letter-spacing: 0.2px;
-	background: ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.25)' : 'color(srgb 0.2 0.6 0.35 / 0.25)')};
-	color: ${props => (props.isBlocked ? 'color(srgb 0.9 0.2 0.2 / 1)' : 'color(srgb 0.2 0.75 0.45 / 1)')};
-	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.45)' : 'color(srgb 0.2 0.6 0.35 / 0.45)')};
+	background: ${props => (props.isBlocked ? 'color(srgb 0.75 0.2 0.2 / 0.15)' : 'color(srgb 0.15 0.55 0.3 / 0.15)')};
+	color: ${props => (props.isBlocked ? 'color(srgb 0.82 0.32 0.32 / 1)' : 'color(srgb 0.28 0.72 0.46 / 1)')};
+	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.75 0.2 0.2 / 0.35)' : 'color(srgb 0.15 0.55 0.3 / 0.35)')};
 `;
 
 // StatPill component with theme-aware styling
@@ -77,6 +77,7 @@ interface UserStoryFormProps {
 	selectedAdditionalTab?: AdditionalTabKey;
 	onAdditionalTabChange?: (tab: AdditionalTabKey) => void;
 	additionalTabContent?: Partial<Record<AdditionalTabKey, ReactNode>>;
+	collaborationEnabled?: boolean;
 }
 
 // Help Request icon
@@ -138,7 +139,7 @@ const DESCRIPTION_HEIGHT_MIN = 80;
 const DESCRIPTION_HEIGHT_MAX = 600;
 const DESCRIPTION_HEIGHT_DEFAULT = 300;
 
-const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange, additionalTabContent }) => {
+const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange, additionalTabContent, collaborationEnabled = false }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
@@ -283,24 +284,10 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	}, [vscode, userStory]);
 
 	return (
-		<collapsible-card
-			title={userStory.formattedId}
-			style={
-				{
-					margin: '20px 0'
-				} as React.CSSProperties
-			}
-		>
-			<div
-				style={{
-					display: 'flex',
-					justifyContent: 'space-between',
-					alignItems: 'center',
-					marginBottom: '20px'
-				}}
-			>
-				<div>
-					{requestSupportSuccess && (
+		<div>
+			<collapsible-card title="Details" style={{ margin: '20px 0' } as React.CSSProperties}>
+				<div slot="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginLeft: '12px' }}>
+					{collaborationEnabled && requestSupportSuccess && (
 						<span
 							style={{
 								fontSize: '12px',
@@ -314,41 +301,41 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							✓ Support requested
 						</span>
 					)}
-				</div>
-				<div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-					<button
-						onClick={handleRequestSupport}
-						disabled={requestSupportLoading}
-						title="Sol·licitar ajuda dels companys d'equip"
-						style={{
-							display: 'inline-flex',
-							alignItems: 'center',
-							gap: '6px',
-							padding: '6px 12px',
-							backgroundColor: requestSupportLoading ? 'var(--vscode-button-secondaryBackground)' : 'var(--vscode-button-background)',
-							color: requestSupportLoading ? 'var(--vscode-button-secondaryForeground)' : 'var(--vscode-button-foreground)',
-							border: 'none',
-							borderRadius: '3px',
-							fontSize: '12px',
-							fontWeight: '500',
-							cursor: requestSupportLoading ? 'not-allowed' : 'pointer',
-							opacity: requestSupportLoading ? 0.6 : 1,
-							whiteSpace: 'nowrap'
-						}}
-						onMouseEnter={e => {
-							if (!requestSupportLoading) {
-								e.currentTarget.style.backgroundColor = 'var(--vscode-button-hoverBackground)';
-							}
-						}}
-						onMouseLeave={e => {
-							if (!requestSupportLoading) {
-								e.currentTarget.style.backgroundColor = 'var(--vscode-button-background)';
-							}
-						}}
-					>
-						<HelpIcon size="14px" />
-						{requestSupportLoading ? 'Sol·licitant...' : 'Sol·licitar Ajuda'}
-					</button>
+					{collaborationEnabled && (
+						<button
+							onClick={handleRequestSupport}
+							disabled={requestSupportLoading}
+							title="Sol·licitar ajuda dels companys d'equip"
+							style={{
+								display: 'inline-flex',
+								alignItems: 'center',
+								gap: '6px',
+								padding: '6px 12px',
+								backgroundColor: requestSupportLoading ? 'var(--vscode-button-secondaryBackground)' : 'var(--vscode-button-background)',
+								color: requestSupportLoading ? 'var(--vscode-button-secondaryForeground)' : 'var(--vscode-button-foreground)',
+								border: 'none',
+								borderRadius: '3px',
+								fontSize: '12px',
+								fontWeight: '500',
+								cursor: requestSupportLoading ? 'not-allowed' : 'pointer',
+								opacity: requestSupportLoading ? 0.6 : 1,
+								whiteSpace: 'nowrap'
+							}}
+							onMouseEnter={e => {
+								if (!requestSupportLoading) {
+									e.currentTarget.style.backgroundColor = 'var(--vscode-button-hoverBackground)';
+								}
+							}}
+							onMouseLeave={e => {
+								if (!requestSupportLoading) {
+									e.currentTarget.style.backgroundColor = 'var(--vscode-button-background)';
+								}
+							}}
+						>
+							<HelpIcon size="14px" />
+							{requestSupportLoading ? 'Sol·licitant...' : 'Sol·licitar Ajuda'}
+						</button>
+					)}
 					{userStory.scheduleState && (
 						<div
 							style={{
@@ -361,47 +348,16 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						</div>
 					)}
 				</div>
-			</div>
 
-			<div style={{ marginBottom: '16px' }}>
-				<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
-				<input
-					type="text"
-					value={userStory.name}
-					readOnly
-					style={{
-						width: '100%',
-						padding: '6px 8px',
-						backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-						color: 'var(--vscode-input-foreground)',
-						border: '1px solid var(--vscode-input-border)',
-						borderRadius: '3px',
-						fontSize: '13px'
-					}}
-				/>
-			</div>
-
-			<div
-				style={{
-					display: 'grid',
-					gridTemplateColumns: '1fr 1fr',
-					columnGap: '40px',
-					rowGap: '12px',
-					alignItems: 'start'
-				}}
-			>
-				{/* Basic Information */}
-				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
-
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Plan Estimate</label>
+				<div style={{ marginBottom: '16px' }}>
+					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
 					<input
-						type="number"
-						value={userStory.planEstimate || 0}
+						type="text"
+						value={userStory.name}
 						readOnly
 						style={{
 							width: '100%',
+							boxSizing: 'border-box',
 							padding: '6px 8px',
 							backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 							color: 'var(--vscode-input-foreground)',
@@ -412,70 +368,101 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					/>
 				</div>
 
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Assigned To</label>
-					<AvatarFormField name={userStory.assignee || ''} emptyLabel="N/A" />
-				</div>
+				<div
+					style={{
+						display: 'grid',
+						gridTemplateColumns: '1fr 1fr',
+						columnGap: '40px',
+						rowGap: '12px',
+						alignItems: 'start'
+					}}
+				>
+					{/* Basic Information */}
+					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
+					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
 
-				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Blocked</label>
-					<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
-				</div>
-
-				{/* Description */}
-				<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
-
-					<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
-						<div
-							dangerouslySetInnerHTML={{
-								__html: DOMPurify.sanitize(userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>')
-							}}
+					<div style={{ minWidth: 0 }}>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Plan Estimate</label>
+						<input
+							type="number"
+							value={userStory.planEstimate || 0}
+							readOnly
 							style={{
 								width: '100%',
-								minHeight: `${DESCRIPTION_HEIGHT_MIN}px`,
-								maxHeight: `${descriptionHeight}px`,
 								boxSizing: 'border-box',
-								padding: '12px',
+								padding: '6px 8px',
 								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 								color: 'var(--vscode-input-foreground)',
-								fontSize: '13px',
-								fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-								lineHeight: '1.6',
-								overflow: 'auto'
+								border: '1px solid var(--vscode-input-border)',
+								borderRadius: '3px',
+								fontSize: '13px'
 							}}
 						/>
-						<div
-							role="separator"
-							aria-label="Resize description"
-							onMouseDown={handleDescriptionResizeStart}
-							style={{
-								height: '8px',
-								backgroundColor: 'var(--vscode-panel-border)',
-								cursor: 'ns-resize',
-								display: 'flex',
-								alignItems: 'center',
-								justifyContent: 'center',
-								flexShrink: 0
-							}}
-						>
+					</div>
+
+					<div>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Assigned To</label>
+						<AvatarFormField name={userStory.assignee || ''} emptyLabel="N/A" />
+					</div>
+
+					<div>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Blocked</label>
+						<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
+					</div>
+
+					{/* Description */}
+					<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
+						<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+
+						<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
 							<div
+								dangerouslySetInnerHTML={{
+									__html: DOMPurify.sanitize(userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>')
+								}}
 								style={{
-									width: '32px',
-									height: '3px',
-									borderRadius: '2px',
-									backgroundColor: 'var(--vscode-descriptionForeground)',
-									opacity: 0.6
+									width: '100%',
+									minHeight: `${DESCRIPTION_HEIGHT_MIN}px`,
+									maxHeight: `${descriptionHeight}px`,
+									boxSizing: 'border-box',
+									padding: '12px',
+									backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+									color: 'var(--vscode-input-foreground)',
+									fontSize: '13px',
+									fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+									lineHeight: '1.6',
+									overflow: 'auto'
 								}}
 							/>
+							<div
+								role="separator"
+								aria-label="Resize description"
+								onMouseDown={handleDescriptionResizeStart}
+								style={{
+									height: '8px',
+									backgroundColor: 'var(--vscode-panel-border)',
+									cursor: 'ns-resize',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									flexShrink: 0
+								}}
+							>
+								<div
+									style={{
+										width: '32px',
+										height: '3px',
+										borderRadius: '2px',
+										backgroundColor: 'var(--vscode-descriptionForeground)',
+										opacity: 0.6
+									}}
+								/>
+							</div>
 						</div>
 					</div>
 				</div>
-
-				{/* Additional Information */}
-				<div style={{ gridColumn: '1 / -1', margin: '20px 0 0 0', borderTop: '1px solid var(--vscode-panel-border)' }} />
-				<h3 style={{ margin: '12px 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px', gridColumn: '1 / -1' }}>Additional Information</h3>
-				<div style={{ gridColumn: '1 / -1' }}>
+			</collapsible-card>
+			<collapsible-card title="Related Records" style={{ margin: '20px 0' } as React.CSSProperties}>
+				<div>
 					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '12px' }}>
 						<StatPill isSelected={selectedAdditionalTab === 'tasks'} onClick={() => handleTabChange('tasks')} title="Click to view tasks">
 							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Tasks</span>
@@ -565,8 +552,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					)}
 					{additionalTabContent?.[selectedAdditionalTab] && selectedAdditionalTab !== 'revisions' && <div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>}
 				</div>
-			</div>
-		</collapsible-card>
+			</collapsible-card>
+		</div>
 	);
 };
 

@@ -1,3 +1,4 @@
+import './utils/injectInterFontFace';
 import 'lenis/dist/lenis.css';
 import { createRoot } from 'react-dom/client';
 import MainWebview from './components/MainWebview';

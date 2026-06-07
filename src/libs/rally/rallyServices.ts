@@ -1758,7 +1758,7 @@ export async function getUserStoryDiscussions(userStoryId: string) {
  */
 export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 	try {
-		errorHandler.logInfo(`Getting team members from last ${numberOfIterations} iterations`, 'rallyServices.getRecentTeamMembers');
+		errorHandler.logDebug(`Getting team members from last ${numberOfIterations} iterations`, 'rallyServices.getRecentTeamMembers');
 
 		// Check cache first
 		const projectId = await getProjectId();
@@ -1767,7 +1767,7 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 		const cachedTeamMembers = teamMembersCache.get(cacheKey);
 
 		if (cachedTeamMembers) {
-			errorHandler.logInfo(`Returning ${cachedTeamMembers.length} team members from cache`, 'rallyServices.getRecentTeamMembers');
+			errorHandler.logDebug(`Returning ${cachedTeamMembers.length} team members from cache`, 'rallyServices.getRecentTeamMembers');
 			return {
 				teamMembers: cachedTeamMembers,
 				source: 'cache',
@@ -1780,7 +1780,7 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 		const iterations = iterationsResult.iterations;
 
 		if (!iterations || iterations.length === 0) {
-			errorHandler.logInfo('No iterations found', 'rallyServices.getRecentTeamMembers');
+			errorHandler.logDebug('No iterations found', 'rallyServices.getRecentTeamMembers');
 			return {
 				teamMembers: [],
 				source: 'api',
@@ -1788,7 +1788,7 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 			};
 		}
 
-		errorHandler.logInfo(`Total iterations available: ${iterations.length}`, 'rallyServices.getRecentTeamMembers');
+		errorHandler.logDebug(`Total iterations available: ${iterations.length}`, 'rallyServices.getRecentTeamMembers');
 
 		// Filter only past or current iterations (endDate <= today)
 		const today = new Date();
@@ -1799,7 +1799,7 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 			return endDate <= today;
 		});
 
-		errorHandler.logInfo(`Past/current iterations: ${pastIterations.length}`, 'rallyServices.getRecentTeamMembers');
+		errorHandler.logDebug(`Past/current iterations: ${pastIterations.length}`, 'rallyServices.getRecentTeamMembers');
 
 		// Sort iterations by end date (most recent first) and take the last N
 		const sortedIterations = [...pastIterations].sort((a, b) => {
@@ -1809,28 +1809,28 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 		});
 
 		const recentIterations = sortedIterations.slice(0, numberOfIterations);
-		errorHandler.logInfo(`Found ${recentIterations.length} recent iterations: ${recentIterations.map(i => i.name).join(', ')}`, 'rallyServices.getRecentTeamMembers');
+		errorHandler.logDebug(`Found ${recentIterations.length} recent iterations: ${recentIterations.map(i => i.name).join(', ')}`, 'rallyServices.getRecentTeamMembers');
 
 		// Collect unique assignees from user stories in these iterations
 		const assigneeSet = new Set<string>();
 
 		for (const iteration of recentIterations) {
-			errorHandler.logInfo(`Processing iteration: ${iteration.name} (${iteration.objectId})`, 'rallyServices.getRecentTeamMembers');
+			errorHandler.logDebug(`Processing iteration: ${iteration.name} (${iteration.objectId})`, 'rallyServices.getRecentTeamMembers');
 
 			// Get user stories for this iteration using the iteration reference
 			const iterationRef = `/iteration/${iteration.objectId}`;
-			errorHandler.logInfo(`Querying user stories with iteration ref: ${iterationRef}`, 'rallyServices.getRecentTeamMembers');
+			errorHandler.logDebug(`Querying user stories with iteration ref: ${iterationRef}`, 'rallyServices.getRecentTeamMembers');
 
 			const userStoriesResult = await getUserStories({ Iteration: iterationRef });
 			const userStories = userStoriesResult.userStories;
 
-			errorHandler.logInfo(`Found ${userStories?.length || 0} user stories in iteration ${iteration.name}`, 'rallyServices.getRecentTeamMembers');
+			errorHandler.logDebug(`Found ${userStories?.length || 0} user stories in iteration ${iteration.name}`, 'rallyServices.getRecentTeamMembers');
 
 			if (userStories && userStories.length > 0) {
 				// Log first user story as sample
 				if (userStories.length > 0) {
 					const sample = userStories[0];
-					errorHandler.logInfo(`Sample user story: ${sample.formattedId}, assignee="${sample.assignee}"`, 'rallyServices.getRecentTeamMembers');
+					errorHandler.logDebug(`Sample user story: ${sample.formattedId}, assignee="${sample.assignee}"`, 'rallyServices.getRecentTeamMembers');
 				}
 
 				for (const userStory of userStories) {
@@ -2121,14 +2121,14 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 	const progressMap = new Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>();
 
 	try {
-		errorHandler.logInfo(`Getting progress for ${teamMembers.length} team members in sprint`, 'rallyServices.getAllTeamMembersProgress');
+		errorHandler.logDebug(`Getting progress for ${teamMembers.length} team members in sprint`, 'rallyServices.getAllTeamMembersProgress');
 
 		// Step 1: Get iterations
 		const iterationsResult = await getIterations();
 		const iterations = iterationsResult.iterations;
 
 		if (!iterations || iterations.length === 0) {
-			errorHandler.logInfo('No iterations found', 'rallyServices.getAllTeamMembersProgress');
+			errorHandler.logDebug('No iterations found', 'rallyServices.getAllTeamMembersProgress');
 			// Return empty progress for all members
 			for (const member of teamMembers) {
 				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iterations', userStoriesCount: 0 });
@@ -2142,7 +2142,7 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 		if (iterationId && iterationId !== 'current') {
 			// Convert both to strings for comparison (Rally API may return number or string)
 			targetIteration = iterations.find(iteration => String(iteration.objectId) === String(iterationId));
-			errorHandler.logInfo(`Looking for iteration with ID: ${iterationId}, found: ${targetIteration?.name || 'NOT FOUND'}`, 'rallyServices.getAllTeamMembersProgress');
+			errorHandler.logDebug(`Looking for iteration with ID: ${iterationId}, found: ${targetIteration?.name || 'NOT FOUND'}`, 'rallyServices.getAllTeamMembersProgress');
 		} else {
 			// Use the same logic as findCurrentIteration in MainWebview.tsx
 			const today = new Date();
@@ -2190,7 +2190,7 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 		}
 
 		if (!targetIteration) {
-			errorHandler.logInfo('No target iteration found', 'rallyServices.getAllTeamMembersProgress');
+			errorHandler.logDebug('No target iteration found', 'rallyServices.getAllTeamMembersProgress');
 			// Return empty progress for all members
 			for (const member of teamMembers) {
 				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iteration', userStoriesCount: 0 });
@@ -2198,14 +2198,14 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 			return progressMap;
 		}
 
-		errorHandler.logInfo(`Target iteration: ${targetIteration.name}`, 'rallyServices.getAllTeamMembersProgress');
+		errorHandler.logDebug(`Target iteration: ${targetIteration.name}`, 'rallyServices.getAllTeamMembersProgress');
 
 		// Step 3: Get ALL user stories for the iteration in ONE query
 		const iterationRef = `/iteration/${targetIteration.objectId}`;
 		const userStoriesResult = await getUserStories({ Iteration: iterationRef });
 		const allUserStories = userStoriesResult.userStories;
 
-		errorHandler.logInfo(`Found ${allUserStories.length} total user stories in iteration`, 'rallyServices.getAllTeamMembersProgress');
+		errorHandler.logDebug(`Found ${allUserStories.length} total user stories in iteration`, 'rallyServices.getAllTeamMembersProgress');
 
 		// Step 4: Group user stories by assignee (using normalized names for matching)
 		// Create a map with normalized assignee names as keys, but keep original assignee names for reference
@@ -2245,11 +2245,11 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 			}
 		}
 
-		errorHandler.logInfo(`Found ${incompleteStoryIds.length} incomplete stories needing task data`, 'rallyServices.getAllTeamMembersProgress');
+		errorHandler.logDebug(`Found ${incompleteStoryIds.length} incomplete stories needing task data`, 'rallyServices.getAllTeamMembersProgress');
 
 		// Step 6: Fetch ALL tasks for incomplete stories in ONE batch query
 		const tasksByStory = await getBatchTasks(incompleteStoryIds);
-		errorHandler.logInfo(`Retrieved tasks for ${tasksByStory.size} stories via batch query`, 'rallyServices.getAllTeamMembersProgress');
+		errorHandler.logDebug(`Retrieved tasks for ${tasksByStory.size} stories via batch query`, 'rallyServices.getAllTeamMembersProgress');
 
 		// Step 7: Calculate progress for each team member in memory
 		for (const memberName of teamMembers) {
@@ -2784,4 +2784,40 @@ async function formatRevisionsAsync(results: any[]): Promise<any[]> {
 	}
 
 	return formatted.sort((a, b) => b.revisionNumber - a.revisionNumber);
+}
+
+/**
+ * Fetches an image from Rally (authenticated) and returns it as a base64 data URL.
+ * Used to proxy Rally images for display in the webview, which cannot add auth headers to <img> src requests.
+ */
+export async function fetchRallyImageAsBase64(imageUrl: string): Promise<{ dataUrl: string } | { error: string }> {
+	const settingsManager = SettingsManager.getInstance();
+	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
+
+	if (!rallyApiKey) {
+		return { error: 'No Rally API key configured' };
+	}
+
+	try {
+		const response = await fetchPolyfill(imageUrl, {
+			method: 'GET',
+			headers: {
+				zsessionid: rallyApiKey,
+				'X-RallyIntegrationName': 'IBM Robert Extension',
+				'X-RallyIntegrationVendor': 'IBM',
+				'X-RallyIntegrationVersion': '0.0.9'
+			}
+		});
+
+		if (!response.ok) {
+			return { error: `HTTP ${response.status}` };
+		}
+
+		const contentType = response.headers.get('content-type') || 'image/png';
+		const arrayBuffer = await response.arrayBuffer();
+		const base64 = Buffer.from(arrayBuffer).toString('base64');
+		return { dataUrl: `data:${contentType};base64,${base64}` };
+	} catch (error) {
+		return { error: error instanceof Error ? error.message : String(error) };
+	}
 }

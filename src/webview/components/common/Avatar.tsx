@@ -1,4 +1,5 @@
 import { FC, useEffect, useState } from 'react';
+import { getMemberColor, darkenHex, isLightVscodeTheme } from '../../utils/chartUtils';
 
 const EMPTY_SENTINELS = new Set(['unassigned', 'sense assignat', 'sense propietari', 'n/a', 'unknown', '-', '—']);
 
@@ -10,12 +11,8 @@ function getAvatarColor(name: string): string {
 	if (isEmpty(name)) {
 		return 'transparent';
 	}
-	let sum = 0;
-	for (let i = 0; i < name.length; i++) {
-		sum += name.charCodeAt(i) * (i + 1);
-	}
-	const hue = sum % 360;
-	return `hsl(${hue}, 45%, 45%)`;
+	const color = getMemberColor(name);
+	return isLightVscodeTheme() ? color : darkenHex(color, 8);
 }
 
 function getInitials(name: string): string {
@@ -50,6 +47,7 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 	if (!showRing) {
 		return (
 			<div
+				title={empty ? undefined : name}
 				style={{
 					width: `${size}px`,
 					height: `${size}px`,
@@ -63,7 +61,8 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 					fontWeight: fw,
 					fontSize: `${fs}px`,
 					flexShrink: 0,
-					boxSizing: 'border-box'
+					boxSizing: 'border-box',
+					cursor: 'inherit'
 				}}
 			>
 				{initials}
@@ -86,7 +85,7 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 	}, [offset]);
 
 	return (
-		<div role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={'Progress: ' + progress + '%'} style={{ position: 'relative' }}>
+		<div role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={'Progress: ' + progress + '%'} title={empty ? undefined : name} style={{ position: 'relative', cursor: 'inherit' }}>
 			<svg
 				width={svgSize}
 				height={svgSize}

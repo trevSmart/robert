@@ -551,6 +551,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	// Sprint-filtered User Stories state
 	const [sprintUserStories, setSprintUserStories] = useState<UserStory[]>([]);
 	const [sprintUserStoriesLoading, setSprintUserStoriesLoading] = useState(false);
+	const [loadedSprintIterationId, setLoadedSprintIterationId] = useState<string | null>(null);
 
 	const [tasks, setTasks] = useState<RallyTask[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
@@ -777,7 +778,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				// Sprint context - use sprint state
 				setSprintUserStoriesLoading(true);
 				setUserStoriesError(null);
-				setSprintUserStories([]); // Clear previous sprint data
+				setSprintUserStories([]);
+				setLoadedSprintIterationId(iteration.objectId);
 			} else {
 				// Fallback to portfolio state if no iteration
 				setPortfolioUserStoriesLoading(true);
@@ -946,10 +948,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const handleIterationSelected = useCallback(
 		(iteration: Iteration) => {
 			setSelectedIteration(iteration);
-			loadUserStories(iteration);
+			if (iteration.objectId !== loadedSprintIterationId) {
+				loadUserStories(iteration);
+			}
 			setCurrentScreen('userStories');
 		},
-		[loadUserStories]
+		[loadUserStories, loadedSprintIterationId]
 	);
 
 	const handleIterationClickFromHome = useCallback(
@@ -977,10 +981,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			setSelectedUserStory(userStory);
 			setCurrentScreen('userStoryDetail');
 			setActiveUserStoryTab('tasks');
-			// Load tasks for this user story
 			loadTasks(userStory.objectId);
+			wrapperRef.current?.scrollTo({ top: 0 });
 		},
-		[loadTasks]
+		[loadTasks, wrapperRef]
 	);
 
 	const handleBackToIterations = useCallback(() => {
@@ -1156,7 +1160,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		// Initialize collaboration client
 		try {
 			// Defer require() to runtime to avoid Vite build issues
-			// eslint-disable-next-line global-require
+			 
 			const { CollaborationClient } = require('../libs/collaboration/collaborationClient');
 			setCollaborationClient(CollaborationClient.getInstance());
 		} catch (error) {
@@ -1240,6 +1244,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		// Reset sprint user stories
 		setSprintUserStories([]);
 		setSprintUserStoriesLoading(false);
+		setLoadedSprintIterationId(null);
 
 		// Reset tasks
 		setTasks([]);
@@ -1763,6 +1768,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		}
 	}, [showTestTab, activeSection]);
 
+	// Collaboration tab must not stay active when the feature is disabled
+	useEffect(() => {
+		if (!collaborationEnabled && activeSection === 'collaboration') {
+			setActiveSection('home');
+		}
+	}, [collaborationEnabled, activeSection]);
+
 	// Save navigation state to backend whenever it changes (syncs across webviews)
 	useEffect(() => {
 		// Debounce state saves to avoid excessive messages
@@ -2116,7 +2128,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			<GlobalStyle />
 			<CenteredContainer>
 				<StickyNav>
-					<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} />
+					<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} />
 					{portfolioSubTabsBar}
 				</StickyNav>
 				<SmoothScrollWrapper ref={wrapperRef}>
@@ -2300,6 +2312,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 												onBackToUserStories={handleBackToUserStories}
 												onBackToDefects={handleBackToDefects}
 												onActiveUserStoryTabChange={setActiveUserStoryTab}
+												collaborationEnabled={collaborationEnabled}
 											/>
 										)}
 									</>

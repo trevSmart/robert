@@ -195,9 +195,17 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 		testCasesCount: number;
 		defectsCount: number;
 		discussionCount: number;
-	}> = ({ tasksCount, testCasesCount, defectsCount, discussionCount }) => {
+		blocked?: boolean;
+	}> = ({ tasksCount, testCasesCount, defectsCount, discussionCount, blocked }) => {
 		return (
 			<div style={{ display: 'flex', gap: '8px', alignItems: 'center', color: themeColors.foreground }}>
+				{blocked && (
+					<span title="Blocked" style={{ display: 'inline-flex', alignItems: 'center', color: 'color(srgb 0.82 0.32 0.32 / 1)' }}>
+						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
+							<path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
+						</svg>
+					</span>
+				)}
 				{tasksCount > 0 && (
 					<span title={`${tasksCount} task(s)`} style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85 }}>
 						<TasksIcon />
@@ -314,12 +322,12 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.formattedId}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.name}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
-										<AvatarWithName name={userStory.assignee || ''} size={20} emptyLabel="Unassigned" />
-									</td>
+									<AvatarWithName name={userStory.assignee || ''} size={20} emptyLabel="Unassigned" />
+								</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: getScheduleStateColor(userStory.scheduleState || 'new'), overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.scheduleState || 'N/A'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center', overflow: 'hidden' }}>
-									<RelatedItemsIcons tasksCount={userStory.tasksCount} testCasesCount={userStory.testCasesCount} defectsCount={userStory.defectsCount} discussionCount={userStory.discussionCount} />
+									<RelatedItemsIcons tasksCount={userStory.tasksCount} testCasesCount={userStory.testCasesCount} defectsCount={userStory.defectsCount} discussionCount={userStory.discussionCount} blocked={userStory.blocked} />
 								</td>
 							</tr>
 						))}

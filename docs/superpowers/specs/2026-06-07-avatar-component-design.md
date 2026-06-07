@@ -98,8 +98,7 @@ Renders `[Avatar] Name` as a flex row, `gap: 6px`, vertically centered. Used in 
 
 ### Progress ring (Teams active variant)
 
-The SVG ring is drawn as a `circle` with `stroke-dasharray`/`stroke-dashoffset` derived from `ringProgress`. This logic moves from TeamSection into Avatar when `showRing=true`. The ring stroke uses the same avatar color (derived from name) with reduced opacity for the track.
-
+The SVG ring is drawn as a `circle` with `stroke-dasharray`/`stroke-dashoffset` derived from `ringProgress`. This logic moves from TeamSection into Avatar when `showRing=true`. The track uses `var(--vscode-widget-border)`, and the progress stroke uses `ringColor` (passed from TeamSection based on percentage).
 ### Column width
 
 Tables currently size the "Assigned To" column by content. Adding a 20px avatar + 6px gap increases the minimum width by ~26px — acceptable without layout changes.

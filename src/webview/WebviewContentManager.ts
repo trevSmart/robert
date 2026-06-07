@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from '../ErrorHandler';
+import { getTestTabEnabledReason, isTestTabEnabled } from '../utils/devMode';
 
 /**
  * Manages webview HTML content generation, CSP headers, and resource URI resolution.
@@ -19,7 +20,8 @@ export class WebviewContentManager {
 	public async getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
 		return (
 			(await this.errorHandler.executeWithErrorHandling(async () => {
-				this.errorHandler.logInfo(`Main webview content rendered for context: ${context}`, 'WebviewContentManager.getHtmlForWebview');
+				const testTabEnabled = isTestTabEnabled();
+				this.errorHandler.logInfo(`Main webview content rendered for context: ${context} (Test tab: ${testTabEnabled ? 'enabled' : 'hidden'}, ${getTestTabEnabledReason()})`, 'WebviewContentManager.getHtmlForWebview');
 
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'robert-logo.png'));
 				const rallyLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'rally-logo.webp'));
@@ -31,7 +33,8 @@ export class WebviewContentManager {
 					__TIMESTAMP__: new Date().toISOString(),
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
 					__INTER_FONT_URI__: interFontUri.toString(),
-					__RALLY_LOGO_URI__: rallyLogoUri.toString()
+					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
+					__TEST_TAB_ENABLED__: String(testTabEnabled)
 				});
 			}, 'WebviewContentManager.getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);

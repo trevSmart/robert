@@ -181,9 +181,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 					<collapsible-card title="Details">
 						<SprintDetailsForm iteration={selectedIteration} />
 					</collapsible-card>
-					<collapsible-card title="User stories assignment">
-						<AssigneeHoursChart userStories={sprintUserStories} />
-					</collapsible-card>
+					<AssigneeHoursChart userStories={sprintUserStories} />
 					<collapsible-card title="User stories" background-color="inherit">
 						<UserStoriesTable
 							userStories={sprintUserStories}

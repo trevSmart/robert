@@ -1,7 +1,13 @@
 import { FC } from 'react';
 
+const EMPTY_SENTINELS = new Set(['unassigned', 'sense assignat', 'n/a', 'unknown', '-', '—']);
+
+function isEmpty(name: string): boolean {
+	return !name || !name.trim() || EMPTY_SENTINELS.has(name.trim().toLowerCase());
+}
+
 function getAvatarColor(name: string): string {
-	if (!name || !name.trim()) {
+	if (isEmpty(name)) {
 		return 'transparent';
 	}
 	let sum = 0;
@@ -13,7 +19,7 @@ function getAvatarColor(name: string): string {
 }
 
 function getInitials(name: string): string {
-	if (!name || !name.trim()) {
+	if (isEmpty(name)) {
 		return '✕';
 	}
 	const parts = name.trim().split(/\s+/);
@@ -33,13 +39,13 @@ interface AvatarProps {
 }
 
 const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgress = 0, ringColor = 'var(--vscode-charts-green, #4caf50)', fontSize }) => {
-	const isEmpty = !name || !name.trim();
+	const empty = isEmpty(name);
 	const bg = getAvatarColor(name);
 	const initials = getInitials(name);
 	const fs = fontSize ?? Math.round(size * 0.38);
 	const fw = size >= 32 ? 'bold' : '400';
-	const color = isEmpty ? '#6c757d' : 'white';
-	const border = isEmpty ? '1px dashed #6c757d' : undefined;
+	const color = empty ? '#6c757d' : 'white';
+	const border = empty ? '1px dashed #6c757d' : undefined;
 
 	if (!showRing) {
 		return (
@@ -120,7 +126,7 @@ interface AvatarFormFieldProps {
 }
 
 export const AvatarFormField: FC<AvatarFormFieldProps> = ({ name, emptyLabel = 'N/A' }) => {
-	const isEmpty = !name || !name.trim();
+	const empty = isEmpty(name);
 	return (
 		<div
 			style={{
@@ -133,12 +139,12 @@ export const AvatarFormField: FC<AvatarFormFieldProps> = ({ name, emptyLabel = '
 				border: '1px solid var(--vscode-input-border)',
 				borderRadius: '3px',
 				fontSize: '13px',
-				color: isEmpty ? '#6c757d' : 'var(--vscode-input-foreground)',
+				color: empty ? '#6c757d' : 'var(--vscode-input-foreground)',
 				boxSizing: 'border-box'
 			}}
 		>
 			<Avatar name={name} size={18} />
-			<span>{isEmpty ? emptyLabel : name}</span>
+			<span>{empty ? emptyLabel : name}</span>
 		</div>
 	);
 };
@@ -150,13 +156,13 @@ interface AvatarWithNameProps {
 }
 
 export const AvatarWithName: FC<AvatarWithNameProps> = ({ name, size = 20, emptyLabel = 'Unassigned' }) => {
-	const isEmpty = !name || !name.trim();
+	const empty = isEmpty(name);
 	return (
 		<div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
 			<Avatar name={name} size={size} />
 			<span
 				style={{
-					color: isEmpty ? '#6c757d' : undefined,
+					color: empty ? '#6c757d' : undefined,
 					overflow: 'hidden',
 					textOverflow: 'ellipsis',
 					whiteSpace: 'nowrap',
@@ -165,7 +171,7 @@ export const AvatarWithName: FC<AvatarWithNameProps> = ({ name, size = 20, empty
 					display: 'block'
 				}}
 			>
-				{isEmpty ? emptyLabel : name}
+				{empty ? emptyLabel : name}
 			</span>
 		</div>
 	);

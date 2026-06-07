@@ -49,9 +49,23 @@ export interface SearchSectionProps {
 	globalSearchLoadingMore?: boolean;
 	onLoadMoreResults?: (term: string, searchType: SearchType) => void;
 	globalSearchTermUsed?: string;
+	onEscapeWhenEmpty?: () => void;
 }
 
-const SearchSection: FC<SearchSectionProps> = ({ globalSearchTerm, onSearchTermChange, onSearch, globalSearchLoading, globalSearchError, globalSearchResults, onOpenResult, globalSearchHasMore = false, globalSearchLoadingMore = false, onLoadMoreResults, globalSearchTermUsed = '' }) => {
+const SearchSection: FC<SearchSectionProps> = ({
+	globalSearchTerm,
+	onSearchTermChange,
+	onSearch,
+	globalSearchLoading,
+	globalSearchError,
+	globalSearchResults,
+	onOpenResult,
+	globalSearchHasMore = false,
+	globalSearchLoadingMore = false,
+	onLoadMoreResults,
+	globalSearchTermUsed = '',
+	onEscapeWhenEmpty
+}) => {
 	const [searchType, setSearchType] = useState<SearchType>('all');
 	const searchInputRef = React.useRef<HTMLInputElement | null>(null);
 
@@ -100,6 +114,7 @@ const SearchSection: FC<SearchSectionProps> = ({ globalSearchTerm, onSearchTermC
 					onTypeChange={setSearchType}
 					onSearchClick={() => onSearch(globalSearchTerm, searchType)}
 					onClear={handleClear}
+					onEscapeWhenEmpty={onEscapeWhenEmpty}
 					disableButton={globalSearchLoading || !globalSearchTerm.trim()}
 					inputRef={searchInputRef}
 				/>

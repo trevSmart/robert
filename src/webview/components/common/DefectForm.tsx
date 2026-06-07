@@ -1,7 +1,8 @@
 import { FC } from 'react';
+import DOMPurify from 'dompurify';
 import styled from 'styled-components';
 import { AvatarFormField } from './Avatar';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
@@ -63,24 +64,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 		};
 	};
 
-	const getScheduleStateColor = (scheduleState: string) => {
-		switch (scheduleState?.toLowerCase()) {
-			case 'new':
-				return '#6c757d'; // Gris
-			case 'defined':
-				return '#fd7e14'; // Taronja
-			case 'in-progress':
-				return '#ffc107'; // Groc
-			case 'completed':
-				return '#0d6efd'; // Blau
-			case 'accepted':
-				return '#198754'; // Verd
-			case 'closed':
-				return '#495057'; // Gris fosc
-			default:
-				return 'var(--vscode-descriptionForeground)';
-		}
-	};
+	const getScheduleStateColor = getThemeScheduleStateColor;
 
 	return (
 		<>
@@ -114,7 +98,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 					</div>
 
 					<div style={{ marginBottom: '0px' }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Name</label>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
 						<input
 							type="text"
 							value={defect.name}
@@ -146,7 +130,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 
 						<div style={{ display: 'flex', gap: '16px' }}>
 							<div style={{ flex: '1' }}>
-								<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>State</label>
+								<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>State</label>
 								<input
 									type="text"
 									value={defect.state || 'N/A'}
@@ -163,7 +147,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 								/>
 							</div>
 							<div style={{ flex: '1' }}>
-								<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Severity</label>
+								<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Severity</label>
 								<input
 									type="text"
 									value={defect.severity || 'N/A'}
@@ -182,7 +166,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						</div>
 
 						<div>
-							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Priority</label>
+							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Priority</label>
 							<input
 								type="text"
 								value={defect.priority || 'N/A'}
@@ -200,12 +184,12 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						</div>
 
 						<div>
-							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Assigned To</label>
+							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Assigned To</label>
 							<AvatarFormField name={defect.owner || ''} emptyLabel="N/A" />
 						</div>
 
 						<div>
-							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Sprint</label>
+							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Sprint</label>
 							<input
 								type="text"
 								value={defect.iteration || 'N/A'}
@@ -223,7 +207,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						</div>
 
 						<div>
-							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
+							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Blocked</label>
 							<StatusPill isBlocked={defect.blocked}>{defect.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
 						</div>
 
@@ -233,7 +217,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 
 							<div
 								dangerouslySetInnerHTML={{
-									__html: defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+									__html: DOMPurify.sanitize(defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>')
 								}}
 								style={{
 									width: '100%',

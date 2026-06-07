@@ -1,8 +1,9 @@
 import { FC, useState, useCallback, useMemo, useRef, useEffect, type ReactNode } from 'react';
 import styled from 'styled-components';
+import DOMPurify from 'dompurify';
 import { AvatarFormField } from './Avatar';
 import { type UserStory } from '../../../types/rally';
-import { isLightTheme } from '../../utils/themeColors';
+import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
 import { getVsCodeApi } from '../../utils/vscodeApi';
 import './CollapsibleCard';
 
@@ -148,24 +149,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const [revisionsLoaded, setRevisionsLoaded] = useState(false);
 	const resizeStartRef = useRef({ y: 0, height: 0 });
 
-	const getScheduleStateColor = (scheduleState: string) => {
-		switch (scheduleState?.toLowerCase()) {
-			case 'new':
-				return '#6c757d'; // Gris
-			case 'defined':
-				return '#fd7e14'; // Taronja
-			case 'in-progress':
-				return '#ffc107'; // Groc
-			case 'completed':
-				return '#0d6efd'; // Blau
-			case 'accepted':
-				return '#198754'; // Verd
-			case 'closed':
-				return '#495057'; // Gris fosc
-			default:
-				return 'var(--vscode-descriptionForeground)';
-		}
-	};
+	const getScheduleStateColor = getThemeScheduleStateColor;
 
 	const handleTabChange = (tab: AdditionalTabKey) => {
 		if (onAdditionalTabChange) {
@@ -380,7 +364,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			</div>
 
 			<div style={{ marginBottom: '16px' }}>
-				<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Name</label>
+				<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
 				<input
 					type="text"
 					value={userStory.name}
@@ -411,7 +395,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
 
 				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Plan Estimate</label>
+					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Plan Estimate</label>
 					<input
 						type="number"
 						value={userStory.planEstimate || 0}
@@ -429,12 +413,12 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				</div>
 
 				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Assigned To</label>
+					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Assigned To</label>
 					<AvatarFormField name={userStory.assignee || ''} emptyLabel="N/A" />
 				</div>
 
 				<div>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Blocked</label>
+					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Blocked</label>
 					<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
 				</div>
 
@@ -445,7 +429,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
 						<div
 							dangerouslySetInnerHTML={{
-								__html: userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
+								__html: DOMPurify.sanitize(userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>')
 							}}
 							style={{
 								width: '100%',
@@ -494,35 +478,35 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				<div style={{ gridColumn: '1 / -1' }}>
 					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '12px' }}>
 						<StatPill isSelected={selectedAdditionalTab === 'tasks'} onClick={() => handleTabChange('tasks')} title="Click to view tasks">
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Tasks</span>
+							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Tasks</span>
 							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
 								<TasksIcon />
 								{userStory.tasksCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'tests'} onClick={() => handleTabChange('tests')} title="Click to view test cases">
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Test cases</span>
+							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Test cases</span>
 							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
 								<TestsIcon />
 								{userStory.testCasesCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'defects'} onClick={() => handleTabChange('defects')} title="Click to view defects">
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Defects</span>
+							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Defects</span>
 							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
 								<DefectsIcon />
 								{userStory.defectsCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'discussions'} onClick={() => handleTabChange('discussions')} title="Click to view discussions">
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Discussions</span>
+							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Discussions</span>
 							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
 								<DiscussionsIcon />
 								{userStory.discussionCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'revisions'} onClick={() => handleTabChange('revisions')} title="Click to view revisions">
-							<span style={{ fontSize: '11px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>Revisions</span>
+							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Revisions</span>
 							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
 								<RevisionsIcon />
 								{revisionsCount !== null ? revisionsCount : '—'}
@@ -557,7 +541,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 												<div style={{ fontWeight: '600', color: 'var(--vscode-foreground)' }}>Revision #{revision.revisionNumber}</div>
 												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{new Date(revision.createdDate).toLocaleString()}</div>
 											</div>
-											<div style={{ marginBottom: '6px', color: 'color(srgb 0.8 0.8 0.8 / 0.68)' }}>
+											<div style={{ marginBottom: '6px', color: 'var(--vscode-descriptionForeground)' }}>
 												By: <strong>{revision.author}</strong>
 											</div>
 											<div
@@ -566,12 +550,13 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 													backgroundColor: 'var(--vscode-input-background)',
 													borderRadius: '2px',
 													color: 'var(--vscode-input-foreground)',
-													fontFamily: 'monospace',
-													wordBreak: 'break-word'
+													wordBreak: 'break-word',
+													overflowWrap: 'anywhere'
 												}}
-											>
-												{revision.description}
-											</div>
+												dangerouslySetInnerHTML={{
+													__html: DOMPurify.sanitize(revision.description || '')
+												}}
+											/>
 										</div>
 									))}
 								</div>

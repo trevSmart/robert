@@ -1,4 +1,4 @@
-import { FC } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 const EMPTY_SENTINELS = new Set(['unassigned', 'sense assignat', 'sense propietari', 'n/a', 'unknown', '-', '—']);
 
@@ -79,6 +79,11 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 	const progress = Math.min(100, Math.max(0, ringProgress));
 	const circumference = 2 * Math.PI * r;
 	const offset = circumference * (1 - progress / 100);
+	const [animatedOffset, setAnimatedOffset] = useState(circumference);
+	useEffect(() => {
+		const id = requestAnimationFrame(() => setAnimatedOffset(offset));
+		return () => cancelAnimationFrame(id);
+	}, [offset]);
 
 	return (
 		<div role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={'Progress: ' + progress + '%'} style={{ position: 'relative' }}>
@@ -93,7 +98,7 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 				}}
 			>
 				<circle cx={cx} cy={cy} r={r} stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-				<circle cx={cx} cy={cy} r={r} stroke={ringColor} strokeWidth="3" fill="none" strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease' }} />
+				<circle cx={cx} cy={cy} r={r} stroke={ringColor} strokeWidth="3" fill="none" strokeDasharray={circumference} strokeDashoffset={animatedOffset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease-out, stroke 0.3s ease' }} />
 			</svg>
 			<div
 				style={{

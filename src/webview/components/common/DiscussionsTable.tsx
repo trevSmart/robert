@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import DOMPurify from 'dompurify';
 import { Discussion } from '../../../types/rally';
 import Avatar from './Avatar';
+import { processRallyHtmlImages } from '../../utils/rallyImageProxy';
 
 const ChatContainer = styled.div<{ embedded?: boolean }>`
 	display: flex;
@@ -112,6 +113,23 @@ interface DiscussionsTableProps {
 	embedded?: boolean;
 }
 
+const DiscussionMessage: React.FC<{ rawHtml: string }> = ({ rawHtml }) => {
+	const sanitized = DOMPurify.sanitize(rawHtml || '');
+	const [html, setHtml] = useState(sanitized);
+
+	useEffect(() => {
+		let cancelled = false;
+		processRallyHtmlImages(sanitized).then(processed => {
+			if (!cancelled) setHtml(processed);
+		});
+		return () => {
+			cancelled = true;
+		};
+	}, [sanitized]);
+
+	return <MessageText dangerouslySetInnerHTML={{ __html: html }} />;
+};
+
 const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loading, error, embedded = false }) => {
 	if (loading) {
 		return (
@@ -163,8 +181,24 @@ const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loadin
 		return dateA - dateB;
 	});
 
+	const containerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		const el = containerRef.current;
+		if (!el) return;
+		const onWheel = (e: WheelEvent) => {
+			const atTop = el.scrollTop === 0 && e.deltaY < 0;
+			const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight && e.deltaY > 0;
+			if (!atTop && !atBottom) {
+				e.stopPropagation();
+			}
+		};
+		el.addEventListener('wheel', onWheel, { passive: true });
+		return () => el.removeEventListener('wheel', onWheel);
+	}, []);
+
 	return (
-		<ChatContainer embedded={embedded}>
+		<ChatContainer embedded={embedded} ref={containerRef as React.RefObject<HTMLDivElement>}>
 			{sortedDiscussions.map(discussion => (
 				<MessageBubble key={discussion.objectId}>
 					<MessageHeader>
@@ -172,7 +206,7 @@ const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loadin
 						<AuthorName>{discussion.author || 'Unknown'}</AuthorName>
 						<MessageDate>{formatDate(discussion.createdDate)}</MessageDate>
 					</MessageHeader>
-					<MessageText dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(discussion.text || '') }} />
+					<DiscussionMessage rawHtml={discussion.text || ''} />
 				</MessageBubble>
 			))}
 		</ChatContainer>

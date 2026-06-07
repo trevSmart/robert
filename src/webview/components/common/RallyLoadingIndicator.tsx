@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
+import { isLightTheme } from '../../utils/themeColors';
 
 const softPulse = keyframes`
   0%   { opacity: 0.30; }
@@ -7,7 +8,7 @@ const softPulse = keyframes`
   100% { opacity: 0.30; }
 `;
 
-const Wrapper = styled.div<{ $visible: boolean }>`
+const Wrapper = styled.div<{ $visible: boolean; $light: boolean }>`
 	position: fixed;
 	bottom: 16px;
 	right: 16px;
@@ -19,9 +20,9 @@ const Wrapper = styled.div<{ $visible: boolean }>`
 	height: 44px;
 	padding: 3px;
 	border-radius: 8px;
-	background: rgba(15, 18, 25, 0.35);
+	background: ${props => (props.$light ? 'rgba(255, 255, 255, 0.72)' : 'rgba(15, 18, 25, 0.35)')};
 	backdrop-filter: blur(6px);
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+	box-shadow: ${props => (props.$light ? '0 2px 10px rgba(0, 0, 0, 0.12)' : '0 4px 12px rgba(0, 0, 0, 0.18)')};
 	pointer-events: none;
 	opacity: ${props => (props.$visible ? 1 : 0)};
 	transform: translateY(${props => (props.$visible ? '0' : '2px')});
@@ -43,7 +44,7 @@ interface Props {
 }
 
 export const RallyLoadingIndicator: React.FC<Props> = ({ rallyLogoUri, visible = false }) => (
-	<Wrapper $visible={visible}>
+	<Wrapper $visible={visible} $light={isLightTheme()}>
 		<Logo src={rallyLogoUri} alt="Loading..." />
 	</Wrapper>
 );

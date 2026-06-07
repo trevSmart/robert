@@ -1585,7 +1585,9 @@ async function formatDiscussionsAsync(results: any[], userStoryId: string): Prom
 
 		formatted.push({
 			objectId: discussion.ObjectID ?? discussion.objectId,
-			text: sanitizeDescription(discussion.Text ?? discussion.text ?? ''),
+			// Keep raw HTML from Rally; it is sanitized with DOMPurify at render time
+			// (DiscussionsTable) so formatting (line breaks, mentions) and entities are preserved.
+			text: String(discussion.Text ?? discussion.text ?? ''),
 			author: authorName,
 			createdDate: discussion.CreationDate ?? discussion.creationDate ?? discussion.CreatedDate ?? discussion.createdDate ?? '',
 			userStoryId: userStoryId

@@ -22,7 +22,7 @@ class CollapsibleCard extends HTMLElement {
 	connectedCallback() {
 		this.render();
 		this.attachEventListeners();
-		this.updateCollapsedState();
+		this.updateCollapsedState(false);
 		this.isInitialized = true;
 	}
 
@@ -38,7 +38,7 @@ class CollapsibleCard extends HTMLElement {
 					break;
 				case 'default-collapsed':
 					this.collapsed = this.hasAttribute('default-collapsed');
-					this.updateCollapsedState();
+					this.updateCollapsedState(false);
 					break;
 			}
 		}
@@ -67,23 +67,65 @@ class CollapsibleCard extends HTMLElement {
 
 	private toggleCollapsed() {
 		this.collapsed = !this.collapsed;
-		this.updateCollapsedState();
+		this.updateCollapsedState(true);
 	}
 
-	private updateCollapsedState() {
-		if (this.contentDiv && this.chevronDiv) {
-			if (this.collapsed) {
+	private updateCollapsedState(animate: boolean = false) {
+		if (!this.contentDiv || !this.chevronDiv) return;
+
+		if (this.collapsed) {
+			this.chevronDiv.style.transform = 'rotate(-90deg)';
+			if (animate) {
+				// If max-height is 'none' we need a concrete starting value for the transition
+				if (!this.contentDiv.style.maxHeight || this.contentDiv.style.maxHeight === 'none') {
+					this.contentDiv.style.overflow = 'hidden';
+					this.contentDiv.style.maxHeight = this.contentDiv.scrollHeight + 'px';
+				}
+				// Two rAFs ensure the browser registers the new max-height before animating to 0
+				requestAnimationFrame(() => {
+					requestAnimationFrame(() => {
+						if (this.contentDiv) {
+							this.contentDiv.style.maxHeight = '0';
+							this.contentDiv.style.opacity = '0';
+							this.contentDiv.style.paddingTop = '0';
+							this.contentDiv.style.paddingBottom = '0';
+						}
+					});
+				});
+			} else {
+				this.contentDiv.style.overflow = 'hidden';
 				this.contentDiv.style.maxHeight = '0';
 				this.contentDiv.style.opacity = '0';
 				this.contentDiv.style.paddingTop = '0';
 				this.contentDiv.style.paddingBottom = '0';
-				this.chevronDiv.style.transform = 'rotate(-90deg)';
-			} else {
-				this.contentDiv.style.maxHeight = '2000px'; //TODO necessari?
+			}
+		} else {
+			this.chevronDiv.style.transform = 'rotate(0deg)';
+			if (animate) {
+				// Measure intrinsic content height while still collapsed (padding = 0)
+				const contentHeight = this.contentDiv.scrollHeight;
+				const targetHeight = contentHeight + 32; // account for 16px top + 16px bottom padding
+				this.contentDiv.style.overflow = 'hidden';
 				this.contentDiv.style.opacity = '1';
 				this.contentDiv.style.paddingTop = '16px';
 				this.contentDiv.style.paddingBottom = '16px';
-				this.chevronDiv.style.transform = 'rotate(0deg)';
+				this.contentDiv.style.maxHeight = targetHeight + 'px';
+				const onTransitionEnd = (e: TransitionEvent) => {
+					if (e.propertyName === 'max-height') {
+						if (this.contentDiv && !this.collapsed) {
+							this.contentDiv.style.maxHeight = 'none';
+							this.contentDiv.style.overflow = 'visible';
+						}
+						this.contentDiv?.removeEventListener('transitionend', onTransitionEnd);
+					}
+				};
+				this.contentDiv.addEventListener('transitionend', onTransitionEnd);
+			} else {
+				this.contentDiv.style.maxHeight = 'none';
+				this.contentDiv.style.overflow = 'visible';
+				this.contentDiv.style.opacity = '1';
+				this.contentDiv.style.paddingTop = '16px';
+				this.contentDiv.style.paddingBottom = '16px';
 			}
 		}
 	}
@@ -157,8 +199,8 @@ class CollapsibleCard extends HTMLElement {
 					padding-bottom: ${this.collapsed ? '0' : '16px'};
 					max-height: ${this.collapsed ? '0' : 'none'};
 					opacity: ${this.collapsed ? '0' : '1'};
-					overflow: ${this.collapsed ? 'hidden' : 'visible'};
-					transition: opacity 0.25s ease, padding-top 0.3s ease, padding-bottom 0.3s ease;
+					overflow: hidden;
+					transition: max-height 0.3s ease, opacity 0.25s ease, padding-top 0.3s ease, padding-bottom 0.3s ease;
 				}
 
 				svg {

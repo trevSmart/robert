@@ -1,4 +1,5 @@
 import { FC } from 'react';
+import Avatar from '../common/Avatar';
 
 export interface TeamMember {
 	name: string;
@@ -143,12 +144,6 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 											}}
 										>
 											{activeMembers.map(member => {
-												const initials = member.name
-													.split(' ')
-													.map(part => part.charAt(0).toUpperCase())
-													.join('')
-													.slice(0, 2);
-
 												const percentage = member.progress.percentage;
 												const progressColor = percentage >= 75 ? 'var(--vscode-charts-green, #4caf50)' : percentage >= 50 ? 'var(--vscode-charts-orange, #ff9800)' : percentage >= 25 ? 'var(--vscode-charts-yellow, #ffc107)' : 'var(--vscode-charts-red, #f44336)';
 
@@ -177,51 +172,13 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 														}}
 													>
 														{/* Avatar with Progress Ring */}
-														<div role="progressbar" aria-valuenow={percentage} aria-valuemin={0} aria-valuemax={100} aria-label={`Progress: ${member.progress.completedHours}h / ${member.progress.totalHours}h (${percentage}%)`} style={{ position: 'relative' }}>
-															<svg
-																width="64"
-																height="64"
-																style={{
-																	position: 'absolute',
-																	top: '-8px',
-																	left: '-8px',
-																	transform: 'rotate(-90deg)'
-																}}
-															>
-																<circle cx="32" cy="32" r="28" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-																<circle
-																	cx="32"
-																	cy="32"
-																	r="28"
-																	stroke={progressColor}
-																	strokeWidth="3"
-																	fill="none"
-																	strokeDasharray={2 * Math.PI * 28}
-																	strokeDashoffset={2 * Math.PI * 28 * (1 - percentage / 100)}
-																	strokeLinecap="round"
-																	style={{
-																		transition: 'stroke-dashoffset 0.5s ease, stroke 0.3s ease'
-																	}}
-																/>
-															</svg>
-															<div
-																style={{
-																	width: '48px',
-																	height: '48px',
-																	borderRadius: '50%',
-																	background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-																	display: 'flex',
-																	alignItems: 'center',
-																	justifyContent: 'center',
-																	color: 'white',
-																	fontWeight: 'bold',
-																	fontSize: '16px',
-																	marginBottom: '6px'
-																}}
-															>
-																{initials}
-															</div>
-														</div>
+														<Avatar
+															name={member.name}
+															size={48}
+															showRing={true}
+															ringProgress={percentage}
+															ringColor={progressColor}
+														/>
 
 														{/* Member Info */}
 														<div style={{ width: '100%' }}>
@@ -264,12 +221,6 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 											}}
 										>
 											{inactiveMembers.map(member => {
-												const initials = member.name
-													.split(' ')
-													.map(part => part.charAt(0).toUpperCase())
-													.join('')
-													.slice(0, 2);
-
 												return (
 													<div
 														key={member.name}
@@ -295,36 +246,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 														}}
 													>
 														{/* Avatar without Progress Ring */}
-														<div style={{ position: 'relative' }}>
-															<svg
-																width="48"
-																height="48"
-																style={{
-																	position: 'absolute',
-																	top: '-6px',
-																	left: '-6px'
-																}}
-															>
-																<circle cx="24" cy="24" r="21" stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-															</svg>
-															<div
-																style={{
-																	width: '36px',
-																	height: '36px',
-																	borderRadius: '50%',
-																	background: 'linear-gradient(135deg, #6b7a9a 0%, #7a6b9a 100%)',
-																	display: 'flex',
-																	alignItems: 'center',
-																	justifyContent: 'center',
-																	color: 'white',
-																	fontWeight: 'bold',
-																	fontSize: '12px',
-																	marginBottom: '6px'
-																}}
-															>
-																{initials}
-															</div>
-														</div>
+														<Avatar name={member.name} size={36} />
 
 														{/* Member Info */}
 														<div style={{ width: '100%' }}>

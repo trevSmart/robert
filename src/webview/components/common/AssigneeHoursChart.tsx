@@ -9,7 +9,8 @@ interface AssigneeHoursChartProps {
 	userStories: UserStory[];
 }
 
-const TOOLTIP_SHOW_DELAY_MS = 200;
+const TOOLTIP_DELAY_MS = 320;
+const TOOLTIP_TRANSITION_DURATION_S = 0.55;
 
 const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
@@ -153,6 +154,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 				confine: true,
 				showDelay: 0,
 				hideDelay: 0,
+				transitionDuration: TOOLTIP_TRANSITION_DURATION_S,
+				displayTransition: true,
 				enterable: false,
 				position: ((point: [number, number], params: echarts.TooltipComponentFormatterCallbackParams, dom: HTMLElement, rect: unknown, size: { viewSize: [number, number]; contentSize: [number, number] }): [number, number] => {
 					// Position tooltip to the right of the cursor, with some padding
@@ -263,6 +266,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		let pointerInside = false;
 		let tooltipVisible = false;
 		let showDelayTimer: ReturnType<typeof setTimeout> | null = null;
+		let hideDelayTimer: ReturnType<typeof setTimeout> | null = null;
 		let lastPointer = { x: 0, y: 0 };
 
 		const cancelPendingShow = () => {
@@ -272,13 +276,39 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			}
 		};
 
-		const hideTooltip = () => {
+		const cancelPendingHide = () => {
+			if (hideDelayTimer !== null) {
+				clearTimeout(hideDelayTimer);
+				hideDelayTimer = null;
+			}
+		};
+
+		const hideTooltipNow = () => {
 			if (chart.isDisposed()) return;
-			pointerInside = false;
 			tooltipVisible = false;
-			cancelPendingShow();
 			chart.dispatchAction({ type: 'updateAxisPointer', currTrigger: 'leave' });
 			chart.dispatchAction({ type: 'hideTip' });
+		};
+
+		const scheduleTooltipHide = () => {
+			cancelPendingHide();
+			hideDelayTimer = setTimeout(() => {
+				hideDelayTimer = null;
+				if (pointerInside) return;
+				hideTooltipNow();
+			}, TOOLTIP_DELAY_MS);
+		};
+
+		const hideTooltip = (immediate = false) => {
+			if (chart.isDisposed()) return;
+			pointerInside = false;
+			cancelPendingShow();
+			if (immediate) {
+				cancelPendingHide();
+				hideTooltipNow();
+				return;
+			}
+			scheduleTooltipHide();
 		};
 
 		const showTooltipAtPointer = () => {
@@ -294,9 +324,10 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		const scheduleTooltipShow = (x: number, y: number) => {
 			lastPointer = { x, y };
 			cancelPendingShow();
+			cancelPendingHide();
 			if (!pointerInside) return;
 
-			const delay = tooltipVisible ? 0 : TOOLTIP_SHOW_DELAY_MS;
+			const delay = tooltipVisible ? 0 : TOOLTIP_DELAY_MS;
 			showDelayTimer = setTimeout(() => {
 				showDelayTimer = null;
 				showTooltipAtPointer();
@@ -322,21 +353,27 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		const handleMouseEnter = () => {
 			pointerInside = true;
 		};
+		const handleMouseLeave = () => {
+			hideTooltip();
+		};
+		const handleGlobalOut = () => {
+			hideTooltip();
+		};
 
 		chart.on('showTip', handleShowTip);
 		chart.on('hideTip', handleHideTip);
 
 		// ECharts globalout can be unreliable inside scrollable webviews; use layered fallbacks.
-		chart.on('globalout', hideTooltip);
+		chart.on('globalout', handleGlobalOut);
 		const zr = chart.getZr();
-		zr.on('globalout', hideTooltip);
+		zr.on('globalout', handleGlobalOut);
 		zr.on('mousemove', handleZrMouseMove);
 
 		const containerEl = chartRef.current;
 		containerEl?.addEventListener('mouseenter', handleMouseEnter);
-		containerEl?.addEventListener('mouseleave', hideTooltip);
+		containerEl?.addEventListener('mouseleave', handleMouseLeave);
 
-		const handleScroll = () => hideTooltip();
+		const handleScroll = () => hideTooltip(true);
 		window.addEventListener('scroll', handleScroll, true);
 
 		let mouseCheckRaf: number | null = null;
@@ -364,7 +401,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		document.addEventListener('mousemove', handleDocumentMouseMove);
 
 		const handleResize = () => {
-			hideTooltip();
+			hideTooltip(true);
 			chart.resize();
 		};
 		window.addEventListener('resize', handleResize);
@@ -377,13 +414,14 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 				cancelAnimationFrame(mouseCheckRaf);
 			}
 			cancelPendingShow();
+			cancelPendingHide();
 			chart.off('showTip', handleShowTip);
 			chart.off('hideTip', handleHideTip);
-			chart.off('globalout', hideTooltip);
-			zr.off('globalout', hideTooltip);
+			chart.off('globalout', handleGlobalOut);
+			zr.off('globalout', handleGlobalOut);
 			zr.off('mousemove', handleZrMouseMove);
 			containerEl?.removeEventListener('mouseenter', handleMouseEnter);
-			containerEl?.removeEventListener('mouseleave', hideTooltip);
+			containerEl?.removeEventListener('mouseleave', handleMouseLeave);
 			disposeChart(chart);
 		};
 	}, [userStories, assigneeData, getStoryColor]);

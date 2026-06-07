@@ -137,9 +137,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						</div>
 					) : (
 						<>
-							<collapsible-card title="User stories assignment">
-								<AssigneeHoursChart userStories={sprintUserStories} />
-							</collapsible-card>
+							<AssigneeHoursChart userStories={sprintUserStories} />
 							<collapsible-card title="User stories" background-color="inherit">
 								<UserStoriesTable
 									userStories={sprintUserStories}

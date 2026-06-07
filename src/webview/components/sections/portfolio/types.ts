@@ -66,4 +66,5 @@ export interface PortfolioViewProps {
 	onBackToUserStories: () => void;
 	onBackToDefects: () => void;
 	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
+	collaborationEnabled?: boolean;
 }

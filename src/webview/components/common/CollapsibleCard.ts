@@ -10,7 +10,7 @@ class CollapsibleCard extends HTMLElement {
 	private isInitialized: boolean = false;
 
 	static get observedAttributes() {
-		return ['title', 'default-collapsed', 'background-color'];
+		return ['title', 'default-collapsed', 'background-color', 'header-actions-stop-propagation'];
 	}
 
 	constructor() {
@@ -135,6 +135,10 @@ class CollapsibleCard extends HTMLElement {
 		if (header) {
 			header.addEventListener('click', () => this.toggleCollapsed());
 		}
+		const actionsSlot = this.shadow.querySelector('slot[name="header-actions"]');
+		if (actionsSlot) {
+			actionsSlot.addEventListener('click', e => e.stopPropagation());
+		}
 	}
 
 	private render() {
@@ -217,6 +221,7 @@ class CollapsibleCard extends HTMLElement {
 						</svg>
 					</div>
 					<h3 class="title">${title}</h3>
+					<slot name="header-actions"></slot>
 				</div>
 				<div class="content">
 					<slot></slot>

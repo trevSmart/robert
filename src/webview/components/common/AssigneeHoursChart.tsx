@@ -1,6 +1,6 @@
 import { type FC, useEffect, useRef, useCallback } from 'react';
 import * as echarts from 'echarts';
-import { aggregateUserStoriesByAssignee } from '../../utils/chartUtils';
+import { aggregateUserStoriesByAssignee, getMemberColor, isLightVscodeTheme } from '../../utils/chartUtils';
 import { themeColors } from '../../utils/themeColors';
 import { type UserStory } from '../../../types/rally';
 
@@ -12,29 +12,8 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
 	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
-	// Detect if theme is light or dark
-	const isLightTheme = () => {
-		const body = document.body;
-		return body.classList.contains('vscode-light') || body.getAttribute('data-vscode-theme-kind') === 'light';
-	};
-
-	// Darken hex color by percentage
-	const darkenColor = (hex: string, percent: number): string => {
-		const num = parseInt(hex.slice(1), 16);
-		const amt = Math.round(2.55 * percent);
-		const R = Math.max(0, (num >> 16) - amt);
-		const G = Math.max(0, ((num >> 8) & 0x00ff) - amt);
-		const B = Math.max(0, (num & 0x0000ff) - amt);
-		return `#${((0x1000000 + R * 0x10000 + G * 0x100 + B) | 0).toString(16).slice(1)}`;
-	};
-
-	// Get color palette with theme adjustments
-	const getColorPalette = useCallback((): string[] => {
-		const baseColors = ['#B5D6F0', '#C8E6C9', '#FFE9A3', '#FFCCCC', '#B3E5FC', '#FFD9B3', '#E1BEE7', '#F8BBD0', '#D1C4E9', '#F0F4C3', '#C8F7DC', '#A5D6A7', '#EF9A9A', '#FFCC80', '#CE93D8', '#90CAF9', '#80DEEA', '#FFAB91', '#F48FB1', '#FFF9C4', '#B39DDB', '#C5E1A5', '#FFCCBC', '#BCAAA4'];
-		if (isLightTheme()) {
-			return baseColors;
-		}
-		return baseColors.map(color => darkenColor(color, 30));
+	const getStoryColor = useCallback((storyId: string): string => {
+		return getMemberColor(storyId);
 	}, []);
 
 	const barHeight = 20; // Height per bar in pixels
@@ -73,7 +52,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		// We don't re-sort here to preserve that ordering
 		const totalHours = assigneeData.reduce((sum, assignee) => sum + assignee.totalHours, 0);
 
-		const lightTheme = isLightTheme();
+		const lightTheme = isLightVscodeTheme();
 
 		// Create series data for stacked bars
 		// First, collect all unique user stories across assignees
@@ -99,15 +78,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		const series = Array.from(allUserStories).map(storyId => {
 			const storyDetails = storyDetailsMap.get(storyId);
 
-			// One color per story from the full palette so each segment is distinct (including in Unassigned bar)
-			const normalColor =
-				getColorPalette()[
-					Math.abs(
-						String(storyId)
-							.split('')
-							.reduce((a, b) => a + b.charCodeAt(0), 0)
-					) % 24
-				];
+			const normalColor = getStoryColor(storyId);
 
 			storyColorMap.set(storyId, normalColor);
 
@@ -175,10 +146,13 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			},
 			tooltip: {
 				trigger: 'axis',
+				triggerOn: 'mousemove',
 				axisPointer: {
 					type: 'shadow'
 				},
 				showDelay: 200,
+				hideDelay: 0,
+				enterable: false,
 				position: ((point: [number, number], params: echarts.TooltipComponentFormatterCallbackParams, dom: HTMLElement, rect: unknown, size: { viewSize: [number, number]; contentSize: [number, number] }): [number, number] => {
 					// Position tooltip to the right of the cursor, with some padding
 					let x = point[0] + 10;
@@ -287,6 +261,16 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 		chartInstanceRef.current?.setOption(option);
 
+		// Explicitly hide the tooltip when the pointer leaves the chart.
+		// ECharts' globalout can be unreliable with a custom position + showDelay,
+		// so we also listen on the DOM container's mouseleave as a fallback.
+		const hideTooltip = () => {
+			chartInstanceRef.current?.dispatchAction({ type: 'hideTip' });
+		};
+		chartInstanceRef.current?.on('globalout', hideTooltip);
+		const containerEl = chartRef.current;
+		containerEl?.addEventListener('mouseleave', hideTooltip);
+
 		// Handle resize
 		const handleResize = () => {
 			chartInstanceRef.current?.resize();
@@ -295,8 +279,10 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 
 		return () => {
 			window.removeEventListener('resize', handleResize);
+			chartInstanceRef.current?.off('globalout', hideTooltip);
+			containerEl?.removeEventListener('mouseleave', hideTooltip);
 		};
-	}, [userStories, assigneeData, getColorPalette]);
+	}, [userStories, assigneeData, getStoryColor]);
 
 	// Cleanup on unmount
 	useEffect(() => {

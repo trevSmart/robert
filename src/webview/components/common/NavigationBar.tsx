@@ -103,6 +103,7 @@ interface NavigationBarProps {
 	onSectionChange: (section: Section) => void;
 	collaborationBadgeCount?: number;
 	showTestTab?: boolean;
+	showCollaborationTab?: boolean;
 }
 
 // Search tab: magnifying glass SVG only (no label)
@@ -179,7 +180,7 @@ const CollaborationIcon = () => (
 	</svg>
 );
 
-const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange, collaborationBadgeCount = 0, showTestTab = false }) => {
+const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange, collaborationBadgeCount = 0, showTestTab = false, showCollaborationTab = false }) => {
 	const lightTheme = isLightTheme();
 	const tabs = useMemo(() => {
 		const baseTabs = [
@@ -188,7 +189,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 			{ id: 'portfolio' as const, label: 'Portfolio', Icon: PortfolioIcon, iconOnly: false },
 			{ id: 'team' as const, label: 'Team', Icon: TeamIcon, iconOnly: false },
 			{ id: 'metrics' as const, label: 'Metrics', Icon: MetricsIcon, iconOnly: false },
-			{ id: 'collaboration' as const, label: 'Collaboration', Icon: CollaborationIcon, iconOnly: false },
+			...(showCollaborationTab ? [{ id: 'collaboration' as const, label: 'Collaboration', Icon: CollaborationIcon, iconOnly: false }] : []),
 			{ id: 'library' as const, label: 'Library', Icon: LibraryIcon, iconOnly: false }
 		];
 
@@ -201,7 +202,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		const metricsIndex = baseTabs.findIndex(tab => tab.id === 'metrics');
 		const insertAt = metricsIndex >= 0 ? metricsIndex + 1 : baseTabs.length;
 		return [...baseTabs.slice(0, insertAt), testTab, ...baseTabs.slice(insertAt)];
-	}, [showTestTab]);
+	}, [showTestTab, showCollaborationTab]);
 	const [visibleCount, setVisibleCount] = useState(tabs.length);
 	const [overflowOpen, setOverflowOpen] = useState(false);
 	const [lastReorderedTabId, setLastReorderedTabId] = useState<Section | null>(null);

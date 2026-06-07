@@ -853,7 +853,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 			// In light theme use higher opacity so teal is readable on white background
 			const regionalOpacity = lightTheme ? 0.65 : 0.36;
-			const nationalOpacity = lightTheme ? 0.80 : 0.57;
+			const nationalOpacity = lightTheme ? 0.8 : 0.57;
 
 			events.push({
 				type: 'holiday',

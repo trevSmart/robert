@@ -50,10 +50,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		.slice(0, 12);
 
 	// Resolve the name of the currently selected sprint for the header
-	const selectedSprintName =
-		selectedTeamIteration === 'current'
-			? currentIterationName || 'Current Sprint'
-			: iterations.find(it => it.objectId === selectedTeamIteration)?.name || currentIterationName || 'Current Sprint';
+	const selectedSprintName = selectedTeamIteration === 'current' ? currentIterationName || 'Current Sprint' : iterations.find(it => it.objectId === selectedTeamIteration)?.name || currentIterationName || 'Current Sprint';
 
 	// Split members into active and inactive
 	const activeMembers = teamMembers.filter(m => {
@@ -179,13 +176,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 														}}
 													>
 														{/* Avatar with Progress Ring */}
-														<Avatar
-															name={member.name}
-															size={40}
-															showRing={true}
-															ringProgress={percentage}
-															ringColor={progressColor}
-														/>
+														<Avatar name={member.name} size={40} showRing={true} ringProgress={percentage} ringColor={progressColor} />
 
 														{/* Member Info */}
 														<div style={{ width: '100%', minWidth: 0 }}>

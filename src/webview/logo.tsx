@@ -1,3 +1,4 @@
+import './utils/injectInterFontFace';
 import { createRoot } from 'react-dom/client';
 import LogoWebview from './components/LogoWebview';
 

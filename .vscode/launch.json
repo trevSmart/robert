@@ -7,7 +7,9 @@
 			"request": "launch",
 			"args": [
 				"--extensionDevelopmentPath=${workspaceFolder}",
-				"/Users/marcpla/Documents/Projectes/CaixaBank"
+				"/Users/marcpla/Documents/Projectes/CaixaBank",
+				"--disable-extension=salesforce.salesforcedx-vscode-core",
+				"--disable-extension=salesforce.salesforcedx-vscode-apex-testing"
 			],
 			"outFiles": [
 				"${workspaceFolder}/out/src/**/*.js"

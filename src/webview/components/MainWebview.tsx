@@ -946,12 +946,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const handleIterationSelected = useCallback(
 		(iteration: Iteration) => {
 			setSelectedIteration(iteration);
-			if (iteration.objectId !== loadedSprintIterationId) {
+			if (iteration.objectId !== loadedSprintIterationId || userStoriesError) {
 				loadUserStories(iteration);
 			}
 			setCurrentScreen('userStories');
 		},
-		[loadUserStories, loadedSprintIterationId]
+		[loadUserStories, loadedSprintIterationId, userStoriesError]
 	);
 
 	const handleIterationClickFromHome = useCallback(

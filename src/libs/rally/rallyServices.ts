@@ -2800,10 +2800,17 @@ export async function fetchRallyImageAsBase64(imageUrl: string): Promise<{ dataU
 
 	try {
 		const rallyInstance = settingsManager.getSetting('rallyInstance');
-		const allowedOrigin = rallyInstance ? new URL(rallyInstance).origin : null;
-		const parsedUrl = new URL(imageUrl);
+		if (!rallyInstance) {
+			return { error: 'Blocked image URL (no Rally instance configured)' };
+		}
 
-		if (!allowedOrigin || parsedUrl.origin !== allowedOrigin || parsedUrl.protocol !== 'https:') {
+		const baseUrl = new URL(rallyInstance);
+		const parsedUrl = new URL(imageUrl, baseUrl);
+		const host = parsedUrl.hostname.toLowerCase();
+		const baseHost = baseUrl.hostname.toLowerCase();
+		const isAllowedHost = host === baseHost || host.endsWith(`.${baseHost}`);
+
+		if (!isAllowedHost || parsedUrl.protocol !== 'https:') {
 			return { error: 'Blocked image URL (not in configured Rally instance)' };
 		}
 

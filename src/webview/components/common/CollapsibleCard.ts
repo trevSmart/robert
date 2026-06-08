@@ -10,7 +10,7 @@ class CollapsibleCard extends HTMLElement {
 	private isInitialized: boolean = false;
 
 	static get observedAttributes() {
-		return ['title', 'default-collapsed', 'background-color', 'header-actions-stop-propagation'];
+		return ['title', 'default-collapsed', 'background-color'];
 	}
 
 	constructor() {

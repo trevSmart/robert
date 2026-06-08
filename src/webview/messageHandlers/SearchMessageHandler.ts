@@ -175,12 +175,20 @@ export class SearchMessageHandler {
 	}
 
 	private async handleFetchRallyImage(webview: vscode.Webview, message: any): Promise<void> {
-		const result = await fetchRallyImageAsBase64(message.url);
-		webview.postMessage({
-			type: 'rallyImageFetched',
-			url: message.url,
-			requestId: message.requestId,
-			...result
-		});
+		const url = typeof message?.url === 'string' ? message.url : '';
+		const requestId = typeof message?.requestId === 'string' ? message.requestId : '';
+
+		if (!url || !requestId) {
+			webview.postMessage({ type: 'rallyImageFetched', url, requestId, error: 'Invalid image request' });
+			return;
+		}
+
+		try {
+			const result = await fetchRallyImageAsBase64(url);
+			webview.postMessage({ type: 'rallyImageFetched', url, requestId, ...result });
+		} catch (error) {
+			const err = error instanceof Error ? error.message : String(error);
+			webview.postMessage({ type: 'rallyImageFetched', url, requestId, error: err });
+		}
 	}
 }

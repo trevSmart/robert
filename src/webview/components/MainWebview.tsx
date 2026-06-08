@@ -946,7 +946,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const handleIterationSelected = useCallback(
 		(iteration: Iteration) => {
 			setSelectedIteration(iteration);
-			if (iteration.objectId !== loadedSprintIterationId || userStoriesError) {
+			if (iteration.objectId !== loadedSprintIterationId || userStoriesError !== null) {
 				loadUserStories(iteration);
 			}
 			setCurrentScreen('userStories');

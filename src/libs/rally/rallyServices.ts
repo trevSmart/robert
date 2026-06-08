@@ -2799,7 +2799,15 @@ export async function fetchRallyImageAsBase64(imageUrl: string): Promise<{ dataU
 	}
 
 	try {
-		const response = await fetchPolyfill(imageUrl, {
+		const rallyInstance = settingsManager.getSetting('rallyInstance');
+		const allowedOrigin = rallyInstance ? new URL(rallyInstance).origin : null;
+		const parsedUrl = new URL(imageUrl);
+
+		if (!allowedOrigin || parsedUrl.origin !== allowedOrigin || parsedUrl.protocol !== 'https:') {
+			return { error: 'Blocked image URL (not in configured Rally instance)' };
+		}
+
+		const response = await fetchPolyfill(parsedUrl.toString(), {
 			method: 'GET',
 			headers: {
 				zsessionid: rallyApiKey,
@@ -2813,7 +2821,11 @@ export async function fetchRallyImageAsBase64(imageUrl: string): Promise<{ dataU
 			return { error: `HTTP ${response.status}` };
 		}
 
-		const contentType = response.headers.get('content-type') || 'image/png';
+		let contentType = (response.headers.get('content-type') || 'image/png').split(';')[0].trim().toLowerCase();
+		if (!contentType.startsWith('image/')) {
+			contentType = 'image/png';
+		}
+
 		const arrayBuffer = await response.arrayBuffer();
 		const base64 = Buffer.from(arrayBuffer).toString('base64');
 		return { dataUrl: `data:${contentType};base64,${base64}` };

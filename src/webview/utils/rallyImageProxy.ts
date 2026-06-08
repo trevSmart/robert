@@ -110,7 +110,7 @@ function isRallyUrl(url: string, rallyBaseUrl?: string): boolean {
 		}
 
 		// Rally URLs typically contain /slm/ path or belong to rallydev.com / rally.com domains.
-		return path.includes('/slm/') || isAllowedHost(host, 'rallydev.com') || isAllowedHost(host, 'rally.com');
+		return isAllowedHost(host, 'rallydev.com') || isAllowedHost(host, 'rally.com') || (host === 'placeholder.local' && path.includes('/slm/'));
 	} catch {
 		return false;
 	}

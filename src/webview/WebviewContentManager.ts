@@ -28,11 +28,14 @@ export class WebviewContentManager {
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 
 				// Serialize preloaded Rally data for inline injection. Escape '<' to
-				// avoid breaking out of the <script> tag; default to `null` when absent.
-				const preloadedJson = preloadedData ? JSON.stringify(preloadedData)
-					.replace(/</g, '\\u003c')
-					.replace(/\u2028/g, '\\u2028')
-					.replace(/\u2029/g, '\\u2029') : 'null';
+				// avoid breaking out of the <script> tag; emit `undefined` when absent.
+				const preloadedJson =
+					preloadedData === undefined
+						? 'undefined'
+						: JSON.stringify(preloadedData)
+								.replace(/</g, '\\u003c')
+								.replace(/\u2028/g, '\\u2028')
+								.replace(/\u2029/g, '\\u2029');
 
 				return this.getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',

@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	__CSP_META__
+	<script src="__BRIDGE_URI__"></script>
+	<title>Robert</title>
+	<style>
+		html, body {
+			margin: 0;
+			padding: 0;
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			/* Match the main UI background so the hand-off shows no flash. */
+			background: var(--vscode-editor-background, #000);
+		}
+
+		#intro-stage {
+			position: fixed;
+			inset: 0;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			background: var(--vscode-editor-background, #000);
+		}
+
+		#intro-video {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			background: var(--vscode-editor-background, #000);
+			opacity: 1;
+			transition: opacity 0.5s ease;
+		}
+
+		/* Fade the (paused, last-frame) video out onto the UI-coloured background,
+		   so the transition into the main view never passes through black. */
+		#intro-video.fade-out {
+			opacity: 0;
+		}
+
+		#skip-button {
+			position: fixed;
+			bottom: 16px;
+			right: 16px;
+			padding: 6px 14px;
+			font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+			font-size: 12px;
+			letter-spacing: 0.04em;
+			color: #fff;
+			background: rgba(0, 0, 0, 0.45);
+			border: 1px solid rgba(255, 255, 255, 0.35);
+			border-radius: 999px;
+			cursor: pointer;
+			opacity: 0.7;
+			transition: opacity 0.15s ease, background 0.15s ease;
+			z-index: 2;
+		}
+
+		#skip-button:hover {
+			opacity: 1;
+			background: rgba(0, 0, 0, 0.7);
+		}
+	</style>
+</head>
+<body>
+	<div id="intro-stage">
+		<video id="intro-video" autoplay muted playsinline preload="auto">
+			<source src="__VIDEO_URI__" type="video/mp4">
+		</video>
+		<button id="skip-button" type="button" aria-label="Skip intro video">Skip ›</button>
+	</div>
+
+	<script>
+		(function () {
+			var vscode = null;
+			try {
+				vscode = acquireVsCodeApi();
+			} catch (e) {
+				vscode = null;
+			}
+
+			function post(message) {
+				if (vscode) {
+					try { vscode.postMessage(message); } catch (e) { /* noop */ }
+				}
+			}
+
+			var video = document.getElementById('intro-video');
+			var skipButton = document.getElementById('skip-button');
+			var finished = false;
+
+			// Duration of the CSS fade-out, kept in sync with #intro-video transition.
+			var FADE_MS = 500;
+
+			function finish(command, extra) {
+				if (finished) { return; }
+				finished = true;
+				var payload = Object.assign({ command: command }, extra || {});
+
+				// Errors should bail immediately; a normal end / skip holds the last
+				// frame and fades the video out onto the UI-coloured background, so the
+				// swap to the main UI feels smooth and never flashes through black.
+				if (command === 'videoLoadingComplete') {
+					try { video.pause(); } catch (e) { /* noop */ }
+					if (skipButton) { skipButton.style.display = 'none'; }
+					// Force a reflow so the transition runs from the current opacity.
+					void video.offsetWidth;
+					video.classList.add('fade-out');
+					window.setTimeout(function () { post(payload); }, FADE_MS);
+				} else {
+					post(payload);
+				}
+			}
+
+			// Play slightly faster than real time.
+			video.playbackRate = 1.4;
+			video.addEventListener('loadedmetadata', function () {
+				video.playbackRate = 1.4;
+			});
+
+			post({ command: 'loadingScreenReady' });
+
+			video.addEventListener('ended', function () {
+				finish('videoLoadingComplete');
+			});
+
+			video.addEventListener('error', function () {
+				var err = video.error ? video.error.message || ('code ' + video.error.code) : 'unknown video error';
+				finish('videoPlaybackError', { error: err });
+			});
+
+			// Autoplay can still be rejected by the host; if so, treat it as done
+			// rather than blocking the user behind a frozen frame.
+			var playAttempt = video.play();
+			if (playAttempt && typeof playAttempt.catch === 'function') {
+				playAttempt.catch(function (err) {
+					finish('videoPlaybackError', { error: 'autoplay blocked: ' + (err && err.message ? err.message : String(err)) });
+				});
+			}
+
+			function skip() {
+				finish('videoLoadingComplete');
+			}
+
+			skipButton.addEventListener('click', skip);
+			window.addEventListener('keydown', function (e) {
+				if (e.key === 'Escape' || e.key === 'Enter' || e.key === ' ') {
+					skip();
+				}
+			});
+		})();
+	</script>
+</body>
+</html>

@@ -1,5 +1,7 @@
 # Source files
 src/
+# ...except the standalone intro-video screen, which is read from src at runtime
+!src/webview/loading.html
 tsconfig.json
 
 # Server backend (separate from extension)

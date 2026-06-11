@@ -17,7 +17,7 @@ export class WebviewContentManager {
 	/**
 	 * Generate HTML for main webview with placeholders resolved
 	 */
-	public async getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
+	public async getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string, preloadedData?: unknown): Promise<string> {
 		return (
 			(await this.errorHandler.executeWithErrorHandling(async () => {
 				const testTabEnabled = isTestTabEnabled();
@@ -27,6 +27,16 @@ export class WebviewContentManager {
 				const rallyLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'rally-logo.webp'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 
+				// Serialize preloaded Rally data for inline injection. Escape '<' to
+				// avoid breaking out of the <script> tag; emit `undefined` when absent.
+				const preloadedJson =
+					preloadedData === undefined
+						? 'undefined'
+						: JSON.stringify(preloadedData)
+								.replace(/</g, '\\u003c')
+								.replace(/\u2028/g, '\\u2028')
+								.replace(/\u2029/g, '\\u2029');
+
 				return this.getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',
 					__CONTEXT__: context,
@@ -34,7 +44,8 @@ export class WebviewContentManager {
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
 					__INTER_FONT_URI__: interFontUri.toString(),
 					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
-					__TEST_TAB_ENABLED__: String(testTabEnabled)
+					__TEST_TAB_ENABLED__: String(testTabEnabled),
+					__PRELOADED_DATA__: preloadedJson
 				});
 			}, 'WebviewContentManager.getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);
@@ -48,7 +59,12 @@ export class WebviewContentManager {
 			(await this.errorHandler.executeWithErrorHandling(async () => {
 				this.errorHandler.logInfo('Loading webview content rendered', 'WebviewContentManager.getHtmlForLoading');
 				const videoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'video.mp4'));
-				return fs.readFileSync(path.join(this.extensionUri.fsPath, 'src', 'webview', 'loading.html'), 'utf8').replace('__VIDEO_URI__', videoUri.toString());
+				const bridgeUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'webview-bridge.js'));
+				return fs
+						.readFileSync(path.join(this.extensionUri.fsPath, 'src', 'webview', 'loading.html'), 'utf8')
+						.replace('__VIDEO_URI__', videoUri.toString())
+						.replace('__BRIDGE_URI__', bridgeUri.toString())
+						.replace('__CSP_META__', this.buildCspMeta(webview));
 			}, 'WebviewContentManager.getHtmlForLoading')) || '<html><body><p>Error loading loading screen</p></body></html>'
 		);
 	}
@@ -118,6 +134,7 @@ export class WebviewContentManager {
 		const csp = [
 			"default-src 'none'",
 			`img-src ${webview.cspSource} https: data:`,
+			`media-src ${webview.cspSource} https: data: blob:`,
 			`script-src ${webview.cspSource} 'unsafe-eval' 'unsafe-inline'`,
 			`style-src ${webview.cspSource} 'unsafe-inline'`,
 			`font-src ${webview.cspSource} https: data:`,

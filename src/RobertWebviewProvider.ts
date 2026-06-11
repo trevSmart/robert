@@ -18,6 +18,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private _disposables: vscode.Disposable[] = [];
 	private _currentPanel: vscode.WebviewPanel | undefined;
 	private _currentView?: vscode.WebviewView;
+	// Message listener currently bound to the activity bar view (intro screen or
+	// main UI). Disposed before binding a new one so reloads don't stack handlers.
+	private _viewMessageListener?: vscode.Disposable;
 	private _errorHandler: ErrorHandler;
 	private _settingsManager: SettingsManager;
 	private _collaborationClient: CollaborationClient;
@@ -317,7 +320,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		const preloadedData = this._preloadedData;
 		webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId, preloadedData);
 		this._preloadedData = undefined;
-		this._setWebviewMessageListener(webviewView.webview, webviewId);
+		// Dispose any prior listener bound to this view (a previous render or the
+		// intro screen) so reloads don't stack duplicate message handlers, which
+		// would otherwise cause duplicate Rally calls and "Unknown command" warnings.
+		this._viewMessageListener?.dispose();
+		this._viewMessageListener = this._setWebviewMessageListener(webviewView.webview, webviewId);
 		this._postDevModeInit(webviewView.webview);
 	}
 
@@ -344,6 +351,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			await this._renderMainView(webviewView);
 		};
 
+		// Dispose any listener still bound to this view from a previous render
+		// (e.g. the main UI listener after a reload) before attaching the intro one.
+		this._viewMessageListener?.dispose();
 		const subscription = webviewView.webview.onDidReceiveMessage(async message => {
 			await this._errorHandler.executeWithErrorHandling(async () => {
 				switch (message?.command) {
@@ -365,6 +375,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				}
 			}, 'RobertWebviewProvider._showIntroVideoInView');
 		});
+		// Track the intro listener so a subsequent render/reload can dispose it.
+		this._viewMessageListener = subscription;
 		this._disposables.push(subscription);
 	}
 
@@ -685,9 +697,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		);
 	}
 
-	private _setWebviewMessageListener(webview: vscode.Webview, webviewId?: string) {
+	private _setWebviewMessageListener(webview: vscode.Webview, webviewId?: string): vscode.Disposable {
 		this._errorHandler.logInfo(`Setting up message listener for webview: ${webviewId || 'unknown'}`, 'WebviewMessageListener');
-		webview.onDidReceiveMessage(
+		const listener = webview.onDidReceiveMessage(
 			async message => {
 				await this._errorHandler.executeWithErrorHandling(async () => {
 					const handled = await this._messageDispatcher.dispatch(message.command, webview, message);
@@ -707,6 +719,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			undefined,
 			this._disposables
 		);
+		return listener;
 	}
 
 	/**

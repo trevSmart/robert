@@ -27,6 +27,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	// Debug mode state
 	private _isDebugMode: boolean = false;
 
+	// Whether the intro video has already been shown in this extension-host session.
+	// Resets on every extension restart (in-memory only, not persisted), so the
+	// video plays once each time the activity bar view is first opened after a restart.
+	private _introVideoShown: boolean = false;
+
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
 		private readonly _context: vscode.ExtensionContext
@@ -218,13 +223,18 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			setRallyBroadcaster(msg => this.broadcastToWebviews(msg));
 			this._errorHandler.logViewCreation('Activity Bar View', 'RobertWebviewProvider.resolveWebviewView');
 
-			// Generate unique ID for this webview instance
-			const webviewId = this._generateWebviewId('activity-bar');
-			webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId);
-
-			// Handle messages from webview
-			this._setWebviewMessageListener(webviewView.webview, webviewId);
-			this._postDevModeInit(webviewView.webview);
+			// On the first opening after an extension-host restart (or after a
+			// reload), play the welcome intro video before showing the normal UI,
+			// unless the user has disabled it. Subsequent openings within the same
+			// session skip it.
+			if (!this._introVideoShown && this._settingsManager.getSetting('showWelcomeAnimation')) {
+				this._introVideoShown = true;
+				this._errorHandler.logInfo('Showing intro video before main UI', 'RobertWebviewProvider.resolveWebviewView');
+				await this._showIntroVideoInView(webviewView);
+			} else {
+				this._introVideoShown = true;
+				await this._renderMainView(webviewView);
+			}
 
 			// Handle view disposal
 			webviewView.onDidDispose(
@@ -239,6 +249,64 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				this._disposables
 			);
 		}, 'RobertWebviewProvider.resolveWebviewView');
+	}
+
+	/**
+	 * Render the normal main UI into the activity bar view and wire up its
+	 * message listener and dev-mode init.
+	 */
+	private async _renderMainView(webviewView: vscode.WebviewView): Promise<void> {
+		const webviewId = this._generateWebviewId('activity-bar');
+		webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId);
+		this._setWebviewMessageListener(webviewView.webview, webviewId);
+		this._postDevModeInit(webviewView.webview);
+	}
+
+	/**
+	 * Play the intro video inside the activity bar view. When the video finishes
+	 * (or fails / is skipped), swap the view's content for the normal main UI.
+	 */
+	private async _showIntroVideoInView(webviewView: vscode.WebviewView): Promise<void> {
+		webviewView.webview.html = await this._getHtmlForLoading(webviewView.webview);
+
+		// Warm the Rally cache while the video plays so the main UI can render with
+		// data already in hand instead of showing its loading spinner afterwards.
+		// Fire-and-forget: prefetchRallyData handles its own errors/validation and
+		// writes to the shared TTL cache, so loadIterations finds it ready.
+		void this.prefetchRallyData('intro-video');
+
+		let switched = false;
+		const switchToMain = async (reason: string) => {
+			if (switched) {
+				return;
+			}
+			switched = true;
+			this._errorHandler.logInfo(`Intro video finished (${reason}); rendering main UI`, 'RobertWebviewProvider._showIntroVideoInView');
+			await this._renderMainView(webviewView);
+		};
+
+		const subscription = webviewView.webview.onDidReceiveMessage(async message => {
+			await this._errorHandler.executeWithErrorHandling(async () => {
+				switch (message?.command) {
+					case 'loadingScreenReady':
+						this._errorHandler.logInfo('Intro video screen is ready', 'RobertWebviewProvider._showIntroVideoInView');
+						break;
+					case 'videoLoadingComplete':
+						subscription.dispose();
+						await switchToMain('completed');
+						break;
+					case 'videoLoadingError':
+					case 'videoPlaybackError':
+						this._errorHandler.logWarning(`Intro video failed: ${message.error || message.message}`, 'RobertWebviewProvider._showIntroVideoInView');
+						subscription.dispose();
+						await switchToMain('error');
+						break;
+					default:
+						break;
+				}
+			}, 'RobertWebviewProvider._showIntroVideoInView');
+		});
+		this._disposables.push(subscription);
 	}
 
 	public async createWebviewPanel(): Promise<vscode.WebviewPanel> {
@@ -641,14 +709,27 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			this._errorHandler.logInfo('Refreshing all webviews after extension reload', 'RobertWebviewProvider.resetAndRefreshWebviews');
 
-			// Send refresh message to activity bar view
+			// A reload counts as a fresh start: allow the welcome video to play again
+			// on the next render of the activity bar view.
+			this._introVideoShown = false;
+
+			// Refresh the activity bar view. If the welcome animation is enabled,
+			// replay the intro video (which also re-warms the Rally cache); otherwise
+			// fall back to the lightweight in-place refresh message.
 			if (this._currentView) {
 				try {
-					this._errorHandler.logInfo('Refreshing activity bar webview...', 'RobertWebviewProvider.resetAndRefreshWebviews');
-					await this._currentView.webview.postMessage({
-						command: 'refresh',
-						timestamp: new Date().toISOString()
-					});
+					if (this._settingsManager.getSetting('showWelcomeAnimation')) {
+						this._introVideoShown = true;
+						this._errorHandler.logInfo('Replaying intro video in activity bar view after reload', 'RobertWebviewProvider.resetAndRefreshWebviews');
+						await this._showIntroVideoInView(this._currentView);
+					} else {
+						this._introVideoShown = true;
+						this._errorHandler.logInfo('Refreshing activity bar webview...', 'RobertWebviewProvider.resetAndRefreshWebviews');
+						await this._currentView.webview.postMessage({
+							command: 'refresh',
+							timestamp: new Date().toISOString()
+						});
+					}
 				} catch (error) {
 					this._errorHandler.logWarning(`Failed to refresh activity bar view: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.resetAndRefreshWebviews');
 				}

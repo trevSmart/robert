@@ -48,7 +48,10 @@ export class WebviewContentManager {
 			(await this.errorHandler.executeWithErrorHandling(async () => {
 				this.errorHandler.logInfo('Loading webview content rendered', 'WebviewContentManager.getHtmlForLoading');
 				const videoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'video.mp4'));
-				return fs.readFileSync(path.join(this.extensionUri.fsPath, 'src', 'webview', 'loading.html'), 'utf8').replace('__VIDEO_URI__', videoUri.toString());
+				return fs
+						.readFileSync(path.join(this.extensionUri.fsPath, 'src', 'webview', 'loading.html'), 'utf8')
+						.replace('__VIDEO_URI__', videoUri.toString())
+						.replace('__CSP_META__', this.buildCspMeta(webview));
 			}, 'WebviewContentManager.getHtmlForLoading')) || '<html><body><p>Error loading loading screen</p></body></html>'
 		);
 	}
@@ -118,6 +121,7 @@ export class WebviewContentManager {
 		const csp = [
 			"default-src 'none'",
 			`img-src ${webview.cspSource} https: data:`,
+			`media-src ${webview.cspSource} https: data: blob:`,
 			`script-src ${webview.cspSource} 'unsafe-eval' 'unsafe-inline'`,
 			`style-src ${webview.cspSource} 'unsafe-inline'`,
 			`font-src ${webview.cspSource} https: data:`,

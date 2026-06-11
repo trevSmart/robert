@@ -520,7 +520,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const preloadedData = typeof window !== 'undefined' ? window.__robertPreloadedData : undefined;
 	const hasPreloadedData = Boolean(preloadedData && Array.isArray(preloadedData.iterations) && preloadedData.iterations.length > 0);
 
-	const [iterations, setIterations] = useState<Iteration[]>([]);
+	const [iterations, setIterations] = useState<Iteration[]>(
+		hasPreloadedData ? (preloadedData.iterations as Iteration[]) : []
+	);
 	const [iterationsLoading, setIterationsLoading] = useState(!hasPreloadedData);
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);

@@ -264,7 +264,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			// reload), play the welcome intro video before showing the normal UI,
 			// unless the user has disabled it. Subsequent openings within the same
 			// session skip it.
-			if (!this._introVideoShown && this._settingsManager.getSetting('showWelcomeAnimation')) {
+			if (!this._introVideoShown && this._settingsManager.getSettings().showWelcomeAnimation) {
 				this._introVideoShown = true;
 				this._errorHandler.logInfo('Showing intro video before main UI', 'RobertWebviewProvider.resolveWebviewView');
 				await this._showIntroVideoInView(webviewView);

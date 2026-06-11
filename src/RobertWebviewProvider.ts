@@ -775,7 +775,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			// fall back to the lightweight in-place refresh message.
 			if (this._currentView) {
 				try {
-					if (this._settingsManager.getSetting('showWelcomeAnimation')) {
+					if (this._settingsManager.getSettings().showWelcomeAnimation) {
 						this._introVideoShown = true;
 						this._errorHandler.logInfo('Replaying intro video in activity bar view after reload', 'RobertWebviewProvider.resetAndRefreshWebviews');
 						await this._showIntroVideoInView(this._currentView);

@@ -298,10 +298,19 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		// data and skip the loading spinner. Cap the wait so a slow/stuck prefetch
 		// never blocks the UI — it just falls back to the normal load path.
 		if (this._prefetchInFlight && !this._preloadedData) {
-			await Promise.race([
-				this._prefetchInFlight,
-				new Promise<void>(resolve => setTimeout(resolve, 1500))
-			]);
+			await new Promise<void>(resolve => {
+				const handle = setTimeout(resolve, 1500);
+				this._prefetchInFlight!.then(
+					() => {
+						clearTimeout(handle);
+						resolve();
+					},
+					() => {
+						clearTimeout(handle);
+						resolve();
+					}
+				);
+			});
 		}
 
 		const webviewId = this._generateWebviewId('activity-bar');

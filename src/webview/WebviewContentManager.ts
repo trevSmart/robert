@@ -29,7 +29,10 @@ export class WebviewContentManager {
 
 				// Serialize preloaded Rally data for inline injection. Escape '<' to
 				// avoid breaking out of the <script> tag; default to `null` when absent.
-				const preloadedJson = preloadedData ? JSON.stringify(preloadedData).replace(/</g, '\\u003c') : 'null';
+				const preloadedJson = preloadedData ? JSON.stringify(preloadedData)
+					.replace(/</g, '\\u003c')
+					.replace(/\u2028/g, '\\u2028')
+					.replace(/\u2029/g, '\\u2029') : 'null';
 
 				return this.getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',

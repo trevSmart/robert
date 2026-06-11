@@ -56,9 +56,11 @@ export class WebviewContentManager {
 			(await this.errorHandler.executeWithErrorHandling(async () => {
 				this.errorHandler.logInfo('Loading webview content rendered', 'WebviewContentManager.getHtmlForLoading');
 				const videoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'video.mp4'));
+				const bridgeUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'webview-bridge.js'));
 				return fs
 						.readFileSync(path.join(this.extensionUri.fsPath, 'src', 'webview', 'loading.html'), 'utf8')
 						.replace('__VIDEO_URI__', videoUri.toString())
+						.replace('__BRIDGE_URI__', bridgeUri.toString())
 						.replace('__CSP_META__', this.buildCspMeta(webview));
 			}, 'WebviewContentManager.getHtmlForLoading')) || '<html><body><p>Error loading loading screen</p></body></html>'
 		);

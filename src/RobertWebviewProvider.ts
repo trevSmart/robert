@@ -9,6 +9,7 @@ import { WebSocketClient } from './libs/collaboration/websocketClient';
 import { WebviewContentManager } from './webview/WebviewContentManager';
 import { WebviewMessageDispatcher } from './webview/messageHandlers/WebviewMessageDispatcher';
 import { isTestTabEnabled } from './utils/devMode';
+import { HolidayService } from './libs/holidayService';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -31,6 +32,22 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	// Resets on every extension restart (in-memory only, not persisted), so the
 	// video plays once each time the activity bar view is first opened after a restart.
 	private _introVideoShown: boolean = false;
+
+	// Rally data computed by the latest prefetch, ready to inject into the main UI's
+	// initial HTML so it renders without a loading spinner. Mirrors the
+	// `iterationsLoaded` message payload. Undefined until a prefetch succeeds.
+	private _preloadedData?: {
+		iterations: unknown[];
+		currentUser: unknown;
+		holidays: unknown[];
+		collaborationEnabled: boolean;
+		devMode: boolean;
+		debugMode: boolean;
+	};
+
+	// Resolves when the in-flight prefetch finishes (success or failure), so the
+	// main view can briefly wait for warm preloaded data before rendering.
+	private _prefetchInFlight?: Promise<void>;
 
 	constructor(
 		private readonly _extensionUri: vscode.Uri,
@@ -190,7 +207,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 * Prefetch Rally data to warm the cache when the extension activates.
 	 */
 	public async prefetchRallyData(trigger: string = 'activation'): Promise<void> {
-		await this._errorHandler.executeWithErrorHandling(async () => {
+		const run = this._errorHandler.executeWithErrorHandling(async () => {
 			const settings = this._settingsManager.getSettings();
 			if (!settings.autoRefresh) {
 				return;
@@ -206,9 +223,29 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				return;
 			}
 
-			const [projectsResult, iterationsResult, userResult] = await Promise.all([getProjects(), getIterations(), getCurrentUser()]);
+			// Fetch everything the main UI needs on first render, mirroring the
+			// `iterationsLoaded` payload built by RallyMessageHandler.handleLoadIterations,
+			// so the result can be injected directly into the initial HTML.
+			const holidayService = HolidayService.getInstance();
+			const currentYear = new Date().getFullYear();
+			const [projectsResult, iterationsResult, userResult, holidays] = await Promise.all([getProjects(), getIterations(), getCurrentUser(), holidayService.getHolidays(currentYear, 'ES')]);
+
+			if (iterationsResult?.iterations) {
+				this._preloadedData = {
+					iterations: iterationsResult.iterations,
+					currentUser: userResult?.user || null,
+					holidays: holidays || [],
+					collaborationEnabled: this._settingsManager.getSetting('collaborationEnabled') || false,
+					devMode: isTestTabEnabled(),
+					debugMode: this._settingsManager.getSetting('debugMode')
+				};
+			}
+
 			this._errorHandler.logDebug(`Prefetch completed: ${projectsResult?.count ?? 0} projects, ${iterationsResult?.count ?? 0} iterations`, 'RobertWebviewProvider.prefetchRallyData');
 		}, 'RobertWebviewProvider.prefetchRallyData');
+
+		this._prefetchInFlight = run.then(() => undefined);
+		await this._prefetchInFlight;
 	}
 
 	// WebviewView implementation (for activity bar)
@@ -256,8 +293,19 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 * message listener and dev-mode init.
 	 */
 	private async _renderMainView(webviewView: vscode.WebviewView): Promise<void> {
+		// If a prefetch is still in flight (e.g. the video ended before it
+		// finished), give it a brief window to complete so we can inject preloaded
+		// data and skip the loading spinner. Cap the wait so a slow/stuck prefetch
+		// never blocks the UI — it just falls back to the normal load path.
+		if (this._prefetchInFlight && !this._preloadedData) {
+			await Promise.race([
+				this._prefetchInFlight,
+				new Promise<void>(resolve => setTimeout(resolve, 1500))
+			]);
+		}
+
 		const webviewId = this._generateWebviewId('activity-bar');
-		webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId);
+		webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId, this._preloadedData);
 		this._setWebviewMessageListener(webviewView.webview, webviewId);
 		this._postDevModeInit(webviewView.webview);
 	}
@@ -583,8 +631,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		return this._contentManager.getHtmlForLogo(webview);
 	}
 
-	private async _getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
-		return this._contentManager.getHtmlForWebview(webview, context, webviewId);
+	private async _getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string, preloadedData?: unknown): Promise<string> {
+		return this._contentManager.getHtmlForWebview(webview, context, webviewId, preloadedData);
 	}
 
 	private _setLoadingScreenMessageListener(webview: vscode.Webview) {

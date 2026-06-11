@@ -18,6 +18,17 @@ declare global {
 		rebusLogoUri?: string;
 		interFontUri?: string;
 		testTabEnabled?: boolean;
+		// Rally data pre-fetched by the extension (e.g. while the intro video plays)
+		// and injected into the initial HTML so the UI can render without showing a
+		// loading spinner. Mirrors the `iterationsLoaded` message payload.
+		__robertPreloadedData?: {
+			iterations: unknown[];
+			currentUser: unknown;
+			holidays: unknown[];
+			collaborationEnabled: boolean;
+			devMode: boolean;
+			debugMode: boolean;
+		};
 	}
 
 	// Web API globals

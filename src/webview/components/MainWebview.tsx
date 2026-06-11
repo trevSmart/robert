@@ -514,8 +514,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[context, vscode, webviewId]
 	);
 
+	// Rally data pre-fetched by the extension (e.g. while the intro video plays) and
+	// injected into the initial HTML. When present, the UI can render immediately
+	// without showing the "Loading sprints..." spinner.
+	const preloadedData = typeof window !== 'undefined' ? window.__robertPreloadedData : undefined;
+	const hasPreloadedData = Boolean(preloadedData && Array.isArray(preloadedData.iterations) && preloadedData.iterations.length > 0);
+
 	const [iterations, setIterations] = useState<Iteration[]>([]);
-	const [iterationsLoading, setIterationsLoading] = useState(true);
+	const [iterationsLoading, setIterationsLoading] = useState(!hasPreloadedData);
 	const [iterationsError, setIterationsError] = useState<string | null>(null);
 	const [selectedIteration, setSelectedIteration] = useState<Iteration | null>(null);
 	const initialTestTabEnabled = typeof window !== 'undefined' && window.testTabEnabled === true;
@@ -1165,14 +1171,27 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			logDebug(`Failed to initialize CollaborationClient: ${error}`, 'MainWebview');
 		}
 
-		// Load iterations for home section on initial mount
-		// Since activeSection defaults to 'home', we should load iterations immediately
-		setTimeout(() => {
-			if (!hasLoadedHomeIterations.current) {
-				hasLoadedHomeIterations.current = true;
-				loadIterations();
-			}
-		}, 200); // Small delay to ensure webview is fully initialized
+		// If the extension injected pre-fetched Rally data into the initial HTML
+		// (e.g. warmed while the intro video played), feed it straight into the
+		// existing `iterationsLoaded` handler instead of round-tripping a
+		// loadIterations request. This avoids the loading spinner entirely.
+		if (hasPreloadedData) {
+			hasLoadedHomeIterations.current = true;
+			// Defer one tick so the 'message' listener (registered in a later effect)
+			// is guaranteed to be attached before the synthetic message is dispatched.
+			setTimeout(() => {
+				window.postMessage({ command: 'iterationsLoaded', ...preloadedData }, '*');
+			}, 0);
+		} else {
+			// Load iterations for home section on initial mount
+			// Since activeSection defaults to 'home', we should load iterations immediately
+			setTimeout(() => {
+				if (!hasLoadedHomeIterations.current) {
+					hasLoadedHomeIterations.current = true;
+					loadIterations();
+				}
+			}, 200); // Small delay to ensure webview is fully initialized
+		}
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []); // Only run once on mount
 

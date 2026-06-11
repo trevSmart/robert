@@ -17,7 +17,7 @@ export class WebviewContentManager {
 	/**
 	 * Generate HTML for main webview with placeholders resolved
 	 */
-	public async getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string): Promise<string> {
+	public async getHtmlForWebview(webview: vscode.Webview, context: string, webviewId?: string, preloadedData?: unknown): Promise<string> {
 		return (
 			(await this.errorHandler.executeWithErrorHandling(async () => {
 				const testTabEnabled = isTestTabEnabled();
@@ -27,6 +27,10 @@ export class WebviewContentManager {
 				const rallyLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'rally-logo.webp'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 
+				// Serialize preloaded Rally data for inline injection. Escape '<' to
+				// avoid breaking out of the <script> tag; default to `null` when absent.
+				const preloadedJson = preloadedData ? JSON.stringify(preloadedData).replace(/</g, '\\u003c') : 'null';
+
 				return this.getHtmlFromBuild(webview, 'main.html', {
 					__WEBVIEW_ID__: webviewId || 'unknown',
 					__CONTEXT__: context,
@@ -34,7 +38,8 @@ export class WebviewContentManager {
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
 					__INTER_FONT_URI__: interFontUri.toString(),
 					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
-					__TEST_TAB_ENABLED__: String(testTabEnabled)
+					__TEST_TAB_ENABLED__: String(testTabEnabled),
+					__PRELOADED_DATA__: preloadedJson
 				});
 			}, 'WebviewContentManager.getHtmlForWebview')) || '<html><body><p>Error loading webview</p></body></html>'
 		);

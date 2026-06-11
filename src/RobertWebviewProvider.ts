@@ -314,7 +314,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		}
 
 		const webviewId = this._generateWebviewId('activity-bar');
-		webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId, this._preloadedData);
+		const preloadedData = this._preloadedData;
+		webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId, preloadedData);
+		this._preloadedData = undefined;
 		this._setWebviewMessageListener(webviewView.webview, webviewId);
 		this._postDevModeInit(webviewView.webview);
 	}

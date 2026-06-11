@@ -34,9 +34,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		const assignedData = allAssigneeData.filter(item => item.name !== 'Unassigned');
 		const hasUnassigned = unassignedData.length > 0;
 
-		return hasUnassigned
-			? [...unassignedData, { name: '', userStories: [], totalHours: 0 }, ...assignedData]
-			: assignedData;
+		return hasUnassigned ? [...unassignedData, { name: '', userStories: [], totalHours: 0 }, ...assignedData] : assignedData;
 	}, [userStories]);
 
 	const hasUnassigned = assigneeData.some(item => item.name === 'Unassigned');
@@ -383,11 +381,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 			mouseCheckRaf = requestAnimationFrame(() => {
 				mouseCheckRaf = null;
 				const rect = containerEl.getBoundingClientRect();
-				const inside =
-					event.clientX >= rect.left &&
-					event.clientX <= rect.right &&
-					event.clientY >= rect.top &&
-					event.clientY <= rect.bottom;
+				const inside = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
 				if (!inside) {
 					hideTooltip();
 				} else {

@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.3.0",
+	"version": "0.3.3",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo.png",
 	"publisher": "trevSmart",
@@ -68,6 +68,11 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Show \"X days left\" in the status bar (days until current sprint cutoff). If disabled or no current sprint, shows \"IBM Robert\"."
+				},
+				"robert.showWelcomeAnimation": {
+					"type": "boolean",
+					"default": true,
+					"description": "Play the welcome intro video the first time the Robert view is opened after the extension starts or is reloaded."
 				}
 			}
 		},

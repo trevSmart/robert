@@ -1158,7 +1158,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		// Initialize collaboration client
 		try {
 			// Defer require() to runtime to avoid Vite build issues
-			 
+
 			const { CollaborationClient } = require('../libs/collaboration/collaborationClient');
 			setCollaborationClient(CollaborationClient.getInstance());
 		} catch (error) {

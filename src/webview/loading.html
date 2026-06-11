@@ -74,11 +74,18 @@
 
 	<script>
 		(function () {
-			var vscode = null;
-			try {
-				vscode = acquireVsCodeApi();
-			} catch (e) {
-				vscode = null;
+			// webview-bridge.js (injected in <head>) already calls acquireVsCodeApi once.
+			// A second call throws, so reuse the bridge instance instead of acquiring again.
+			var vscode = window.__vscodeApi || null;
+			if (!vscode) {
+				try {
+					vscode = typeof acquireVsCodeApi === 'function' ? acquireVsCodeApi() : null;
+					if (vscode) {
+						window.__vscodeApi = vscode;
+					}
+				} catch (e) {
+					vscode = null;
+				}
 			}
 
 			function post(message) {

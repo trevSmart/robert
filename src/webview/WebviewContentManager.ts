@@ -61,10 +61,10 @@ export class WebviewContentManager {
 				const videoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'video.mp4'));
 				const bridgeUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'webview-bridge.js'));
 				return fs
-						.readFileSync(path.join(this.extensionUri.fsPath, 'src', 'webview', 'loading.html'), 'utf8')
-						.replace('__VIDEO_URI__', videoUri.toString())
-						.replace('__BRIDGE_URI__', bridgeUri.toString())
-						.replace('__CSP_META__', this.buildCspMeta(webview));
+					.readFileSync(path.join(this.extensionUri.fsPath, 'src', 'webview', 'loading.html'), 'utf8')
+					.replace('__VIDEO_URI__', videoUri.toString())
+					.replace('__BRIDGE_URI__', bridgeUri.toString())
+					.replace('__CSP_META__', this.buildCspMeta(webview));
 			}, 'WebviewContentManager.getHtmlForLoading')) || '<html><body><p>Error loading loading screen</p></body></html>'
 		);
 	}
@@ -118,6 +118,9 @@ export class WebviewContentManager {
 			const uri = toWebviewUri(value.replace(/^\//, ''));
 			return `${attr}="${uri}"`;
 		});
+
+		// VS Code webviews cannot load crossorigin module scripts from vscode-webview:// URIs.
+		html = html.replace(/\s+crossorigin(="[^"]*")?/g, '');
 
 		const cspMeta = this.buildCspMeta(webview);
 		const bridgeUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'media', 'webview-bridge.js'));

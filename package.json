@@ -185,7 +185,7 @@
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
 		"@vscode/vsce": "^3.9.1",
-		"eslint": "^10.2.0",
+		"eslint": "^10.5.0",
 		"eslint-plugin-react-hooks": "^7.1.1",
 		"glob": "^13.0.6",
 		"knip": "^6.16.1",

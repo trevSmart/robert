@@ -205,6 +205,21 @@ export function groupByBlockedStatus(userStories: UserStory[], iterationName?: s
  * @param numberOfSprints - Nombre de sprints a incloure
  * @returns Array de DefectsBySeverity
  */
+/**
+ * Normalitza els valors de severitat que retorna Rally a les categories del gràfic.
+ * Rally retorna valors com "Minor Problem", "Major Problem", "Crash/Data Loss", "Cosmetic",
+ * "None"/"Unset" o buit, que no coincideixen directament amb les etiquetes del gràfic.
+ */
+export function normalizeSeverity(severity: string | null | undefined): 'Critical' | 'Major' | 'Minor' | 'Cosmetic' | 'Unset' {
+	const value = (severity || '').trim().toLowerCase();
+
+	if (value.includes('crash') || value.includes('data loss') || value.includes('critical')) return 'Critical';
+	if (value.includes('major')) return 'Major';
+	if (value.includes('minor')) return 'Minor';
+	if (value.includes('cosmetic')) return 'Cosmetic';
+	return 'Unset';
+}
+
 export function aggregateDefectsBySeverity(defects: RallyDefect[], iterations: Iteration[], numberOfSprints: number = 6): DefectsBySeverity[] {
 	// Filtrar només sprints passats o actuals
 	const today = new Date();
@@ -231,10 +246,10 @@ export function aggregateDefectsBySeverity(defects: RallyDefect[], iterations: I
 	pastIterations.forEach(iteration => {
 		const sprintDefects = defects.filter(defect => defect.iteration === iteration.name);
 
-		// Agrupar per severitat
-		const severities = ['Critical', 'Major', 'Minor', 'Cosmetic'];
+		// Agrupar per severitat (normalitzant els valors reals de Rally a les categories del gràfic)
+		const severities = ['Critical', 'Major', 'Minor', 'Cosmetic', 'Unset'];
 		severities.forEach(severity => {
-			const defectsWithSeverity = sprintDefects.filter(defect => (defect.severity || 'Minor') === severity);
+			const defectsWithSeverity = sprintDefects.filter(defect => normalizeSeverity(defect.severity) === severity);
 
 			const open = defectsWithSeverity.filter(defect => defect.state !== 'Closed' && defect.state !== 'Fixed').length;
 

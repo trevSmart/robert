@@ -2126,10 +2126,7 @@ async function getBatchTasks(userStoryIds: string[]): Promise<
  * @param iterationId Optional iteration ID (uses current if not provided)
  * @returns Map of member name to progress data
  */
-export async function getAllTeamMembersProgress(
-	teamMembers?: string[],
-	iterationId?: string
-): Promise<{ progressMap: Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>; members: string[] }> {
+export async function getAllTeamMembersProgress(teamMembers?: string[], iterationId?: string): Promise<{ progressMap: Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>; members: string[] }> {
 	const progressMap = new Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>();
 
 	try {
@@ -2244,9 +2241,7 @@ export async function getAllTeamMembersProgress(
 
 		// Derive the active members from the iteration's stories when the caller
 		// didn't provide a list (fast phase: we don't yet know the historical roster).
-		const resolvedMembers = teamMembers && teamMembers.length
-			? teamMembers
-			: Array.from(assigneeNameMap.values()).sort();
+		const resolvedMembers = teamMembers && teamMembers.length ? teamMembers : Array.from(assigneeNameMap.values()).sort();
 
 		// Step 5: Get all incomplete story IDs for batch task fetching
 		const incompleteStoryIds: string[] = [];

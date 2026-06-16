@@ -2126,11 +2126,14 @@ async function getBatchTasks(userStoryIds: string[]): Promise<
  * @param iterationId Optional iteration ID (uses current if not provided)
  * @returns Map of member name to progress data
  */
-export async function getAllTeamMembersProgress(teamMembers: string[], iterationId?: string): Promise<Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>> {
+export async function getAllTeamMembersProgress(
+	teamMembers?: string[],
+	iterationId?: string
+): Promise<{ progressMap: Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>; members: string[] }> {
 	const progressMap = new Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>();
 
 	try {
-		errorHandler.logDebug(`Getting progress for ${teamMembers.length} team members in sprint`, 'rallyServices.getAllTeamMembersProgress');
+		errorHandler.logDebug(`Getting progress for ${teamMembers?.length ?? 0} team members in sprint`, 'rallyServices.getAllTeamMembersProgress');
 
 		// Step 1: Get iterations
 		const iterationsResult = await getIterations();
@@ -2139,10 +2142,10 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 		if (!iterations || iterations.length === 0) {
 			errorHandler.logDebug('No iterations found', 'rallyServices.getAllTeamMembersProgress');
 			// Return empty progress for all members
-			for (const member of teamMembers) {
+			for (const member of teamMembers ?? []) {
 				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iterations', userStoriesCount: 0 });
 			}
-			return progressMap;
+			return { progressMap, members: teamMembers ?? [] };
 		}
 
 		// Step 2: Find target iteration
@@ -2201,10 +2204,10 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 		if (!targetIteration) {
 			errorHandler.logDebug('No target iteration found', 'rallyServices.getAllTeamMembersProgress');
 			// Return empty progress for all members
-			for (const member of teamMembers) {
+			for (const member of teamMembers ?? []) {
 				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iteration', userStoriesCount: 0 });
 			}
-			return progressMap;
+			return { progressMap, members: teamMembers ?? [] };
 		}
 
 		errorHandler.logDebug(`Target iteration: ${targetIteration.name}`, 'rallyServices.getAllTeamMembersProgress');
@@ -2239,6 +2242,12 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 			}
 		}
 
+		// Derive the active members from the iteration's stories when the caller
+		// didn't provide a list (fast phase: we don't yet know the historical roster).
+		const resolvedMembers = teamMembers && teamMembers.length
+			? teamMembers
+			: Array.from(assigneeNameMap.values()).sort();
+
 		// Step 5: Get all incomplete story IDs for batch task fetching
 		const incompleteStoryIds: string[] = [];
 		for (const story of allUserStories) {
@@ -2246,7 +2255,7 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 			if (!isCompleted && story.assignee && story.assignee !== 'Unassigned') {
 				// Check if any team member matches this assignee (using normalized comparison)
 				const normalizedAssignee = normalizeName(story.assignee);
-				const matchesTeamMember = teamMembers.some(member => normalizeName(member) === normalizedAssignee);
+				const matchesTeamMember = resolvedMembers.some(member => normalizeName(member) === normalizedAssignee);
 
 				if (matchesTeamMember) {
 					incompleteStoryIds.push(story.objectId);
@@ -2261,7 +2270,7 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 		errorHandler.logDebug(`Retrieved tasks for ${tasksByStory.size} stories via batch query`, 'rallyServices.getAllTeamMembersProgress');
 
 		// Step 7: Calculate progress for each team member in memory
-		for (const memberName of teamMembers) {
+		for (const memberName of resolvedMembers) {
 			const normalizedMemberName = normalizeName(memberName);
 			const userStories = storiesByUser.get(normalizedMemberName) || [];
 
@@ -2306,14 +2315,14 @@ export async function getAllTeamMembersProgress(teamMembers: string[], iteration
 		}
 
 		errorHandler.logInfo(`Successfully calculated progress for ${progressMap.size} team members`, 'rallyServices.getAllTeamMembersProgress');
-		return progressMap;
+		return { progressMap, members: resolvedMembers };
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.getAllTeamMembersProgress');
 		// Return empty progress for all members on error
-		for (const member of teamMembers) {
+		for (const member of teamMembers ?? []) {
 			progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'error', userStoriesCount: 0 });
 		}
-		return progressMap;
+		return { progressMap, members: teamMembers ?? [] };
 	}
 }
 

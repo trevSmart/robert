@@ -163,6 +163,11 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 					<h2 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '20px', fontWeight: '600' }}>
 						{member.name}
 					</h2>
+					{member.userName && (
+						<span style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', fontFamily: 'var(--vscode-editor-font-family, monospace)' }}>
+							{member.userName}
+						</span>
+					)}
 					{member.emailAddress && (
 						<a
 							href={`mailto:${member.emailAddress}`}

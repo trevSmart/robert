@@ -491,7 +491,7 @@ export class RallyMessageHandler {
 
 			if (teamMembersResult?.teamMembers) {
 				const selectedIterationId = message.iterationId as string | undefined;
-				const progressMap = await getAllTeamMembersProgress(teamMembersResult.teamMembers, selectedIterationId);
+				const { progressMap } = await getAllTeamMembersProgress(teamMembersResult.teamMembers, selectedIterationId);
 
 				const teamMembersWithProgress = teamMembersResult.teamMembers.map(memberName => ({
 					name: memberName,

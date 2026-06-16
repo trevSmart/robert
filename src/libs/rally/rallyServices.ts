@@ -667,11 +667,31 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 	return formatted;
 }
 
+/**
+ * Extreu l'objectId numèric d'un ref d'iteració de Rally.
+ * Accepta tant refs curts (`/iteration/12345`) com complets
+ * (`https://…/v2.0/iteration/12345`). Retorna null si l'entrada és buida.
+ */
+export function extractIterationId(ref: string | null | undefined): string | null {
+	if (!ref) {
+		return null;
+	}
+	const id = String(ref).split('/').pop();
+	return id && id.length ? id : null;
+}
+
 // Helper function to check cache for filtered results
-function checkCacheForFilteredResults(query: RallyQuery, dataArray: RallyUserStory[]) {
+export function checkCacheForFilteredResults(query: RallyQuery, dataArray: RallyUserStory[]) {
 	if (Object.keys(query).length && dataArray && dataArray.length) {
 		const filteredResults = dataArray.filter(item =>
 			Object.keys(query).every(key => {
+				// Cas especial: la query filtra per `Iteration` amb un ref (curt o complet),
+				// però la story cacheja el camp com `iteration` (objecte). Comparem per objectId.
+				if (key === 'Iteration') {
+					const queryId = extractIterationId(query[key] as string);
+					const itemId = (item.iteration as any)?.objectId;
+					return queryId != null && itemId != null && String(itemId) === String(queryId);
+				}
 				if (item[key as keyof RallyUserStory] === undefined) {
 					return false;
 				}

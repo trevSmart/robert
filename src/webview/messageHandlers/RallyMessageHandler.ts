@@ -490,16 +490,15 @@ export class RallyMessageHandler {
 		try {
 			this.errorHandler.logDebug('Loading team members — phase 1 (active members)', 'RallyMessageHandler');
 
-			const [{ progressMap, members: activeMembers }, usersResult] = await Promise.all([
-				getAllTeamMembersProgress(undefined, selectedIterationId),
-				getUsers({}, null).catch(() => ({ users: [] }))
-			]);
+			const [{ progressMap, members: activeMembers }, usersResult] = await Promise.all([getAllTeamMembersProgress(undefined, selectedIterationId), getUsers({}, null).catch(() => ({ users: [] }))]);
 
-			const userInfoByDisplayName = new Map<string, { emailAddress: string; userName: string }>(
-				(usersResult.users as Array<{ displayName?: string; emailAddress?: string; userName?: string }>)
-					.filter(u => u.displayName)
-					.map(u => [u.displayName!, { emailAddress: u.emailAddress ?? '', userName: u.userName ?? '' }])
-			);
+			const typedUsers = usersResult.users as Array<{ displayName?: string; emailAddress?: string; userName?: string }>;
+			const userInfoByDisplayName = new Map<string, { emailAddress: string; userName: string }>();
+			for (const u of typedUsers) {
+				const info = { emailAddress: u.emailAddress ?? '', userName: u.userName ?? '' };
+				if (u.displayName) userInfoByDisplayName.set(u.displayName, info);
+				if (u.userName) userInfoByDisplayName.set(u.userName, info);
+			}
 
 			const activeWithProgress = activeMembers.map(name => {
 				const info = userInfoByDisplayName.get(name);

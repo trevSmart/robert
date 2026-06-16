@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress, getUsers } from '../../libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress, getUsers, getMemberHoursHistory } from '../../libs/rally/rallyServices';
 import { HolidayService } from '../../libs/holidayService';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
@@ -49,6 +49,9 @@ export class RallyMessageHandler {
 				return true;
 			case 'getTeamMemberInfo':
 				await this.handleGetTeamMemberInfo(webview, message);
+				return true;
+			case 'getMemberHoursHistory':
+				await this.handleGetMemberHoursHistory(webview, message);
 				return true;
 			case 'getRallyCurrentUser':
 				await this.handleGetRallyCurrentUser(webview);
@@ -510,6 +513,25 @@ export class RallyMessageHandler {
 				name,
 				userName: null,
 				emailAddress: null
+			});
+		}
+	}
+
+	private async handleGetMemberHoursHistory(webview: vscode.Webview, message: any): Promise<void> {
+		const name = message.name as string;
+		try {
+			const { history } = await getMemberHoursHistory(name, 6);
+			webview.postMessage({
+				type: 'memberHoursHistoryLoaded',
+				name,
+				history
+			});
+		} catch (error) {
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getMemberHoursHistory');
+			webview.postMessage({
+				type: 'memberHoursHistoryLoaded',
+				name,
+				history: []
 			});
 		}
 	}

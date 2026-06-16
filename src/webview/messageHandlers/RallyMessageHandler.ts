@@ -483,37 +483,49 @@ export class RallyMessageHandler {
 	}
 
 	private async handleLoadTeamMembers(webview: vscode.Webview, message: any): Promise<void> {
+		const selectedIterationId = message.iterationId as string | undefined;
+		const iterationKey = selectedIterationId ?? 'current';
+
+		// Phase 1 (fast): active members + progress for the selected iteration.
 		try {
-			this.errorHandler.logDebug('Loading team members from last 6 sprints', 'RallyMessageHandler');
-			this.errorHandler.logDebug('Webview received loadTeamMembers command', 'RallyMessageHandler');
+			this.errorHandler.logDebug('Loading team members — phase 1 (active members)', 'RallyMessageHandler');
 
-			const teamMembersResult = await getRecentTeamMembers(6);
+			const { progressMap, members: activeMembers } = await getAllTeamMembersProgress(undefined, selectedIterationId);
 
-			if (teamMembersResult?.teamMembers) {
-				const selectedIterationId = message.iterationId as string | undefined;
-				const { progressMap } = await getAllTeamMembersProgress(teamMembersResult.teamMembers, selectedIterationId);
+			const activeWithProgress = activeMembers.map(name => ({
+				name,
+				progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'not-found', userStoriesCount: 0 }
+			}));
 
-				const teamMembersWithProgress = teamMembersResult.teamMembers.map(memberName => ({
-					name: memberName,
-					progress: progressMap.get(memberName) || {
-						completedHours: 0,
-						totalHours: 0,
-						percentage: 0,
-						source: 'not-found'
-					}
+			webview.postMessage({
+				command: 'teamMembersLoaded',
+				teamMembers: activeWithProgress,
+				iterationId: iterationKey
+			});
+			this.errorHandler.logInfo(`Team members phase 1 loaded: ${activeWithProgress.length} active members`, 'RallyMessageHandler');
+
+			// Phase 2 (deferred): historical roster from the last 6 sprints.
+			try {
+				const recent = await getRecentTeamMembers(6);
+				const otherWithProgress = (recent?.teamMembers || []).map(name => ({
+					name,
+					progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'historical', userStoriesCount: 0 }
 				}));
 
 				webview.postMessage({
-					command: 'teamMembersLoaded',
-					teamMembers: teamMembersWithProgress
+					command: 'teamMembersOtherLoaded',
+					teamMembers: otherWithProgress,
+					iterationId: iterationKey
 				});
-				this.errorHandler.logInfo(`Team members loaded successfully: ${teamMembersWithProgress.length} members with progress`, 'RallyMessageHandler');
-			} else {
+				this.errorHandler.logInfo(`Team members phase 2 loaded: ${otherWithProgress.length} historical members`, 'RallyMessageHandler');
+			} catch (phase2Error) {
+				// The view is already painted; just clear the section spinner.
+				this.errorHandler.handleError(phase2Error instanceof Error ? phase2Error : new Error(String(phase2Error)), 'loadTeamMembers.phase2');
 				webview.postMessage({
-					command: 'teamMembersLoaded',
-					teamMembers: []
+					command: 'teamMembersOtherLoaded',
+					teamMembers: [],
+					iterationId: iterationKey
 				});
-				this.errorHandler.logInfo('No team members found', 'RallyMessageHandler');
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);

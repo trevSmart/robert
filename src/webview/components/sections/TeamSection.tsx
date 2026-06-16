@@ -30,9 +30,10 @@ export interface TeamSectionProps {
 	onTeamIterationChange: (value: string) => void;
 	iterations: Iteration[];
 	currentIterationName: string | null;
+	otherMembersLoading: boolean;
 }
 
-const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, teamMembersError, selectedTeamIteration, onTeamIterationChange, iterations, currentIterationName }) => {
+const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, teamMembersError, selectedTeamIteration, onTeamIterationChange, iterations, currentIterationName, otherMembersLoading }) => {
 	// Filter past iterations for dropdown
 	const pastIterations = iterations
 		.filter(it => {
@@ -49,8 +50,11 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
 		.slice(0, 12);
 
-	// Resolve the name of the currently selected sprint for the header
-	const selectedSprintName = selectedTeamIteration === 'current' ? currentIterationName || 'Current Sprint' : iterations.find(it => it.objectId === selectedTeamIteration)?.name || currentIterationName || 'Current Sprint';
+	// Resolve the name of the currently selected sprint for the header.
+	// Rally returns ObjectID as a number at runtime even though the type says
+	// string, while the dropdown value is always a string, so compare as strings.
+	const matchedIteration = iterations.find(it => String(it.objectId) === String(selectedTeamIteration));
+	const selectedSprintName = selectedTeamIteration === 'current' ? currentIterationName || 'Current Sprint' : matchedIteration?.name || currentIterationName || 'Current Sprint';
 
 	// Split members into active and inactive
 	const activeMembers = teamMembers.filter(m => {
@@ -94,7 +98,19 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 				<>
 					<div style={{ marginBottom: '20px' }}>
 						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-							<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+							<h4
+								style={{
+									margin: 0,
+									color: 'var(--vscode-foreground)',
+									fontSize: '13px',
+									fontWeight: '600',
+									textTransform: 'uppercase',
+									letterSpacing: '0.5px',
+									opacity: 0.7
+								}}
+							>
+								Collaborating in {selectedSprintName}
+							</h4>
 							<select
 								value={selectedTeamIteration}
 								onChange={e => onTeamIterationChange(e.target.value)}
@@ -126,20 +142,6 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 								{/* Active Members Section */}
 								{activeMembers.length > 0 && (
 									<div>
-										<h4
-											style={{
-												margin: '0 0 12px 0',
-												color: 'var(--vscode-foreground)',
-												fontSize: '13px',
-												fontWeight: '600',
-												textTransform: 'uppercase',
-												letterSpacing: '0.5px',
-												opacity: 0.7,
-												textAlign: 'center'
-											}}
-										>
-											Collaborating in {selectedSprintName}
-										</h4>
 										<div
 											style={{
 												display: 'grid',
@@ -164,15 +166,13 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 															alignItems: 'center',
 															textAlign: 'center',
 															cursor: 'pointer',
-															transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+															transition: 'box-shadow 0.2s ease'
 														}}
 														onMouseEnter={e => {
-															e.currentTarget.style.transform = 'translateY(-2px)';
-															e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+												e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
 														}}
 														onMouseLeave={e => {
-															e.currentTarget.style.transform = 'translateY(0)';
-															e.currentTarget.style.boxShadow = 'none';
+												e.currentTarget.style.boxShadow = 'none';
 														}}
 													>
 														{/* Avatar with Progress Ring */}
@@ -196,7 +196,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 								)}
 
 								{/* Inactive Members Section */}
-								{inactiveMembers.length > 0 && (
+								{(inactiveMembers.length > 0 || otherMembersLoading) && (
 									<div>
 										<h4
 											style={{
@@ -207,56 +207,70 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 												textTransform: 'uppercase',
 												letterSpacing: '0.5px',
 												opacity: 0.7,
-												textAlign: 'center'
+												textAlign: 'left'
 											}}
 										>
 											Other Team Members
 										</h4>
-										<div
-											style={{
-												display: 'grid',
-												gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-												gap: '12px'
-											}}
-										>
-											{inactiveMembers.map(member => {
-												return (
-													<div
-														key={member.name}
-														style={{
-															backgroundColor: 'var(--vscode-editor-background)',
-															border: '1px solid var(--vscode-panel-border)',
-															borderRadius: '8px',
-															padding: '12px',
-															display: 'flex',
-															flexDirection: 'column',
-															alignItems: 'center',
-															textAlign: 'center',
-															cursor: 'pointer',
-															transition: 'transform 0.2s ease, box-shadow 0.2s ease'
-														}}
-														onMouseEnter={e => {
-															e.currentTarget.style.transform = 'translateY(-2px)';
-															e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
-														}}
-														onMouseLeave={e => {
-															e.currentTarget.style.transform = 'translateY(0)';
-															e.currentTarget.style.boxShadow = 'none';
-														}}
-													>
-														{/* Avatar without Progress Ring */}
-														<Avatar name={member.name} size={36} />
+										{inactiveMembers.length === 0 && otherMembersLoading ? (
+											<div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', color: 'var(--vscode-descriptionForeground)' }}>
+												<div
+													style={{
+														border: '2px solid var(--vscode-panel-border)',
+														borderTop: '2px solid var(--vscode-progressBar-background)',
+														borderRadius: '50%',
+														width: '14px',
+														height: '14px',
+														animation: 'spin 1s linear infinite'
+													}}
+												/>
+												<span style={{ fontSize: '12px' }}>Loading other team members…</span>
+											</div>
+										) : (
+											<div
+												style={{
+													display: 'grid',
+													gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+													gap: '12px'
+												}}
+											>
+												{inactiveMembers.map(member => {
+													return (
+														<div
+															key={member.name}
+															style={{
+																backgroundColor: 'var(--vscode-editor-background)',
+																border: '1px solid var(--vscode-panel-border)',
+																borderRadius: '8px',
+																padding: '12px',
+																display: 'flex',
+																flexDirection: 'column',
+																alignItems: 'center',
+																textAlign: 'center',
+																cursor: 'pointer',
+																transition: 'box-shadow 0.2s ease'
+															}}
+															onMouseEnter={e => {
+													e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+															}}
+															onMouseLeave={e => {
+													e.currentTarget.style.boxShadow = 'none';
+															}}
+														>
+															{/* Avatar without Progress Ring */}
+															<Avatar name={member.name} size={30} />
 
-														{/* Member Info */}
-														<div style={{ width: '100%', minWidth: 0 }}>
-															<div style={{ marginBottom: '6px', marginTop: '8px' }}>
-																<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
+															{/* Member Info */}
+															<div style={{ width: '100%', minWidth: 0 }}>
+																<div style={{ marginBottom: '6px', marginTop: '8px' }}>
+																	<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
+																</div>
 															</div>
 														</div>
-													</div>
-												);
-											})}
-										</div>
+													);
+												})}
+											</div>
+										)}
 									</div>
 								)}
 							</div>

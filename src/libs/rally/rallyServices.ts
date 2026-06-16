@@ -2330,10 +2330,7 @@ export async function getAllTeamMembersProgress(teamMembers?: string[], iteratio
  * @param numberOfSprints - How many recent sprints to include (default 6)
  * @returns Array of { iterationName, totalHours, completedHours, userStoriesCount } in chronological order
  */
-export async function getMemberHoursHistory(
-	memberName: string,
-	numberOfSprints: number = 6
-): Promise<{ history: Array<{ iterationName: string; totalHours: number; completedHours: number; userStoriesCount: number }> }> {
+export async function getMemberHoursHistory(memberName: string, numberOfSprints: number = 6): Promise<{ history: Array<{ iterationName: string; totalHours: number; completedHours: number; userStoriesCount: number }> }> {
 	try {
 		errorHandler.logDebug(`Getting hours history for member "${memberName}" over last ${numberOfSprints} sprints`, 'rallyServices.getMemberHoursHistory');
 

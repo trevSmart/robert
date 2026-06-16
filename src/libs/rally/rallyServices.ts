@@ -1831,33 +1831,22 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 		const recentIterations = sortedIterations.slice(0, numberOfIterations);
 		errorHandler.logDebug(`Found ${recentIterations.length} recent iterations: ${recentIterations.map(i => i.name).join(', ')}`, 'rallyServices.getRecentTeamMembers');
 
-		// Collect unique assignees from user stories in these iterations
+		// Collect unique assignees from user stories in these iterations (in parallel).
 		const assigneeSet = new Set<string>();
 
-		for (const iteration of recentIterations) {
-			errorHandler.logDebug(`Processing iteration: ${iteration.name} (${iteration.objectId})`, 'rallyServices.getRecentTeamMembers');
+		const perIterationStories = await Promise.all(
+			recentIterations.map(async iteration => {
+				const iterationRef = `/iteration/${iteration.objectId}`;
+				errorHandler.logDebug(`Querying user stories with iteration ref: ${iterationRef}`, 'rallyServices.getRecentTeamMembers');
+				const userStoriesResult = await getUserStories({ Iteration: iterationRef });
+				return userStoriesResult.userStories || [];
+			})
+		);
 
-			// Get user stories for this iteration using the iteration reference
-			const iterationRef = `/iteration/${iteration.objectId}`;
-			errorHandler.logDebug(`Querying user stories with iteration ref: ${iterationRef}`, 'rallyServices.getRecentTeamMembers');
-
-			const userStoriesResult = await getUserStories({ Iteration: iterationRef });
-			const userStories = userStoriesResult.userStories;
-
-			errorHandler.logDebug(`Found ${userStories?.length || 0} user stories in iteration ${iteration.name}`, 'rallyServices.getRecentTeamMembers');
-
-			if (userStories && userStories.length > 0) {
-				// Log first user story as sample
-				if (userStories.length > 0) {
-					const sample = userStories[0];
-					errorHandler.logDebug(`Sample user story: ${sample.formattedId}, assignee="${sample.assignee}"`, 'rallyServices.getRecentTeamMembers');
-				}
-
-				for (const userStory of userStories) {
-					// Add assignee if it exists and is not "Unassigned"
-					if (userStory.assignee && userStory.assignee !== 'Unassigned') {
-						assigneeSet.add(userStory.assignee);
-					}
+		for (const userStories of perIterationStories) {
+			for (const userStory of userStories) {
+				if (userStory.assignee && userStory.assignee !== 'Unassigned') {
+					assigneeSet.add(userStory.assignee);
 				}
 			}
 		}

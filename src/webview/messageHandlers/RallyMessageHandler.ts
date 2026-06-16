@@ -520,7 +520,8 @@ export class RallyMessageHandler {
 				this.errorHandler.logInfo(`Team members phase 2 loaded: ${otherWithProgress.length} historical members`, 'RallyMessageHandler');
 			} catch (phase2Error) {
 				// The view is already painted; just clear the section spinner.
-				this.errorHandler.handleError(phase2Error instanceof Error ? phase2Error : new Error(String(phase2Error)), 'loadTeamMembers.phase2');
+				const err = phase2Error instanceof Error ? phase2Error : new Error(String(phase2Error));
+				this.errorHandler.logWarning(`Team members phase 2 failed: ${err.message}`, 'RallyMessageHandler');
 				webview.postMessage({
 					command: 'teamMembersOtherLoaded',
 					teamMembers: [],

@@ -118,10 +118,7 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 			</div>
 			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '20px' }}>
 				{assets.map(asset => (
-					<div
-						key={asset.title}
-						style={{ background: asset.gradient, borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minHeight: '140px', cursor: 'pointer' }}
-					>
+					<div key={asset.title} style={{ background: asset.gradient, borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minHeight: '140px', cursor: 'pointer' }}>
 						<h4 style={{ margin: '0 0 8px 0', color: '#ffffff', fontSize: '16px', fontWeight: 600 }}>{asset.title}</h4>
 						<p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '12px', lineHeight: 1.4 }}>{asset.description}</p>
 					</div>

@@ -601,6 +601,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [teamMembersLoading, setTeamMembersLoading] = useState(false);
 	const [teamMembersError, setTeamMembersError] = useState<string | null>(null);
 	const [selectedTeamIteration, setSelectedTeamIteration] = useState<string>('current'); // 'current' or iteration objectId
+	const [teamOtherLoading, setTeamOtherLoading] = useState(false);
 
 	// Metrics state - each chart has independent loading state
 	const [metricsLoading, setMetricsLoading] = useState(false);
@@ -697,6 +698,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	// Track if we've loaded all defects for metrics (reset when leaving metrics)
 	const hasLoadedAllDefectsForMetrics = useRef(false);
+
+	// Track the readiness sprint we've already requested stories for (reset when leaving metrics)
+	// Prevents re-sending loadUserStories on every unrelated metrics re-render (e.g. defects paging)
+	const requestedReadinessSprintRef = useRef<string | null>(null);
 
 	const loadIterations = useCallback(() => {
 		setIterationsLoading(true);
@@ -1034,6 +1039,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				}
 			}
 			if (section === 'team') {
+				// Iterations power the sprint dropdown and the "Collaborating in X"
+				// header, so make sure they are loaded even when Team is the first
+				// section visited.
+				if (!iterations.length && !iterationsLoading && !iterationsError) {
+					loadIterations();
+				}
 				// Load team members only once per session to avoid redundant fetches
 				if (!hasLoadedTeamMembers.current && !teamMembersLoading && !teamMembersError) {
 					hasLoadedTeamMembers.current = true;
@@ -1344,6 +1355,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		attemptedUserStoryTests.current.clear();
 		hasLoadedVelocityDataForMetrics.current = false;
 		hasLoadedAllDefectsForMetrics.current = false;
+		requestedReadinessSprintRef.current = null;
 		pendingSearchUserStoryTabRef.current = null;
 
 		logDebug('All state reset complete', 'MainWebview.resetAllState');
@@ -1605,11 +1617,33 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						setTeamMembers(message.teamMembers);
 						setTeamMembersError(null);
 						loadedTeamIterationRef.current = completedTeamIteration;
+						// Phase 2 (Other Team Members) is still on its way.
+						setTeamOtherLoading(true);
 					} else {
 						setTeamMembersError('Failed to load team members');
 					}
 					if (requestedTeamIteration && requestedTeamIteration !== completedTeamIteration) {
 						loadTeamMembers(requestedTeamIteration === 'current' ? undefined : requestedTeamIteration);
+					}
+					break;
+				}
+				case 'teamMembersOtherLoaded': {
+					// Ignore stale responses from a previously-selected iteration.
+					if (message.iterationId && loadedTeamIterationRef.current && message.iterationId !== loadedTeamIterationRef.current) {
+						break;
+					}
+					setTeamOtherLoading(false);
+					if (Array.isArray(message.teamMembers) && message.teamMembers.length) {
+						setTeamMembers(prev => {
+							const byName = new Map(prev.map(m => [m.name, m]));
+							for (const member of message.teamMembers) {
+								// Active members already present win over historical entries.
+								if (!byName.has(member.name)) {
+									byName.set(member.name, member);
+								}
+							}
+							return Array.from(byName.values());
+						});
 					}
 					break;
 				}
@@ -1619,6 +1653,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					pendingTeamIterationRef.current = null;
 					teamMembersLoadingRef.current = false;
 					setTeamMembersLoading(false);
+					setTeamOtherLoading(false);
 					setTeamMembersError(message.error || 'Error loading team members');
 					if (requestedTeamIterationAfterError && requestedTeamIterationAfterError !== failedTeamIteration) {
 						loadTeamMembers(requestedTeamIterationAfterError === 'current' ? undefined : requestedTeamIterationAfterError);
@@ -1836,80 +1871,81 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		}
 	}, [homeDate, holidays, sendMessage]);
 
-	// Calculate metrics when data changes - load charts in parallel (state distribution, defects, KPIs)
+	// Next Sprint Readiness (state distribution) - request stories for the selected sprint.
+	// Kept separate from the defects/KPI calculation below so that defects paging (which mutates
+	// `defects` repeatedly) does not re-trigger loadUserStories and re-animate the readiness chart.
+	// The ref guard ensures we only request once per (section entry, selected sprint).
+	useEffect(() => {
+		if (activeSection !== 'metrics') {
+			requestedReadinessSprintRef.current = null;
+			return;
+		}
+		if (!iterations.length) return;
+		if (requestedReadinessSprintRef.current === selectedReadinessSprint) return;
+		requestedReadinessSprintRef.current = selectedReadinessSprint;
+
+		try {
+			const targetIteration: Iteration | null =
+				selectedReadinessSprint === 'next' ? findNextIteration(iterations) : iterations.find(it => it.name === selectedReadinessSprint) || null;
+
+			if (targetIteration) {
+				setStateDistributionLoading(true);
+				setNextSprintName(targetIteration.name);
+				// Load stories specifically for this sprint to ensure we get all stories, not just cached ones
+				sendMessage({
+					command: 'loadUserStories',
+					iteration: targetIteration._ref
+				});
+			} else {
+				setNextSprintName('No Sprint');
+				setStateDistribution([]);
+				setBlockedDistribution([]);
+				setStateDistributionLoading(false);
+			}
+		} catch (error) {
+			console.error('Error calculating state distribution:', error);
+			setStateDistributionLoading(false);
+		}
+	}, [activeSection, iterations, findNextIteration, selectedReadinessSprint, sendMessage]);
+
+	// KPI metrics from user stories - cheap, can update as stories arrive.
 	useEffect(() => {
 		if (activeSection !== 'metrics') return;
 		if (!iterations.length || !portfolioUserStories.length) return;
 
 		setMetricsLoading(true);
-
-		// State distribution chart - Next sprint readiness
-		(async () => {
-			try {
-				setStateDistributionLoading(true);
-				let targetIteration: Iteration | null = null;
-				let displayName = 'Next Sprint';
-
-				if (selectedReadinessSprint === 'next') {
-					targetIteration = findNextIteration(iterations);
-				} else {
-					// Find the iteration by name
-					targetIteration = iterations.find(it => it.name === selectedReadinessSprint) || null;
-				}
-
-				if (targetIteration) {
-					displayName = targetIteration.name;
-					setNextSprintName(targetIteration.name);
-					// Load stories specifically for this sprint to ensure we get all stories, not just cached ones
-					sendMessage({
-						command: 'loadUserStories',
-						iteration: targetIteration._ref
-					});
-				} else {
-					setNextSprintName('No Sprint');
-					setStateDistribution([]);
-					setBlockedDistribution([]);
-					setStateDistributionLoading(false);
-				}
-			} catch (error) {
-				console.error('Error calculating state distribution:', error);
-				setStateDistributionLoading(false);
-			}
-		})();
-
-		// Defects trend chart - last 12 sprints
-		(async () => {
-			try {
-				setDefectsBySeverityLoading(true);
-				const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 12);
-				setDefectsBySeverity(defectsBySev);
-			} catch (error) {
-				console.error('Error calculating defects:', error);
-			} finally {
-				setDefectsBySeverityLoading(false);
-			}
-		})();
-
-		// Calculate other KPI metrics
 		try {
-			// Calculate completed points (current sprint or all)
-			const points = calculateCompletedPoints(portfolioUserStories);
-			setCompletedPoints(points);
-
-			// Calculate WIP
-			const wipCount = calculateWIP(portfolioUserStories);
-			setWip(wipCount);
-
-			// Calculate blocked items
-			const blocked = calculateBlockedItems(portfolioUserStories, defects);
-			setBlockedItems(blocked);
-
+			setCompletedPoints(calculateCompletedPoints(portfolioUserStories));
+			setWip(calculateWIP(portfolioUserStories));
+			setBlockedItems(calculateBlockedItems(portfolioUserStories, defects));
 			setMetricsLoading(false);
 		} catch (error) {
 			console.error('Error calculating metrics:', error);
 			setMetricsLoading(false);
 		}
-	}, [activeSection, iterations, portfolioUserStories, defects, findNextIteration, selectedReadinessSprint]);
+	}, [activeSection, iterations.length, portfolioUserStories, defects]);
+
+	// Defects trend chart - last 12 sprints. Only recompute once defects paging has finished,
+	// so the chart animates a single time instead of re-animating on every loaded page.
+	useEffect(() => {
+		if (activeSection !== 'metrics') return;
+		if (!iterations.length) return;
+
+		// While there are still defect pages to load, keep showing the loading state.
+		if (defectsHasMore || defectsLoading) {
+			setDefectsBySeverityLoading(true);
+			return;
+		}
+
+		try {
+			const defectsBySev = aggregateDefectsBySeverity(defects, iterations, 12);
+			setDefectsBySeverity(defectsBySev);
+		} catch (error) {
+			console.error('Error calculating defects:', error);
+		} finally {
+			setDefectsBySeverityLoading(false);
+		}
+	}, [activeSection, iterations, defects, defectsHasMore, defectsLoading]);
 
 	// Load iterations when navigating to home section
 	useEffect(() => {

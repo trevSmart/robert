@@ -19,15 +19,23 @@ La llista completa de membres (les 6 crides) només serveix per descobrir noms q
 la secció **"Other Team Members"** (membres sense activitat a la sprint current). Els membres
 **actius** depenen únicament de la iteració current, que ja es calcula a `getAllTeamMembersProgress`.
 
-### Fetch redundant detectat (no es resol en aquest disseny, documentat per context)
+### Fetch redundant detectat (ES RESOL en aquest disseny)
 
 `checkCacheForFilteredResults` ([rallyServices.ts:671-691](../../../src/libs/rally/rallyServices.ts#L671))
 compara `item['Iteration'] === query['Iteration']`. Però la user story formatada desa el camp
 com `iteration` (minúscula) i és un **objecte** `{objectId, _ref, _refObjectName}`
 ([rallyServices.ts:642-648](../../../src/libs/rally/rallyServices.ts#L642-L648)), no un string
 `/iteration/12345`. Per tant la comprovació de cache filtrada per iteració **sempre falla** i cada
-`getUserStories({Iteration})` va sempre a la xarxa. Aquest disseny **no** arregla la cache; només
-redueix l'impacte percebut paral·lelitzant i diferint. Queda anotat com a millora futura.
+`getUserStories({Iteration})` va sempre a la xarxa.
+
+A més, els consumidors passen el filtre `Iteration` en **dos formats diferents**:
+- Serveis del Team: `/iteration/${objectId}` (ref curt) —
+  [rallyServices.ts:1821](../../../src/libs/rally/rallyServices.ts#L1821), 1921, 2204.
+- `loadUserStories` del webview: `iteration._ref`, que és el **ref complet** de Rally
+  (`https://…/v2.0/iteration/12345`) — [MainWebview.tsx:798](../../../src/webview/components/MainWebview.tsx#L798)
+  via [RallyMessageHandler.ts:192](../../../src/webview/messageHandlers/RallyMessageHandler.ts#L192).
+
+El fix ha de ser robust als dos formats comparant per `objectId`.
 
 `getIterations()` es crida dos cops però la segona va a cache TTL de 30 min
 ([rallyServices.ts:744-754](../../../src/libs/rally/rallyServices.ts#L744-L754)), així que no és
@@ -82,6 +90,27 @@ La fase 2 s'`await`-eja després d'enviar la fase 1, de manera que no bloqueja e
   actius de la iteració. El càlcul intern de progrés no canvia.
 - Adaptar tots els consumidors actuals d'aquesta funció al nou retorn.
 
+### 1b. `src/libs/rally/rallyServices.ts` — fix cache filtrada per iteració (`checkCacheForFilteredResults`, línia 671)
+
+- Afegir maneig especial de la clau `Iteration`: extreure l'objectId del valor de la query (que pot
+  venir com a ref curt `/iteration/12345` o ref complet `https://…/iteration/12345`) amb un helper
+  tipus `extractIterationId(ref)` (p. ex. `String(ref).split('/').pop()`), i comparar-lo contra
+  `item.iteration?.objectId`.
+- La resta de claus mantenen la comparació estricta actual (`item[key] === query[key]`).
+- Conseqüència: `getUserStories({ Iteration })` reaprofita stories ja a `rallyData.userStories` per
+  iteració. La iteració current consultada per la fase 1 i per `getRecentTeamMembers` deixa de
+  generar dues crides HTTP a la xarxa.
+
+**Paginació (no és regressió):** quan la cache filtrada encerta, `getUserStories` retorna fins a
+`PAGE_SIZE` (=100) resultats ([rallyServices.ts:874-886](../../../src/libs/rally/rallyServices.ts#L874-L886)).
+Els serveis del Team ja consumeixen avui **només la primera pàgina** de cada iteració: llegeixen
+`userStoriesResult.userStories` un sol cop, sense bucle de paginació
+([rallyServices.ts:1824-1825](../../../src/libs/rally/rallyServices.ts#L1824-L1825),
+[2205-2206](../../../src/libs/rally/rallyServices.ts#L2205-L2206)). El fix manté exactament aquest
+comportament (≤100 stories per iteració) tant per la via API com per la via cache, així que **no
+introdueix cap regressió**. Si en el futur cal cobrir iteracions amb >100 stories, és un canvi
+independent (paginar els serveis del Team). Es deixa una prova que documenti el límit de pàgina.
+
 ### 2. `src/libs/rally/rallyServices.ts` — `getRecentTeamMembers` (línia 1817)
 
 - Substituir el `for (const iteration of recentIterations) { await getUserStories(...) }` per
@@ -135,6 +164,8 @@ descartar respostes obsoletes si l'usuari canvia de selecció enmig de la càrre
 
 ## Fora d'abast (YAGNI)
 
-- Arreglar `checkCacheForFilteredResults` perquè encerti per iteració (millora futura, anotada a dalt).
-- Reduir les 6 crides a 1 amb un filtre `OR` d'iteracions (no es prioritza).
+- Reduir les 6 crides a 1 amb un filtre `OR` d'iteracions (no es prioritza; la paral·lelització ja
+  redueix la latència a ~1 round-trip).
+- Paginar els serveis del Team per cobrir iteracions amb >100 stories (comportament preexistent de
+  pàgina única, no és regressió d'aquest disseny).
 - Canviar el nombre de sprints històrics (es manté 6).

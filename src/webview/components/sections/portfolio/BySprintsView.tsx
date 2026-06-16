@@ -57,7 +57,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	onActiveUserStoryTabChange,
 	collaborationEnabled
 }) => {
-	const [showOnlyThreeFutureSprints, setShowOnlyThreeFutureSprints] = useState(true);
+	const [showAllFutureSprints, setShowAllFutureSprints] = useState(false);
 
 	const additionalTabContent = selectedUserStory
 		? {
@@ -79,7 +79,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 		: undefined;
 
 	const getFilteredIterations = () => {
-		if (!showOnlyThreeFutureSprints) {
+		if (showAllFutureSprints) {
 			return iterations;
 		}
 
@@ -111,7 +111,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 	const rightContent = (
 		<label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'normal' }}>
-			<input type="checkbox" checked={showOnlyThreeFutureSprints} onChange={e => setShowOnlyThreeFutureSprints(e.target.checked)} style={{ cursor: 'pointer' }} />
+			<input type="checkbox" checked={showAllFutureSprints} onChange={e => setShowAllFutureSprints(e.target.checked)} style={{ cursor: 'pointer' }} />
 			<span>Show all future sprints</span>
 		</label>
 	);

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as echarts from 'echarts';
 import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { isLightTheme } from '../../utils/themeColors';
@@ -11,23 +11,50 @@ interface DefectSeverityChartProps {
 
 const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
+	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
+
+	// Signatura estable del contingut: només canvia quan les dades canvien de veritat,
+	// no quan arriba una nova referència d'array amb el mateix contingut. Evita repintar
+	// (i re-animar) el gràfic quan iterations/defects es refresquen amb dades equivalents.
+	const dataSignature = useMemo(
+		() => data.map(d => `${d.sprint}|${d.severity}|${d.open}|${d.closed}`).join(';'),
+		[data]
+	);
+
+	// Crear la instància del gràfic una sola vegada (al muntar) i destruir-la al desmuntar.
+	// Així les actualitzacions posteriors fan una transició suau en lloc de re-animar de zero.
+	useEffect(() => {
+		if (!chartRef.current) return;
+		const chart = initChart(chartRef.current);
+		chartInstanceRef.current = chart;
+
+		const handleResize = () => chart.resize();
+		window.addEventListener('resize', handleResize);
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			disposeChart(chart);
+			chartInstanceRef.current = null;
+		};
+	}, []);
 
 	useEffect(() => {
-		if (!chartRef.current || loading || data.length === 0) return;
+		const chart = chartInstanceRef.current;
+		if (!chart || loading || data.length === 0) return;
 
-		const chart = initChart(chartRef.current);
 		const lightTheme = isLightTheme();
 
 		// Extreure sprints únics
 		const sprints = [...new Set(data.map(d => d.sprint))];
 
 		// Agrupar dades per severitat
-		const severities = ['Cosmetic', 'Minor', 'Major', 'Critical'];
+		const severities = ['Unset', 'Cosmetic', 'Minor', 'Major', 'Critical'];
 		const seriesData: Record<string, number[]> = {
 			Critical: [],
 			Major: [],
 			Minor: [],
-			Cosmetic: []
+			Cosmetic: [],
+			Unset: []
 		};
 
 		// Omplir dades per cada sprint
@@ -41,12 +68,13 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 			});
 		});
 
-		// Colors per severitat
+		// Colors per severitat (tons suaus, mantenint la jerarquia semàntica)
 		const severityColors: Record<string, string> = {
-			Critical: '#d32f2f',
-			Major: '#f57c00',
-			Minor: '#fbc02d',
-			Cosmetic: '#7e57c2'
+			Critical: '#e07a7a',
+			Major: '#e8b07a',
+			Minor: '#e6d07a',
+			Cosmetic: '#a99bd1',
+			Unset: '#a8b4bd'
 		};
 
 		// Crear sèries
@@ -107,6 +135,9 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 			legend: {
 				bottom: 10,
 				type: 'scroll',
+				icon: 'circle',
+				itemWidth: 10,
+				itemHeight: 10,
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc',
 					fontSize: 11
@@ -159,62 +190,19 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 			series: series
 		};
 
-		setChartOption(chart, option);
+		setChartOption(chart, option, { notMerge: true });
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [dataSignature, loading]);
 
-		const handleResize = () => {
-			chart.resize();
-		};
-		window.addEventListener('resize', handleResize);
-
-		return () => {
-			window.removeEventListener('resize', handleResize);
-			disposeChart(chart);
-		};
-	}, [data, loading]);
-
-	if (loading) {
-		return (
-			<div
-				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
-					borderRadius: '12px',
-					padding: '20px',
-					height: '350px',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
-				}}
-			>
-				Loading defects data...
-			</div>
-		);
-	}
-
-	if (data.length === 0) {
-		return (
-			<div
-				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
-					borderRadius: '12px',
-					padding: '20px',
-					height: '350px',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
-				}}
-			>
-				No defects data available
-			</div>
-		);
-	}
+	// El contenidor del gràfic es manté SEMPRE muntat perquè la instància d'ECharts es crea
+	// una sola vegada. Els estats de loading / sense dades es mostren com a overlay a sobre,
+	// no com a JSX alternatiu (que desmuntaria el chart i en provocaria la re-creació + re-animació).
+	const overlayMessage = loading ? 'Loading defects data...' : data.length === 0 ? 'No defects data available' : null;
 
 	return (
 		<div
 			style={{
+				position: 'relative',
 				backgroundColor: 'var(--vscode-editor-background)',
 				border: '1px solid var(--vscode-panel-border)',
 				borderRadius: '12px',
@@ -222,6 +210,22 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 			}}
 		>
 			<div ref={chartRef} style={{ width: '100%', height: '350px' }} />
+			{overlayMessage && (
+				<div
+					style={{
+						position: 'absolute',
+						inset: 0,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: 'var(--vscode-editor-background)',
+						borderRadius: '12px',
+						color: 'var(--vscode-descriptionForeground)'
+					}}
+				>
+					{overlayMessage}
+				</div>
+			)}
 		</div>
 	);
 };

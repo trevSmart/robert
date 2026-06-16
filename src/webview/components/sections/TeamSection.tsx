@@ -1,5 +1,6 @@
-import { FC } from 'react';
+import { FC, useState } from 'react';
 import Avatar from '../common/Avatar';
+import TeamMemberDetail from './team/TeamMemberDetail';
 
 export interface TeamMember {
 	name: string;
@@ -50,6 +51,17 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
 		.slice(0, 12);
 
+	// State for team member detail view
+	const [selectedTeamMember, setSelectedTeamMember] = useState<TeamMember | null>(null);
+
+	const handleMemberClick = (member: TeamMember) => {
+		setSelectedTeamMember(member);
+	};
+
+	const handleBackToTeam = () => {
+		setSelectedTeamMember(null);
+	};
+
 	// Resolve the name of the currently selected sprint for the header
 	const selectedSprintName = selectedTeamIteration === 'current' ? currentIterationName || 'Current Sprint' : iterations.find(it => it.objectId === selectedTeamIteration)?.name || currentIterationName || 'Current Sprint';
 
@@ -64,6 +76,11 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		const hasHours = m.progress.totalHours > 0;
 		return !hasStories && !hasHours;
 	});
+
+	// Show detail view if a team member is selected
+	if (selectedTeamMember) {
+		return <TeamMemberDetail member={selectedTeamMember} onBack={handleBackToTeam} />;
+	}
 
 	return (
 		<div style={{ padding: '20px' }}>
@@ -155,6 +172,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 												return (
 													<div
 														key={member.name}
+														onClick={() => handleMemberClick(member)}
 														style={{
 															backgroundColor: 'var(--vscode-editor-background)',
 															border: '1px solid var(--vscode-panel-border)',
@@ -239,6 +257,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 													return (
 														<div
 															key={member.name}
+														onClick={() => handleMemberClick(member)}
 															style={{
 																backgroundColor: 'var(--vscode-editor-background)',
 																border: '1px solid var(--vscode-panel-border)',

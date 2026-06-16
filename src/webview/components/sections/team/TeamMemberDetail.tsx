@@ -1,6 +1,7 @@
-import type { FC } from 'react';
+import { type FC, useState, useEffect, useMemo } from 'react';
 import Avatar from '../../common/Avatar';
 import ScreenHeader from '../../common/ScreenHeader';
+import { getVsCodeApi } from '../../../utils/vscodeApi';
 import type { TeamMember } from '../TeamSection';
 
 interface TeamMemberDetailProps {
@@ -34,27 +35,9 @@ const DonutChart: FC<DonutChartProps> = ({ percentage, size = 160 }) => {
 		<div style={{ position: 'relative', width: size, height: size, flexShrink: 0 }}>
 			<svg width={size} height={size} style={{ transform: 'rotate(-90deg)' }}>
 				{/* Track */}
-				<circle
-					cx={cx}
-					cy={cy}
-					r={radius}
-					fill="none"
-					stroke="var(--vscode-panel-border)"
-					strokeWidth={14}
-				/>
+				<circle cx={cx} cy={cy} r={radius} fill="none" stroke="var(--vscode-panel-border)" strokeWidth={14} />
 				{/* Arc */}
-				<circle
-					cx={cx}
-					cy={cy}
-					r={radius}
-					fill="none"
-					stroke={color}
-					strokeWidth={14}
-					strokeLinecap="round"
-					strokeDasharray={circumference}
-					strokeDashoffset={strokeDashoffset}
-					style={{ transition: 'stroke-dashoffset 0.6s ease' }}
-				/>
+				<circle cx={cx} cy={cy} r={radius} fill="none" stroke={color} strokeWidth={14} strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
 			</svg>
 			{/* Centre label */}
 			<div
@@ -103,16 +86,12 @@ const HoursBarChart: FC<HoursBarChartProps> = ({ completedHours, totalHours }) =
 					padding: '16px 20px'
 				}}
 			>
-				<div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--vscode-foreground)', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-					Hours breakdown
-				</div>
+				<div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--vscode-foreground)', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hours breakdown</div>
 
 				{rows.map(row => (
 					<div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
 						{/* Label */}
-						<span style={{ width: `${labelW}px`, flexShrink: 0, fontSize: '11px', color: 'var(--vscode-descriptionForeground)', textAlign: 'right' }}>
-							{row.label}
-						</span>
+						<span style={{ width: `${labelW}px`, flexShrink: 0, fontSize: '11px', color: 'var(--vscode-descriptionForeground)', textAlign: 'right' }}>{row.label}</span>
 
 						{/* Bar */}
 						<div style={{ flex: 1, height: `${barH}px`, backgroundColor: 'var(--vscode-panel-border)', borderRadius: '5px', overflow: 'hidden', maxWidth: `${chartW}px` }}>
@@ -128,9 +107,7 @@ const HoursBarChart: FC<HoursBarChartProps> = ({ completedHours, totalHours }) =
 						</div>
 
 						{/* Value */}
-						<span style={{ width: '36px', flexShrink: 0, fontSize: '11px', fontWeight: '600', color: 'var(--vscode-foreground)' }}>
-							{row.hours}h
-						</span>
+						<span style={{ width: '36px', flexShrink: 0, fontSize: '11px', fontWeight: '600', color: 'var(--vscode-foreground)' }}>{row.hours}h</span>
 					</div>
 				))}
 
@@ -151,42 +128,118 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 	const hasActivity = member.progress.totalHours > 0 || (member.progress.userStoriesCount ?? 0) > 0;
 	const userStoriesCount = member.progress.userStoriesCount ?? 0;
 
+	const vscode = useMemo(() => getVsCodeApi(), []);
+
+	// User identity (UserName / EmailAddress) is loaded lazily by display name so it
+	// shows regardless of whether the member has any sprint activity. Seed from any
+	// values already present on the member, then refine with the targeted lookup.
+	const [userName, setUserName] = useState<string | null>(member.userName ?? null);
+	const [emailAddress, setEmailAddress] = useState<string | null>(member.emailAddress ?? null);
+	const [infoLoading, setInfoLoading] = useState(true);
+
+	useEffect(() => {
+		setUserName(member.userName ?? null);
+		setEmailAddress(member.emailAddress ?? null);
+		setInfoLoading(true);
+
+		if (!vscode) {
+			setInfoLoading(false);
+			return;
+		}
+
+		const handleMessage = (event: MessageEvent) => {
+			const data = event.data;
+			if (data?.type === 'teamMemberInfoLoaded' && data.name === member.name) {
+				window.removeEventListener('message', handleMessage);
+				clearTimeout(timeoutId);
+				setUserName(data.userName ?? null);
+				setEmailAddress(data.emailAddress ?? null);
+				setInfoLoading(false);
+			}
+		};
+		window.addEventListener('message', handleMessage);
+
+		vscode.postMessage({ command: 'getTeamMemberInfo', name: member.name });
+
+		const timeoutId = setTimeout(() => {
+			window.removeEventListener('message', handleMessage);
+			setInfoLoading(false);
+		}, 8000);
+
+		return () => {
+			window.removeEventListener('message', handleMessage);
+			clearTimeout(timeoutId);
+		};
+	}, [vscode, member.name, member.userName, member.emailAddress]);
+
 	return (
 		<div style={{ padding: '0 20px' }}>
 			<ScreenHeader title={member.name} showBackButton={true} onBack={onBack} />
 
 			<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', paddingTop: '24px', paddingBottom: '32px' }}>
-
 				{/* Avatar + nom */}
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
 					<Avatar name={member.name} size={64} showRing={hasActivity} ringProgress={pct} ringColor={color} />
-					<h2 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '20px', fontWeight: '600' }}>
-						{member.name}
-					</h2>
-					{member.userName && (
-						<span style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', fontFamily: 'var(--vscode-editor-font-family, monospace)' }}>
-							{member.userName}
-						</span>
-					)}
-					{member.emailAddress && (
-						<a
-							href={`mailto:${member.emailAddress}`}
-							style={{ fontSize: '12px', color: 'var(--vscode-textLink-foreground)', textDecoration: 'none' }}
-							onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
-							onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
-						>
-							{member.emailAddress}
-						</a>
-					)}
-					{userStoriesCount > 0 && (
-						<span style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>
-							{userStoriesCount} user {userStoriesCount === 1 ? 'story' : 'stories'} this sprint
-						</span>
-					)}
+					<h2 style={{ margin: '4px 0 0 0', color: 'var(--vscode-foreground)', fontSize: '20px', fontWeight: '600' }}>{member.name}</h2>
+				</div>
+
+				{/* Identity card — always shown */}
+				<div
+					style={{
+						width: '100%',
+						maxWidth: '480px',
+						backgroundColor: 'var(--vscode-editor-background)',
+						border: '1px solid var(--vscode-panel-border)',
+						borderRadius: '8px',
+						padding: '16px 20px',
+						display: 'flex',
+						flexDirection: 'column',
+						gap: '12px'
+					}}
+				>
+					{/* Username */}
+					<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+						<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Username</span>
+						{infoLoading && !userName ? (
+							<span style={{ fontSize: '13px', color: 'var(--vscode-descriptionForeground)' }}>Loading…</span>
+						) : (
+							<span style={{ fontSize: '13px', color: 'var(--vscode-foreground)', fontFamily: 'var(--vscode-editor-font-family, monospace)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName || '—'}</span>
+						)}
+					</div>
+
+					{/* Email */}
+					<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', borderTop: '1px solid var(--vscode-panel-border)', paddingTop: '12px' }}>
+						<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</span>
+						{infoLoading && !emailAddress ? (
+							<span style={{ fontSize: '13px', color: 'var(--vscode-descriptionForeground)' }}>Loading…</span>
+						) : emailAddress ? (
+							<a
+								href={`mailto:${emailAddress}`}
+								style={{ fontSize: '13px', color: 'var(--vscode-textLink-foreground)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+								onMouseEnter={e => {
+									(e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline';
+								}}
+								onMouseLeave={e => {
+									(e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none';
+								}}
+							>
+								{emailAddress}
+							</a>
+						) : (
+							<span style={{ fontSize: '13px', color: 'var(--vscode-foreground)' }}>—</span>
+						)}
+					</div>
 				</div>
 
 				{hasActivity ? (
 					<>
+						{/* Sprint activity label */}
+						{userStoriesCount > 0 && (
+							<span style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>
+								{userStoriesCount} user {userStoriesCount === 1 ? 'story' : 'stories'} this sprint
+							</span>
+						)}
+
 						{/* Donut chart */}
 						<DonutChart percentage={pct} size={160} />
 
@@ -207,17 +260,10 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 						</div>
 
 						{/* Hours bar chart */}
-						{member.progress.totalHours > 0 && (
-							<HoursBarChart
-								completedHours={member.progress.completedHours}
-								totalHours={member.progress.totalHours}
-							/>
-						)}
+						{member.progress.totalHours > 0 && <HoursBarChart completedHours={member.progress.completedHours} totalHours={member.progress.totalHours} />}
 					</>
 				) : (
-					<p style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>
-						No activity recorded for this sprint.
-					</p>
+					<p style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '14px', margin: 0 }}>No activity recorded for this sprint.</p>
 				)}
 			</div>
 		</div>

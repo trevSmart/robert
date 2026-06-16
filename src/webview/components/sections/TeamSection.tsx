@@ -50,11 +50,8 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
 		.slice(0, 12);
 
-	// Resolve the name of the currently selected sprint for the header.
-	// Rally returns ObjectID as a number at runtime even though the type says
-	// string, while the dropdown value is always a string, so compare as strings.
-	const matchedIteration = iterations.find(it => String(it.objectId) === String(selectedTeamIteration));
-	const selectedSprintName = selectedTeamIteration === 'current' ? currentIterationName || 'Current Sprint' : matchedIteration?.name || currentIterationName || 'Current Sprint';
+	// Resolve the name of the currently selected sprint for the header
+	const selectedSprintName = selectedTeamIteration === 'current' ? currentIterationName || 'Current Sprint' : iterations.find(it => it.objectId === selectedTeamIteration)?.name || currentIterationName || 'Current Sprint';
 
 	// Split members into active and inactive
 	const activeMembers = teamMembers.filter(m => {
@@ -98,19 +95,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 				<>
 					<div style={{ marginBottom: '20px' }}>
 						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-							<h4
-								style={{
-									margin: 0,
-									color: 'var(--vscode-foreground)',
-									fontSize: '13px',
-									fontWeight: '600',
-									textTransform: 'uppercase',
-									letterSpacing: '0.5px',
-									opacity: 0.7
-								}}
-							>
-								Collaborating in {selectedSprintName}
-							</h4>
+							<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
 							<select
 								value={selectedTeamIteration}
 								onChange={e => onTeamIterationChange(e.target.value)}
@@ -142,6 +127,20 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 								{/* Active Members Section */}
 								{activeMembers.length > 0 && (
 									<div>
+										<h4
+											style={{
+												margin: '0 0 12px 0',
+												color: 'var(--vscode-foreground)',
+												fontSize: '13px',
+												fontWeight: '600',
+												textTransform: 'uppercase',
+												letterSpacing: '0.5px',
+												opacity: 0.7,
+												textAlign: 'center'
+											}}
+										>
+											Collaborating in {selectedSprintName}
+										</h4>
 										<div
 											style={{
 												display: 'grid',
@@ -166,13 +165,15 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 															alignItems: 'center',
 															textAlign: 'center',
 															cursor: 'pointer',
-															transition: 'box-shadow 0.2s ease'
+															transition: 'transform 0.2s ease, box-shadow 0.2s ease'
 														}}
 														onMouseEnter={e => {
-												e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+															e.currentTarget.style.transform = 'translateY(-2px)';
+															e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
 														}}
 														onMouseLeave={e => {
-												e.currentTarget.style.boxShadow = 'none';
+															e.currentTarget.style.transform = 'translateY(0)';
+															e.currentTarget.style.boxShadow = 'none';
 														}}
 													>
 														{/* Avatar with Progress Ring */}
@@ -207,7 +208,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 												textTransform: 'uppercase',
 												letterSpacing: '0.5px',
 												opacity: 0.7,
-												textAlign: 'left'
+												textAlign: 'center'
 											}}
 										>
 											Other Team Members
@@ -248,17 +249,19 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 																alignItems: 'center',
 																textAlign: 'center',
 																cursor: 'pointer',
-																transition: 'box-shadow 0.2s ease'
+																transition: 'transform 0.2s ease, box-shadow 0.2s ease'
 															}}
 															onMouseEnter={e => {
-													e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
+																e.currentTarget.style.transform = 'translateY(-2px)';
+																e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
 															}}
 															onMouseLeave={e => {
-													e.currentTarget.style.boxShadow = 'none';
+																e.currentTarget.style.transform = 'translateY(0)';
+																e.currentTarget.style.boxShadow = 'none';
 															}}
 														>
 															{/* Avatar without Progress Ring */}
-															<Avatar name={member.name} size={30} />
+															<Avatar name={member.name} size={36} />
 
 															{/* Member Info */}
 															<div style={{ width: '100%', minWidth: 0 }}>

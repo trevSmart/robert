@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as echarts from 'echarts';
 import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { isLightTheme } from '../../utils/themeColors';
@@ -11,11 +11,34 @@ interface VelocityTrendChartProps {
 
 const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
+	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
+
+	// Signatura estable del contingut: només canvia quan les dades canvien de veritat,
+	// no quan arriba una nova referència d'array amb el mateix contingut. Evita repintar
+	// (i re-animar) el gràfic quan les mètriques es refresquen amb dades equivalents.
+	const dataSignature = useMemo(() => data.map(d => `${d.sprintName}|${d.points}`).join(';'), [data]);
+
+	// Crear la instància del gràfic una sola vegada (al muntar) i destruir-la al desmuntar.
+	// Així les actualitzacions posteriors fan una transició suau en lloc de re-animar de zero.
+	useEffect(() => {
+		if (!chartRef.current) return;
+		const chart = initChart(chartRef.current);
+		chartInstanceRef.current = chart;
+
+		const handleResize = () => chart.resize();
+		window.addEventListener('resize', handleResize);
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			disposeChart(chart);
+			chartInstanceRef.current = null;
+		};
+	}, []);
 
 	useEffect(() => {
-		if (!chartRef.current || loading || data.length === 0) return;
+		const chart = chartInstanceRef.current;
+		if (!chart || loading || data.length === 0) return;
 
-		const chart = initChart(chartRef.current);
 		const lightTheme = isLightTheme();
 
 		// Preparar dades
@@ -149,62 +172,19 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 			]
 		};
 
-		setChartOption(chart, option);
+		setChartOption(chart, option, { notMerge: true });
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [dataSignature, loading]);
 
-		const handleResize = () => {
-			chart.resize();
-		};
-		window.addEventListener('resize', handleResize);
-
-		return () => {
-			window.removeEventListener('resize', handleResize);
-			disposeChart(chart);
-		};
-	}, [data, loading]);
-
-	if (loading) {
-		return (
-			<div
-				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
-					borderRadius: '12px',
-					padding: '20px',
-					height: '300px',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
-				}}
-			>
-				Loading velocity data...
-			</div>
-		);
-	}
-
-	if (data.length === 0) {
-		return (
-			<div
-				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
-					borderRadius: '12px',
-					padding: '20px',
-					height: '300px',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
-				}}
-			>
-				No velocity data available
-			</div>
-		);
-	}
+	// El contenidor del gràfic es manté SEMPRE muntat perquè la instància d'ECharts es crea
+	// una sola vegada. Els estats de loading / sense dades es mostren com a overlay a sobre,
+	// no com a JSX alternatiu (que desmuntaria el chart i en provocaria la re-creació + re-animació).
+	const overlayMessage = loading ? 'Loading velocity data...' : data.length === 0 ? 'No velocity data available' : null;
 
 	return (
 		<div
 			style={{
+				position: 'relative',
 				backgroundColor: 'var(--vscode-editor-background)',
 				border: '1px solid var(--vscode-panel-border)',
 				borderRadius: '12px',
@@ -213,6 +193,22 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 			}}
 		>
 			<div ref={chartRef} style={{ width: '100%', height: '300px' }} />
+			{overlayMessage && (
+				<div
+					style={{
+						position: 'absolute',
+						inset: 0,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: 'var(--vscode-editor-background)',
+						borderRadius: '12px',
+						color: 'var(--vscode-descriptionForeground)'
+					}}
+				>
+					{overlayMessage}
+				</div>
+			)}
 		</div>
 	);
 };

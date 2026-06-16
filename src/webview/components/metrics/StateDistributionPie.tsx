@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import * as echarts from 'echarts';
 import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { isLightTheme } from '../../utils/themeColors';
@@ -23,11 +23,38 @@ interface StateDistributionPieProps {
 
 const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, blockedData = [], sprintName = 'Next Sprint', loading = false, selectedSprint = 'next', onSprintChange, iterations = [], showSelector = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
+	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
+
+	// Signatura estable del contingut: només canvia quan les dades canvien de veritat,
+	// no quan arriba una nova referència d'array amb el mateix contingut. Evita repintar
+	// (i re-animar) el gràfic quan les mètriques es refresquen amb dades equivalents.
+	const dataSignature = useMemo(() => {
+		const stateSig = data.map(d => `${d.state}|${d.count}|${d.percentage}`).join(';');
+		const blockedSig = blockedData.map(d => `${d.status}|${d.count}|${d.percentage}`).join(';');
+		return `${sprintName}#${stateSig}#${blockedSig}`;
+	}, [data, blockedData, sprintName]);
+
+	// Crear la instància del gràfic una sola vegada (al muntar) i destruir-la al desmuntar.
+	// Així les actualitzacions posteriors fan una transició suau en lloc de re-animar de zero.
+	useEffect(() => {
+		if (!chartRef.current) return;
+		const chart = initChart(chartRef.current);
+		chartInstanceRef.current = chart;
+
+		const handleResize = () => chart.resize();
+		window.addEventListener('resize', handleResize);
+
+		return () => {
+			window.removeEventListener('resize', handleResize);
+			disposeChart(chart);
+			chartInstanceRef.current = null;
+		};
+	}, []);
 
 	useEffect(() => {
-		if (!chartRef.current || loading || data.length === 0) return;
+		const chart = chartInstanceRef.current;
+		if (!chart || loading || data.length === 0) return;
 
-		const chart = initChart(chartRef.current);
 		const lightTheme = isLightTheme();
 
 		// Colors per cada estat - Versió Viva
@@ -93,12 +120,19 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 				}
 			},
 			legend: {
-				orient: 'horizontal',
-				bottom: -5,
+				bottom: 10,
+				type: 'scroll',
+				icon: 'circle',
+				itemWidth: 10,
+				itemHeight: 10,
 				textStyle: {
-					color: lightTheme ? '#333' : '#ccc'
+					color: lightTheme ? '#333' : '#ccc',
+					fontSize: 11
 				},
-				data: [...data.map(d => d.state), ...(blockedData.length > 0 ? blockedData.map(d => d.status) : [])]
+				// Treure el sufix "(X%)" només dels ítems de la llegenda (les etiquetes
+				// del donut i el tooltip segueixen mostrant el percentatge).
+				formatter: (name: string) => name.replace(/\s*\(\d+%\)\s*$/, ''),
+				data: [...blockedChartData.map(d => d.name), ...chartData.map(d => d.name)]
 			},
 			series: [
 				...(blockedData.length > 0
@@ -108,7 +142,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 								type: 'pie',
 								radius: ['20%', '25%'],
 								avoidLabelOverlap: false,
-								center: ['50%', '50%'],
+								center: ['50%', '45%'],
 								label: {
 									show: false
 								},
@@ -140,7 +174,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 					type: 'pie',
 					radius: ['25%', '38%'],
 					avoidLabelOverlap: false,
-					center: ['50%', '50%'],
+					center: ['50%', '45%'],
 					label: {
 						show: true,
 						position: 'outside',
@@ -174,62 +208,19 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 			]
 		};
 
-		setChartOption(chart, option);
+		setChartOption(chart, option, { notMerge: true });
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [dataSignature, loading]);
 
-		const handleResize = () => {
-			chart.resize();
-		};
-		window.addEventListener('resize', handleResize);
-
-		return () => {
-			window.removeEventListener('resize', handleResize);
-			disposeChart(chart);
-		};
-	}, [data, blockedData, sprintName, loading]);
-
-	if (loading) {
-		return (
-			<div
-				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
-					borderRadius: '12px',
-					padding: '20px',
-					height: '400px',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
-				}}
-			>
-				Loading state distribution...
-			</div>
-		);
-	}
-
-	if (data.length === 0) {
-		return (
-			<div
-				style={{
-					backgroundColor: 'var(--vscode-editor-background)',
-					border: '1px solid var(--vscode-panel-border)',
-					borderRadius: '12px',
-					padding: '20px',
-					height: '400px',
-					display: 'flex',
-					alignItems: 'center',
-					justifyContent: 'center',
-					color: 'var(--vscode-descriptionForeground)'
-				}}
-			>
-				No state data available
-			</div>
-		);
-	}
+	// El contenidor del gràfic es manté SEMPRE muntat perquè la instància d'ECharts es crea
+	// una sola vegada. Els estats de loading / sense dades es mostren com a overlay a sobre,
+	// no com a JSX alternatiu (que desmuntaria el chart i en provocaria la re-creació + re-animació).
+	const overlayMessage = loading ? 'Loading state distribution...' : data.length === 0 ? 'No state data available' : null;
 
 	return (
 		<div
 			style={{
+				position: 'relative',
 				backgroundColor: 'var(--vscode-editor-background)',
 				border: '1px solid var(--vscode-panel-border)',
 				borderRadius: '12px',
@@ -262,6 +253,22 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 				</div>
 			)}
 			<div ref={chartRef} style={{ width: '100%', height: '280px' }} />
+			{overlayMessage && (
+				<div
+					style={{
+						position: 'absolute',
+						inset: 0,
+						display: 'flex',
+						alignItems: 'center',
+						justifyContent: 'center',
+						backgroundColor: 'var(--vscode-editor-background)',
+						borderRadius: '12px',
+						color: 'var(--vscode-descriptionForeground)'
+					}}
+				>
+					{overlayMessage}
+				</div>
+			)}
 		</div>
 	);
 };

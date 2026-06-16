@@ -129,6 +129,9 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 					color: lightTheme ? '#333' : '#ccc',
 					fontSize: 11
 				},
+				// Treure el sufix "(X%)" només dels ítems de la llegenda (les etiquetes
+				// del donut i el tooltip segueixen mostrant el percentatge).
+				formatter: (name: string) => name.replace(/\s*\(\d+%\)\s*$/, ''),
 				data: [...blockedChartData.map(d => d.name), ...chartData.map(d => d.name)]
 			},
 			series: [

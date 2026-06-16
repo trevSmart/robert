@@ -183,14 +183,12 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 															alignItems: 'center',
 															textAlign: 'center',
 															cursor: 'pointer',
-															transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+															transition: 'box-shadow 0.2s ease'
 														}}
 														onMouseEnter={e => {
-															e.currentTarget.style.transform = 'translateY(-2px)';
 															e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
 														}}
 														onMouseLeave={e => {
-															e.currentTarget.style.transform = 'translateY(0)';
 															e.currentTarget.style.boxShadow = 'none';
 														}}
 													>
@@ -268,14 +266,12 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 																alignItems: 'center',
 																textAlign: 'center',
 																cursor: 'pointer',
-																transition: 'transform 0.2s ease, box-shadow 0.2s ease'
+																transition: 'box-shadow 0.2s ease'
 															}}
 															onMouseEnter={e => {
-																e.currentTarget.style.transform = 'translateY(-2px)';
 																e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.1)';
 															}}
 															onMouseLeave={e => {
-																e.currentTarget.style.transform = 'translateY(0)';
 																e.currentTarget.style.boxShadow = 'none';
 															}}
 														>

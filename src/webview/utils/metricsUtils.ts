@@ -199,13 +199,6 @@ export function groupByBlockedStatus(userStories: UserStory[], iterationName?: s
 }
 
 /**
- * Agrupa defects per severitat i estat
- * @param defects - Llista de defects
- * @param iterations - Llista d'iteracions per agrupar per sprint
- * @param numberOfSprints - Nombre de sprints a incloure
- * @returns Array de DefectsBySeverity
- */
-/**
  * Normalitza els valors de severitat que retorna Rally a les categories del gràfic.
  * Rally retorna valors com "Minor Problem", "Major Problem", "Crash/Data Loss", "Cosmetic",
  * "None"/"Unset" o buit, que no coincideixen directament amb les etiquetes del gràfic.
@@ -220,6 +213,13 @@ export function normalizeSeverity(severity: string | null | undefined): 'Critica
 	return 'Unset';
 }
 
+/**
+ * Agrupa defects per severitat i estat
+ * @param defects - Llista de defects
+ * @param iterations - Llista d'iteracions per agrupar per sprint
+ * @param numberOfSprints - Nombre de sprints a incloure
+ * @returns Array de DefectsBySeverity
+ */
 export function aggregateDefectsBySeverity(defects: RallyDefect[], iterations: Iteration[], numberOfSprints: number = 6): DefectsBySeverity[] {
 	// Filtrar només sprints passats o actuals
 	const today = new Date();

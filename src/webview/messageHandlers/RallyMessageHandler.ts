@@ -495,17 +495,21 @@ export class RallyMessageHandler {
 				getUsers({}, null).catch(() => ({ users: [] }))
 			]);
 
-			const emailByDisplayName = new Map<string, string>(
-				(usersResult.users as Array<{ displayName?: string; emailAddress?: string }>)
-					.filter(u => u.displayName && u.emailAddress)
-					.map(u => [u.displayName!, u.emailAddress!])
+			const userInfoByDisplayName = new Map<string, { emailAddress: string; userName: string }>(
+				(usersResult.users as Array<{ displayName?: string; emailAddress?: string; userName?: string }>)
+					.filter(u => u.displayName)
+					.map(u => [u.displayName!, { emailAddress: u.emailAddress ?? '', userName: u.userName ?? '' }])
 			);
 
-			const activeWithProgress = activeMembers.map(name => ({
-				name,
-				emailAddress: emailByDisplayName.get(name),
-				progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'not-found', userStoriesCount: 0 }
-			}));
+			const activeWithProgress = activeMembers.map(name => {
+				const info = userInfoByDisplayName.get(name);
+				return {
+					name,
+					emailAddress: info?.emailAddress || undefined,
+					userName: info?.userName || undefined,
+					progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'not-found', userStoriesCount: 0 }
+				};
+			});
 
 			webview.postMessage({
 				command: 'teamMembersLoaded',
@@ -517,11 +521,15 @@ export class RallyMessageHandler {
 			// Phase 2 (deferred): historical roster from the last 6 sprints.
 			try {
 				const recent = await getRecentTeamMembers(6);
-				const otherWithProgress = (recent?.teamMembers || []).map(name => ({
-					name,
-					emailAddress: emailByDisplayName.get(name),
-					progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'historical', userStoriesCount: 0 }
-				}));
+				const otherWithProgress = (recent?.teamMembers || []).map(name => {
+					const info = userInfoByDisplayName.get(name);
+					return {
+						name,
+						emailAddress: info?.emailAddress || undefined,
+						userName: info?.userName || undefined,
+						progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'historical', userStoriesCount: 0 }
+					};
+				});
 
 				webview.postMessage({
 					command: 'teamMembersOtherLoaded',

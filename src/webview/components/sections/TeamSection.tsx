@@ -172,7 +172,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 												return (
 													<div
 														key={member.name}
-														onClick={() => handleMemberClick(member)}
+															onClick={() => handleMemberClick(member)}
 														style={{
 															backgroundColor: 'var(--vscode-editor-background)',
 															border: '1px solid var(--vscode-panel-border)',

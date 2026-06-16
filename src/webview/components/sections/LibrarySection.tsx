@@ -97,13 +97,7 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 				{tutorialBanners.map(banner => (
 					<div
 						key={banner.title}
-						style={{ height: '110px', borderRadius: '16px', background: banner.bg, padding: '16px 20px', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', transition: 'transform 0.2s ease' }}
-						onMouseEnter={e => {
-							e.currentTarget.style.transform = 'translateY(-1px)';
-						}}
-						onMouseLeave={e => {
-							e.currentTarget.style.transform = 'translateY(0)';
-						}}
+						style={{ height: '110px', borderRadius: '16px', background: banner.bg, padding: '16px 20px', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
 						onClick={() => {
 							onTutorialSelect(banner);
 							sendMessage('openTutorialInEditor', { title: banner.title, kicker: banner.kicker, accent: banner.accent, bg: banner.bg, shadow: banner.shadow });
@@ -126,13 +120,7 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 				{assets.map(asset => (
 					<div
 						key={asset.title}
-						style={{ background: asset.gradient, borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minHeight: '140px', cursor: 'pointer', transition: 'transform 0.2s ease' }}
-						onMouseEnter={e => {
-							e.currentTarget.style.transform = 'translateY(-1px)';
-						}}
-						onMouseLeave={e => {
-							e.currentTarget.style.transform = 'translateY(0)';
-						}}
+						style={{ background: asset.gradient, borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minHeight: '140px', cursor: 'pointer' }}
 					>
 						<h4 style={{ margin: '0 0 8px 0', color: '#ffffff', fontSize: '16px', fontWeight: 600 }}>{asset.title}</h4>
 						<p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '12px', lineHeight: 1.4 }}>{asset.description}</p>

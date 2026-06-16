@@ -16,10 +16,7 @@ const DefectSeverityChart: React.FC<DefectSeverityChartProps> = ({ data, loading
 	// Signatura estable del contingut: només canvia quan les dades canvien de veritat,
 	// no quan arriba una nova referència d'array amb el mateix contingut. Evita repintar
 	// (i re-animar) el gràfic quan iterations/defects es refresquen amb dades equivalents.
-	const dataSignature = useMemo(
-		() => data.map(d => `${d.sprint}|${d.severity}|${d.open}|${d.closed}`).join(';'),
-		[data]
-	);
+	const dataSignature = useMemo(() => data.map(d => `${d.sprint}|${d.severity}|${d.open}|${d.closed}`).join(';'), [data]);
 
 	// Crear la instància del gràfic una sola vegada (al muntar) i destruir-la al desmuntar.
 	// Així les actualitzacions posteriors fan una transició suau en lloc de re-animar de zero.

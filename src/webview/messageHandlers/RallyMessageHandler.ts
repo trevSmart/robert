@@ -47,6 +47,9 @@ export class RallyMessageHandler {
 			case 'loadTeamMembers':
 				await this.handleLoadTeamMembers(webview, message);
 				return true;
+			case 'getTeamMemberInfo':
+				await this.handleGetTeamMemberInfo(webview, message);
+				return true;
 			case 'getRallyCurrentUser':
 				await this.handleGetRallyCurrentUser(webview);
 				return true;
@@ -482,6 +485,35 @@ export class RallyMessageHandler {
 		}
 	}
 
+	private async handleGetTeamMemberInfo(webview: vscode.Webview, message: any): Promise<void> {
+		const name = message.name as string;
+		try {
+			// Targeted query by display name (getUsers uses a 'contains' match for DisplayName),
+			// so this avoids the pagination limits of fetching the full user list.
+			const usersResult = await getUsers({ DisplayName: name }, 10);
+			const users = (usersResult.users as Array<{ displayName?: string; emailAddress?: string; userName?: string }>) || [];
+
+			// Prefer an exact display-name match; fall back to the first result.
+			const normalized = (name || '').trim().replace(/\s+/g, ' ').toLowerCase();
+			const match = users.find(u => (u.displayName ?? '').trim().replace(/\s+/g, ' ').toLowerCase() === normalized) ?? users[0];
+
+			webview.postMessage({
+				type: 'teamMemberInfoLoaded',
+				name,
+				userName: match?.userName ?? null,
+				emailAddress: match?.emailAddress ?? null
+			});
+		} catch (error) {
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getTeamMemberInfo');
+			webview.postMessage({
+				type: 'teamMemberInfoLoaded',
+				name,
+				userName: null,
+				emailAddress: null
+			});
+		}
+	}
+
 	private async handleLoadTeamMembers(webview: vscode.Webview, message: any): Promise<void> {
 		const selectedIterationId = message.iterationId as string | undefined;
 		const iterationKey = selectedIterationId ?? 'current';
@@ -490,25 +522,12 @@ export class RallyMessageHandler {
 		try {
 			this.errorHandler.logDebug('Loading team members — phase 1 (active members)', 'RallyMessageHandler');
 
-			const [{ progressMap, members: activeMembers }, usersResult] = await Promise.all([getAllTeamMembersProgress(undefined, selectedIterationId), getUsers({}, null).catch(() => ({ users: [] }))]);
+			const { progressMap, members: activeMembers } = await getAllTeamMembersProgress(undefined, selectedIterationId);
 
-			const typedUsers = usersResult.users as Array<{ displayName?: string; emailAddress?: string; userName?: string }>;
-			const userInfoByDisplayName = new Map<string, { emailAddress: string; userName: string }>();
-			for (const u of typedUsers) {
-				const info = { emailAddress: u.emailAddress ?? '', userName: u.userName ?? '' };
-				if (u.displayName) userInfoByDisplayName.set(u.displayName, info);
-				if (u.userName) userInfoByDisplayName.set(u.userName, info);
-			}
-
-			const activeWithProgress = activeMembers.map(name => {
-				const info = userInfoByDisplayName.get(name);
-				return {
-					name,
-					emailAddress: info?.emailAddress || undefined,
-					userName: info?.userName || undefined,
-					progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'not-found', userStoriesCount: 0 }
-				};
-			});
+			const activeWithProgress = activeMembers.map(name => ({
+				name,
+				progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'not-found', userStoriesCount: 0 }
+			}));
 
 			webview.postMessage({
 				command: 'teamMembersLoaded',
@@ -520,15 +539,10 @@ export class RallyMessageHandler {
 			// Phase 2 (deferred): historical roster from the last 6 sprints.
 			try {
 				const recent = await getRecentTeamMembers(6);
-				const otherWithProgress = (recent?.teamMembers || []).map(name => {
-					const info = userInfoByDisplayName.get(name);
-					return {
-						name,
-						emailAddress: info?.emailAddress || undefined,
-						userName: info?.userName || undefined,
-						progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'historical', userStoriesCount: 0 }
-					};
-				});
+				const otherWithProgress = (recent?.teamMembers || []).map(name => ({
+					name,
+					progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'historical', userStoriesCount: 0 }
+				}));
 
 				webview.postMessage({
 					command: 'teamMembersOtherLoaded',

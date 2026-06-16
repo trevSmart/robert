@@ -35,11 +35,11 @@ vi.mock('./CacheService', () => ({
 import { extractIterationId, checkCacheForFilteredResults } from './rallyServices';
 
 describe('extractIterationId', () => {
-	it('extreu objectId d\'un ref curt', () => {
+	it("extreu objectId d'un ref curt", () => {
 		expect(extractIterationId('/iteration/12345')).toBe('12345');
 	});
 
-	it('extreu objectId d\'un ref complet de Rally', () => {
+	it("extreu objectId d'un ref complet de Rally", () => {
 		expect(extractIterationId('https://rally1.rallydev.com/slm/webservice/v2.0/iteration/67890')).toBe('67890');
 	});
 

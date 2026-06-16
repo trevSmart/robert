@@ -163,6 +163,16 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 					<h2 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '20px', fontWeight: '600' }}>
 						{member.name}
 					</h2>
+					{member.emailAddress && (
+						<a
+							href={`mailto:${member.emailAddress}`}
+							style={{ fontSize: '12px', color: 'var(--vscode-textLink-foreground)', textDecoration: 'none' }}
+							onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline'; }}
+							onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.textDecoration = 'none'; }}
+						>
+							{member.emailAddress}
+						</a>
+					)}
 					{userStoriesCount > 0 && (
 						<span style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>
 							{userStoriesCount} user {userStoriesCount === 1 ? 'story' : 'stories'} this sprint

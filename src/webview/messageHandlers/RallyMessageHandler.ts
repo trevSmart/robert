@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress } from '../../libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress, getUsers } from '../../libs/rally/rallyServices';
 import { HolidayService } from '../../libs/holidayService';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
@@ -490,10 +490,20 @@ export class RallyMessageHandler {
 		try {
 			this.errorHandler.logDebug('Loading team members — phase 1 (active members)', 'RallyMessageHandler');
 
-			const { progressMap, members: activeMembers } = await getAllTeamMembersProgress(undefined, selectedIterationId);
+			const [{ progressMap, members: activeMembers }, usersResult] = await Promise.all([
+				getAllTeamMembersProgress(undefined, selectedIterationId),
+				getUsers({}, null).catch(() => ({ users: [] }))
+			]);
+
+			const emailByDisplayName = new Map<string, string>(
+				(usersResult.users as Array<{ displayName?: string; emailAddress?: string }>)
+					.filter(u => u.displayName && u.emailAddress)
+					.map(u => [u.displayName!, u.emailAddress!])
+			);
 
 			const activeWithProgress = activeMembers.map(name => ({
 				name,
+				emailAddress: emailByDisplayName.get(name),
 				progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'not-found', userStoriesCount: 0 }
 			}));
 
@@ -509,6 +519,7 @@ export class RallyMessageHandler {
 				const recent = await getRecentTeamMembers(6);
 				const otherWithProgress = (recent?.teamMembers || []).map(name => ({
 					name,
+					emailAddress: emailByDisplayName.get(name),
 					progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'historical', userStoriesCount: 0 }
 				}));
 

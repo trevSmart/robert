@@ -2264,6 +2264,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 												onTeamIterationChange={setSelectedTeamIteration}
 												iterations={iterations}
 												currentIterationName={findCurrentIteration(iterations)?.name ?? null}
+												otherMembersLoading={teamOtherLoading}
 											/>
 										)}
 										{(renderedSection === 'library' || selectedTutorial) && (

@@ -122,6 +122,78 @@ const HoursBarChart: FC<HoursBarChartProps> = ({ completedHours, totalHours }) =
 	);
 };
 
+// Vertical bar chart: assigned-hours evolution across the last sprints
+interface SprintHoursPoint {
+	iterationName: string;
+	totalHours: number;
+	completedHours: number;
+	userStoriesCount: number;
+}
+
+interface HoursHistoryChartProps {
+	history: SprintHoursPoint[];
+}
+
+// Shorten a sprint name for the compact x-axis labels (e.g. "Sprint 2024-12" -> "12").
+function shortSprintLabel(name: string): string {
+	const trimmed = (name || '').trim();
+	const match = trimmed.match(/(\d+)\s*$/);
+	if (match) return match[1];
+	const words = trimmed.split(/\s+/);
+	return words[words.length - 1] || trimmed;
+}
+
+const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
+	const maxHours = Math.max(1, ...history.map(h => h.totalHours));
+	const chartH = 140;
+	const barColor = 'var(--vscode-charts-blue, #3794ff)';
+
+	return (
+		<div style={{ width: '100%', maxWidth: '480px' }}>
+			<div
+				style={{
+					backgroundColor: 'var(--vscode-editor-background)',
+					border: '1px solid var(--vscode-panel-border)',
+					borderRadius: '8px',
+					padding: '16px 20px'
+				}}
+			>
+				<div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--vscode-foreground)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Assigned hours · last {history.length} sprints</div>
+
+				<div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '8px', height: `${chartH}px` }}>
+					{history.map(point => {
+						const barHeight = Math.round((point.totalHours / maxHours) * (chartH - 24));
+						return (
+							<div key={point.iterationName} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: 0 }} title={`${point.iterationName}: ${point.totalHours}h assigned (${point.completedHours}h done)`}>
+								<span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--vscode-foreground)', marginBottom: '4px' }}>{point.totalHours}h</span>
+								<div
+									style={{
+										width: '70%',
+										maxWidth: '32px',
+										height: `${Math.max(2, barHeight)}px`,
+										backgroundColor: point.totalHours > 0 ? barColor : 'var(--vscode-panel-border)',
+										borderRadius: '4px 4px 0 0',
+										transition: 'height 0.6s ease'
+									}}
+								/>
+							</div>
+						);
+					})}
+				</div>
+
+				{/* X-axis labels */}
+				<div style={{ display: 'flex', justifyContent: 'space-around', gap: '8px', marginTop: '8px', borderTop: '1px solid var(--vscode-panel-border)', paddingTop: '8px' }}>
+					{history.map(point => (
+						<span key={point.iterationName} style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: 'var(--vscode-descriptionForeground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={point.iterationName}>
+							{shortSprintLabel(point.iterationName)}
+						</span>
+					))}
+				</div>
+			</div>
+		</div>
+	);
+};
+
 const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 	const pct = member.progress.percentage;
 	const color = progressColor(pct);
@@ -136,6 +208,10 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 	const [userName, setUserName] = useState<string | null>(member.userName ?? null);
 	const [emailAddress, setEmailAddress] = useState<string | null>(member.emailAddress ?? null);
 	const [infoLoading, setInfoLoading] = useState(true);
+
+	// Assigned-hours history across the last 6 sprints — loaded lazily on open.
+	const [hoursHistory, setHoursHistory] = useState<SprintHoursPoint[] | null>(null);
+	const [historyLoading, setHistoryLoading] = useState(true);
 
 	useEffect(() => {
 		setUserName(member.userName ?? null);
@@ -172,6 +248,40 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 		};
 	}, [vscode, member.name, member.userName, member.emailAddress]);
 
+	// Load the assigned-hours history for the last 6 sprints.
+	useEffect(() => {
+		setHoursHistory(null);
+		setHistoryLoading(true);
+
+		if (!vscode) {
+			setHistoryLoading(false);
+			return;
+		}
+
+		const handleMessage = (event: MessageEvent) => {
+			const data = event.data;
+			if (data?.type === 'memberHoursHistoryLoaded' && data.name === member.name) {
+				window.removeEventListener('message', handleMessage);
+				clearTimeout(timeoutId);
+				setHoursHistory(Array.isArray(data.history) ? data.history : []);
+				setHistoryLoading(false);
+			}
+		};
+		window.addEventListener('message', handleMessage);
+
+		vscode.postMessage({ command: 'getMemberHoursHistory', name: member.name });
+
+		const timeoutId = setTimeout(() => {
+			window.removeEventListener('message', handleMessage);
+			setHistoryLoading(false);
+		}, 15000);
+
+		return () => {
+			window.removeEventListener('message', handleMessage);
+			clearTimeout(timeoutId);
+		};
+	}, [vscode, member.name]);
+
 	return (
 		<div style={{ padding: '0 20px' }}>
 			<ScreenHeader title={member.name} showBackButton={true} onBack={onBack} />
@@ -179,7 +289,7 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 			<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', paddingTop: '24px', paddingBottom: '32px' }}>
 				{/* Avatar + nom */}
 				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-					<Avatar name={member.name} size={64} showRing={hasActivity} ringProgress={pct} ringColor={color} />
+					<Avatar name={member.name} size={64} />
 					<h2 style={{ margin: '4px 0 0 0', color: 'var(--vscode-foreground)', fontSize: '20px', fontWeight: '600' }}>{member.name}</h2>
 				</div>
 
@@ -230,6 +340,25 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 						)}
 					</div>
 				</div>
+
+				{/* Assigned-hours evolution over the last 6 sprints */}
+				{historyLoading ? (
+					<div style={{ width: '100%', maxWidth: '480px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px 0', color: 'var(--vscode-descriptionForeground)' }}>
+						<div
+							style={{
+								border: '2px solid var(--vscode-panel-border)',
+								borderTop: '2px solid var(--vscode-progressBar-background)',
+								borderRadius: '50%',
+								width: '16px',
+								height: '16px',
+								animation: 'spin 1s linear infinite'
+							}}
+						/>
+						<span style={{ fontSize: '12px' }}>Loading hours history…</span>
+					</div>
+				) : (
+					hoursHistory && hoursHistory.length > 0 && <HoursHistoryChart history={hoursHistory} />
+				)}
 
 				{hasActivity ? (
 					<>

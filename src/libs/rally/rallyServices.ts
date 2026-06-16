@@ -2322,6 +2322,82 @@ export async function getAllTeamMembersProgress(teamMembers?: string[], iteratio
 }
 
 /**
+ * Get the assigned-hours history for a single team member across the most recent sprints.
+ * For each of the last N past/current iterations (chronological order, oldest → newest) it
+ * sums the assigned hours (taskEstimateTotal) of the user stories assigned to the member.
+ *
+ * @param memberName - Display name of the team member (assignee)
+ * @param numberOfSprints - How many recent sprints to include (default 6)
+ * @returns Array of { iterationName, totalHours, completedHours, userStoriesCount } in chronological order
+ */
+export async function getMemberHoursHistory(
+	memberName: string,
+	numberOfSprints: number = 6
+): Promise<{ history: Array<{ iterationName: string; totalHours: number; completedHours: number; userStoriesCount: number }> }> {
+	try {
+		errorHandler.logDebug(`Getting hours history for member "${memberName}" over last ${numberOfSprints} sprints`, 'rallyServices.getMemberHoursHistory');
+
+		const iterationsResult = await getIterations();
+		const iterations = iterationsResult.iterations;
+
+		if (!iterations || iterations.length === 0) {
+			errorHandler.logDebug('No iterations found', 'rallyServices.getMemberHoursHistory');
+			return { history: [] };
+		}
+
+		// Keep only past/current iterations, sort most-recent-first and take the last N.
+		const today = new Date();
+		today.setHours(23, 59, 59, 999);
+
+		const recentIterations = [...iterations]
+			.filter(iteration => {
+				const endDate = new Date(iteration.endDate);
+				return endDate <= today;
+			})
+			.sort((a, b) => new Date(b.endDate).getTime() - new Date(a.endDate).getTime())
+			.slice(0, numberOfSprints)
+			// Chronological order (oldest → newest) so the chart reads left-to-right in time.
+			.reverse();
+
+		errorHandler.logDebug(`Recent iterations for history: ${recentIterations.map(i => i.name).join(', ') || 'none'}`, 'rallyServices.getMemberHoursHistory');
+
+		const normalizedMember = normalizeName(memberName);
+
+		const history = await Promise.all(
+			recentIterations.map(async iteration => {
+				const iterationRef = `/iteration/${iteration.objectId}`;
+				const userStoriesResult = await getUserStories({ Iteration: iterationRef });
+				const memberStories = (userStoriesResult.userStories || []).filter(story => story.assignee && story.assignee !== 'Unassigned' && normalizeName(story.assignee) === normalizedMember);
+
+				let totalHours = 0;
+				let completedHours = 0;
+				for (const story of memberStories) {
+					const storyHours = story.taskEstimateTotal || 0;
+					totalHours += storyHours;
+					if (story.scheduleState === 'Completed' || story.scheduleState === 'Accepted') {
+						completedHours += storyHours;
+					}
+				}
+
+				return {
+					iterationName: iteration.name,
+					totalHours,
+					completedHours,
+					userStoriesCount: memberStories.length
+				};
+			})
+		);
+
+		errorHandler.logInfo(`Hours history computed for "${memberName}": ${history.map(h => `${h.iterationName}=${h.totalHours}h`).join(', ') || 'empty'}`, 'rallyServices.getMemberHoursHistory');
+
+		return { history };
+	} catch (error) {
+		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.getMemberHoursHistory');
+		return { history: [] };
+	}
+}
+
+/**
  * Clear all Rally service caches
  * Called when extension needs to reload/reset all data
  */

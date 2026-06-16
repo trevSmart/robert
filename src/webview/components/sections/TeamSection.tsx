@@ -5,6 +5,7 @@ import TeamMemberDetail from './team/TeamMemberDetail';
 export interface TeamMember {
 	name: string;
 	emailAddress?: string;
+	userName?: string;
 	progress: {
 		completedHours: number;
 		totalHours: number;

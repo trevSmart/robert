@@ -2,9 +2,9 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.3.8",
+	"version": "0.3.10",
 	"type": "commonjs",
-	"icon": "resources/icons/robert-logo.png",
+	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",
 	"repository": {
 		"type": "git",

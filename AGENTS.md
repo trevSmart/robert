@@ -265,3 +265,21 @@ Any action performed by our extension must be logged to the "Robert" Output chan
 2. `npm run build:webview`: Construir webviews
 3. `npm run package`: Generar VSIX
 4. `vsce publish`: Publicar a marketplace
+
+## Cursor Cloud specific instructions
+
+Scope: the main product is the VS Code extension (root `package.json`). `server/` is an **optional** collaboration backend (Express + WebSocket + PostgreSQL, disabled by default via `robert.collaboration.enabled`, with a deployed prod instance at `https://robert-8vdt.onrender.com`); it is not needed to develop/run the extension and requires a PostgreSQL DB to run locally.
+
+Dependencies are installed automatically by the startup update script (`npm install` at repo root). Node 22 is used (matches `.github/workflows/copilot-setup-steps.yml`).
+
+Standard commands (see root `package.json` scripts; do not duplicate here):
+- Lint: `npm run lint`. Build (dev): `npx tsc -p ./` then `npm run build:webview` (or `npm run compile:fast`). Avoid `npm run compile` for a quick build — it also runs `format` + `lint:fix` which currently fail on pre-existing lint errors.
+- Unit tests: `npm test` (vitest). VS Code integration tests: `npm run test:vscode` (downloads VS Code to `.vscode-test/`, runs headless under the existing `DISPLAY`).
+
+Known-baseline failures (pre-existing in committed code, NOT environment problems — do not treat as regressions you must fix unless asked): `npm run lint` reports ~50 errors / ~190 warnings (React hooks / react-compiler rules), and `npm test` has 2 failing tests in `test/SettingsManager.test.ts` (mock `createOutputChannel` lacks `.error()`).
+
+Running the extension in a GUI (headless desktop is available on `DISPLAY=:1`): there is no system `code` binary, but `npm run test:vscode` downloads one to `.vscode-test/vscode-linux-x64-<ver>/code`. Launch the Extension Development Host with:
+`DISPLAY=:1 .vscode-test/vscode-linux-x64-<ver>/code --no-sandbox --disable-gpu --user-data-dir=/tmp/vscode-user --extensions-dir=/tmp/vscode-ext --extensionDevelopmentPath="$PWD" "$PWD/test-workspace"`
+The `dbus`/`gpu` errors it prints are harmless in this sandbox. Build the webview (`npm run build:webview`) before launching or the side panel renders blank.
+
+Rally integration: without credentials the extension still activates and renders its UI, but the Rally panels show config errors in the "Robert" output channel. To exercise live Rally data set env vars `ROBERT_RALLY_API_KEY`, `ROBERT_RALLY_INSTANCE`, `ROBERT_RALLY_PROJECT_NAME` (see `ENVIRONMENT_VARIABLES.md` / `test/AI_AGENT_TESTING.md`).

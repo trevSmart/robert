@@ -1,114 +1,127 @@
-## <img src="resources/icons/ibm-logo.webp" alt="IBM logo" width="50" style="position: relative; margin-right: 10px; top: 4px;"/> Robert - VS Code Extension
+## <img src="resources/icons/ibm-logo.webp" alt="IBM logo" width="50" style="position: relative; margin-right: 10px; top: 4px;"/> IBM Robert
 
-[![Dependabot automerge](https://github.com/trevSmart/robert/actions/workflows/dependabot-automerge.yml/badge.svg)](https://github.com/trevSmart/robert/actions/workflows/dependabot-automerge.yml)
-[![CodeQL Advanced](https://github.com/trevSmart/robert/actions/workflows/codeql.yml/badge.svg)](https://github.com/trevSmart/robert/actions/workflows/codeql.yml)
+**IBM Robert** is a VS Code extension that brings Rally Agile project management into your editor. Track sprints, user stories, defects, and team workload without leaving VS Code — with dashboards, search, and analytics built for day-to-day delivery work.
 
-Robert is a VS Code extension that integrates with Rally (Agile project management tool) to help you manage your projects, iterations, and user stories directly from VS Code.
+---
 
-## 🚀 Getting Started
+## What you can do with Robert
 
-### Prerequisites
+### Home — your sprint at a glance
 
-- VS Code (v1.105.1 or higher)
+The Home view welcomes you with a personalized dashboard: current sprint countdown, a monthly calendar with active sprints and regional holidays, and quick access to sprint details.
 
-### Installation from Source
+![Home dashboard and sprint details](resources/screenshots/home-and-sprint-details.png)
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/trevSmart/robert.git
-   cd robert
-   ```
+Open any sprint to see resource allocation per team member, user stories with state and hours, and a clear picture of who is working on what.
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+### Portfolio — user stories and defects
 
-3. Build the extension:
-   ```bash
-   npm run compile
-   npm run build:webview
-   ```
+Browse work by sprint or across the full backlog. Open any user story to see its description, assignment, estimates, and related records — tasks, test cases, defects, discussions, and revisions — all in one place.
 
-4. Open the project in VS Code:
-   ```bash
-   code .
-   ```
+![User story details](resources/screenshots/user-story-details.png)
 
-5. Press `F5` to run the extension in a new Extension Development Host window.
+### Search — find anything fast
 
-### Installation from VSIX
+Search across user stories, tasks, and other Rally artifacts. Results are grouped by type, with keyword highlighting so you can jump straight to the item you need.
 
-1. Download the latest `.vsix` file from the [releases page](https://github.com/trevSmart/robert/releases)
-2. Install it in VS Code:
-   ```bash
-   code --install-extension robert-x.x.x.vsix
-   ```
+![Search results](resources/screenshots/search.png)
 
-## 🔧 Development
+### Metrics — project analytics
 
-### Available Scripts
+The Metrics view provides real-time insights from Rally: velocity trends, hours completed, work in progress, blocked items, next-sprint readiness, and defect trends by severity over the last 12 sprints.
 
-- `npm run compile` - Compile TypeScript extension code
-- `npm run build:webview` - Build React webview components
-- `npm run watch` - Watch mode for TypeScript compilation
-- `npm run lint` - Lint all source files
-- `npm run lint:fix` - Lint and auto-fix issues
-- `npm run format` - Format code with Prettier
-- `npm run package` - Create VSIX package
+![Project analytics](resources/screenshots/analytics.png)
 
-### Building from Scratch
+### Team
 
-If you encounter a blank view or other issues, rebuild the extension:
+See each team member's progress for the current or past sprints — completed hours, total allocation, and linked user stories — to balance workload and spot bottlenecks early.
 
-```bash
-# Clean build artifacts
-rm -rf out/ dist/
+### Library
 
-# Reinstall dependencies
-npm install
+Access built-in tutorials and guides to get the most out of Robert and Rally workflows.
 
-# Build everything
-npm run compile
-npm run build:webview
-```
+---
 
-## 📋 Configuration
+## Getting started
 
-Configure Rally settings in VS Code:
+### Requirements
 
-1. Open Settings (`Cmd+,` or `Ctrl+,`)
-2. Search for "Robert"
-3. Configure:
-   - **Rally Instance URL**: Your Rally server URL (e.g., `https://rally1.rallydev.com`)
-   - **Rally API Key**: Your Rally API key
-   - **Rally Project Name**: The project you want to connect to
+- Visual Studio Code 1.105.1 or later
+- A Rally account with API access
+- Your Rally project name
 
-Or use the command palette:
-- `IBM Robert: Open Settings`
+### Install
 
-For automated testing and AI agents, see [ENVIRONMENT_VARIABLES.md](ENVIRONMENT_VARIABLES.md) and [test/AI_AGENT_TESTING.md](test/AI_AGENT_TESTING.md).
+1. Install **IBM Robert** from the VS Code Extensions view, or install a `.vsix` package provided by your team.
+2. Open the **IBM Robert** panel from the activity bar (left sidebar).
+3. On first launch, configure your Rally connection (see below).
 
-## 🐛 Troubleshooting
+### Open Robert
 
-### Blank View Issue
+- Click the **IBM Robert** icon in the activity bar, or
+- Run **IBM Robert: Open Main View** from the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`).
 
-If you see a blank view when opening Robert:
+You can also open Robert in a full editor tab via the **Open in Editor** button in the panel toolbar.
 
-1. Ensure you've built the webview components:
-   ```bash
-   npm run build:webview
-   ```
+---
 
-2. Verify that `out/webview/` directory exists and contains `.js` files
+## Configuration
 
-3. Reload VS Code window (`Developer: Reload Window`)
+Connect Robert to your Rally instance once; settings are saved across sessions.
 
-### Other Issues
+1. Open VS Code Settings (`Cmd+,` / `Ctrl+,`).
+2. Search for **Robert**.
+3. Set:
+   - **Rally Instance URL** — e.g. `https://rally1.rallydev.com`
+   - **Rally API Key** — your personal Rally API key
+   - **Rally Project Name** — the project you work on
 
-- Check the "Robert" output channel: `View > Output > Robert`
-- Enable debug mode: `IBM Robert: Debug: Enable Debug Mode`
+| Setting | Description |
+|---------|-------------|
+| Auto refresh | Keep data up to date automatically |
+| Status bar sprint days | Show days left until sprint cutoff in the status bar |
+| Welcome animation | Play the intro video on first open after reload |
+| Collaboration | Optional real-time collaboration features (requires server URL) |
+| Debug mode | Verbose logging to the Robert output channel |
 
-## 📝 License
+---
+
+## Navigation
+
+Robert is organized around five main areas:
+
+| Tab | Purpose |
+|-----|---------|
+| **Home** | Calendar, sprint overview, and sprint detail panels |
+| **Portfolio** | User stories and defects by sprint or full list |
+| **Team** | Per-member workload and progress |
+| **Metrics** | Velocity, readiness, and defect analytics |
+| **Library** | Tutorials and onboarding content |
+
+Use the search icon in the top bar to find work items across the project.
+
+---
+
+## Tips
+
+- **Reload data** — use the refresh button in the panel toolbar or run **IBM Robert: Reload**.
+- **Status bar** — when enabled, shows how many days remain until the current sprint cutoff.
+- **Output log** — if something looks wrong, open **View → Output → Robert** or run **IBM Robert: Show Robert Output**.
+
+---
+
+## Troubleshooting
+
+| Issue | What to try |
+|-------|-------------|
+| Blank or empty view | Run **IBM Robert: Reload**, or restart VS Code |
+| No data / connection errors | Check Rally URL, API key, and project name in Settings |
+| Stale information | Enable auto refresh, or use the reload button |
+
+Enable **Debug mode** in Settings for more detail in the Robert output channel.
+
+---
+
+## License
 
 See [LICENSE.md](LICENSE.md) for details.

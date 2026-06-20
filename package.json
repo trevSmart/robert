@@ -196,7 +196,7 @@
 	},
 	"dependencies": {
 		"@vscode/codicons": "^0.0.45",
-		"dompurify": "^3.4.10",
+		"dompurify": "^3.4.11",
 		"echarts": "^6.0.0",
 		"ibm-rally-node": "^0.0.17",
 		"lenis": "^1.3.23",

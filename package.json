@@ -179,7 +179,7 @@
 		"@types/react-dom": "^19.2.3",
 		"@types/vscode": "^1.125.0",
 		"@typescript-eslint/eslint-plugin": "^8.61.1",
-		"@typescript-eslint/parser": "^8.61.1",
+		"@typescript-eslint/parser": "^8.62.0",
 		"@vitejs/plugin-react": "^6.0.1",
 		"@vitest/ui": "^4.1.9",
 		"@vscode/test-cli": "^0.0.12",

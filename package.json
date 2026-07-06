@@ -192,7 +192,7 @@
 		"mocha": "^11.7.5",
 		"prettier": "^3.9.4",
 		"typescript": "^6.0.2",
-		"vitest": "^4.1.9"
+		"vitest": "^4.1.10"
 	},
 	"dependencies": {
 		"@vscode/codicons": "^0.0.45",

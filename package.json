@@ -188,7 +188,7 @@
 		"eslint": "^10.7.0",
 		"eslint-plugin-react-hooks": "^7.1.1",
 		"glob": "^13.0.6",
-		"knip": "^6.24.0",
+		"knip": "^6.26.0",
 		"mocha": "^11.7.5",
 		"prettier": "^3.9.4",
 		"typescript": "^7.0.2",

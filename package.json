@@ -177,7 +177,7 @@
 		"@types/node": "^26.1.1",
 		"@types/react": "^19.2.14",
 		"@types/react-dom": "^19.2.3",
-		"@types/vscode": "^1.105.1",
+		"@types/vscode": "1.105.0",
 		"@typescript-eslint/eslint-plugin": "^8.63.0",
 		"@typescript-eslint/parser": "^8.62.1",
 		"@vitejs/plugin-react": "^6.0.3",
@@ -191,7 +191,7 @@
 		"knip": "^6.26.0",
 		"mocha": "^11.7.5",
 		"prettier": "^3.9.5",
-		"typescript": "^7.0.2",
+		"typescript": "~6.0.2",
 		"vitest": "^4.1.10"
 	},
 	"dependencies": {

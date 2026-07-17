@@ -883,28 +883,59 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	};
 }
 
+/**
+ * Builds Rally query options for user stories, always scoped to the configured project
+ * unless the caller already provided a Project filter.
+ */
+async function buildScopedUserStoryQueryOptions(query: RallyQueryParams, offset: number = 0): Promise<RallyQueryOptions> {
+	const queryOptions = buildUserStoryQueryOptions(query, offset);
+
+	if (!query?.Project) {
+		const projectId = await getProjectId();
+		const projectQuery = queryUtils.where('Project', '=', `/project/${projectId}`);
+
+		if (queryOptions.query) {
+			// @ts-expect-error - Rally query builder has and method
+			queryOptions.query = queryOptions.query.and(projectQuery);
+		} else {
+			queryOptions.query = projectQuery;
+		}
+	}
+
+	return queryOptions;
+}
+
+/**
+ * Fetches a single page of user stories from Rally and merges them into the progressive cache.
+ */
+async function fetchUserStoriesPage(query: RallyQueryParams, offset: number, loadingMessage: string): Promise<{ userStories: RallyUserStory[]; rawCount: number }> {
+	const rallyApi = getRallyApi();
+	const queryOptions = await buildScopedUserStoryQueryOptions(query, offset);
+	const result = await callRally(rallyApi, queryOptions, loadingMessage);
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+
+	if (!results.length) {
+		return { userStories: [], rawCount: 0 };
+	}
+
+	const userStories = await formatUserStoriesAsync({ ...resultData, Results: results });
+	if (!rallyData.userStories) {
+		rallyData.userStories = [];
+	}
+	addToCache(userStories, rallyData.userStories, 'objectId');
+	return { userStories, rawCount: results.length };
+}
+
 export async function getUserStories(query: RallyQueryParams = {}, offset: number = 0) {
 	errorHandler.logDebug(`getUserStories called with query: ${JSON.stringify(query)}, offset: ${offset}`, 'rallyServices.getUserStories');
 
-	// For filtered queries (e.g., by iteration), use cache if available
 	const hasFilters = Object.keys(query).length > 0;
-	if (hasFilters) {
-		// Fall back to in-memory cache for filtered results
-		const cacheResult = checkCacheForFilteredResults(query as RallyQuery, rallyData.userStories);
-		if (cacheResult) {
-			const sorted = sortByFormattedIdDescending(cacheResult.results);
-			const paginated = sorted.slice(offset, offset + PAGE_SIZE);
-			const hasMore = offset + PAGE_SIZE < sorted.length;
-			return {
-				userStories: paginated,
-				source: cacheResult.source,
-				count: paginated.length,
-				totalCount: sorted.length,
-				hasMore: hasMore,
-				offset: offset
-			};
-		}
-	}
+
+	// Do NOT serve filtered queries (e.g. by Iteration) from the progressive in-memory cache.
+	// That cache is filled by paginated "all user stories" loads and is often incomplete/stale,
+	// which under-reports assignee hours in sprint detail and team progress views.
+	// Always fetch filtered queries from the Rally API for completeness and freshness.
 
 	// For non-filtered queries (all user stories), only use cache if it's complete
 	// Check if cache has enough data for this offset
@@ -929,29 +960,35 @@ export async function getUserStories(query: RallyQueryParams = {}, offset: numbe
 		}
 	}
 
-	// For non-filtered queries (all user stories), always fetch from Rally for proper pagination
-	// This ensures each "Load more" fetches the next page from Rally
-	const rallyApi = getRallyApi();
-	const queryOptions = buildUserStoryQueryOptions(query, offset);
+	// Filtered queries need the full matching set (hours charts, team progress).
+	// Paginate through Rally until exhaustion when starting from offset 0.
+	if (hasFilters && offset === 0) {
+		const allStories: RallyUserStory[] = [];
+		let pageOffset = 0;
+		let pageRawCount = 0;
 
-	// Always filter by project (unless Project is already specified in the query)
-	if (!query?.Project) {
-		const projectId = await getProjectId();
-		const projectQuery = queryUtils.where('Project', '=', `/project/${projectId}`);
+		do {
+			const page = await fetchUserStoriesPage(query, pageOffset, pageOffset === 0 ? 'Loading user stories...' : 'Loading more user stories...');
+			allStories.push(...page.userStories);
+			pageRawCount = page.rawCount;
+			pageOffset += PAGE_SIZE;
+		} while (pageRawCount === PAGE_SIZE);
 
-		if (queryOptions.query) {
-			// @ts-expect-error - Rally query builder has and method
-			queryOptions.query = queryOptions.query.and(projectQuery);
-		} else {
-			queryOptions.query = projectQuery;
-		}
+		errorHandler.logInfo(`Loaded ${allStories.length} filtered user stories from API (complete set)`, 'rallyServices.getUserStories');
+
+		return {
+			userStories: allStories,
+			source: 'api',
+			count: allStories.length,
+			totalCount: allStories.length,
+			hasMore: false,
+			offset: 0
+		};
 	}
 
-	const result = await callRally(rallyApi, queryOptions, 'Loading user stories...');
-	const resultData = result as RallyApiResult;
-
-	const results = resultData.Results || resultData.QueryResult?.Results || [];
-	if (!results.length) {
+	// Single-page fetch for unfiltered pagination (or filtered with explicit offset)
+	const page = await fetchUserStoriesPage(query, offset, 'Loading user stories...');
+	if (!page.userStories.length) {
 		return {
 			userStories: [],
 			source: 'api',
@@ -962,21 +999,12 @@ export async function getUserStories(query: RallyQueryParams = {}, offset: numbe
 		};
 	}
 
-	// Format the response
-	const userStories = await formatUserStoriesAsync({ ...resultData, Results: results });
-
-	// Add new user stories to rallyData progressively without duplicates
-	addToCache(userStories, rallyData.userStories, 'objectId');
-
-	// Results are already ordered by Rally (FormattedID desc), no need to sort locally
-	// Determine if there are more results
-	// Rally API typically returns pageSize items, and if we got exactly PAGE_SIZE items, there might be more
-	const hasMore = results.length === PAGE_SIZE;
+	const hasMore = page.rawCount === PAGE_SIZE;
 
 	return {
-		userStories: userStories,
+		userStories: page.userStories,
 		source: 'api',
-		count: userStories.length,
+		count: page.userStories.length,
 		totalCount: 0, // We don't know the total until we've fetched all pages
 		hasMore: hasMore,
 		offset: offset

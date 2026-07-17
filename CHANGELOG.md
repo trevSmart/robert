@@ -1,3 +1,13 @@
+## 0.3.11
+
+### Fixes
+* Load the complete set of sprint user stories for assignee hours (#260): skip the incomplete progressive cache for Iteration-filtered queries and paginate all API pages so sprint detail and team views show full `TaskEstimateTotal` hours
+
+### Tooling
+* Align `@types/vscode` with `engines.vscode` and pin TypeScript to 6.0.x so packaging with `vsce` succeeds
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.3.10...0.3.11
+
 ## 0.3.8
 
 ### Team

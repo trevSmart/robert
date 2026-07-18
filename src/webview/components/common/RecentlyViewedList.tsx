@@ -52,8 +52,8 @@ const RecentlyViewedList: FC<RecentlyViewedListProps> = ({ items, onItemClick, o
 	if (items.length === 0) return null;
 
 	return (
-		<collapsible-card title="Recently Viewed">
-			<div style={{ padding: '0 16px', display: 'flex', flexDirection: 'column' }}>
+		<collapsible-card title="Recently Viewed" compact>
+			<div style={{ display: 'flex', flexDirection: 'column' }}>
 				{items.map(item => {
 					const key = `${item.type}-${item.objectId}`;
 					const isHovered = hoveredKey === key;
@@ -73,9 +73,11 @@ const RecentlyViewedList: FC<RecentlyViewedListProps> = ({ items, onItemClick, o
 								display: 'flex',
 								alignItems: 'center',
 								gap: '10px',
-								padding: '8px 4px',
+								padding: '7px 16px',
 								borderBottom: `1px solid ${themeColors.panelBorder}`,
-								cursor: 'pointer'
+								cursor: 'pointer',
+								backgroundColor: isHovered ? 'var(--vscode-list-hoverBackground)' : 'transparent',
+								transition: 'background-color 0.15s ease'
 							}}
 						>
 							<span
@@ -97,18 +99,45 @@ const RecentlyViewedList: FC<RecentlyViewedListProps> = ({ items, onItemClick, o
 								<TypeIcon />
 								{TYPE_LABELS[item.type]}
 							</span>
-							<span
-								style={{
-									flex: 1,
-									fontSize: '12.5px',
-									color: themeColors.foreground,
-									overflow: 'hidden',
-									textOverflow: 'ellipsis',
-									whiteSpace: 'nowrap'
-								}}
-							>
-								{item.type === 'sprint' ? item.name : `${item.formattedId}: ${item.name}`}
-							</span>
+							{item.type === 'sprint' ? (
+								<span
+									style={{
+										flex: 1,
+										fontSize: '12.5px',
+										color: 'var(--vscode-descriptionForeground)',
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+										whiteSpace: 'nowrap'
+									}}
+								>
+									{item.name}
+								</span>
+							) : (
+								<>
+									<span
+										style={{
+											fontSize: '12.5px',
+											fontWeight: 500,
+											color: 'var(--vscode-foreground)',
+											flexShrink: 0
+										}}
+									>
+										{item.formattedId}
+									</span>
+									<span
+										style={{
+											flex: 1,
+											fontSize: '12.5px',
+											color: 'var(--vscode-descriptionForeground)',
+											overflow: 'hidden',
+											textOverflow: 'ellipsis',
+											whiteSpace: 'nowrap'
+										}}
+									>
+										{item.name}
+									</span>
+								</>
+							)}
 							{item.pinned && !isHovered && (
 								<span style={{ display: 'inline-flex', color: 'var(--vscode-textLink-foreground)', opacity: 0.7 }}>
 									<CodiconSpan name="pinned" />

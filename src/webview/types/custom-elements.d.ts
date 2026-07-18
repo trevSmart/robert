@@ -8,4 +8,5 @@ interface CollapsibleCardElement
 	extends React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement> {
 	title?: string;
 	'default-collapsed'?: boolean;
+	compact?: boolean;
 }

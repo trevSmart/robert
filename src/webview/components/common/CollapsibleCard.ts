@@ -10,7 +10,15 @@ class CollapsibleCard extends HTMLElement {
 	private isInitialized: boolean = false;
 
 	static get observedAttributes() {
-		return ['title', 'default-collapsed', 'background-color'];
+		return ['title', 'default-collapsed', 'background-color', 'compact'];
+	}
+
+	private isCompact(): boolean {
+		return this.hasAttribute('compact');
+	}
+
+	private getContentPaddingY(): string {
+		return this.isCompact() ? '0' : '16px';
 	}
 
 	constructor() {
@@ -107,12 +115,13 @@ class CollapsibleCard extends HTMLElement {
 			this.chevronDiv.style.transform = 'rotate(0deg)';
 			if (animate) {
 				// Measure intrinsic content height while still collapsed (padding = 0)
+				const paddingY = this.isCompact() ? 0 : 16;
 				const contentHeight = this.contentDiv.scrollHeight;
-				const targetHeight = contentHeight + 32; // account for 16px top + 16px bottom padding
+				const targetHeight = contentHeight + paddingY * 2;
 				this.contentDiv.style.overflow = 'hidden';
 				this.contentDiv.style.opacity = '1';
-				this.contentDiv.style.paddingTop = '16px';
-				this.contentDiv.style.paddingBottom = '16px';
+				this.contentDiv.style.paddingTop = this.getContentPaddingY();
+				this.contentDiv.style.paddingBottom = this.getContentPaddingY();
 				this.contentDiv.style.maxHeight = targetHeight + 'px';
 				const onTransitionEnd = (e: TransitionEvent) => {
 					if (e.propertyName === 'max-height') {
@@ -128,8 +137,8 @@ class CollapsibleCard extends HTMLElement {
 				this.contentDiv.style.maxHeight = 'none';
 				this.contentDiv.style.overflow = 'visible';
 				this.contentDiv.style.opacity = '1';
-				this.contentDiv.style.paddingTop = '16px';
-				this.contentDiv.style.paddingBottom = '16px';
+				this.contentDiv.style.paddingTop = this.getContentPaddingY();
+				this.contentDiv.style.paddingBottom = this.getContentPaddingY();
 			}
 		}
 	}
@@ -201,10 +210,10 @@ class CollapsibleCard extends HTMLElement {
 				}
 
 				.content {
-					padding-left: 16px;
-					padding-right: 16px;
-					padding-top: ${this.collapsed ? '0' : '16px'};
-					padding-bottom: ${this.collapsed ? '0' : '16px'};
+					padding-left: ${this.isCompact() ? '0' : '16px'};
+					padding-right: ${this.isCompact() ? '0' : '16px'};
+					padding-top: ${this.collapsed ? '0' : this.getContentPaddingY()};
+					padding-bottom: ${this.collapsed ? '0' : this.getContentPaddingY()};
 					max-height: ${this.collapsed ? '0' : 'none'};
 					opacity: ${this.collapsed ? '0' : '1'};
 					overflow: hidden;

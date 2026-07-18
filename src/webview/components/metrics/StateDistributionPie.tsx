@@ -99,7 +99,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc',
 					fontSize: 14,
-					fontWeight: '600'
+					fontWeight: '500'
 				},
 				subtextStyle: {
 					color: lightTheme ? '#666' : '#999',
@@ -150,7 +150,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 									label: {
 										show: true,
 										fontSize: 12,
-										fontWeight: 'bold'
+										fontWeight: '600'
 									},
 									itemStyle: {
 										shadowBlur: 10,
@@ -185,7 +185,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 						label: {
 							show: true,
 							fontSize: 14,
-							fontWeight: 'bold'
+							fontWeight: '600'
 						},
 						itemStyle: {
 							shadowBlur: 10,
@@ -229,7 +229,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 		>
 			{showSelector && (
 				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-					<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Next Sprint Readiness</h3>
+					<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '500' }}>Next Sprint Readiness</h3>
 					<select
 						value={selectedSprint}
 						onChange={e => onSprintChange?.(e.target.value)}

@@ -63,7 +63,7 @@ const VelocityTrendChart: React.FC<VelocityTrendChartProps> = ({ data, loading =
 				textStyle: {
 					color: lightTheme ? '#333' : '#ccc',
 					fontSize: 16,
-					fontWeight: '600'
+					fontWeight: '500'
 				},
 				subtextStyle: {
 					color: lightTheme ? '#666' : '#999',

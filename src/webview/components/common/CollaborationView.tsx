@@ -485,7 +485,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 					marginBottom: '20px'
 				}}
 			>
-				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: themeColors.foreground }}>Collaboration Requests</h2>
+				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 500, color: themeColors.foreground }}>Collaboration Requests</h2>
 				<div style={{ display: 'flex', gap: '8px' }}>
 					<button
 						onClick={() => setShowGeneralMessageForm(!showGeneralMessageForm)}
@@ -497,7 +497,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 							color: '#fff',
 							cursor: 'pointer',
 							fontSize: '12px',
-							fontWeight: 500
+							fontWeight: 400
 						}}
 					>
 						{showGeneralMessageForm ? 'Cancel' : '+ New General Message'}
@@ -532,7 +532,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 						borderRadius: '6px'
 					}}
 				>
-					<h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 600, color: themeColors.foreground }}>New General Message</h3>
+					<h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 500, color: themeColors.foreground }}>New General Message</h3>
 					<textarea
 						ref={textareaRef}
 						value={generalMessageContent}
@@ -581,7 +581,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 								color: '#fff',
 								cursor: generalMessageContent.trim() ? 'pointer' : 'not-allowed',
 								fontSize: '12px',
-								fontWeight: 500,
+								fontWeight: 400,
 								opacity: generalMessageContent.trim() ? 1 : 0.5
 							}}
 						>
@@ -628,13 +628,13 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 									borderBottom: `2px solid ${themeColors.panelBorder}`
 								}}
 							>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Date</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>User Story</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '200px', color: themeColors.foreground }}>Request</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '120px', color: themeColors.foreground }}>Requester</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '150px', color: themeColors.foreground }}>Assignee</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 600, minWidth: '100px', color: themeColors.foreground }}>Status</th>
-								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 600, minWidth: '140px', color: themeColors.foreground }}>Actions</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '120px', color: themeColors.foreground }}>Date</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '100px', color: themeColors.foreground }}>User Story</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '200px', color: themeColors.foreground }}>Request</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '120px', color: themeColors.foreground }}>Requester</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '150px', color: themeColors.foreground }}>Assignee</th>
+								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '100px', color: themeColors.foreground }}>Status</th>
+								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 500, minWidth: '140px', color: themeColors.foreground }}>Actions</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -658,7 +658,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 												<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{new Date(message.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ fontWeight: 500, color: themeColors.foreground }}>{message.userStoryId === 'GENERAL' ? '—' : message.userStoryId}</div>
+												<div style={{ fontWeight: 400, color: themeColors.foreground }}>{message.userStoryId === 'GENERAL' ? '—' : message.userStoryId}</div>
 												{message.userStoryId === 'GENERAL' && (
 													<span
 														style={{
@@ -669,7 +669,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 															backgroundColor: lightTheme ? ACCENT_COLORS.grey : 'rgba(108, 117, 125, 0.3)',
 															color: lightTheme ? '#fff' : '#aaa',
 															fontSize: '10px',
-															fontWeight: 600
+															fontWeight: 500
 														}}
 													>
 														GENERAL
@@ -700,7 +700,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																backgroundColor: lightTheme ? ACCENT_COLORS.orange : 'rgba(255, 140, 0, 0.3)',
 																color: lightTheme ? '#fff' : '#ffb74d',
 																fontSize: '10px',
-																fontWeight: 600
+																fontWeight: 500
 															}}
 														>
 															🆘 HELP
@@ -715,7 +715,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 															fontSize: '11px',
 															color: ACCENT_COLORS.blue,
 															cursor: 'pointer',
-															fontWeight: 500
+															fontWeight: 400
 														}}
 														onClick={() => toggleExpanded(message.id)}
 													>
@@ -769,7 +769,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																		: 'rgba(108, 117, 125, 0.2)',
 														color: message.status === 'open' ? ACCENT_COLORS.blue : message.status === 'resolved' ? ACCENT_COLORS.green : ACCENT_COLORS.grey,
 														fontSize: '11px',
-														fontWeight: 500,
+														fontWeight: 400,
 														textTransform: 'uppercase'
 													}}
 												>
@@ -788,7 +788,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 															color: '#fff',
 															cursor: 'pointer',
 															fontSize: '11px',
-															fontWeight: 500
+															fontWeight: 400
 														}}
 													>
 														{attending ? 'Leave' : 'Participate'}
@@ -804,7 +804,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																color: themeColors.buttonSecondaryForeground,
 																cursor: 'pointer',
 																fontSize: '11px',
-																fontWeight: 500
+																fontWeight: 400
 															}}
 															title="Mark this message as read"
 														>
@@ -821,7 +821,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																color: themeColors.buttonSecondaryForeground,
 																cursor: 'pointer',
 																fontSize: '11px',
-																fontWeight: 500
+																fontWeight: 400
 															}}
 															title="Mark this message as unread"
 														>
@@ -839,7 +839,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																color: ACCENT_COLORS.red,
 																cursor: 'pointer',
 																fontSize: '11px',
-																fontWeight: 500
+																fontWeight: 400
 															}}
 															title="Delete this message (debug mode only)"
 														>
@@ -872,7 +872,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																				fontSize: '12px'
 																			}}
 																		>
-																			<div style={{ fontWeight: 600, marginBottom: '4px', fontSize: '11px', color: themeColors.descriptionForeground }}>
+																			<div style={{ fontWeight: 500, marginBottom: '4px', fontSize: '11px', color: themeColors.descriptionForeground }}>
 																				{reply.user?.displayName || 'Unknown'} • {new Date(reply.createdAt).toLocaleString('en-US')}
 																			</div>
 																			<div style={{ whiteSpace: 'pre-wrap', color: themeColors.foreground }}>{renderMessageContentSecure(reply.content)}</div>

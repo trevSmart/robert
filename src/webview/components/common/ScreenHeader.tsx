@@ -6,9 +6,10 @@ interface ScreenHeaderProps {
 	showBackButton?: boolean;
 	sticky?: boolean;
 	rightContent?: React.ReactNode;
+	titleActions?: React.ReactNode;
 }
 
-const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButton = false, sticky = false, rightContent }) => {
+const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButton = false, sticky = false, rightContent, titleActions }) => {
 	const stickyHeader = Boolean(sticky || (showBackButton && onBack));
 	return (
 		<div
@@ -22,7 +23,7 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButt
 				paddingBottom: '10px',
 				borderBottom: '1px solid var(--vscode-panel-border)',
 				fontSize: '14px',
-				fontWeight: 'bold',
+				fontWeight: '600',
 				color: 'var(--vscode-foreground)',
 				...(stickyHeader
 					? {
@@ -65,7 +66,10 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButt
 						</svg>
 					</button>
 				)}
-				<span>{title}</span>
+				<span>
+					{title}
+					{titleActions}
+				</span>
 			</div>
 			{rightContent && <div style={{ display: 'flex', alignItems: 'center' }}>{rightContent}</div>}
 		</div>

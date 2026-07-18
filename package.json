@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.3.11",
+	"version": "0.3.12",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",
@@ -89,7 +89,7 @@
 			},
 			{
 				"command": "robert.reload",
-				"title": "Reload",
+				"title": "Reload Extension",
 				"category": "IBM Robert",
 				"icon": "$(refresh)"
 			},
@@ -98,6 +98,12 @@
 				"title": "Open in Editor",
 				"category": "IBM Robert",
 				"icon": "$(screen-full)"
+			},
+			{
+				"command": "robert.openSettings",
+				"title": "Settings",
+				"category": "IBM Robert",
+				"icon": "$(gear)"
 			}
 		],
 		"viewsContainers": {
@@ -134,14 +140,19 @@
 		"menus": {
 			"view/title": [
 				{
-					"command": "robert.reload",
-					"when": "view == robert.mainView",
-					"group": "navigation"
-				},
-				{
 					"command": "robert.openInEditor",
 					"when": "view == robert.mainView",
-					"group": "navigation"
+					"group": "1_robert@1"
+				},
+				{
+					"command": "robert.openSettings",
+					"when": "view == robert.mainView",
+					"group": "1_robert@2"
+				},
+				{
+					"command": "robert.reload",
+					"when": "view == robert.mainView",
+					"group": "1_robert@3"
 				}
 			]
 		}

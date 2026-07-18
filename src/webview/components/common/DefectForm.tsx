@@ -12,7 +12,7 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	padding: 0 8px;
 	border-radius: 999px;
 	font-size: 11px;
-	font-weight: 600;
+	font-weight: 500;
 	letter-spacing: 0.2px;
 	background: ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.25)' : 'color(srgb 0.2 0.6 0.35 / 0.25)')};
 	color: ${props => (props.isBlocked ? 'color(srgb 0.9 0.2 0.2 / 1)' : 'color(srgb 0.2 0.75 0.45 / 1)')};
@@ -88,7 +88,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 							<div
 								style={{
 									fontSize: '14px',
-									fontWeight: '500',
+									fontWeight: '400',
 									color: getScheduleStateColor(defect.scheduleState)
 								}}
 							>
@@ -217,7 +217,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 
 							<div
 								dangerouslySetInnerHTML={{
-									__html: DOMPurify.sanitize(defect.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>')
+									__html: defect.description ? DOMPurify.sanitize(defect.description, { FORBID_ATTR: ['style'] }) : '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
 								}}
 								style={{
 									width: '100%',

@@ -87,7 +87,7 @@ const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading = fa
 					padding: '10px 12px',
 					textAlign,
 					borderBottom: `1px solid ${themeColors.panelBorder}`,
-					fontWeight: 'bold',
+					fontWeight: '600',
 					cursor: 'pointer',
 					backgroundColor: themeColors.titleBarActiveBackground,
 					color: themeColors.titleBarActiveForeground,
@@ -212,12 +212,12 @@ const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading = fa
 									e.currentTarget.style.boxShadow = 'none';
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.formattedId}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.state}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.type || '—'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.priority || '—'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.formattedId}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.name}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.state}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.type || '—'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.priority || '—'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
 									<AvatarWithName name={tc.owner || ''} size={20} emptyLabel="N/A" />
 								</td>
 							</tr>

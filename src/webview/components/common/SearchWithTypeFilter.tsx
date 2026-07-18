@@ -99,7 +99,7 @@ const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder
 							padding: '8px 8px 8px 12px',
 							paddingRight: '28px',
 							fontSize: '13px',
-							fontWeight: 500,
+							fontWeight: 400,
 							cursor: 'pointer',
 							outline: 'none',
 							width: selectWidth,

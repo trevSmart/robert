@@ -30,7 +30,7 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 							border: '1px solid var(--vscode-panel-border)'
 						}}
 					>
-						<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px', color: 'var(--vscode-descriptionForeground)' }}>...</div>
+						<div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '4px', color: 'var(--vscode-descriptionForeground)' }}>...</div>
 						<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)' }}>Loading...</div>
 					</div>
 				))}
@@ -57,7 +57,7 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 					color: 'white'
 				}}
 			>
-				<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{averageVelocity}</div>
+				<div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '4px' }}>{averageVelocity}</div>
 				<div style={{ fontSize: '10px', opacity: 0.9 }}>Avg Velocity (h)</div>
 			</div>
 
@@ -71,7 +71,7 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 					color: 'white'
 				}}
 			>
-				<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{completedPoints}</div>
+				<div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '4px' }}>{completedPoints}</div>
 				<div style={{ fontSize: '10px', opacity: 0.9 }}>Hours Completed</div>
 			</div>
 
@@ -85,7 +85,7 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 					color: 'white'
 				}}
 			>
-				<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{wip}</div>
+				<div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '4px' }}>{wip}</div>
 				<div style={{ fontSize: '10px', opacity: 0.9 }}>Work In Progress</div>
 			</div>
 
@@ -99,7 +99,7 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 					color: 'white'
 				}}
 			>
-				<div style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '4px' }}>{blockedItems}</div>
+				<div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '4px' }}>{blockedItems}</div>
 				<div style={{ fontSize: '10px', opacity: 0.9 }}>Blocked Items</div>
 			</div>
 		</div>

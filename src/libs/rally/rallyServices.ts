@@ -426,7 +426,9 @@ function buildUserStoryQuery(query: RallyQueryParams) {
 	return rallyQueries.length ? rallyQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)) : null;
 }
 
-// Helper function to safely sanitize HTML descriptions
+// Descriptions from Rally are rich-text HTML (may include <p>, <br>, <li>, etc.).
+// Tags are preserved here so line breaks/formatting survive; actual XSS sanitization
+// happens downstream in the webview via DOMPurify.sanitize() before rendering.
 function sanitizeDescription(description: unknown): string | null {
 	if (description == null) {
 		return null;
@@ -436,18 +438,7 @@ function sanitizeDescription(description: unknown): string | null {
 		return String(description);
 	}
 
-	let sanitized = description;
-	let previous: string;
-	// Repeatedly remove HTML-like tags to avoid incomplete multi-character sanitization
-	do {
-		previous = sanitized;
-		sanitized = sanitized.replace(/<[^>]*>/g, '');
-	} while (sanitized !== previous);
-
-	// Remove any remaining angle brackets to avoid HTML element injection
-	sanitized = sanitized.replace(/[<>]/g, '');
-
-	return sanitized;
+	return description;
 }
 
 /**
@@ -650,6 +641,7 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 			taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
 			taskStatus: userStory.TaskStatus ?? userStory.taskStatus,
 			scheduleState: userStory.ScheduleState ?? userStory.scheduleState ?? 'Unknown',
+			creationDate: userStory.CreationDate ?? userStory.creationDate,
 			tasksCount: userStory.Tasks?.Count ?? userStory.tasks?.count ?? 0,
 			testCasesCount: userStory.TestCases?.Count ?? userStory.testCases?.count ?? 0,
 			defectsCount: userStory.Defects?.Count ?? userStory.defects?.count ?? 0,
@@ -733,7 +725,7 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 function buildUserStoryQueryOptions(query: RallyQueryParams, offset: number = 0) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project', 'RevisionHistory'],
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project', 'RevisionHistory', 'CreationDate'],
 		order: 'FormattedID desc' // Order by FormattedID descending to get proper pagination
 	};
 
@@ -2358,7 +2350,7 @@ export async function getAllTeamMembersProgress(teamMembers?: string[], iteratio
  * @param numberOfSprints - How many recent sprints to include (default 6)
  * @returns Array of { iterationName, totalHours, completedHours, userStoriesCount } in chronological order
  */
-export async function getMemberHoursHistory(memberName: string, numberOfSprints: number = 6): Promise<{ history: Array<{ iterationName: string; totalHours: number; completedHours: number; userStoriesCount: number }> }> {
+export async function getMemberHoursHistory(memberName: string, numberOfSprints: number = 6): Promise<{ history: Array<{ iterationName: string; totalHours: number; completedHours: number; sprintTotalHours: number; userStoriesCount: number }> }> {
 	try {
 		errorHandler.logDebug(`Getting hours history for member "${memberName}" over last ${numberOfSprints} sprints`, 'rallyServices.getMemberHoursHistory');
 
@@ -2392,7 +2384,15 @@ export async function getMemberHoursHistory(memberName: string, numberOfSprints:
 			recentIterations.map(async iteration => {
 				const iterationRef = `/iteration/${iteration.objectId}`;
 				const userStoriesResult = await getUserStories({ Iteration: iterationRef });
-				const memberStories = (userStoriesResult.userStories || []).filter(story => story.assignee && story.assignee !== 'Unassigned' && normalizeName(story.assignee) === normalizedMember);
+				const allStories = userStoriesResult.userStories || [];
+				const memberStories = allStories.filter(story => story.assignee && story.assignee !== 'Unassigned' && normalizeName(story.assignee) === normalizedMember);
+
+				// Total assigned hours across every story in the sprint (all assignees),
+				// used as the grey backdrop bar the member's own hours sit inside.
+				let sprintTotalHours = 0;
+				for (const story of allStories) {
+					sprintTotalHours += story.taskEstimateTotal || 0;
+				}
 
 				let totalHours = 0;
 				let completedHours = 0;
@@ -2408,6 +2408,7 @@ export async function getMemberHoursHistory(memberName: string, numberOfSprints:
 					iterationName: iteration.name,
 					totalHours,
 					completedHours,
+					sprintTotalHours,
 					userStoriesCount: memberStories.length
 				};
 			})
@@ -2598,7 +2599,7 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 	const rallyApi = getRallyApi();
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project', 'RevisionHistory'],
+		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project', 'RevisionHistory', 'CreationDate'],
 		query: queryUtils.where('ObjectID', '=', objectId)
 	};
 

@@ -6,11 +6,13 @@ import TestCasesTable from '../../common/TestCasesTable';
 import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
+import OpenInRallyButton from '../../common/OpenInRallyButton';
 import { type RallyTask } from '../../../../../types/rally';
 import type { Defect } from '../../../../../types/rally';
 import type { PortfolioViewProps } from './types';
 
 const AllUserStoriesView: FC<PortfolioViewProps> = ({
+	iterations,
 	portfolioUserStories,
 	portfolioUserStoriesLoading,
 	portfolioUserStoriesHasMore = false,
@@ -84,8 +86,8 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} collaborationEnabled={collaborationEnabled} />
+					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInRallyButton objectId={selectedUserStory.objectId} />} />
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} collaborationEnabled={collaborationEnabled} iterations={iterations} />
 				</>
 			)}
 		</div>

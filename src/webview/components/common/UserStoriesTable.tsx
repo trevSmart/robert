@@ -143,7 +143,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 					padding: '10px 12px',
 					textAlign,
 					borderBottom: `1px solid ${themeColors.panelBorder}`,
-					fontWeight: 'bold',
+					fontWeight: '600',
 					cursor: 'pointer',
 					backgroundColor: themeColors.titleBarActiveBackground,
 					color: themeColors.titleBarActiveForeground,
@@ -283,7 +283,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									padding: '10px 12px',
 									textAlign: 'center',
 									borderBottom: `1px solid ${themeColors.panelBorder}`,
-									fontWeight: 'bold',
+									fontWeight: '600',
 									backgroundColor: themeColors.titleBarActiveBackground,
 									color: themeColors.titleBarActiveForeground,
 									overflow: 'hidden'
@@ -319,14 +319,14 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									}
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.formattedId}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+								<td style={{ padding: '10px 12px', fontWeight: '300', color: themeColors.foreground, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.formattedId}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.name}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
 									<AvatarWithName name={userStory.assignee || ''} size={20} emptyLabel="Unassigned" />
 								</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: getScheduleStateColor(userStory.scheduleState || 'new'), overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.scheduleState || 'N/A'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center', overflow: 'hidden' }}>
+								<td style={{ padding: '10px 12px', fontWeight: '300', color: getScheduleStateColor(userStory.scheduleState || 'new'), overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.scheduleState || 'N/A'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center', overflow: 'hidden' }}>
 									<RelatedItemsIcons tasksCount={userStory.tasksCount} testCasesCount={userStory.testCasesCount} defectsCount={userStory.defectsCount} discussionCount={userStory.discussionCount} blocked={userStory.blocked} />
 								</td>
 							</tr>
@@ -347,7 +347,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 							border: 'none',
 							borderRadius: '4px',
 							cursor: loadingMore ? 'not-allowed' : 'pointer',
-							fontWeight: 'normal',
+							fontWeight: '300',
 							opacity: loadingMore ? 0.6 : 1,
 							transition: 'opacity 0.15s ease'
 						}}
@@ -467,11 +467,11 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
 					<thead>
 						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
-							<th style={{ padding: '10px 0 10px 12px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '20px' }}></th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', minWidth: '100px', width: '40%' }}>Name</th>
-							<th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold', width: '80px' }}>Hours</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>Start Date</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: 'bold' }}>End Date</th>
+							<th style={{ padding: '10px 0 10px 12px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600', width: '20px' }}></th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600', minWidth: '100px', width: '40%' }}>Name</th>
+							<th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600', width: '80px' }}>Hours</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600' }}>Start Date</th>
+							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600' }}>End Date</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -481,7 +481,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 									{iterationIndex === 0 && (
 										<tr style={{ backgroundColor: yearGroupBackground, color: themeColors.titleBarActiveForeground }}>
 											<td style={{ width: '20px', borderBottom: `1px solid ${themeColors.panelBorder}` }} />
-											<td colSpan={4} style={{ padding: '10px 12px', fontWeight: 'bold', borderBottom: `1px solid ${themeColors.panelBorder}`, textAlign: 'left' }}>
+											<td colSpan={4} style={{ padding: '10px 12px', fontWeight: '600', borderBottom: `1px solid ${themeColors.panelBorder}`, textAlign: 'left' }}>
 												{year}
 											</td>
 										</tr>
@@ -509,7 +509,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 											}
 										}}
 									>
-										<td style={{ padding: '10px 0 10px 12px', fontWeight: 'normal' }}>
+										<td style={{ padding: '10px 0 10px 12px', fontWeight: '300' }}>
 											{isCurrentDayIteration(iteration) && (
 												<div
 													style={{
@@ -527,31 +527,33 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 															borderRadius: '50%',
 															backgroundColor: themeColors.buttonBackground,
 															opacity: 0.8,
-															animation: 'glow-subtle 1.8s ease-in-out infinite'
+															animation: 'glow-subtle 1.5s ease-in-out infinite'
 														}}
 														title="Ongoing"
 													/>
 													<style>{`
 													@keyframes glow-subtle {
 														0%, 100% {
-															box-shadow: 0 0 8px rgba(33, 150, 243, 0.65);
-															opacity: 0.85;
+															box-shadow: 0 0 5px rgba(33, 150, 243, 0.4);
+															opacity: 0.6;
+															transform: scale(0.95);
 														}
 														50% {
-															box-shadow: 0 0 18px rgba(33, 150, 243, 1), 0 0 6px rgba(33, 150, 243, 0.6);
+															box-shadow: 0 0 20px rgba(33, 150, 243, 1), 0 0 8px rgba(33, 150, 243, 0.75);
 															opacity: 1;
+															transform: scale(1.12);
 														}
 													}
 												`}</style>
 												</div>
 											)}
 										</td>
-										<td style={{ padding: '10px 12px', fontWeight: 'normal', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : themeColors.foreground, textDecoration: 'none' }}>{iteration.name}</td>
-										<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'right', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>
+										<td style={{ padding: '10px 12px', fontWeight: '300', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : themeColors.foreground, textDecoration: 'none' }}>{iteration.name}</td>
+										<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'right', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>
 											{iteration.taskEstimateTotal !== undefined && iteration.taskEstimateTotal !== null ? `${iteration.taskEstimateTotal}h` : ''}
 										</td>
-										<td style={{ padding: '10px 12px', fontWeight: 'normal', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
-										<td style={{ padding: '10px 12px', fontWeight: 'normal', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>
+										<td style={{ padding: '10px 12px', fontWeight: '300', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
+										<td style={{ padding: '10px 12px', fontWeight: '300', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>
 									</tr>
 								</React.Fragment>
 							))

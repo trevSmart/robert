@@ -168,7 +168,7 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 					padding: '10px 12px',
 					textAlign,
 					borderBottom: `1px solid ${themeColors.panelBorder}`,
-					fontWeight: 'bold',
+					fontWeight: '600',
 					cursor: 'pointer',
 					backgroundColor: themeColors.titleBarActiveBackground,
 					color: themeColors.titleBarActiveForeground,
@@ -296,13 +296,13 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 									}
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', color: themeColors.foreground, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.formattedId}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.iteration || 'N/A'}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', color: themeColors.foreground, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.formattedId}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.name}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.iteration || 'N/A'}</td>
 								<td
 									style={{
 										padding: '10px 12px',
-										fontWeight: 'normal',
+										fontWeight: '300',
 										color: getScheduleStateColor(defect.scheduleState || 'new'),
 										overflow: 'hidden',
 										whiteSpace: 'nowrap',
@@ -314,7 +314,7 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 								<td
 									style={{
 										padding: '10px 12px',
-										fontWeight: 'normal',
+										fontWeight: '300',
 										overflow: 'hidden',
 										whiteSpace: 'nowrap',
 										textOverflow: 'ellipsis',
@@ -326,7 +326,7 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 								<td
 									style={{
 										padding: '10px 12px',
-										fontWeight: 'normal',
+										fontWeight: '300',
 										overflow: 'hidden',
 										whiteSpace: 'nowrap',
 										textOverflow: 'ellipsis',
@@ -353,7 +353,7 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 							border: 'none',
 							borderRadius: '4px',
 							cursor: loadingMore ? 'not-allowed' : 'pointer',
-							fontWeight: 'normal',
+							fontWeight: '300',
 							opacity: loadingMore ? 0.6 : 1,
 							transition: 'opacity 0.15s ease'
 						}}

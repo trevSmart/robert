@@ -88,7 +88,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		<div style={{ padding: '20px' }}>
 			{/* Team Header */}
 			<div style={{ marginBottom: '30px', textAlign: 'center' }}>
-				<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '600' }}>Team Dashboard</h2>
+				<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '500' }}>Team Dashboard</h2>
 				<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Monitor team activity, collaboration, and project progress</p>
 			</div>
 
@@ -114,7 +114,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 				<>
 					<div style={{ marginBottom: '20px' }}>
 						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-							<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '600' }}>Team Members</h3>
+							<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '500' }}>Team Members</h3>
 							<select
 								value={selectedTeamIteration}
 								onChange={e => onTeamIterationChange(e.target.value)}
@@ -151,7 +151,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 												margin: '0 0 12px 0',
 												color: 'var(--vscode-foreground)',
 												fontSize: '13px',
-												fontWeight: '600',
+												fontWeight: '500',
 												textTransform: 'uppercase',
 												letterSpacing: '0.5px',
 												opacity: 0.7,
@@ -200,7 +200,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 														{/* Member Info */}
 														<div style={{ width: '100%', minWidth: 0 }}>
 															<div style={{ marginBottom: '6px', marginTop: '8px' }}>
-																<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '13px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
+																<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '13px', fontWeight: '300', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
 																<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
 																<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
 																	{member.progress.completedHours}h / {member.progress.totalHours}h
@@ -222,7 +222,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 												margin: '0 0 12px 0',
 												color: 'var(--vscode-foreground)',
 												fontSize: '13px',
-												fontWeight: '600',
+												fontWeight: '500',
 												textTransform: 'uppercase',
 												letterSpacing: '0.5px',
 												opacity: 0.7,
@@ -283,7 +283,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 															{/* Member Info */}
 															<div style={{ width: '100%', minWidth: 0 }}>
 																<div style={{ marginBottom: '6px', marginTop: '8px' }}>
-																	<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '400', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
+																	<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '300', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
 																</div>
 															</div>
 														</div>

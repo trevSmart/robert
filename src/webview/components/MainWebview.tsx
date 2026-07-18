@@ -2,7 +2,6 @@
 import React, { FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import 'vscrui/dist/codicon.css';
-import '@vscode/codicons/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
 import UserStoryForm from './common/UserStoryForm';
 import TasksTable from './common/TasksTable';
@@ -11,6 +10,7 @@ import DefectForm from './common/DefectForm';
 import DiscussionsTable from './common/DiscussionsTable';
 import TestCasesTable from './common/TestCasesTable';
 import ScreenHeader from './common/ScreenHeader';
+import OpenInRallyButton from './common/OpenInRallyButton';
 import NavigationBar from './common/NavigationBar';
 import SubTabsBar from './common/SubTabsBar';
 import { getPortfolioSubTabs } from './sections/portfolio/portfolioSubTabs';
@@ -27,7 +27,7 @@ import TeamSection from './sections/TeamSection';
 import TestSection from './sections/TestSection';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem } from '../../types/rally';
+import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem, type RecentlyViewedItem } from '../../types/rally';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
@@ -198,8 +198,8 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
+					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInRallyButton objectId={selectedUserStory.objectId} />} />
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} iterations={iterations} />
 				</>
 			)}
 		</>
@@ -207,6 +207,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 };
 
 const AllUserStoriesView: FC<PortfolioViewProps> = ({
+	iterations,
 	portfolioUserStories,
 	portfolioUserStoriesLoading,
 	portfolioUserStoriesHasMore = false,
@@ -279,8 +280,8 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} />
+					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInRallyButton objectId={selectedUserStory.objectId} />} />
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} iterations={iterations} />
 				</>
 			)}
 		</>
@@ -519,6 +520,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	// without showing the "Loading sprints..." spinner.
 	const preloadedData = typeof window !== 'undefined' ? window.__robertPreloadedData : undefined;
 	const hasPreloadedData = Boolean(preloadedData && Array.isArray(preloadedData.iterations) && preloadedData.iterations.length > 0);
+
+	const [recentlyViewedItems, setRecentlyViewedItems] = useState<RecentlyViewedItem[]>([]);
 
 	const [iterations, setIterations] = useState<Iteration[]>(hasPreloadedData ? (preloadedData.iterations as Iteration[]) : []);
 	const [iterationsLoading, setIterationsLoading] = useState(!hasPreloadedData);
@@ -889,10 +892,17 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[sendMessage]
 	);
 
-	const handleDefectSelected = useCallback((defect: RallyDefect) => {
-		setSelectedDefect(defect);
-		setCurrentScreen('defectDetail');
-	}, []);
+	const handleDefectSelected = useCallback(
+		(defect: RallyDefect) => {
+			setSelectedDefect(defect);
+			setCurrentScreen('defectDetail');
+			sendMessage({
+				command: 'recordRecentlyViewedItem',
+				item: { objectId: defect.objectId, formattedId: defect.formattedId, name: defect.name, type: 'defect' }
+			});
+		},
+		[sendMessage]
+	);
 
 	const handleBackToDefects = useCallback(() => {
 		setSelectedDefect(null);
@@ -957,8 +967,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				loadUserStories(iteration);
 			}
 			setCurrentScreen('userStories');
+			sendMessage({
+				command: 'recordRecentlyViewedItem',
+				item: { objectId: iteration.objectId, formattedId: iteration.name, name: iteration.name, type: 'sprint' }
+			});
 		},
-		[loadUserStories, loadedSprintIterationId, userStoriesError]
+		[loadUserStories, loadedSprintIterationId, userStoriesError, sendMessage]
 	);
 
 	const handleIterationClickFromHome = useCallback(
@@ -967,6 +981,44 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			handleIterationSelected(iteration);
 		},
 		[handleIterationSelected]
+	);
+
+	const handleRecentlyViewedItemClick = useCallback(
+		(item: RecentlyViewedItem) => {
+			switch (item.type) {
+				case 'userstory':
+					sendMessage({ command: 'loadUserStoryByObjectId', objectId: item.objectId });
+					break;
+				case 'defect':
+					sendMessage({ command: 'loadDefectByObjectId', objectId: item.objectId });
+					break;
+				case 'sprint': {
+					setActiveSection('portfolio');
+					const iteration = iterations.find(i => i.objectId === item.objectId);
+					if (iteration) {
+						handleIterationSelected(iteration);
+					} else {
+						loadIterations();
+					}
+					break;
+				}
+			}
+		},
+		[sendMessage, iterations, handleIterationSelected, loadIterations]
+	);
+
+	const handleRecentlyViewedItemPinToggle = useCallback(
+		(item: RecentlyViewedItem) => {
+			sendMessage({ command: 'toggleRecentlyViewedItemPin', objectId: item.objectId, type: item.type });
+		},
+		[sendMessage]
+	);
+
+	const handleRecentlyViewedItemDelete = useCallback(
+		(item: RecentlyViewedItem) => {
+			sendMessage({ command: 'deleteRecentlyViewedItem', objectId: item.objectId, type: item.type });
+		},
+		[sendMessage]
 	);
 
 	const loadTasks = useCallback(
@@ -988,8 +1040,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			setActiveUserStoryTab('tasks');
 			loadTasks(userStory.objectId);
 			wrapperRef.current?.scrollTo({ top: 0 });
+			sendMessage({
+				command: 'recordRecentlyViewedItem',
+				item: { objectId: userStory.objectId, formattedId: userStory.formattedId, name: userStory.name, type: 'userstory' }
+			});
 		},
-		[loadTasks, wrapperRef]
+		[loadTasks, wrapperRef, sendMessage]
 	);
 
 	const handleBackToIterations = useCallback(() => {
@@ -1160,6 +1216,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		// Load saved state when webview initializes
 		sendMessage({
 			command: 'getState'
+		});
+
+		sendMessage({
+			command: 'getRecentlyViewedItems'
 		});
 
 		// Initialize collaboration client
@@ -1676,6 +1736,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 							pendingSearchUserStoryTabRef.current = null;
 						}
 						loadAllUserStories();
+						sendMessage({
+							command: 'recordRecentlyViewedItem',
+							item: { objectId: message.userStory.objectId, formattedId: message.userStory.formattedId, name: message.userStory.name, type: 'userstory' }
+						});
 					}
 					break;
 				case 'defectByObjectIdLoaded':
@@ -1686,7 +1750,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						setCurrentScreen('defectDetail');
 						loadIterations();
 						loadAllDefects();
+						sendMessage({
+							command: 'recordRecentlyViewedItem',
+							item: { objectId: message.defect.objectId, formattedId: message.defect.formattedId, name: message.defect.name, type: 'defect' }
+						});
 					}
+					break;
+				case 'recentlyViewedItemsLoaded':
+					setRecentlyViewedItems(message.items ?? []);
 					break;
 				case 'taskWithParentLoaded':
 					if (message.userStoryObjectId) {
@@ -2229,6 +2300,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 														currentUser={currentUser}
 														holidays={holidays}
 														onIterationClick={handleIterationClickFromHome}
+														recentlyViewedItems={recentlyViewedItems}
+														onRecentlyViewedItemClick={handleRecentlyViewedItemClick}
+														onRecentlyViewedItemPinToggle={handleRecentlyViewedItemPinToggle}
+														onRecentlyViewedItemDelete={handleRecentlyViewedItemDelete}
 														customEvents={mergedCalendarEvents}
 														onSaveCustomEvent={(event: CustomCalendarEvent) => {
 															const wasPublic = publicCalendarEvents.some(e => e.id === event.id);

@@ -50,7 +50,7 @@ const DonutChart: FC<DonutChartProps> = ({ percentage, size = 160 }) => {
 					justifyContent: 'center'
 				}}
 			>
-				<span style={{ fontSize: '26px', fontWeight: '700', color, lineHeight: 1 }}>{clampedPct}%</span>
+				<span style={{ fontSize: '26px', fontWeight: '600', color, lineHeight: 1 }}>{clampedPct}%</span>
 				<span style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>done</span>
 			</div>
 		</div>
@@ -86,7 +86,7 @@ const HoursBarChart: FC<HoursBarChartProps> = ({ completedHours, totalHours }) =
 					padding: '16px 20px'
 				}}
 			>
-				<div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--vscode-foreground)', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hours breakdown</div>
+				<div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--vscode-foreground)', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hours breakdown</div>
 
 				{rows.map(row => (
 					<div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
@@ -107,7 +107,7 @@ const HoursBarChart: FC<HoursBarChartProps> = ({ completedHours, totalHours }) =
 						</div>
 
 						{/* Value */}
-						<span style={{ width: '36px', flexShrink: 0, fontSize: '11px', fontWeight: '600', color: 'var(--vscode-foreground)' }}>{row.hours}h</span>
+						<span style={{ width: '36px', flexShrink: 0, fontSize: '11px', fontWeight: '500', color: 'var(--vscode-foreground)' }}>{row.hours}h</span>
 					</div>
 				))}
 
@@ -127,6 +127,7 @@ interface SprintHoursPoint {
 	iterationName: string;
 	totalHours: number;
 	completedHours: number;
+	sprintTotalHours: number;
 	userStoriesCount: number;
 }
 
@@ -144,9 +145,12 @@ function shortSprintLabel(name: string): string {
 }
 
 const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
-	const maxHours = Math.max(1, ...history.map(h => h.totalHours));
+	// Bars are scaled against the largest whole-sprint total so the grey backdrops
+	// stay comparable across sprints; the coloured segment shows the member's share.
+	const maxHours = Math.max(1, ...history.map(h => h.sprintTotalHours));
 	const chartH = 140;
 	const barColor = 'var(--vscode-charts-blue, #3794ff)';
+	const trackColor = 'var(--vscode-panel-border)';
 
 	return (
 		<div style={{ width: '100%', maxWidth: '480px' }}>
@@ -158,24 +162,46 @@ const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
 					padding: '16px 20px'
 				}}
 			>
-				<div style={{ fontSize: '12px', fontWeight: '600', color: 'var(--vscode-foreground)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Assigned hours · last {history.length} sprints</div>
+				<div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--vscode-foreground)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your hours vs sprint total · last {history.length} sprints</div>
 
 				<div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '8px', height: `${chartH}px` }}>
 					{history.map(point => {
-						const barHeight = Math.round((point.totalHours / maxHours) * (chartH - 24));
+						const barHeight = Math.round((point.sprintTotalHours / maxHours) * (chartH - 24));
+						// Height of the member's coloured slice within the grey sprint bar.
+						const memberHeight = point.sprintTotalHours > 0 ? Math.round((point.totalHours / point.sprintTotalHours) * barHeight) : 0;
 						return (
-							<div key={point.iterationName} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: 0 }} title={`${point.iterationName}: ${point.totalHours}h assigned (${point.completedHours}h done)`}>
-								<span style={{ fontSize: '10px', fontWeight: '600', color: 'var(--vscode-foreground)', marginBottom: '4px' }}>{point.totalHours}h</span>
+							<div
+								key={point.iterationName}
+								style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: 0 }}
+								title={`${point.iterationName}: ${point.totalHours}h of ${point.sprintTotalHours}h sprint total (${point.completedHours}h done)`}
+							>
+								<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--vscode-foreground)', marginBottom: '4px' }}>{point.totalHours}h</span>
 								<div
 									style={{
 										width: '70%',
 										maxWidth: '32px',
 										height: `${Math.max(2, barHeight)}px`,
-										backgroundColor: point.totalHours > 0 ? barColor : 'var(--vscode-panel-border)',
+										backgroundColor: trackColor,
 										borderRadius: '4px 4px 0 0',
-										transition: 'height 0.6s ease'
+										transition: 'height 0.6s ease',
+										display: 'flex',
+										flexDirection: 'column',
+										justifyContent: 'flex-end',
+										overflow: 'hidden'
 									}}
-								/>
+								>
+									{memberHeight > 0 && (
+										<div
+											style={{
+												width: '100%',
+												height: `${Math.max(2, memberHeight)}px`,
+												backgroundColor: barColor,
+												borderRadius: memberHeight >= barHeight ? '4px 4px 0 0' : '0',
+												transition: 'height 0.6s ease'
+											}}
+										/>
+									)}
+								</div>
 							</div>
 						);
 					})}
@@ -290,7 +316,7 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 				{/* Avatar + nom */}
 				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
 					<Avatar name={member.name} size={64} />
-					<h2 style={{ margin: '4px 0 0 0', color: 'var(--vscode-foreground)', fontSize: '20px', fontWeight: '600' }}>{member.name}</h2>
+					<h2 style={{ margin: '4px 0 0 0', color: 'var(--vscode-foreground)', fontSize: '20px', fontWeight: '500' }}>{member.name}</h2>
 				</div>
 
 				{/* Identity card — always shown */}
@@ -375,15 +401,15 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 						{/* Stats pills */}
 						<div style={{ display: 'flex', gap: '10px' }}>
 							<div style={{ backgroundColor: 'var(--vscode-editor-background)', border: '1px solid var(--vscode-panel-border)', borderRadius: '8px', padding: '12px 20px', textAlign: 'center', minWidth: '90px' }}>
-								<div style={{ fontSize: '20px', fontWeight: '700', color }}>{pct}%</div>
+								<div style={{ fontSize: '20px', fontWeight: '600', color }}>{pct}%</div>
 								<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Completed</div>
 							</div>
 							<div style={{ backgroundColor: 'var(--vscode-editor-background)', border: '1px solid var(--vscode-panel-border)', borderRadius: '8px', padding: '12px 20px', textAlign: 'center', minWidth: '90px' }}>
-								<div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--vscode-foreground)' }}>{member.progress.completedHours}h</div>
+								<div style={{ fontSize: '20px', fontWeight: '600', color: 'var(--vscode-foreground)' }}>{member.progress.completedHours}h</div>
 								<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Done</div>
 							</div>
 							<div style={{ backgroundColor: 'var(--vscode-editor-background)', border: '1px solid var(--vscode-panel-border)', borderRadius: '8px', padding: '12px 20px', textAlign: 'center', minWidth: '90px' }}>
-								<div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--vscode-foreground)' }}>{member.progress.totalHours}h</div>
+								<div style={{ fontSize: '20px', fontWeight: '600', color: 'var(--vscode-foreground)' }}>{member.progress.totalHours}h</div>
 								<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</div>
 							</div>
 						</div>

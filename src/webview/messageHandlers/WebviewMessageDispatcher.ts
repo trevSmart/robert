@@ -4,6 +4,7 @@ import { RallyMessageHandler } from './RallyMessageHandler';
 import { SearchMessageHandler } from './SearchMessageHandler';
 import { CollaborationMessageHandler } from './CollaborationMessageHandler';
 import { CalendarMessageHandler } from './CalendarMessageHandler';
+import { RecentlyViewedMessageHandler } from './RecentlyViewedMessageHandler';
 import { CollaborationClient } from '../../libs/collaboration/collaborationClient';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
@@ -27,6 +28,7 @@ export class WebviewMessageDispatcher {
 	private searchHandler: SearchMessageHandler;
 	private collaborationHandler: CollaborationMessageHandler;
 	private calendarHandler: CalendarMessageHandler;
+	private recentlyViewedHandler: RecentlyViewedMessageHandler;
 
 	constructor(
 		private errorHandler: ErrorHandler,
@@ -37,6 +39,7 @@ export class WebviewMessageDispatcher {
 		this.searchHandler = new SearchMessageHandler(errorHandler);
 		this.collaborationHandler = new CollaborationMessageHandler(errorHandler, collaborationClient);
 		this.calendarHandler = new CalendarMessageHandler(errorHandler, collaborationClient, context);
+		this.recentlyViewedHandler = new RecentlyViewedMessageHandler(errorHandler, context);
 	}
 
 	/** Clears in-session navigation state (e.g. on extension reload). */
@@ -66,6 +69,9 @@ export class WebviewMessageDispatcher {
 				return true;
 			}
 			if (await this.calendarHandler.handle(command, webview, message)) {
+				return true;
+			}
+			if (await this.recentlyViewedHandler.handle(command, webview, message)) {
 				return true;
 			}
 

@@ -104,8 +104,8 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 						}}
 					>
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-							<div style={{ fontSize: '11px', letterSpacing: '0.12em', fontWeight: 700, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase' }}>{banner.kicker}</div>
-							<div style={{ fontSize: '18px', fontWeight: 700 }}>{banner.title}</div>
+							<div style={{ fontSize: '11px', letterSpacing: '0.12em', fontWeight: 600, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase' }}>{banner.kicker}</div>
+							<div style={{ fontSize: '18px', fontWeight: 600 }}>{banner.title}</div>
 							<div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Hands-on Salesforce development and administration.</div>
 						</div>
 						{banner.icon && typeof banner.icon === 'function' && (
@@ -119,7 +119,7 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '20px' }}>
 				{assets.map(asset => (
 					<div key={asset.title} style={{ background: asset.gradient, borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minHeight: '140px', cursor: 'pointer' }}>
-						<h4 style={{ margin: '0 0 8px 0', color: '#ffffff', fontSize: '16px', fontWeight: 600 }}>{asset.title}</h4>
+						<h4 style={{ margin: '0 0 8px 0', color: '#ffffff', fontSize: '16px', fontWeight: 500 }}>{asset.title}</h4>
 						<p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '12px', lineHeight: 1.4 }}>{asset.description}</p>
 					</div>
 				))}

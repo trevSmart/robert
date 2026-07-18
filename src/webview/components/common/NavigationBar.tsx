@@ -407,7 +407,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 									backgroundColor: '#ff5252',
 									color: '#fff',
 									fontSize: '10px',
-									fontWeight: '600',
+									fontWeight: '500',
 									lineHeight: '1'
 								}}
 							>
@@ -465,7 +465,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 													backgroundColor: '#ff5252',
 													color: '#fff',
 													fontSize: '10px',
-													fontWeight: '600',
+													fontWeight: '500',
 													lineHeight: '1',
 													marginLeft: 'auto'
 												}}

@@ -1,13 +1,26 @@
 ## 0.4.0
 
-### Recently Viewed
+### Recently Viewed (#263)
+* Add a Recently Viewed list on Home for user stories, defects, and sprints, with pin and remove actions (persisted in extension storage)
 * Add a `compact` mode to `CollapsibleCard` and use it for the Recently Viewed list (tighter padding, full-width hover rows)
 * Split formatted ID and name in Recently Viewed rows for clearer scanning
 * When opening a Recently Viewed sprint that is not yet in the loaded iterations list, reload iterations and auto-select that sprint once available
 
-### Fixes
-* Encode and validate Rally “Open in Rally” URLs so only `http`/`https` schemes are opened
+### User story timeline (#263)
+* Add a collapsible revision Timeline on user story detail with proportional State and Blocked tracks, week guides, and sprint-start markers
+* Lazy-load revision history when the Timeline card is expanded; fetch `CreationDate` as the timeline zero point
 * Pair consecutive blocked events correctly when computing blocked duration on the revision timeline
+
+### Navigation & Rally (#263)
+* Add an “Open in Rally” button on user story headers
+* Add a view-title Settings command (`robert.openSettings`) that opens VS Code settings filtered to this extension; reorder sidebar actions (Open in Editor, Settings, Reload)
+* Encode and validate Rally “Open in Rally” URLs so only `http`/`https` schemes are opened
+
+### UI & UX polish (#263)
+* Adopt Inter across the webview (without breaking Codicon glyphs) and lighten typography weights across tables and forms
+* Preserve Rally description HTML formatting (sanitize in the webview with DOMPurify); support Cmd/Ctrl+A to select the description
+* Localize the status-bar quick pick to English
+* Show member hours against the full sprint total in the Team member hours-history chart
 
 **Full Changelog**: https://github.com/trevSmart/robert/compare/0.3.11...0.4.0
 

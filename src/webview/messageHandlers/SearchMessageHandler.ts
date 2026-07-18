@@ -50,9 +50,15 @@ export class SearchMessageHandler {
 			if (!rallyInstance || !message.objectId) {
 				return;
 			}
-			const artifactType = message.artifactType ?? 'userstory';
-			const url = `${rallyInstance.replace(/\/$/, '')}/#/detail/${artifactType}/${message.objectId}`;
-			await vscode.env.openExternal(vscode.Uri.parse(url));
+			const artifactType = encodeURIComponent(String(message.artifactType ?? 'userstory'));
+			const objectId = encodeURIComponent(String(message.objectId));
+			const url = `${rallyInstance.replace(/\/$/, '')}/#/detail/${artifactType}/${objectId}`;
+			const uri = vscode.Uri.parse(url);
+			if (uri.scheme !== 'http' && uri.scheme !== 'https') {
+				this.errorHandler.logWarning(`Refused to open non-http(s) Rally URL (scheme: ${uri.scheme})`, 'openInRally');
+				return;
+			}
+			await vscode.env.openExternal(uri);
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openInRally');
 		}

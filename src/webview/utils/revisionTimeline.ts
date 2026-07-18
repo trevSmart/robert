@@ -101,17 +101,26 @@ export function buildRevisionTimeline(revisions: RevisionLike[]): RevisionTimeli
 	}
 
 	// Pair each "blocked" with the next "unblocked" to compute how long it stayed blocked.
+	// Single pass: remember every blocked event still awaiting its unblock, and resolve them
+	// all at once when the next "unblocked" event is reached (events are already chronological).
+	const pendingBlockedIndices: number[] = [];
 	for (let i = 0; i < blockedEvents.length; i++) {
 		const event = blockedEvents[i];
-		if (!event.blocked) continue;
-		const next = blockedEvents.slice(i + 1).find(e => !e.blocked);
-		if (next) {
-			const start = new Date(event.date).getTime();
-			const end = new Date(next.date).getTime();
-			if (!Number.isNaN(start) && !Number.isNaN(end) && end >= start) {
-				event.durationMs = end - start;
+		if (event.blocked) {
+			pendingBlockedIndices.push(i);
+			continue;
+		}
+		if (pendingBlockedIndices.length === 0) continue;
+		const end = new Date(event.date).getTime();
+		if (!Number.isNaN(end)) {
+			for (const pendingIndex of pendingBlockedIndices) {
+				const start = new Date(blockedEvents[pendingIndex].date).getTime();
+				if (!Number.isNaN(start) && end >= start) {
+					blockedEvents[pendingIndex].durationMs = end - start;
+				}
 			}
 		}
+		pendingBlockedIndices.length = 0;
 	}
 
 	return {
@@ -231,7 +240,7 @@ export function buildTimelineTracks(revisions: RevisionLike[], options: BuildTra
 	// State track.
 	let stateSegments: TimelineSegment[];
 	if (stateEvents.length > 0) {
-		const labels = [stateEvents[0].from ?? options.currentState ?? 'Unknown', ...stateEvents.map(e => e.to)];
+		const labels = [stateEvents[0].from ?? 'Unknown', ...stateEvents.map(e => e.to)];
 		const inner = monotonic(stateEvents.map(e => clamp(toMs(e.date))));
 		const boundaries = [startMs, ...inner, endMs];
 		stateSegments = segmentsFromBoundaries(boundaries, labels, totalMs, i => (i > 0 ? { author: stateEvents[i - 1].author } : {}));

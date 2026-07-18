@@ -8,6 +8,7 @@ declare global {
 					title?: string;
 					'default-collapsed'?: boolean;
 					'background-color'?: string;
+					compact?: boolean;
 				},
 				HTMLElement
 			>;

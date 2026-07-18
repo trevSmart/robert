@@ -22,9 +22,7 @@ const TYPE_ICONS: Record<RecentlyViewedItemType, FC> = {
 	sprint: SprintTypeIcon
 };
 
-const CodiconSpan: FC<{ name: string; style?: React.CSSProperties }> = ({ name, style }) => (
-	<span className={`codicon codicon-${name}`} style={{ fontSize: '14px', lineHeight: 1, display: 'inline-block', flexShrink: 0, ...style }} />
-);
+const CodiconSpan: FC<{ name: string; style?: React.CSSProperties }> = ({ name, style }) => <span className={`codicon codicon-${name}`} style={{ fontSize: '14px', lineHeight: 1, display: 'inline-block', flexShrink: 0, ...style }} />;
 
 const RowActionButton: FC<{ title: string; onClick: (e: React.MouseEvent) => void; children: React.ReactNode; active?: boolean }> = ({ title, onClick, children, active }) => (
 	<button

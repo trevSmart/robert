@@ -1,3 +1,16 @@
+## 0.4.0
+
+### Recently Viewed
+* Add a `compact` mode to `CollapsibleCard` and use it for the Recently Viewed list (tighter padding, full-width hover rows)
+* Split formatted ID and name in Recently Viewed rows for clearer scanning
+* When opening a Recently Viewed sprint that is not yet in the loaded iterations list, reload iterations and auto-select that sprint once available
+
+### Fixes
+* Encode and validate Rally “Open in Rally” URLs so only `http`/`https` schemes are opened
+* Pair consecutive blocked events correctly when computing blocked duration on the revision timeline
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.3.11...0.4.0
+
 ## 0.3.11
 
 ### Fixes

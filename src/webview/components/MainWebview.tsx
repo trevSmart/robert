@@ -677,6 +677,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const hasLoadedTeamMembers = useRef(false);
 	const loadedTeamIterationRef = useRef<string | null>(null);
 	const pendingTeamIterationRef = useRef<string | null>(null);
+	// Sprint objectId to auto-open once iterations finish (re)loading — set when a Recently Viewed
+	// sprint click can't find the sprint in the currently loaded iterations.
+	const pendingRecentlyViewedIterationIdRef = useRef<string | null>(null);
 	const requestedTeamIterationRef = useRef<string | null>(null);
 	const teamMembersLoadingRef = useRef(false);
 
@@ -998,6 +1001,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					if (iteration) {
 						handleIterationSelected(iteration);
 					} else {
+						pendingRecentlyViewedIterationIdRef.current = item.objectId;
 						loadIterations();
 					}
 					break;
@@ -1448,17 +1452,28 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						setCurrentUser(message.currentUser || null);
 						setHolidays(message.holidays || []);
 
-						// Auto-select current iteration only on first portfolio navigation
-						// Subsequent times, stay on the iterations list
-						const currentIteration = findCurrentIteration(message.iterations);
-						if (currentIteration && activeSection === 'portfolio' && isFirstPortfolioNavigation.current) {
-							isFirstPortfolioNavigation.current = false;
-							setSelectedIteration(currentIteration);
-							loadUserStories(currentIteration);
-							// Navigate to userStories only if we're on the iterations list screen
-							// Don't override userStoryDetail when coming from search
-							if (currentScreen === 'iterations') {
-								setCurrentScreen('userStories');
+						// A Recently Viewed sprint click that couldn't find the sprint locally
+						// triggered this load — open it now that iterations are available.
+						const pendingIterationId = pendingRecentlyViewedIterationIdRef.current;
+						if (pendingIterationId) {
+							pendingRecentlyViewedIterationIdRef.current = null;
+							const pendingIteration = message.iterations.find((i: Iteration) => i.objectId === pendingIterationId);
+							if (pendingIteration) {
+								handleIterationSelected(pendingIteration);
+							}
+						} else {
+							// Auto-select current iteration only on first portfolio navigation
+							// Subsequent times, stay on the iterations list
+							const currentIteration = findCurrentIteration(message.iterations);
+							if (currentIteration && activeSection === 'portfolio' && isFirstPortfolioNavigation.current) {
+								isFirstPortfolioNavigation.current = false;
+								setSelectedIteration(currentIteration);
+								loadUserStories(currentIteration);
+								// Navigate to userStories only if we're on the iterations list screen
+								// Don't override userStoryDetail when coming from search
+								if (currentScreen === 'iterations') {
+									setCurrentScreen('userStories');
+								}
 							}
 						}
 					} else {
@@ -1851,7 +1866,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, loadTeamMembers, iterations, resetAllState, activeSection]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, loadTeamMembers, iterations, resetAllState, activeSection, handleIterationSelected]); // Only include dependencies needed by handleMessage
 
 	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
 	useEffect(() => {

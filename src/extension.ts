@@ -156,6 +156,14 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(openInEditorCommand);
 
+	// Register command to open the extension's settings filtered to Robert only
+	const openSettingsCommand = vscode.commands.registerCommand('robert.openSettings', async () => {
+		await errorHandler.executeWithErrorHandling(async () => {
+			await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:trevSmart.robert');
+		}, 'robert.openSettings');
+	});
+	context.subscriptions.push(openSettingsCommand);
+
 	// Register command used by the status bar to open a small, lightweight popover
 	const openStatusPanelCommand = vscode.commands.registerCommand('robert.openStatusPanel', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
@@ -420,30 +428,30 @@ function _showStatusPopover(webviewProvider: RobertWebviewProvider) {
 	try {
 		const qp = vscode.window.createQuickPick();
 		qp.title = 'Robert';
-		qp.placeholder = 'IBM Robert — resum ràpid';
+		qp.placeholder = 'IBM Robert — quick summary';
 		qp.matchOnDetail = true;
 		qp.matchOnDescription = true;
 
 		qp.items = [
 			{
 				label: '$(organization) Robert',
-				description: 'Extensió activa',
-				detail: 'Pots obrir el panell complet o la vista lateral'
+				description: 'Extension active',
+				detail: 'You can open the full panel or the sidebar view'
 			},
 			{
-				label: '$(rocket) Obrir panell complet',
-				description: 'Webview en una pestanya nova',
+				label: '$(rocket) Open full panel',
+				description: 'Webview in a new tab',
 				detail: ''
 			},
 			{
-				label: '$(sidebar-expand) Obrir vista lateral',
-				description: 'Mostra la vista del contenidor IBM Robert',
+				label: '$(sidebar-expand) Open sidebar view',
+				description: 'Show the IBM Robert container view',
 				detail: ''
 			}
 		];
 
 		// Add a button to open the full panel quickly
-		qp.buttons = [{ iconPath: new vscode.ThemeIcon('screen-full'), tooltip: 'Obrir panell complet' }];
+		qp.buttons = [{ iconPath: new vscode.ThemeIcon('screen-full'), tooltip: 'Open full panel' }];
 
 		const accept = () => {
 			try {
@@ -453,9 +461,9 @@ function _showStatusPopover(webviewProvider: RobertWebviewProvider) {
 					qp.dispose();
 					return;
 				}
-				if (picked.label.includes('Obrir panell complet')) {
+				if (picked.label.includes('Open full panel')) {
 					webviewProvider.createWebviewPanel();
-				} else if (picked.label.includes('Obrir vista lateral')) {
+				} else if (picked.label.includes('Open sidebar view')) {
 					vscode.commands.executeCommand('workbench.view.extension.robert.mainView');
 				}
 				qp.hide();

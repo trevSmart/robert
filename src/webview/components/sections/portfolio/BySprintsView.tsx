@@ -8,6 +8,7 @@ import TestCasesTable from '../../common/TestCasesTable';
 import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
+import OpenInRallyButton from '../../common/OpenInRallyButton';
 import SprintDetailsForm from '../../common/SprintDetailsForm';
 import AssigneeHoursChart from '../../common/AssigneeHoursChart';
 import '../../common/CollapsibleCard';
@@ -110,7 +111,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	const filteredIterations = getFilteredIterations();
 
 	const rightContent = (
-		<label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: 'normal' }}>
+		<label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: '300' }}>
 			<input type="checkbox" checked={showAllFutureSprints} onChange={e => setShowAllFutureSprints(e.target.checked)} style={{ cursor: 'pointer' }} />
 			<span>Show all future sprints</span>
 		</label>
@@ -156,8 +157,8 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} />
-					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} collaborationEnabled={collaborationEnabled} />
+					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInRallyButton objectId={selectedUserStory.objectId} />} />
+					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} collaborationEnabled={collaborationEnabled} iterations={iterations} />
 				</>
 			)}
 		</div>

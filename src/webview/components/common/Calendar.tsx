@@ -522,9 +522,9 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			const available = Math.max(0, viewportH - gridTop - headerH - legendH - paddingAndMargins);
 			const weeks = Math.ceil(totalDays / 7);
 			// Limit max height per cell to avoid runaway values
-			const maxCell = Math.max(48, Math.floor(viewportH * 0.6));
-			const h = weeks > 0 ? Math.floor(available / weeks) : 80;
-			setCellHeight(Math.max(40, Math.min(h, maxCell)));
+			const maxCell = Math.max(44, Math.floor(viewportH * 0.52));
+			const h = weeks > 0 ? Math.floor((available / weeks) * 0.88) : 70;
+			setCellHeight(Math.max(36, Math.min(h, maxCell)));
 		};
 
 		computeHeights();
@@ -1058,7 +1058,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					}}
 				>
 					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground, textAlign: 'center' }}>
-						Welcome, <span style={{ fontWeight: 'bold', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>!
+						Welcome, <span style={{ fontWeight: '600', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>!
 					</div>
 					<div
 						ref={marqueeContainerRef}
@@ -1171,7 +1171,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							margin: '0',
 							color: themeColors.foreground,
 							fontSize: '16.4px',
-							fontWeight: '300',
+							fontWeight: '200',
 							minWidth: '140px',
 							textAlign: 'center'
 						}}
@@ -1268,7 +1268,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							color: themeColors.titleBarActiveForeground,
 							textAlign: 'center',
 							fontSize: getDayNumberFontSize(calendarGridWidth) + 'px',
-							fontWeight: '600',
+							fontWeight: '500',
 							borderBottom: `1px solid ${themeColors.panelBorder}`
 						}}
 					>
@@ -1292,8 +1292,8 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							style={{
 								// Use explicit height so all cells keep same vertical size
 								height: cellHeight + 'px',
-								minHeight: '46px',
-								maxHeight: '90px',
+								minHeight: '40px',
+								maxHeight: '68px',
 								padding: '8px',
 								backgroundColor: !dayInfo.isCurrentMonth ? (lightTheme ? 'rgba(230, 230, 230, 0.18)' : 'rgba(0, 0, 0, 0.18)') : isWeekend && dayInfo.isCurrentMonth ? (lightTheme ? 'rgba(200, 200, 200, 0.12)' : 'rgba(0, 0, 0, 0.18)') : lightTheme ? 'rgba(250, 250, 250, 0.6)' : 'transparent',
 								color: dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
@@ -1303,7 +1303,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								alignItems: 'flex-start',
 								justifyContent: 'flex-start',
 								fontSize: '14px',
-								fontWeight: '400',
+								fontWeight: '300',
 								cursor: 'pointer',
 								transition: 'background-color 0.2s ease',
 								position: 'relative',
@@ -1341,7 +1341,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							<span
 								style={{
 									fontSize: getDayNumberFontSize(calendarGridWidth) + 'px',
-									fontWeight: '200',
+									fontWeight: '100',
 									marginBottom: '4px',
 									opacity: dayInfo.isCurrentMonth ? 1 : 0.4,
 									color: dayInfo.isCurrentMonth ? themeColors.foreground : themeColors.descriptionForeground,
@@ -1355,7 +1355,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												justifyContent: 'center',
 												minWidth: getDayNumberFontSize(calendarGridWidth) * 1.8 + 'px',
 												height: getDayNumberFontSize(calendarGridWidth) * 1.8 + 'px',
-												fontWeight: '500'
+												fontWeight: '400'
 											}
 										: {})
 								}}
@@ -1410,7 +1410,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 													backgroundColor: `rgba(${colorRgb}, ${event.opacity})`,
 													color: lightTheme ? '#1a1a1a' : 'white',
 													fontSize: '10px',
-													fontWeight: 'normal',
+													fontWeight: '300',
 													padding: '3px 4px',
 													marginLeft: '2px',
 													marginRight: '2px',
@@ -1441,7 +1441,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												marginRight: '2px'
 											}}
 										>
-											+{dayInfo.events.length - 3} más
+											+{dayInfo.events.length - 3} more
 										</div>
 									)}
 								</div>
@@ -1662,7 +1662,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						const dateTime = ce.time ? `${dateStr} · ${ce.time}` : dateStr;
 						return (
 							<div style={tooltipStyle}>
-								<div style={{ fontWeight: '600', fontSize: '13px', marginBottom: '3px' }}>{ce.title}</div>
+								<div style={{ fontWeight: '500', fontSize: '13px', marginBottom: '3px' }}>{ce.title}</div>
 								<div style={{ fontSize: '11px', color: themeColors.descriptionForeground, marginBottom: ce.description ? '4px' : '0' }}>{dateTime}</div>
 								{ce.description && <div style={{ fontSize: '11px', color: themeColors.foreground, whiteSpace: 'pre-wrap' }}>{ce.description}</div>}
 							</div>
@@ -1672,7 +1672,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					if (hoveredEvent.type === 'holiday') {
 						return (
 							<div style={tooltipStyle}>
-								<div style={{ fontWeight: '600', fontSize: '13px' }}>{hoveredEvent.tooltip}</div>
+								<div style={{ fontWeight: '500', fontSize: '13px' }}>{hoveredEvent.tooltip}</div>
 							</div>
 						);
 					}
@@ -1680,7 +1680,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					if (hoveredEvent.tooltip) {
 						return (
 							<div style={tooltipStyle}>
-								<div style={{ fontWeight: '600', fontSize: '13px' }}>{hoveredEvent.tooltip}</div>
+								<div style={{ fontWeight: '500', fontSize: '13px' }}>{hoveredEvent.tooltip}</div>
 							</div>
 						);
 					}
@@ -1719,7 +1719,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						const iterDetail = iterStart && iterEnd && iterDays !== null ? `${fmtDate(iterStart)} to ${fmtDate(iterEnd)}${iterHours > 0 ? `: ${iterHours}h` : ''}` : null;
 						return (
 							<div style={tooltipStyle}>
-								<div style={{ fontWeight: '600', marginBottom: iterDetail ? '4px' : '0', fontSize: '13px' }}>{hoveredIteration.name}</div>
+								<div style={{ fontWeight: '500', marginBottom: iterDetail ? '4px' : '0', fontSize: '13px' }}>{hoveredIteration.name}</div>
 								{iterDetail && <div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{iterDetail}</div>}
 							</div>
 						);
@@ -1728,7 +1728,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					const tooltip = getDayTooltip(hoveredDay!);
 					return (
 						<div style={tooltipStyle}>
-							<div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '13px' }}>{tooltip.title}</div>
+							<div style={{ fontWeight: '500', marginBottom: '4px', fontSize: '13px' }}>{tooltip.title}</div>
 							<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{tooltip.content}</div>
 						</div>
 					);
@@ -1770,7 +1770,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							transition: `opacity ${modalTransitionMs}ms ease, transform ${modalTransitionMs}ms ease`
 						}}
 					>
-						<h3 style={{ margin: 0, fontSize: '15px', fontWeight: 600, color: themeColors.foreground }}>{editingEvent ? 'Edit Event' : 'New Event'}</h3>
+						<h3 style={{ margin: 0, fontSize: '15px', fontWeight: 500, color: themeColors.foreground }}>{editingEvent ? 'Edit Event' : 'New Event'}</h3>
 
 						{/* Date + Time row */}
 						<div style={{ display: 'flex', gap: '10px' }}>

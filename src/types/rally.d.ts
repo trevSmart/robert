@@ -28,6 +28,7 @@ export interface UserStory {
 	revisionsCount: number;
 	appgar: string;
 	scheduleState: string; // PRIMARY: Rally ScheduleState (Defined, In-Progress, Completed, New)
+	creationDate?: string; // Optional - ISO date the story was created (timeline zero point)
 	revisions?: Revision[]; // Optional - revision history of the user story
 	_ref?: string; // Optional - reference field
 }
@@ -114,6 +115,17 @@ export interface Project {
 	name: string;
 	state: string;
 	_ref?: string;
+}
+
+export type RecentlyViewedItemType = 'userstory' | 'defect' | 'sprint';
+
+export interface RecentlyViewedItem {
+	objectId: string;
+	formattedId: string; // for sprints: the sprint name, since iterations have no FormattedID
+	name: string;
+	type: RecentlyViewedItemType;
+	viewedAt: number; // epoch ms, stamped by the extension host
+	pinned: boolean;
 }
 
 export interface User {

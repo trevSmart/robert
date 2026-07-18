@@ -101,7 +101,7 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 					padding: '10px 12px',
 					textAlign,
 					borderBottom: `1px solid ${themeColors.panelBorder}`,
-					fontWeight: 'bold',
+					fontWeight: '600',
 					cursor: 'pointer',
 					backgroundColor: themeColors.titleBarActiveBackground,
 					color: themeColors.titleBarActiveForeground,
@@ -228,15 +228,15 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 									e.currentTarget.style.boxShadow = 'none';
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.formattedId}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.state}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.formattedId}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.name}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.state}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
 									<AvatarWithName name={task.owner || ''} size={20} emptyLabel="N/A" />
 								</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center' }}>{task.estimate || 0}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center' }}>{task.toDo}</td>
-								<td style={{ padding: '10px 12px', fontWeight: 'normal', textAlign: 'center' }}>{task.timeSpent}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center' }}>{task.estimate || 0}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center' }}>{task.toDo}</td>
+								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center' }}>{task.timeSpent}</td>
 							</tr>
 						))}
 					</tbody>

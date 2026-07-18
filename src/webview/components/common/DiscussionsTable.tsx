@@ -38,7 +38,7 @@ const MessageHeader = styled.div`
 
 const AuthorName = styled.span`
 	font-size: 13px;
-	font-weight: 600;
+	font-weight: 500;
 	color: var(--vscode-textLink-foreground);
 `;
 
@@ -114,7 +114,7 @@ interface DiscussionsTableProps {
 }
 
 const DiscussionMessage: React.FC<{ rawHtml: string }> = ({ rawHtml }) => {
-	const sanitized = DOMPurify.sanitize(rawHtml || '');
+	const sanitized = DOMPurify.sanitize(rawHtml || '', { FORBID_ATTR: ['style'] });
 	const [html, setHtml] = useState(sanitized);
 
 	useEffect(() => {

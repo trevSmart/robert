@@ -20,6 +20,9 @@ class CollapsibleCard extends HTMLElement {
 	}
 
 	connectedCallback() {
+		// Re-read here: when created by React, attributes are set after the constructor runs,
+		// so `this.collapsed` set in the constructor can be stale by the time we connect.
+		this.collapsed = this.hasAttribute('default-collapsed');
 		this.render();
 		this.attachEventListeners();
 		this.updateCollapsedState(false);
@@ -68,6 +71,7 @@ class CollapsibleCard extends HTMLElement {
 	private toggleCollapsed() {
 		this.collapsed = !this.collapsed;
 		this.updateCollapsedState(true);
+		this.dispatchEvent(new CustomEvent('toggle', { detail: { collapsed: this.collapsed }, bubbles: true, composed: true }));
 	}
 
 	private updateCollapsedState(animate: boolean = false) {
@@ -190,7 +194,7 @@ class CollapsibleCard extends HTMLElement {
 
 				.title {
 					font-size: 13.2px;
-					font-weight: 300;
+					font-weight: 200;
 					color: ${themeColors.text};
 					margin: 0;
 					flex: 1;

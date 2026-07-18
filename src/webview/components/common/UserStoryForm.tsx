@@ -5,6 +5,7 @@ import { AvatarFormField } from './Avatar';
 import { type UserStory } from '../../../types/rally';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
 import { getVsCodeApi } from '../../utils/vscodeApi';
+import RevisionTimeline from './RevisionTimeline';
 import './CollapsibleCard';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
@@ -15,7 +16,7 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	padding: 1px 8px;
 	border-radius: 6px;
 	font-size: 11px;
-	font-weight: 600;
+	font-weight: 500;
 	letter-spacing: 0.2px;
 	background: ${props => (props.isBlocked ? 'color(srgb 0.75 0.2 0.2 / 0.15)' : 'color(srgb 0.15 0.55 0.3 / 0.15)')};
 	color: ${props => (props.isBlocked ? 'color(srgb 0.82 0.32 0.32 / 1)' : 'color(srgb 0.28 0.72 0.46 / 1)')};
@@ -78,6 +79,8 @@ interface UserStoryFormProps {
 	onAdditionalTabChange?: (tab: AdditionalTabKey) => void;
 	additionalTabContent?: Partial<Record<AdditionalTabKey, ReactNode>>;
 	collaborationEnabled?: boolean;
+	/** Iterations/sprints, used to mark sprint starts on the Timeline card. */
+	iterations?: { name: string; startDate: string }[];
 }
 
 // Help Request icon
@@ -139,7 +142,7 @@ const DESCRIPTION_HEIGHT_MIN = 80;
 const DESCRIPTION_HEIGHT_MAX = 600;
 const DESCRIPTION_HEIGHT_DEFAULT = 300;
 
-const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange, additionalTabContent, collaborationEnabled = false }) => {
+const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange, additionalTabContent, collaborationEnabled = false, iterations }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
@@ -149,6 +152,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const [revisionsLoading, setRevisionsLoading] = useState(false);
 	const [revisionsLoaded, setRevisionsLoaded] = useState(false);
 	const resizeStartRef = useRef({ y: 0, height: 0 });
+	const timelineCardRef = useRef<HTMLElement | null>(null);
+	const timelineExpandedRef = useRef(false);
 
 	const getScheduleStateColor = getThemeScheduleStateColor;
 
@@ -236,7 +241,26 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		setRevisionsCount(null);
 		// Load revisions count immediately when user story changes
 		loadRevisionsCount();
-	}, [userStory.objectId, loadRevisionsCount]);
+		// If the Timeline card is already expanded, refetch for the new story.
+		if (timelineExpandedRef.current) {
+			loadRevisions();
+		}
+	}, [userStory.objectId, loadRevisionsCount, loadRevisions]);
+
+	// Lazy-load the revision history the first time the Timeline card is expanded.
+	useEffect(() => {
+		const card = timelineCardRef.current;
+		if (!card) return;
+		const handleToggle = (event: Event) => {
+			const collapsed = (event as CustomEvent<{ collapsed: boolean }>).detail?.collapsed;
+			timelineExpandedRef.current = collapsed === false;
+			if (collapsed === false && !revisionsLoaded && !revisionsLoading) {
+				loadRevisions();
+			}
+		};
+		card.addEventListener('toggle', handleToggle);
+		return () => card.removeEventListener('toggle', handleToggle);
+	}, [revisionsLoaded, revisionsLoading, loadRevisions]);
 
 	const handleDescriptionResizeStart = useCallback(
 		(e: React.MouseEvent) => {
@@ -260,6 +284,20 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		},
 		[descriptionHeight]
 	);
+
+	const handleDescriptionKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
+		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
+			e.preventDefault();
+			const target = e.currentTarget;
+			const selection = window.getSelection();
+			if (selection) {
+				const range = document.createRange();
+				range.selectNodeContents(target);
+				selection.removeAllRanges();
+				selection.addRange(range);
+			}
+		}
+	}, []);
 
 	const handleRequestSupport = useCallback(() => {
 		if (!vscode) return;
@@ -292,7 +330,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							style={{
 								fontSize: '12px',
 								color: '#4caf50',
-								fontWeight: '500',
+								fontWeight: '400',
 								padding: '4px 8px',
 								backgroundColor: 'rgba(76, 175, 80, 0.1)',
 								borderRadius: '4px'
@@ -316,7 +354,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 								border: 'none',
 								borderRadius: '3px',
 								fontSize: '12px',
-								fontWeight: '500',
+								fontWeight: '400',
 								cursor: requestSupportLoading ? 'not-allowed' : 'pointer',
 								opacity: requestSupportLoading ? 0.6 : 1,
 								whiteSpace: 'nowrap'
@@ -340,7 +378,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						<div
 							style={{
 								fontSize: '14px',
-								fontWeight: '500',
+								fontWeight: '300',
 								color: getScheduleStateColor(userStory.scheduleState)
 							}}
 						>
@@ -416,8 +454,10 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 
 						<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
 							<div
+								tabIndex={0}
+								onKeyDown={handleDescriptionKeyDown}
 								dangerouslySetInnerHTML={{
-									__html: DOMPurify.sanitize(userStory.description || '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>')
+									__html: userStory.description ? DOMPurify.sanitize(userStory.description, { FORBID_ATTR: ['style'] }) : '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
 								}}
 								style={{
 									width: '100%',
@@ -426,7 +466,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 									boxSizing: 'border-box',
 									padding: '12px',
 									backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-									color: 'var(--vscode-input-foreground)',
+									color: 'color-mix(in srgb, var(--vscode-input-foreground) 85%, transparent)',
 									fontSize: '13px',
 									fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 									lineHeight: '1.6',
@@ -466,35 +506,35 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '12px' }}>
 						<StatPill isSelected={selectedAdditionalTab === 'tasks'} onClick={() => handleTabChange('tasks')} title="Click to view tasks">
 							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Tasks</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
 								<TasksIcon />
 								{userStory.tasksCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'tests'} onClick={() => handleTabChange('tests')} title="Click to view test cases">
 							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Test cases</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
 								<TestsIcon />
 								{userStory.testCasesCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'defects'} onClick={() => handleTabChange('defects')} title="Click to view defects">
 							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Defects</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
 								<DefectsIcon />
 								{userStory.defectsCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'discussions'} onClick={() => handleTabChange('discussions')} title="Click to view discussions">
 							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Discussions</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
 								<DiscussionsIcon />
 								{userStory.discussionCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'revisions'} onClick={() => handleTabChange('revisions')} title="Click to view revisions">
 							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Revisions</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 600, color: 'var(--vscode-foreground)' }}>
+							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
 								<RevisionsIcon />
 								{revisionsCount !== null ? revisionsCount : '—'}
 							</span>
@@ -525,8 +565,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 											}}
 										>
 											<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-												<div style={{ fontWeight: '600', color: 'var(--vscode-foreground)' }}>Revision #{revision.revisionNumber}</div>
-												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{new Date(revision.createdDate).toLocaleString()}</div>
+												<div style={{ fontWeight: '500', color: 'var(--vscode-foreground)' }}>Revision #{revision.revisionNumber}</div>
+												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{new Date(revision.createdDate).toLocaleString('en-US')}</div>
 											</div>
 											<div style={{ marginBottom: '6px', color: 'var(--vscode-descriptionForeground)' }}>
 												By: <strong>{revision.author}</strong>
@@ -541,7 +581,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 													overflowWrap: 'anywhere'
 												}}
 												dangerouslySetInnerHTML={{
-													__html: DOMPurify.sanitize(revision.description || '')
+													__html: DOMPurify.sanitize(revision.description || '', { FORBID_ATTR: ['style'] })
 												}}
 											/>
 										</div>
@@ -552,6 +592,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					)}
 					{additionalTabContent?.[selectedAdditionalTab] && selectedAdditionalTab !== 'revisions' && <div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>}
 				</div>
+			</collapsible-card>
+			<collapsible-card ref={timelineCardRef} title="Timeline" default-collapsed style={{ margin: '20px 0' } as React.CSSProperties}>
+				<RevisionTimeline revisions={revisions} loading={revisionsLoading} loaded={revisionsLoaded} totalCount={revisionsCount} creationDate={userStory.creationDate} currentState={userStory.scheduleState} currentBlocked={userStory.blocked} iterations={iterations} />
 			</collapsible-card>
 		</div>
 	);

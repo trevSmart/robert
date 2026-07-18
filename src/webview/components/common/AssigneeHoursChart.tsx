@@ -196,7 +196,7 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 				textStyle: {
 					color: themeColors.foreground,
 					fontSize: 16,
-					fontWeight: 600
+					fontWeight: 500
 				},
 				subtextStyle: {
 					color: themeColors.descriptionForeground,

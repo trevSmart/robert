@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
 import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getTestCaseWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchRallyImageAsBase64 } from '../../libs/rally/rallyServices';
+import { SettingsManager } from '../../SettingsManager';
 
 /**
  * Handles search and lookup-related webview messages
@@ -35,8 +36,25 @@ export class SearchMessageHandler {
 			case 'fetchRallyImage':
 				await this.handleFetchRallyImage(webview, message);
 				return true;
+			case 'openInRally':
+				await this.handleOpenInRally(message);
+				return true;
 			default:
 				return false;
+		}
+	}
+
+	private async handleOpenInRally(message: any): Promise<void> {
+		try {
+			const rallyInstance = SettingsManager.getInstance().getSetting('rallyInstance');
+			if (!rallyInstance || !message.objectId) {
+				return;
+			}
+			const artifactType = message.artifactType ?? 'userstory';
+			const url = `${rallyInstance.replace(/\/$/, '')}/#/detail/${artifactType}/${message.objectId}`;
+			await vscode.env.openExternal(vscode.Uri.parse(url));
+		} catch (error) {
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openInRally');
 		}
 	}
 

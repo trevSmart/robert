@@ -2,8 +2,13 @@ import styled, { createGlobalStyle } from 'styled-components';
 import { themeColors } from '../../utils/themeColors';
 
 export const GlobalStyle = createGlobalStyle`
-	* {
+	*:not(.codicon) {
 		font-family: 'Inter', ${themeColors.fontFamily}, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+	}
+
+	/* Keep codicon glyphs on the icon font; the global Inter !important would otherwise override them. */
+	.codicon[class*='codicon-'] {
+		font-family: codicon !important;
 	}
 
 	html, body {
@@ -108,7 +113,7 @@ export const LogoImage = styled.img`
 
 export const Title = styled.h1`
 	margin: 0;
-	font-weight: 500;
+	font-weight: 400;
 	font-size: 28px;
 `;
 
@@ -116,7 +121,7 @@ export const SettingsTitle = styled.h1`
 	margin: 0;
 	color: ${themeColors.textPrimary};
 	font-size: 16px;
-	font-weight: 600;
+	font-weight: 500;
 `;
 
 // Content areas
@@ -159,7 +164,7 @@ export const Section = styled.div`
 
 export const SectionTitle = styled.div`
 	font-size: 12px;
-	font-weight: 400;
+	font-weight: 300;
 	color: ${themeColors.descriptionForeground};
 	letter-spacing: 0.5px;
 	margin: 0 0 8px 0;
@@ -192,7 +197,7 @@ export const SettingInfo = styled.div`
 `;
 
 export const SettingTitle = styled.div`
-	font-weight: 400;
+	font-weight: 300;
 	color: ${themeColors.textPrimary};
 	margin: 0 0 4px 0;
 	font-size: 12px;
@@ -203,7 +208,7 @@ export const SettingDescription = styled.div`
 	margin: 0;
 	font-size: 12px;
 	line-height: 1.3;
-	font-weight: 400;
+	font-weight: 300;
 `;
 
 export const SettingControl = styled.div`
@@ -288,7 +293,7 @@ export const LogoTitle = styled.h1`
 	font-size: 16px;
 	margin: 0 0 8px 0;
 	color: ${themeColors.foreground};
-	font-weight: 500;
+	font-weight: 400;
 `;
 
 export const LogoDescription = styled.p`

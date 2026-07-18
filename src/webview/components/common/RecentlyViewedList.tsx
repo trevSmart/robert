@@ -28,6 +28,7 @@ const CodiconSpan: FC<{ name: string; style?: React.CSSProperties }> = ({ name, 
 
 const RowActionButton: FC<{ title: string; onClick: (e: React.MouseEvent) => void; children: React.ReactNode; active?: boolean }> = ({ title, onClick, children, active }) => (
 	<button
+		type="button"
 		title={title}
 		onClick={onClick}
 		style={{

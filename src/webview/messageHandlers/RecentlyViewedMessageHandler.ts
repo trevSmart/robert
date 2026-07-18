@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { RecentlyViewedItem } from '../../types/rally';
+import type { RecentlyViewedItem } from '../../types/rally';
 
 const STORAGE_KEY = 'robert.recentlyViewedItems';
 const MAX_UNPINNED_ITEMS = 10;

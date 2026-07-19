@@ -1,7 +1,7 @@
 import React, { FC, RefObject, useState, useEffect } from 'react';
 import { type GlobalSearchResultItem } from '../../../types/rally';
 import SearchWithTypeFilter, { type SearchType } from '../common/SearchWithTypeFilter';
-import { UserStoryTypeIcon as SearchResultUserStoryIcon, TaskTypeIcon as SearchResultTaskIcon, TestCaseTypeIcon as SearchResultTestCaseIcon, DefectTypeIcon as SearchResultDefectIcon } from '../common/icons/EntityTypeIcons';
+import EntityTypeBadge from '../common/EntityTypeBadge';
 
 export interface SearchSectionProps {
 	globalSearchTerm: string;
@@ -157,27 +157,7 @@ const SearchSection: FC<SearchSectionProps> = ({
 										e.currentTarget.style.backgroundColor = 'transparent';
 									}}
 								>
-									<span
-										style={{
-											fontSize: '11.5px',
-											fontWeight: 300,
-											padding: '5px 6px',
-											borderRadius: '8px',
-											backgroundColor: 'rgba(128, 128, 128, 0.1)',
-											color: 'var(--vscode-descriptionForeground)',
-											border: '1px solid var(--vscode-panel-border)',
-											textTransform: 'capitalize',
-											display: 'inline-flex',
-											alignItems: 'center',
-											gap: '7px'
-										}}
-									>
-										{item.entityType === 'userstory' && <SearchResultUserStoryIcon />}
-										{item.entityType === 'task' && <SearchResultTaskIcon />}
-										{item.entityType === 'testcase' && <SearchResultTestCaseIcon />}
-										{item.entityType === 'defect' && <SearchResultDefectIcon />}
-										{item.entityType === 'userstory' ? 'User Story' : item.entityType}
-									</span>
+									<EntityTypeBadge type={item.entityType} />
 									<span style={{ fontWeight: 500, color: 'var(--vscode-foreground)' }}>{highlightMatch(item.formattedId)}</span>
 									<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{highlightMatch(item.name || '\u2014')}</span>
 								</button>

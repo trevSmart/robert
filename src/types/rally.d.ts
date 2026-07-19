@@ -117,9 +117,16 @@ export interface Project {
 	_ref?: string;
 }
 
+/**
+ * Every Rally entity type that can be shown with a type badge. Superset of the narrower
+ * unions below (RecentlyViewedItemType, GlobalSearchResultItem['entityType']), which stay
+ * as they are — both are assignable to this.
+ */
+export type RallyEntityType = 'userstory' | 'defect' | 'sprint' | 'task' | 'testcase';
+
 export type RecentlyViewedItemType = 'userstory' | 'defect' | 'sprint';
 
-/** Shared reference shape for the Recently Viewed and Pinned lists. */
+/** Shared reference shape for the Recently Viewed and Favorites lists. */
 export interface RallyItemRef {
 	objectId: string;
 	formattedId: string; // for sprints: the sprint name, since iterations have no FormattedID
@@ -131,8 +138,8 @@ export interface RecentlyViewedItem extends RallyItemRef {
 	viewedAt: number; // epoch ms, stamped by the extension host
 }
 
-export interface PinnedItem extends RallyItemRef {
-	pinnedAt: number; // epoch ms, stamped by the extension host
+export interface FavoriteItem extends RallyItemRef {
+	favoritedAt: number; // epoch ms, stamped by the extension host
 }
 
 export interface User {

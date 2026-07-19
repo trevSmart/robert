@@ -23,6 +23,16 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.75 0.2 0.2 / 0.35)' : 'color(srgb 0.15 0.55 0.3 / 0.35)')};
 `;
 
+// Reset outer margins of the rendered HTML so text starts flush with the padding.
+const DescriptionBody = styled.div`
+	& > :first-child {
+		margin-top: 0;
+	}
+	& > :last-child {
+		margin-bottom: 0;
+	}
+`;
+
 // StatPill component with theme-aware styling
 const StatPill: FC<{
 	isSelected: boolean;
@@ -443,11 +453,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Sprint</label>
 						<input
 							type="text"
-							value={
-								typeof userStory.iteration === 'string'
-									? userStory.iteration
-									: userStory.iteration?._refObjectName || 'N/A'
-							}
+							value={typeof userStory.iteration === 'string' ? userStory.iteration : userStory.iteration?._refObjectName || 'N/A'}
 							readOnly
 							style={{
 								width: '100%',
@@ -472,7 +478,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
 						<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
-							<div
+							<DescriptionBody
 								tabIndex={0}
 								onKeyDown={handleDescriptionKeyDown}
 								dangerouslySetInnerHTML={{
@@ -483,7 +489,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 									minHeight: `${DESCRIPTION_HEIGHT_MIN}px`,
 									maxHeight: `${descriptionHeight}px`,
 									boxSizing: 'border-box',
-									padding: '12px',
+									padding: '10px 12px',
 									backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 									color: 'color-mix(in srgb, var(--vscode-input-foreground) 85%, transparent)',
 									fontSize: '13px',

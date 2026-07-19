@@ -28,8 +28,8 @@ import TestSection from './sections/TestSection';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 import { useNavigationHistory, type NavKey } from '../hooks/useNavigationHistory';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem, type RecentlyViewedItem, type PinnedItem, type RallyItemRef } from '../../types/rally';
-import { PinnedContext, pinnedKey } from './common/PinnedContext';
+import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem, type RecentlyViewedItem, type FavoriteItem, type RallyItemRef } from '../../types/rally';
+import { FavoritesContext, favoriteKey } from './common/FavoritesContext';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
@@ -530,8 +530,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const hasPreloadedData = Boolean(preloadedData && Array.isArray(preloadedData.iterations) && preloadedData.iterations.length > 0);
 
 	const [recentlyViewedItems, setRecentlyViewedItems] = useState<RecentlyViewedItem[]>([]);
-	const [pinnedItems, setPinnedItems] = useState<PinnedItem[]>([]);
-	const pinnedKeys = useMemo(() => new Set(pinnedItems.map(item => pinnedKey(item.type, item.objectId))), [pinnedItems]);
+	const [favoriteItems, setFavoriteItems] = useState<FavoriteItem[]>([]);
+	const favoriteKeys = useMemo(() => new Set(favoriteItems.map(item => favoriteKey(item.type, item.objectId))), [favoriteItems]);
 
 	const [iterations, setIterations] = useState<Iteration[]>(hasPreloadedData ? (preloadedData.iterations as Iteration[]) : []);
 	const [iterationsLoading, setIterationsLoading] = useState(!hasPreloadedData);
@@ -996,7 +996,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[handleIterationSelected]
 	);
 
-	// Shared navigation for both the Recently Viewed and Pinned lists — same record kinds.
+	// Shared navigation for both the Recently Viewed and Favorites lists — same record kinds.
 	const navigateToItem = useCallback(
 		(item: RallyItemRef) => {
 			switch (item.type) {
@@ -1029,9 +1029,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[sendMessage]
 	);
 
-	const handlePinnedItemUnpin = useCallback(
-		(item: PinnedItem) => {
-			sendMessage({ command: 'togglePinnedItem', item: { objectId: item.objectId, formattedId: item.formattedId, name: item.name, type: item.type } });
+	const handleFavoriteItemRemove = useCallback(
+		(item: FavoriteItem) => {
+			sendMessage({ command: 'toggleFavoriteItem', item: { objectId: item.objectId, formattedId: item.formattedId, name: item.name, type: item.type } });
 		},
 		[sendMessage]
 	);
@@ -1319,7 +1319,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		});
 
 		sendMessage({
-			command: 'getPinnedItems'
+			command: 'getFavoriteItems'
 		});
 
 		// Initialize collaboration client
@@ -1870,8 +1870,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				case 'recentlyViewedItemsLoaded':
 					setRecentlyViewedItems(message.items ?? []);
 					break;
-				case 'pinnedItemsLoaded':
-					setPinnedItems(message.items ?? []);
+				case 'favoriteItemsLoaded':
+					setFavoriteItems(message.items ?? []);
 					break;
 				case 'taskWithParentLoaded':
 					if (message.userStoryObjectId) {
@@ -2387,7 +2387,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	}
 
 	return (
-		<PinnedContext.Provider value={pinnedKeys}>
+		<FavoritesContext.Provider value={favoriteKeys}>
 			<Container>
 				<GlobalStyle />
 				<CenteredContainer>
@@ -2438,9 +2438,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 															recentlyViewedItems={recentlyViewedItems}
 															onRecentlyViewedItemClick={navigateToItem}
 															onRecentlyViewedItemDelete={handleRecentlyViewedItemDelete}
-															pinnedItems={pinnedItems}
-															onPinnedItemClick={navigateToItem}
-															onPinnedItemUnpin={handlePinnedItemUnpin}
+															favoriteItems={favoriteItems}
+															onFavoriteItemClick={navigateToItem}
+															onFavoriteItemRemove={handleFavoriteItemRemove}
 															customEvents={mergedCalendarEvents}
 															onSaveCustomEvent={(event: CustomCalendarEvent) => {
 																const wasPublic = publicCalendarEvents.some(e => e.id === event.id);
@@ -2596,7 +2596,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 				<RallyLoadingIndicator rallyLogoUri={rallyLogoUri} visible={rallyCallCount > 0} />
 			</Container>
-		</PinnedContext.Provider>
+		</FavoritesContext.Provider>
 	);
 };
 

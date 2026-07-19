@@ -1319,10 +1319,11 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 								setMousePosition({ x: e.clientX, y: e.clientY });
 							}}
 							onMouseLeave={e => {
-								// Only clear hoveredDay if we're not over a sprint bar (check if hoveredIteration is set)
-								if (!hoveredIteration) {
-									setHoveredDay(null);
-								}
+								// The cursor has left the whole cell (sprint bars are children of it), so always
+								// clear both tooltips. Guarding on hoveredIteration read a stale render value and
+								// left the day tooltip stuck when the cursor exited the cell through a sprint bar.
+								setHoveredDay(null);
+								setHoveredIteration(null);
 								const dayOfWeek = index % 7;
 								const isWeekend = dayOfWeek === 5 || dayOfWeek === 6;
 								e.currentTarget.style.backgroundColor = !dayInfo.isCurrentMonth

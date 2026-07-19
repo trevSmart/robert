@@ -201,6 +201,27 @@ class CollapsibleCard extends HTMLElement {
 					flex-shrink: 0;
 				}
 
+				/*
+				 * Icon slot, rendered before the title. Slotted content stays in the light DOM,
+				 * so global stylesheets (e.g. the codicon font classes) still apply to it —
+				 * which is why this is a slot rather than markup built inside the shadow root.
+				 * Accepts both codicon spans and inline SVG; the color below makes either
+				 * follow the title. display:contents keeps an empty slot from adding any
+				 * box or margin to cards that pass no icon.
+				 */
+				.title-icon {
+					display: contents;
+				}
+
+				::slotted([slot='title-icon']) {
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					margin-right: 8px;
+					color: ${themeColors.text};
+					flex-shrink: 0;
+				}
+
 				.title {
 					font-size: 13.2px;
 					font-weight: 200;
@@ -233,6 +254,7 @@ class CollapsibleCard extends HTMLElement {
 							<path d="M4 6L8 10L12 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 						</svg>
 					</div>
+					<slot name="title-icon" class="title-icon"></slot>
 					<h3 class="title">${title}</h3>
 					<slot name="header-actions"></slot>
 				</div>

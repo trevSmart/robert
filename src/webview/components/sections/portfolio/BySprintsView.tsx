@@ -9,7 +9,7 @@ import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
 import OpenInRallyButton from '../../common/OpenInRallyButton';
-import PinButton from '../../common/PinButton';
+import FavoriteButton from '../../common/FavoriteButton';
 import TitleActions from '../../common/TitleActions';
 import SprintDetailsForm from '../../common/SprintDetailsForm';
 import AssigneeHoursChart from '../../common/AssigneeHoursChart';
@@ -136,7 +136,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						onBack={onBackToIterations}
 						titleActions={
 							<TitleActions>
-								<PinButton item={{ objectId: selectedIteration.objectId, formattedId: selectedIteration.name, name: selectedIteration.name, type: 'sprint' }} />
+								<FavoriteButton item={{ objectId: selectedIteration.objectId, formattedId: selectedIteration.name, name: selectedIteration.name, type: 'sprint' }} />
 								<OpenInRallyButton objectId={selectedIteration.objectId} artifactType="iteration" />
 							</TitleActions>
 						}
@@ -175,7 +175,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						onBack={onBackToUserStories}
 						titleActions={
 							<TitleActions>
-								<PinButton item={{ objectId: selectedUserStory.objectId, formattedId: selectedUserStory.formattedId, name: selectedUserStory.name, type: 'userstory' }} />
+								<FavoriteButton item={{ objectId: selectedUserStory.objectId, formattedId: selectedUserStory.formattedId, name: selectedUserStory.name, type: 'userstory' }} />
 								<OpenInRallyButton objectId={selectedUserStory.objectId} />
 							</TitleActions>
 						}

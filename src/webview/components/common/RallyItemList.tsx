@@ -1,7 +1,7 @@
-import { FC, useState } from 'react';
+import { FC, ReactNode, useState } from 'react';
 import { themeColors } from '../../utils/themeColors';
-import { UserStoryTypeIcon, DefectTypeIcon, SprintTypeIcon } from './icons/EntityTypeIcons';
-import type { RallyItemRef, RecentlyViewedItemType } from '../../../types/rally';
+import EntityTypeBadge from './EntityTypeBadge';
+import type { RallyItemRef } from '../../../types/rally';
 
 interface RowAction<T extends RallyItemRef> {
 	codiconName: string;
@@ -11,37 +11,27 @@ interface RowAction<T extends RallyItemRef> {
 
 interface RallyItemListProps<T extends RallyItemRef> {
 	title: string;
+	/** Rendered before the title in the card header. Accepts a codicon span or inline SVG. */
+	titleIcon?: ReactNode;
 	items: T[];
 	onItemClick: (item: T) => void;
 	rowAction: RowAction<T>;
 }
 
-const TYPE_LABELS: Record<RecentlyViewedItemType, string> = {
-	userstory: 'User Story',
-	defect: 'Defect',
-	sprint: 'Sprint'
-};
+export const CodiconSpan: FC<{ name: string }> = ({ name }) => <span className={`codicon codicon-${name}`} style={{ fontSize: '14px', lineHeight: 1, display: 'inline-block', flexShrink: 0 }} />;
 
-const TYPE_ICONS: Record<RecentlyViewedItemType, FC> = {
-	userstory: UserStoryTypeIcon,
-	defect: DefectTypeIcon,
-	sprint: SprintTypeIcon
-};
-
-const CodiconSpan: FC<{ name: string }> = ({ name }) => <span className={`codicon codicon-${name}`} style={{ fontSize: '14px', lineHeight: 1, display: 'inline-block', flexShrink: 0 }} />;
-
-function RallyItemList<T extends RallyItemRef>({ title, items, onItemClick, rowAction }: RallyItemListProps<T>) {
+function RallyItemList<T extends RallyItemRef>({ title, titleIcon, items, onItemClick, rowAction }: RallyItemListProps<T>) {
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
 	if (items.length === 0) return null;
 
 	return (
 		<collapsible-card title={title} compact>
+			{titleIcon && <span slot="title-icon">{titleIcon}</span>}
 			<div style={{ display: 'flex', flexDirection: 'column' }}>
 				{items.map(item => {
 					const key = `${item.type}-${item.objectId}`;
 					const isHovered = hoveredKey === key;
-					const TypeIcon = TYPE_ICONS[item.type];
 					return (
 						<div
 							key={key}
@@ -64,25 +54,7 @@ function RallyItemList<T extends RallyItemRef>({ title, items, onItemClick, rowA
 								transition: 'background-color 0.15s ease'
 							}}
 						>
-							<span
-								style={{
-									fontSize: '11.5px',
-									fontWeight: 300,
-									padding: '5px 6px',
-									borderRadius: '8px',
-									backgroundColor: 'rgba(128, 128, 128, 0.1)',
-									color: 'var(--vscode-descriptionForeground)',
-									border: '1px solid var(--vscode-panel-border)',
-									display: 'inline-flex',
-									alignItems: 'center',
-									gap: '7px',
-									flexShrink: 0,
-									whiteSpace: 'nowrap'
-								}}
-							>
-								<TypeIcon />
-								{TYPE_LABELS[item.type]}
-							</span>
+							<EntityTypeBadge type={item.type} display="icon" />
 							{item.type === 'sprint' ? (
 								<span
 									style={{

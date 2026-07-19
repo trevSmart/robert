@@ -1,28 +1,28 @@
 import { FC, useCallback, useContext, useMemo } from 'react';
 import { getVsCodeApi } from '../../utils/vscodeApi';
-import { PinnedContext, pinnedKey } from './PinnedContext';
+import { FavoritesContext, favoriteKey } from './FavoritesContext';
 import type { RallyItemRef } from '../../../types/rally';
 
-interface PinButtonProps {
+interface FavoriteButtonProps {
 	item: RallyItemRef;
 }
 
-const PinButton: FC<PinButtonProps> = ({ item }) => {
+const FavoriteButton: FC<FavoriteButtonProps> = ({ item }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
-	const pinnedKeys = useContext(PinnedContext);
-	const isPinned = pinnedKeys.has(pinnedKey(item.type, item.objectId));
+	const favoriteKeys = useContext(FavoritesContext);
+	const isFavorite = favoriteKeys.has(favoriteKey(item.type, item.objectId));
 
 	const handleClick = useCallback(() => {
 		if (!vscode) return;
-		vscode.postMessage({ command: 'togglePinnedItem', item });
+		vscode.postMessage({ command: 'toggleFavoriteItem', item });
 	}, [vscode, item]);
 
 	return (
 		<button
 			type="button"
 			onClick={handleClick}
-			title={isPinned ? 'Unpin' : 'Pin'}
-			aria-label={isPinned ? 'Unpin' : 'Pin'}
+			title={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+			aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
 			style={{
 				display: 'inline-flex',
 				verticalAlign: 'middle',
@@ -30,7 +30,7 @@ const PinButton: FC<PinButtonProps> = ({ item }) => {
 				justifyContent: 'center',
 				padding: '4px',
 				backgroundColor: 'transparent',
-				color: isPinned ? 'var(--vscode-textLink-foreground)' : 'var(--vscode-descriptionForeground)',
+				color: isFavorite ? 'var(--vscode-textLink-foreground)' : 'var(--vscode-descriptionForeground)',
 				border: 'none',
 				borderRadius: '3px',
 				cursor: 'pointer',
@@ -45,9 +45,9 @@ const PinButton: FC<PinButtonProps> = ({ item }) => {
 				e.currentTarget.style.opacity = '0.7';
 			}}
 		>
-			<span className={`codicon codicon-${isPinned ? 'pinned' : 'pin'}`} style={{ fontSize: '18px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', transform: 'translateY(-1px)' }} />
+			<span className={`codicon codicon-${isFavorite ? 'star-full' : 'star'}`} style={{ fontSize: '18px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', transform: 'translateY(-1px)' }} />
 		</button>
 	);
 };
 
-export default PinButton;
+export default FavoriteButton;

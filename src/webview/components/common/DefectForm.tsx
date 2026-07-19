@@ -19,6 +19,16 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.45)' : 'color(srgb 0.2 0.6 0.35 / 0.45)')};
 `;
 
+// Reset outer margins of the rendered HTML so text starts flush with the padding.
+const DescriptionBody = styled.div`
+	& > :first-child {
+		margin-top: 0;
+	}
+	& > :last-child {
+		margin-bottom: 0;
+	}
+`;
+
 interface Defect {
 	objectId: string;
 	formattedId: string;
@@ -215,13 +225,13 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
 							<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
-							<div
+							<DescriptionBody
 								dangerouslySetInnerHTML={{
 									__html: defect.description ? DOMPurify.sanitize(defect.description, { FORBID_ATTR: ['style'] }) : '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
 								}}
 								style={{
 									width: '100%',
-									padding: '12px',
+									padding: '10px 12px',
 									backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
 									color: 'var(--vscode-input-foreground)',
 									border: '1px solid var(--vscode-input-border)',

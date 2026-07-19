@@ -7,7 +7,7 @@ import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
 import OpenInRallyButton from '../../common/OpenInRallyButton';
-import PinButton from '../../common/PinButton';
+import FavoriteButton from '../../common/FavoriteButton';
 import TitleActions from '../../common/TitleActions';
 import { type RallyTask } from '../../../../../types/rally';
 import type { Defect } from '../../../../../types/rally';
@@ -94,7 +94,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 						onBack={onBackToUserStories}
 						titleActions={
 							<TitleActions>
-								<PinButton item={{ objectId: selectedUserStory.objectId, formattedId: selectedUserStory.formattedId, name: selectedUserStory.name, type: 'userstory' }} />
+								<FavoriteButton item={{ objectId: selectedUserStory.objectId, formattedId: selectedUserStory.formattedId, name: selectedUserStory.name, type: 'userstory' }} />
 								<OpenInRallyButton objectId={selectedUserStory.objectId} />
 							</TitleActions>
 						}

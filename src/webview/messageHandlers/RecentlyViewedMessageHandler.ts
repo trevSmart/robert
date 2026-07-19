@@ -8,7 +8,7 @@ const MAX_ITEMS = 10;
 /**
  * Persists the list of Rally items (user stories, defects, sprints) the user has recently
  * opened in a detail view, so Home can show a jump-back-in list across sessions. This is a
- * pure history: pinning is a separate concern handled by PinnedItemsMessageHandler.
+ * pure history: pinning is a separate concern handled by FavoritesMessageHandler.
  */
 export class RecentlyViewedMessageHandler {
 	constructor(

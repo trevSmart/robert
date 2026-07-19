@@ -104,6 +104,30 @@
 				"title": "Settings",
 				"category": "IBM Robert",
 				"icon": "$(gear)"
+			},
+			{
+				"command": "robert.goBack",
+				"title": "Go to Previous View",
+				"category": "IBM Robert",
+				"icon": "$(arrow-left)"
+			},
+			{
+				"command": "robert.goForward",
+				"title": "Go to Next View",
+				"category": "IBM Robert",
+				"icon": "$(arrow-right)"
+			}
+		],
+		"keybindings": [
+			{
+				"command": "robert.goBack",
+				"key": "alt+left",
+				"when": "robertWebviewFocused || activeWebviewPanelId == 'robert.mainPanel'"
+			},
+			{
+				"command": "robert.goForward",
+				"key": "alt+right",
+				"when": "robertWebviewFocused || activeWebviewPanelId == 'robert.mainPanel'"
 			}
 		],
 		"viewsContainers": {

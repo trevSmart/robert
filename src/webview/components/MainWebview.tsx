@@ -26,6 +26,7 @@ import SearchSection from './sections/SearchSection';
 import TeamSection from './sections/TeamSection';
 import TestSection from './sections/TestSection';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
+import { useNavigationHistory, type NavKey } from '../hooks/useNavigationHistory';
 import { logDebug } from '../utils/vscodeApi';
 import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem, type RecentlyViewedItem, type PinnedItem, type RallyItemRef } from '../../types/rally';
 import { PinnedContext, pinnedKey } from './common/PinnedContext';
@@ -485,6 +486,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
+
+	// Pila d'historial de navegació estil navegador (back/forward amb ratolí i teclat).
+	const { pushEntry, goBack, goForward } = useNavigationHistory();
+	// Es posa a true mentre apliquem una entrada d'historial, perquè l'effect de push
+	// no torni a apilar el canvi d'estat que provoca la pròpia navegació back/forward.
+	const isNavigatingViaHistoryRef = useRef(false);
 
 	const sendMessage = useCallback(
 		(command: string | Record<string, unknown>, data?: any) => {
@@ -1085,6 +1092,82 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		attemptedUserStoryDiscussions.current.clear();
 		attemptedUserStoryTests.current.clear();
 	}, [portfolioActiveViewType]);
+
+	// Snapshot de la navegació principal actual (per apilar a l'historial).
+	// El subtab del portfolio NO forma part de la clau: ja queda determinat pel
+	// currentScreen, i incloure'l provocaria falsos passos d'historial quan la
+	// càrrega asíncrona d'un detall normalitza el subtab.
+	const getCurrentNavKey = useCallback(
+		(): NavKey => ({
+			activeSection,
+			currentScreen,
+			selectedIterationId: selectedIteration?.objectId,
+			selectedUserStoryId: selectedUserStory?.objectId,
+			selectedDefectId: selectedDefect?.objectId
+		}),
+		[activeSection, currentScreen, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId]
+	);
+
+	// Aplica una entrada d'historial a l'estat, reaprofitant la mateixa mecànica
+	// que el case 'restoreState' (inclosa la càrrega asíncrona d'items de detall).
+	const applyNavKey = useCallback(
+		(key: NavKey) => {
+			setActiveSection(key.activeSection as SectionType);
+			setCurrentScreen(key.currentScreen as ScreenType);
+
+			// El subtab del portfolio es deriva del currentScreen, coincidint amb la
+			// normalització que fan els carregadors asíncrons (userStoryByObjectIdLoaded
+			// força 'allUserStories', defectByObjectIdLoaded força 'allDefects').
+			if (key.activeSection === 'portfolio') {
+				const derivedView: PortfolioViewType = key.currentScreen === 'allUserStories' || key.currentScreen === 'userStoryDetail' ? 'allUserStories' : key.currentScreen === 'defects' || key.currentScreen === 'defectDetail' ? 'allDefects' : 'bySprints';
+				setActiveSubTabBySection(prev => ({ ...prev, portfolio: derivedView }));
+			}
+
+			// Iteració seleccionada: buscar-la a les iterations ja carregades.
+			if (key.selectedIterationId) {
+				const iteration = iterations.find(i => i.objectId === key.selectedIterationId);
+				if (iteration) {
+					setSelectedIteration(iteration);
+					if (key.currentScreen === 'userStories' || key.currentScreen === 'userStoryDetail') {
+						loadUserStories(iteration);
+					}
+				}
+			} else {
+				setSelectedIteration(null);
+			}
+
+			// User story de detall: es demana al backend (restauració asíncrona).
+			if (key.selectedUserStoryId && key.currentScreen === 'userStoryDetail') {
+				sendMessage({ command: 'loadUserStoryByObjectId', objectId: key.selectedUserStoryId });
+			} else {
+				setSelectedUserStory(null);
+			}
+
+			// Defecte de detall: es demana al backend (restauració asíncrona).
+			if (key.selectedDefectId && key.currentScreen === 'defectDetail') {
+				sendMessage({ command: 'loadDefectByObjectId', objectId: key.selectedDefectId });
+			} else {
+				setSelectedDefect(null);
+			}
+		},
+		[iterations, loadUserStories, sendMessage]
+	);
+
+	const navigateBack = useCallback(() => {
+		const key = goBack();
+		if (key) {
+			isNavigatingViaHistoryRef.current = true;
+			applyNavKey(key);
+		}
+	}, [goBack, applyNavKey]);
+
+	const navigateForward = useCallback(() => {
+		const key = goForward();
+		if (key) {
+			isNavigatingViaHistoryRef.current = true;
+			applyNavKey(key);
+		}
+	}, [goForward, applyNavKey]);
 
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
@@ -1828,9 +1911,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						};
 						logDebug(`Restoring navigation state: ${JSON.stringify(state)}`);
 
-						// Restore basic navigation state
-						if (state.activeSection) setActiveSection(state.activeSection);
-						if (state.currentScreen) setCurrentScreen(state.currentScreen);
+						// Restore sub-tabs (broader than the NavKey, which only tracks portfolio)
+						// and the fields that are not part of the browser-like history key.
 						if (state.activeSubTabBySection) {
 							setActiveSubTabBySection(prev => ({ ...prev, ...state.activeSubTabBySection }));
 						} else if (state.activeViewType) {
@@ -1841,29 +1923,24 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						if (state.globalSearchTerm) setGlobalSearchTerm(state.globalSearchTerm);
 						if (state.homeDate) setHomeDate(new Date(state.homeDate));
 
-						// Restore selected iteration - need to find it in loaded iterations
-						if (state.selectedIterationId && iterations.length > 0) {
-							const iteration = iterations.find(i => i.objectId === state.selectedIterationId);
-							if (iteration) {
-								setSelectedIteration(iteration);
-								// Only load user stories if we're on a screen that needs them
-								if (state.currentScreen === 'userStories' || state.currentScreen === 'userStoryDetail') {
-									loadUserStories(iteration);
-								}
-							}
-						}
-
-						// Restore selected user story - only load if we're on the detail screen
-						// (otherwise the handler will auto-navigate to detail, overriding our state)
-						if (state.selectedUserStoryId && state.currentScreen === 'userStoryDetail') {
-							sendMessage({ command: 'loadUserStoryByObjectId', objectId: state.selectedUserStoryId });
-						}
-
-						// Restore selected defect - only load if we're on the detail screen
-						// (otherwise the handler will auto-navigate to detail, overriding our state)
-						if (state.selectedDefectId && state.currentScreen === 'defectDetail') {
-							sendMessage({ command: 'loadDefectByObjectId', objectId: state.selectedDefectId });
-						}
+						// Restore the main navigation (section, screen, selected item) via the
+						// same mechanism used for back/forward history navigation.
+						applyNavKey({
+							activeSection: state.activeSection ?? activeSection,
+							currentScreen: state.currentScreen ?? currentScreen,
+							selectedIterationId: state.selectedIterationId,
+							selectedUserStoryId: state.selectedUserStoryId,
+							selectedDefectId: state.selectedDefectId
+						});
+					}
+					break;
+				case 'navigateHistory':
+					// Browser-like back/forward triggered from an IDE command
+					// (robert.goBack / robert.goForward), e.g. mapped to the mouse side buttons.
+					if (message.direction === 'forward') {
+						navigateForward();
+					} else {
+						navigateBack();
 					}
 					break;
 				case 'rallyCallStarted':
@@ -1877,7 +1954,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, loadTeamMembers, iterations, resetAllState, activeSection, handleIterationSelected]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, loadTeamMembers, iterations, resetAllState, activeSection, handleIterationSelected, applyNavKey, navigateBack, navigateForward]); // Only include dependencies needed by handleMessage
 
 	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
 	useEffect(() => {
@@ -1936,6 +2013,21 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		}, 100);
 		return () => clearTimeout(timeoutId);
 	}, [activeSection, currentScreen, portfolioActiveViewType, activeSubTabBySection, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, activeUserStoryTab, globalSearchTerm, homeDate, sendMessage]);
+
+	// Push the current location onto the browser-like navigation history whenever the
+	// main navigation changes. Skips the push when the change was itself caused by a
+	// back/forward navigation (to avoid re-apilar the restored entry). Debounced so
+	// that actions mutating several setters at once produce a single history entry.
+	useEffect(() => {
+		const timeoutId = setTimeout(() => {
+			if (isNavigatingViaHistoryRef.current) {
+				isNavigatingViaHistoryRef.current = false;
+				return;
+			}
+			pushEntry(getCurrentNavKey());
+		}, 100);
+		return () => clearTimeout(timeoutId);
+	}, [activeSection, currentScreen, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, getCurrentNavKey, pushEntry]);
 
 	// Track home year changes and load holidays for the new year
 	useEffect(() => {
@@ -2186,6 +2278,25 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		};
 	}, [hasVsCodeApi, sendMessage]);
 
+	// Report webview focus state to the extension so it can toggle the
+	// `robertWebviewFocused` context key. This is needed because the built-in
+	// `focusedView` context key is NOT set while focus is inside a sidebar
+	// webview's iframe, so the Alt+Left/Right keybindings can't be scoped to it
+	// otherwise. (Editor panels are covered by `activeWebviewPanelId`.)
+	useEffect(() => {
+		const reportFocus = (focused: boolean) => sendMessage({ command: 'webviewFocusChanged', focused });
+		const onFocus = () => reportFocus(true);
+		const onBlur = () => reportFocus(false);
+		window.addEventListener('focus', onFocus);
+		window.addEventListener('blur', onBlur);
+		// Report the initial state in case the webview already has focus on mount.
+		if (document.hasFocus()) reportFocus(true);
+		return () => {
+			window.removeEventListener('focus', onFocus);
+			window.removeEventListener('blur', onBlur);
+		};
+	}, [sendMessage]);
+
 	// Handle keyboard shortcut for opening search (Cmd/Ctrl+F)
 	useEffect(() => {
 		const handleKeyDown = (event: KeyboardEvent) => {
@@ -2193,6 +2304,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				event.preventDefault();
 				handleSectionChange('search');
 			}
+			// Alt+Left / Alt+Right for history back/forward are handled via VS Code
+			// keybindings (robert.goBack / robert.goForward) so they show up in the
+			// Keyboard Shortcuts editor and can be remapped. We must NOT preventDefault
+			// them here, otherwise the webview would swallow the forwarded keybinding.
 		};
 
 		document.addEventListener('keydown', handleKeyDown);
@@ -2202,39 +2317,27 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		};
 	}, [handleSectionChange]);
 
+	// Browser-like back/forward with the mouse side buttons.
+	// Button values: 0 = left, 1 = middle, 2 = right, 3 = back, 4 = forward.
+	// Registered on a single event (mousedown) to avoid firing 2-3× per click.
 	useEffect(() => {
 		const handleMouseEvent = (event: globalThis.MouseEvent) => {
-			// Mouse back button is typically button 3 (some mice use button 4)
-			// Button values: 0 = left, 1 = middle, 2 = right, 3 = back, 4 = forward
 			if (event.button === 3) {
 				event.preventDefault();
 				event.stopPropagation();
-
-				// Navigate back based on current screen
-				if (currentScreen === 'userStoryDetail' && selectedUserStory) {
-					handleBackToUserStories();
-				} else if (currentScreen === 'userStories' && selectedIteration) {
-					handleBackToIterations();
-				} else if (currentScreen === 'defectDetail' && selectedDefect) {
-					handleBackToDefects();
-				}
+				navigateBack();
+			} else if (event.button === 4) {
+				event.preventDefault();
+				event.stopPropagation();
+				navigateForward();
 			}
 		};
 
-		// Add event listeners to catch mouse events - try multiple event types
-		// Some browsers/mice may use different events
 		document.addEventListener('mousedown', handleMouseEvent);
-		document.addEventListener('mouseup', handleMouseEvent);
-		document.addEventListener('auxclick', handleMouseEvent);
-
 		return () => {
 			document.removeEventListener('mousedown', handleMouseEvent);
-			document.removeEventListener('mouseup', handleMouseEvent);
-			document.removeEventListener('auxclick', handleMouseEvent);
-			// eslint-disable-next-line no-console
-			console.log('[MainWebview] Mouse event listeners removed from document');
 		};
-	}, [currentScreen, selectedUserStory, selectedIteration, selectedDefect, handleBackToUserStories, handleBackToIterations, handleBackToDefects]);
+	}, [navigateBack, navigateForward]);
 
 	const _clearIterations = () => {
 		setIterations([]);

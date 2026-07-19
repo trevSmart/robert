@@ -4,12 +4,22 @@ import type { FavoriteItem, RallyItemRef } from '../../types/rally';
 
 const STORAGE_KEY = 'robert.favorites';
 
+/** Key used before the pinned → favorites rename. Read once, then dropped. */
+const LEGACY_STORAGE_KEY = 'robert.pinnedItems';
+
+/** Item shape persisted under the legacy key: same fields, but `pinnedAt` instead of `favoritedAt`. */
+interface LegacyPinnedItem extends RallyItemRef {
+	pinnedAt: number;
+}
+
 /**
  * Persists the user-curated list of favorite Rally items (user stories, defects, sprints).
  * Favoriting is toggled from each record's detail view and is independent of the recently
  * viewed history — favorites are never auto-evicted.
  */
 export class FavoritesMessageHandler {
+	private migrationChecked = false;
+
 	constructor(
 		private errorHandler: ErrorHandler,
 		private context: vscode.ExtensionContext
@@ -18,13 +28,41 @@ export class FavoritesMessageHandler {
 	async handle(command: string, webview: vscode.Webview, message: any): Promise<boolean> {
 		switch (command) {
 			case 'getFavoriteItems':
+				await this.ensureMigrated();
 				await this.handleGetFavoriteItems(webview);
 				return true;
 			case 'toggleFavoriteItem':
+				// Also migrate here: toggling before the list has loaded would otherwise
+				// read an empty list and persist over the legacy data.
+				await this.ensureMigrated();
 				await this.handleToggleFavoriteItem(webview, message);
 				return true;
 			default:
 				return false;
+		}
+	}
+
+	/**
+	 * One-time move of the list stored under the pre-rename key, so users upgrading from a
+	 * "pinned" build keep their favorites instead of silently starting from an empty list.
+	 */
+	private async ensureMigrated(): Promise<void> {
+		if (this.migrationChecked) return;
+		this.migrationChecked = true;
+
+		try {
+			// Any existing entry — including an empty array, meaning the user removed them all —
+			// says we already own the data. Only a missing entry should fall back to the legacy key.
+			if (this.context.globalState.get<FavoriteItem[]>(STORAGE_KEY) !== undefined) return;
+
+			const legacy = this.context.globalState.get<LegacyPinnedItem[]>(LEGACY_STORAGE_KEY);
+			if (legacy === undefined) return;
+
+			const migrated: FavoriteItem[] = (legacy ?? []).filter(Boolean).map(({ pinnedAt, ...rest }) => ({ ...rest, favoritedAt: pinnedAt ?? Date.now() }));
+			await this.context.globalState.update(STORAGE_KEY, migrated);
+			await this.context.globalState.update(LEGACY_STORAGE_KEY, undefined);
+		} catch (error) {
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'migrateLegacyFavorites');
 		}
 	}
 

@@ -193,6 +193,20 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(openStatusPanelCommand);
 
+	// Browser-like history navigation. These commands let the user map the mouse
+	// side buttons (via IDE keybindings or the mouse driver software) to back/forward,
+	// since webviews can't reliably capture the physical mouse back/forward buttons.
+	context.subscriptions.push(
+		vscode.commands.registerCommand('robert.goBack', () => {
+			errorHandler.executeWithErrorHandlingSync(() => webviewProvider.navigateHistory('back'), 'robert.goBack command');
+		})
+	);
+	context.subscriptions.push(
+		vscode.commands.registerCommand('robert.goForward', () => {
+			errorHandler.executeWithErrorHandlingSync(() => webviewProvider.navigateHistory('forward'), 'robert.goForward command');
+		})
+	);
+
 	// Command to reveal the Output channel
 	context.subscriptions.push(vscode.commands.registerCommand('robert.showOutput', () => outputManager.show()));
 

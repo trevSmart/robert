@@ -89,7 +89,8 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
 					<ScreenHeader
-						title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`}
+						entityType="userstory"
+						title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`}
 						showBackButton={true}
 						onBack={onBackToUserStories}
 						titleActions={

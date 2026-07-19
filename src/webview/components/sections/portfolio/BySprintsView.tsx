@@ -131,7 +131,8 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStories' && selectedIteration && (
 				<>
 					<ScreenHeader
-						title={`Sprint "${selectedIteration.name}"`}
+						entityType="sprint"
+						title={selectedIteration.name}
 						showBackButton={true}
 						onBack={onBackToIterations}
 						titleActions={
@@ -170,7 +171,8 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
 					<ScreenHeader
-						title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`}
+						entityType="userstory"
+						title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`}
 						showBackButton={true}
 						onBack={onBackToUserStories}
 						titleActions={

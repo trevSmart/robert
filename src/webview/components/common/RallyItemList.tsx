@@ -62,7 +62,7 @@ function RallyItemList<T extends RallyItemRef>({ title, titleIcon, items, onItem
 									style={{
 										flex: 1,
 										fontSize: '12.5px',
-										fontWeight: 400,
+										fontWeight: 300,
 										color: 'var(--vscode-foreground)',
 										overflow: 'hidden',
 										textOverflow: 'ellipsis',
@@ -76,7 +76,7 @@ function RallyItemList<T extends RallyItemRef>({ title, titleIcon, items, onItem
 									<span
 										style={{
 											fontSize: '12.5px',
-											fontWeight: 400,
+											fontWeight: 300,
 											color: 'var(--vscode-foreground)',
 											flexShrink: 0
 										}}

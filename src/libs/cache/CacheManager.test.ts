@@ -128,6 +128,48 @@ describe('CacheManager', () => {
 		});
 	});
 
+	describe('getWithMeta', () => {
+		it('should return data with metadata when the entry exists', () => {
+			cache.set('key1', 'value1', 1000);
+			const result = cache.getWithMeta('key1');
+			expect(result).not.toBeNull();
+			expect(result?.data).toBe('value1');
+			expect(result?.ttl).toBe(1000);
+			expect(typeof result?.timestamp).toBe('number');
+		});
+
+		it('should return null for non-existent keys', () => {
+			expect(cache.getWithMeta('non-existent')).toBeNull();
+		});
+
+		it('should return the entry even when get() would treat it as expired', async () => {
+			cache.set('key1', 'value1', 500);
+			await new Promise(resolve => setTimeout(resolve, 600));
+
+			// get() applies TTL and evicts; getWithMeta bypasses TTL entirely
+			expect(cache.get('key1')).toBeNull();
+
+			// Re-set because get() evicted the entry above
+			cache.set('key2', 'value2', 500);
+			await new Promise(resolve => setTimeout(resolve, 600));
+			const result = cache.getWithMeta('key2');
+			expect(result).not.toBeNull();
+			expect(result?.data).toBe('value2');
+		});
+
+		it('should count present entries as hits and absent ones as misses', () => {
+			cache.set('key1', 'value1');
+
+			cache.getWithMeta('key1'); // hit
+			cache.getWithMeta('key1'); // hit
+			cache.getWithMeta('non-existent'); // miss
+
+			const stats = cache.getStats();
+			expect(stats.hits).toBe(2);
+			expect(stats.misses).toBe(1);
+		});
+	});
+
 	describe('Cache size and entries', () => {
 		it('should report correct cache size', () => {
 			cache.set('key1', 'value1');

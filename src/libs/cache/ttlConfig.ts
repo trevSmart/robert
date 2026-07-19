@@ -51,15 +51,15 @@ export function ttlFor(entity: CacheEntity): number {
 
 /**
  * Retorna true si la dada és stale (cal re-fetchar).
- * - TTL no finit (Infinity) ⇒ mai stale.
- * - `fetchedAt` absent/0 ⇒ stale (mai carregat).
+ * - `fetchedAt` absent/0 ⇒ stale (mai carregat), fins i tot amb TTL Infinity.
+ * - TTL no finit (Infinity) ⇒ mai stale un cop carregat.
  */
 export function isStale(fetchedAt: number, ttl: number, now: number = Date.now()): boolean {
-	if (!Number.isFinite(ttl)) {
-		return false; // Infinity → mai caduca
-	}
 	if (!fetchedAt) {
-		return true; // mai carregat
+		return true; // mai carregat → sempre stale
+	}
+	if (!Number.isFinite(ttl)) {
+		return false; // Infinity → mai caduca un cop carregat
 	}
 	return now - fetchedAt > ttl;
 }

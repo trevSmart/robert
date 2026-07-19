@@ -1,5 +1,6 @@
 import { FC } from 'react';
 import { UserStoryTypeIcon, DefectTypeIcon, SprintTypeIcon, TaskTypeIcon, TestCaseTypeIcon } from './icons/EntityTypeIcons';
+import { getEntityTypeColors } from '../../utils/themeColors';
 import type { RallyEntityType } from '../../../types/rally';
 
 const TYPE_LABELS: Record<RallyEntityType, string> = {
@@ -34,6 +35,7 @@ const EntityTypeBadge: FC<EntityTypeBadgeProps> = ({ type, display = 'full' }) =
 	const Icon = TYPE_ICONS[type];
 	const label = TYPE_LABELS[type];
 	const iconOnly = display === 'icon';
+	const colors = getEntityTypeColors(type);
 
 	return (
 		<span
@@ -44,9 +46,9 @@ const EntityTypeBadge: FC<EntityTypeBadgeProps> = ({ type, display = 'full' }) =
 				fontWeight: 300,
 				padding: iconOnly ? '5px' : '5px 6px',
 				borderRadius: '8px',
-				backgroundColor: 'rgba(128, 128, 128, 0.1)',
+				backgroundColor: colors.background,
 				color: 'var(--vscode-descriptionForeground)',
-				border: '1px solid var(--vscode-panel-border)',
+				border: `1px solid ${colors.border}`,
 				display: 'inline-flex',
 				alignItems: 'center',
 				gap: iconOnly ? 0 : '7px',

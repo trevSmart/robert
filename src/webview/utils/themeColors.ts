@@ -4,6 +4,8 @@
  * Reference: https://code.visualstudio.com/api/references/theme-color
  */
 
+import type { RallyEntityType } from '../../types/rally';
+
 export const themeColors = {
 	// ============================================================================
 	// FOREGROUND & BACKGROUND
@@ -197,4 +199,29 @@ export const getScheduleStateColor = (scheduleState?: string): string => {
 		default:
 			return themeColors.descriptionForeground;
 	}
+};
+
+/**
+ * Base RGB triplets of the entity type colour code, one per Rally entity type.
+ * Kept as `'R G B'` strings so the alpha variants below stay a single source of truth.
+ */
+const ENTITY_TYPE_BASE_RGB: Record<RallyEntityType, string> = {
+	defect: '255 42 0', // Vermell
+	userstory: '0 168 84', // Verd
+	task: '0 122 255', // Blau
+	testcase: '160 80 230', // Porpra
+	sprint: '255 168 0' // Ambre
+};
+
+/**
+ * Background/border pair for an entity type badge. Both are alpha colours, so they blend
+ * into whichever editor background is active — no light/dark branch needed, unlike
+ * getScheduleStateColor which paints opaque text.
+ */
+export const getEntityTypeColors = (type: RallyEntityType): { background: string; border: string } => {
+	const base = ENTITY_TYPE_BASE_RGB[type];
+	return {
+		background: `rgb(${base} / 8%)`,
+		border: `rgb(${base} / 13%)`
+	};
 };

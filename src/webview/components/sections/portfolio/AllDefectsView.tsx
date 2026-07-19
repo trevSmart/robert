@@ -2,6 +2,9 @@ import type { FC } from 'react';
 import DefectsTable from '../../common/DefectsTable';
 import DefectForm from '../../common/DefectForm';
 import ScreenHeader from '../../common/ScreenHeader';
+import OpenInRallyButton from '../../common/OpenInRallyButton';
+import PinButton from '../../common/PinButton';
+import TitleActions from '../../common/TitleActions';
 import { logDebug } from '../../../utils/vscodeApi';
 import type { Defect } from '../../../../../types/rally';
 import type { PortfolioViewProps } from './types';
@@ -28,7 +31,17 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defec
 			)}
 			{currentScreen === 'defectDetail' && selectedDefect && (
 				<>
-					<ScreenHeader title={`Defect "${selectedDefect.formattedId}: ${selectedDefect.name}"`} showBackButton={true} onBack={onBackToDefects} />
+					<ScreenHeader
+						title={`Defect "${selectedDefect.formattedId}: ${selectedDefect.name}"`}
+						showBackButton={true}
+						onBack={onBackToDefects}
+						titleActions={
+							<TitleActions>
+								<PinButton item={{ objectId: selectedDefect.objectId, formattedId: selectedDefect.formattedId, name: selectedDefect.name, type: 'defect' }} />
+								<OpenInRallyButton objectId={selectedDefect.objectId} artifactType="defect" />
+							</TitleActions>
+						}
+					/>
 					<DefectForm defect={selectedDefect as Defect} />
 				</>
 			)}

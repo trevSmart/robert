@@ -27,7 +27,8 @@ import TeamSection from './sections/TeamSection';
 import TestSection from './sections/TestSection';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem, type RecentlyViewedItem } from '../../types/rally';
+import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem, type RecentlyViewedItem, type PinnedItem, type RallyItemRef } from '../../types/rally';
+import { PinnedContext, pinnedKey } from './common/PinnedContext';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
@@ -522,6 +523,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const hasPreloadedData = Boolean(preloadedData && Array.isArray(preloadedData.iterations) && preloadedData.iterations.length > 0);
 
 	const [recentlyViewedItems, setRecentlyViewedItems] = useState<RecentlyViewedItem[]>([]);
+	const [pinnedItems, setPinnedItems] = useState<PinnedItem[]>([]);
+	const pinnedKeys = useMemo(() => new Set(pinnedItems.map(item => pinnedKey(item.type, item.objectId))), [pinnedItems]);
 
 	const [iterations, setIterations] = useState<Iteration[]>(hasPreloadedData ? (preloadedData.iterations as Iteration[]) : []);
 	const [iterationsLoading, setIterationsLoading] = useState(!hasPreloadedData);
@@ -986,8 +989,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[handleIterationSelected]
 	);
 
-	const handleRecentlyViewedItemClick = useCallback(
-		(item: RecentlyViewedItem) => {
+	// Shared navigation for both the Recently Viewed and Pinned lists — same record kinds.
+	const navigateToItem = useCallback(
+		(item: RallyItemRef) => {
 			switch (item.type) {
 				case 'userstory':
 					sendMessage({ command: 'loadUserStoryByObjectId', objectId: item.objectId });
@@ -1011,16 +1015,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[sendMessage, iterations, handleIterationSelected, loadIterations]
 	);
 
-	const handleRecentlyViewedItemPinToggle = useCallback(
+	const handleRecentlyViewedItemDelete = useCallback(
 		(item: RecentlyViewedItem) => {
-			sendMessage({ command: 'toggleRecentlyViewedItemPin', objectId: item.objectId, type: item.type });
+			sendMessage({ command: 'deleteRecentlyViewedItem', objectId: item.objectId, type: item.type });
 		},
 		[sendMessage]
 	);
 
-	const handleRecentlyViewedItemDelete = useCallback(
-		(item: RecentlyViewedItem) => {
-			sendMessage({ command: 'deleteRecentlyViewedItem', objectId: item.objectId, type: item.type });
+	const handlePinnedItemUnpin = useCallback(
+		(item: PinnedItem) => {
+			sendMessage({ command: 'togglePinnedItem', item: { objectId: item.objectId, formattedId: item.formattedId, name: item.name, type: item.type } });
 		},
 		[sendMessage]
 	);
@@ -1224,6 +1228,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 		sendMessage({
 			command: 'getRecentlyViewedItems'
+		});
+
+		sendMessage({
+			command: 'getPinnedItems'
 		});
 
 		// Initialize collaboration client
@@ -1774,6 +1782,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				case 'recentlyViewedItemsLoaded':
 					setRecentlyViewedItems(message.items ?? []);
 					break;
+				case 'pinnedItemsLoaded':
+					setPinnedItems(message.items ?? []);
+					break;
 				case 'taskWithParentLoaded':
 					if (message.userStoryObjectId) {
 						sendMessage({ command: 'loadUserStoryByObjectId', objectId: message.userStoryObjectId });
@@ -2268,212 +2279,216 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	}
 
 	return (
-		<Container>
-			<GlobalStyle />
-			<CenteredContainer>
-				<StickyNav>
-					<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} />
-					{portfolioSubTabsBar}
-				</StickyNav>
-				<SmoothScrollWrapper ref={wrapperRef}>
-					<SmoothScrollContent ref={contentRef} noPaddingTop={activeSection === 'portfolio'}>
-						<TabFadeWrapper key={displayedKey} $leaving={isLeaving}>
-							{(() => {
-								const [renderedSection, , renderedScreen] = displayedKey.split('__') as [SectionType, string, ScreenType];
-								return (
-									<>
-										{renderedSection === 'search' && (
-											<SearchSection
-												globalSearchTerm={globalSearchTerm}
-												onSearchTermChange={setGlobalSearchTerm}
-												onSearch={runGlobalSearch}
-												globalSearchLoading={globalSearchLoading}
-												globalSearchError={globalSearchError}
-												globalSearchResults={globalSearchResults}
-												onOpenResult={openSearchResult}
-												globalSearchHasMore={globalSearchHasMore}
-												globalSearchLoadingMore={globalSearchLoadingMore}
-												onLoadMoreResults={loadMoreSearchResults}
-												globalSearchTermUsed={globalSearchTermUsed}
-												onEscapeWhenEmpty={handleSearchEscapeWhenEmpty}
-											/>
-										)}
-										{renderedSection === 'home' && (
-											<>
-												{iterationsLoading && iterations.length === 0 ? (
-													<SpinnerContainer>
-														<Spinner />
-														<LoadingText>Loading sprints...</LoadingText>
-													</SpinnerContainer>
-												) : (
-													<HomeSection
-														currentDate={homeDate}
-														iterations={iterations}
-														userStories={portfolioUserStories}
-														onMonthChange={setHomeDate}
-														debugMode={debugMode}
-														currentUser={currentUser}
-														holidays={holidays}
-														onIterationClick={handleIterationClickFromHome}
-														recentlyViewedItems={recentlyViewedItems}
-														onRecentlyViewedItemClick={handleRecentlyViewedItemClick}
-														onRecentlyViewedItemPinToggle={handleRecentlyViewedItemPinToggle}
-														onRecentlyViewedItemDelete={handleRecentlyViewedItemDelete}
-														customEvents={mergedCalendarEvents}
-														onSaveCustomEvent={(event: CustomCalendarEvent) => {
-															const wasPublic = publicCalendarEvents.some(e => e.id === event.id);
-															if (event.isPublic) {
-																sendMessage('savePublicCalendarEvent', { event });
-															} else {
-																if (wasPublic) {
-																	// Converting public → private: remove the server copy first
-																	sendMessage('deletePublicCalendarEvent', { eventId: event.id });
+		<PinnedContext.Provider value={pinnedKeys}>
+			<Container>
+				<GlobalStyle />
+				<CenteredContainer>
+					<StickyNav>
+						<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} />
+						{portfolioSubTabsBar}
+					</StickyNav>
+					<SmoothScrollWrapper ref={wrapperRef}>
+						<SmoothScrollContent ref={contentRef} noPaddingTop={activeSection === 'portfolio'}>
+							<TabFadeWrapper key={displayedKey} $leaving={isLeaving}>
+								{(() => {
+									const [renderedSection, , renderedScreen] = displayedKey.split('__') as [SectionType, string, ScreenType];
+									return (
+										<>
+											{renderedSection === 'search' && (
+												<SearchSection
+													globalSearchTerm={globalSearchTerm}
+													onSearchTermChange={setGlobalSearchTerm}
+													onSearch={runGlobalSearch}
+													globalSearchLoading={globalSearchLoading}
+													globalSearchError={globalSearchError}
+													globalSearchResults={globalSearchResults}
+													onOpenResult={openSearchResult}
+													globalSearchHasMore={globalSearchHasMore}
+													globalSearchLoadingMore={globalSearchLoadingMore}
+													onLoadMoreResults={loadMoreSearchResults}
+													globalSearchTermUsed={globalSearchTermUsed}
+													onEscapeWhenEmpty={handleSearchEscapeWhenEmpty}
+												/>
+											)}
+											{renderedSection === 'home' && (
+												<>
+													{iterationsLoading && iterations.length === 0 ? (
+														<SpinnerContainer>
+															<Spinner />
+															<LoadingText>Loading sprints...</LoadingText>
+														</SpinnerContainer>
+													) : (
+														<HomeSection
+															currentDate={homeDate}
+															iterations={iterations}
+															userStories={portfolioUserStories}
+															onMonthChange={setHomeDate}
+															debugMode={debugMode}
+															currentUser={currentUser}
+															holidays={holidays}
+															onIterationClick={handleIterationClickFromHome}
+															recentlyViewedItems={recentlyViewedItems}
+															onRecentlyViewedItemClick={navigateToItem}
+															onRecentlyViewedItemDelete={handleRecentlyViewedItemDelete}
+															pinnedItems={pinnedItems}
+															onPinnedItemClick={navigateToItem}
+															onPinnedItemUnpin={handlePinnedItemUnpin}
+															customEvents={mergedCalendarEvents}
+															onSaveCustomEvent={(event: CustomCalendarEvent) => {
+																const wasPublic = publicCalendarEvents.some(e => e.id === event.id);
+																if (event.isPublic) {
+																	sendMessage('savePublicCalendarEvent', { event });
+																} else {
+																	if (wasPublic) {
+																		// Converting public → private: remove the server copy first
+																		sendMessage('deletePublicCalendarEvent', { eventId: event.id });
+																	}
+																	sendMessage('saveCustomEvent', { event });
 																}
-																sendMessage('saveCustomEvent', { event });
+															}}
+															onDeleteCustomEvent={(eventId: string) => {
+																const isPublicEvent = publicCalendarEvents.some(e => e.id === eventId);
+																if (isPublicEvent) {
+																	sendMessage('deletePublicCalendarEvent', { eventId });
+																} else {
+																	sendMessage('deleteCustomEvent', { eventId });
+																}
+															}}
+														/>
+													)}
+												</>
+											)}
+
+											{renderedSection === 'team' && (
+												<TeamSection
+													teamMembers={teamMembers}
+													teamMembersLoading={teamMembersLoading}
+													teamMembersError={teamMembersError}
+													selectedTeamIteration={selectedTeamIteration}
+													onTeamIterationChange={setSelectedTeamIteration}
+													iterations={iterations}
+													currentIterationName={findCurrentIteration(iterations)?.name ?? null}
+													otherMembersLoading={teamOtherLoading}
+												/>
+											)}
+											{(renderedSection === 'library' || selectedTutorial) && (
+												<LibrarySection
+													selectedTutorial={selectedTutorial}
+													onTutorialSelect={setSelectedTutorial}
+													onTutorialClose={() => {
+														setShowTutorial(false);
+														setSelectedTutorial(null);
+													}}
+													sendMessage={sendMessage}
+												/>
+											)}
+
+											{renderedSection === 'metrics' && (
+												<MetricsSection
+													averageVelocity={averageVelocity}
+													completedPoints={completedPoints}
+													wip={wip}
+													blockedItems={blockedItems}
+													metricsLoading={metricsLoading}
+													velocityData={velocityData}
+													velocityLoading={velocityLoading}
+													stateDistribution={stateDistribution}
+													stateDistributionLoading={stateDistributionLoading}
+													blockedDistribution={blockedDistribution}
+													nextSprintName={nextSprintName}
+													selectedReadinessSprint={selectedReadinessSprint}
+													onReadinessSprintChange={setSelectedReadinessSprint}
+													sprintIterations={iterations
+														.filter(it => {
+															const nextIter = findNextIteration(iterations);
+															if (nextIter && it.name === nextIter.name) {
+																return false;
 															}
-														}}
-														onDeleteCustomEvent={(eventId: string) => {
-															const isPublicEvent = publicCalendarEvents.some(e => e.id === eventId);
-															if (isPublicEvent) {
-																sendMessage('deletePublicCalendarEvent', { eventId });
-															} else {
-																sendMessage('deleteCustomEvent', { eventId });
-															}
-														}}
-													/>
-												)}
-											</>
-										)}
+															return true;
+														})
+														.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
+														.map(it => ({
+															objectId: it.objectId,
+															name: it.name,
+															startDate: it.startDate
+														}))}
+													defectsBySeverity={defectsBySeverity}
+													defectsBySeverityLoading={defectsBySeverityLoading}
+												/>
+											)}
 
-										{renderedSection === 'team' && (
-											<TeamSection
-												teamMembers={teamMembers}
-												teamMembersLoading={teamMembersLoading}
-												teamMembersError={teamMembersError}
-												selectedTeamIteration={selectedTeamIteration}
-												onTeamIterationChange={setSelectedTeamIteration}
-												iterations={iterations}
-												currentIterationName={findCurrentIteration(iterations)?.name ?? null}
-												otherMembersLoading={teamOtherLoading}
-											/>
-										)}
-										{(renderedSection === 'library' || selectedTutorial) && (
-											<LibrarySection
-												selectedTutorial={selectedTutorial}
-												onTutorialSelect={setSelectedTutorial}
-												onTutorialClose={() => {
-													setShowTutorial(false);
-													setSelectedTutorial(null);
-												}}
-												sendMessage={sendMessage}
-											/>
-										)}
+											{renderedSection === 'collaboration' && <CollaborationSection selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />}
 
-										{renderedSection === 'metrics' && (
-											<MetricsSection
-												averageVelocity={averageVelocity}
-												completedPoints={completedPoints}
-												wip={wip}
-												blockedItems={blockedItems}
-												metricsLoading={metricsLoading}
-												velocityData={velocityData}
-												velocityLoading={velocityLoading}
-												stateDistribution={stateDistribution}
-												stateDistributionLoading={stateDistributionLoading}
-												blockedDistribution={blockedDistribution}
-												nextSprintName={nextSprintName}
-												selectedReadinessSprint={selectedReadinessSprint}
-												onReadinessSprintChange={setSelectedReadinessSprint}
-												sprintIterations={iterations
-													.filter(it => {
-														const nextIter = findNextIteration(iterations);
-														if (nextIter && it.name === nextIter.name) {
-															return false;
-														}
-														return true;
-													})
-													.sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime())
-													.map(it => ({
-														objectId: it.objectId,
-														name: it.name,
-														startDate: it.startDate
-													}))}
-												defectsBySeverity={defectsBySeverity}
-												defectsBySeverityLoading={defectsBySeverityLoading}
-											/>
-										)}
+											{renderedSection === 'test' && <TestSection devMode={showTestTab} sendMessage={sendMessage} />}
 
-										{renderedSection === 'collaboration' && <CollaborationSection selectedUserStoryId={selectedUserStory?.formattedId || selectedUserStory?.objectId || null} onHelpRequestsCountChange={setCollaborationHelpRequestsCount} />}
+											{renderedSection === 'portfolio' && (
+												<PortfolioSection
+													activeViewType={portfolioActiveViewType}
+													iterations={iterations}
+													iterationsLoading={iterationsLoading}
+													iterationsError={iterationsError}
+													selectedIteration={selectedIteration}
+													userStories={userStories}
+													userStoriesLoading={userStoriesLoading}
+													userStoriesError={userStoriesError}
+													selectedUserStory={selectedUserStory}
+													userStoriesHasMore={userStoriesHasMore}
+													userStoriesLoadingMore={userStoriesLoadingMore}
+													loadMoreUserStories={loadMoreUserStories}
+													portfolioUserStories={portfolioUserStories}
+													portfolioUserStoriesLoading={portfolioUserStoriesLoading}
+													portfolioUserStoriesHasMore={portfolioUserStoriesHasMore}
+													portfolioUserStoriesLoadingMore={portfolioUserStoriesLoadingMore}
+													sprintUserStories={sprintUserStories}
+													sprintUserStoriesLoading={sprintUserStoriesLoading}
+													tasks={tasks}
+													tasksLoading={tasksLoading}
+													tasksError={tasksError}
+													userStoryDefects={userStoryDefects}
+													userStoryDefectsLoading={userStoryDefectsLoading}
+													userStoryDefectsError={userStoryDefectsError}
+													userStoryDiscussions={userStoryDiscussions}
+													userStoryDiscussionsLoading={userStoryDiscussionsLoading}
+													userStoryDiscussionsError={userStoryDiscussionsError}
+													userStoryTestCases={userStoryTestCases}
+													userStoryTestCasesLoading={userStoryTestCasesLoading}
+													userStoryTestCasesError={userStoryTestCasesError}
+													defects={defects}
+													defectsLoading={defectsLoading}
+													defectsError={defectsError}
+													defectsHasMore={defectsHasMore}
+													defectsLoadingMore={defectsLoadingMore}
+													onLoadMoreDefects={loadMoreDefects}
+													selectedDefect={selectedDefect}
+													activeUserStoryTab={activeUserStoryTab}
+													currentScreen={renderedScreen}
+													onLoadIterations={loadIterations}
+													onIterationSelected={handleIterationSelected}
+													onUserStorySelected={handleUserStorySelected}
+													onLoadUserStories={loadUserStories}
+													onClearUserStories={clearUserStories}
+													onLoadTasks={loadTasks}
+													onLoadUserStoryDefects={loadUserStoryDefects}
+													onLoadDefects={loadAllDefects}
+													onDefectSelected={handleDefectSelected}
+													onBackToIterations={handleBackToIterations}
+													onBackToUserStories={handleBackToUserStories}
+													onBackToDefects={handleBackToDefects}
+													onActiveUserStoryTabChange={setActiveUserStoryTab}
+													collaborationEnabled={collaborationEnabled}
+												/>
+											)}
+										</>
+									);
+								})()}
+							</TabFadeWrapper>
+						</SmoothScrollContent>
+					</SmoothScrollWrapper>
+				</CenteredContainer>
 
-										{renderedSection === 'test' && <TestSection devMode={showTestTab} sendMessage={sendMessage} />}
-
-										{renderedSection === 'portfolio' && (
-											<PortfolioSection
-												activeViewType={portfolioActiveViewType}
-												iterations={iterations}
-												iterationsLoading={iterationsLoading}
-												iterationsError={iterationsError}
-												selectedIteration={selectedIteration}
-												userStories={userStories}
-												userStoriesLoading={userStoriesLoading}
-												userStoriesError={userStoriesError}
-												selectedUserStory={selectedUserStory}
-												userStoriesHasMore={userStoriesHasMore}
-												userStoriesLoadingMore={userStoriesLoadingMore}
-												loadMoreUserStories={loadMoreUserStories}
-												portfolioUserStories={portfolioUserStories}
-												portfolioUserStoriesLoading={portfolioUserStoriesLoading}
-												portfolioUserStoriesHasMore={portfolioUserStoriesHasMore}
-												portfolioUserStoriesLoadingMore={portfolioUserStoriesLoadingMore}
-												sprintUserStories={sprintUserStories}
-												sprintUserStoriesLoading={sprintUserStoriesLoading}
-												tasks={tasks}
-												tasksLoading={tasksLoading}
-												tasksError={tasksError}
-												userStoryDefects={userStoryDefects}
-												userStoryDefectsLoading={userStoryDefectsLoading}
-												userStoryDefectsError={userStoryDefectsError}
-												userStoryDiscussions={userStoryDiscussions}
-												userStoryDiscussionsLoading={userStoryDiscussionsLoading}
-												userStoryDiscussionsError={userStoryDiscussionsError}
-												userStoryTestCases={userStoryTestCases}
-												userStoryTestCasesLoading={userStoryTestCasesLoading}
-												userStoryTestCasesError={userStoryTestCasesError}
-												defects={defects}
-												defectsLoading={defectsLoading}
-												defectsError={defectsError}
-												defectsHasMore={defectsHasMore}
-												defectsLoadingMore={defectsLoadingMore}
-												onLoadMoreDefects={loadMoreDefects}
-												selectedDefect={selectedDefect}
-												activeUserStoryTab={activeUserStoryTab}
-												currentScreen={renderedScreen}
-												onLoadIterations={loadIterations}
-												onIterationSelected={handleIterationSelected}
-												onUserStorySelected={handleUserStorySelected}
-												onLoadUserStories={loadUserStories}
-												onClearUserStories={clearUserStories}
-												onLoadTasks={loadTasks}
-												onLoadUserStoryDefects={loadUserStoryDefects}
-												onLoadDefects={loadAllDefects}
-												onDefectSelected={handleDefectSelected}
-												onBackToIterations={handleBackToIterations}
-												onBackToUserStories={handleBackToUserStories}
-												onBackToDefects={handleBackToDefects}
-												onActiveUserStoryTabChange={setActiveUserStoryTab}
-												collaborationEnabled={collaborationEnabled}
-											/>
-										)}
-									</>
-								);
-							})()}
-						</TabFadeWrapper>
-					</SmoothScrollContent>
-				</SmoothScrollWrapper>
-			</CenteredContainer>
-
-			<RallyLoadingIndicator rallyLogoUri={rallyLogoUri} visible={rallyCallCount > 0} />
-		</Container>
+				<RallyLoadingIndicator rallyLogoUri={rallyLogoUri} visible={rallyCallCount > 0} />
+			</Container>
+		</PinnedContext.Provider>
 	);
 };
 

@@ -196,7 +196,17 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 * buttons can be mapped to them from the IDE keybindings or the mouse software.
 	 */
 	public navigateHistory(direction: 'back' | 'forward'): void {
-		this.broadcastToWebviews({ command: 'navigateHistory', direction });
+		const message = { command: 'navigateHistory', direction };
+		// Target a single surface so that having both the activity-bar view and the
+		// editor panel open doesn't navigate both (each keeps its own history) and
+		// desync them. Prefer the active panel, then the visible view, else broadcast.
+		if (this._currentPanel?.active) {
+			Promise.resolve(this._currentPanel.webview.postMessage(message)).catch(() => undefined);
+		} else if (this._currentView?.visible) {
+			Promise.resolve(this._currentView.webview.postMessage(message)).catch(() => undefined);
+		} else {
+			this.broadcastToWebviews(message);
+		}
 	}
 
 	/**

@@ -191,6 +191,15 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	}
 
 	/**
+	 * Trigger browser-like history navigation (back/forward) in the webview.
+	 * Invoked by the robert.goBack / robert.goForward commands so the mouse side
+	 * buttons can be mapped to them from the IDE keybindings or the mouse software.
+	 */
+	public navigateHistory(direction: 'back' | 'forward'): void {
+		this.broadcastToWebviews({ command: 'navigateHistory', direction });
+	}
+
+	/**
 	 * Set debug mode state
 	 */
 	public setDebugMode(_isDebug: boolean): void {
@@ -709,6 +718,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						this._websocketClient.subscribeUserStory(message.userStoryId);
 					} else if (message.command === 'unsubscribeCollaborationUserStory' && this._websocketClient.isConnected()) {
 						this._websocketClient.unsubscribeUserStory(message.userStoryId);
+					}
+
+					// Track webview focus so the Alt+Left/Right history keybindings can be
+					// scoped to when Robert has focus (via the robertWebviewFocused context key).
+					if (message.command === 'webviewFocusChanged') {
+						void vscode.commands.executeCommand('setContext', 'robertWebviewFocused', Boolean(message.focused));
+						return;
 					}
 
 					if (!handled) {

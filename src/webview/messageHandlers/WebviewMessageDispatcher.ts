@@ -5,6 +5,7 @@ import { SearchMessageHandler } from './SearchMessageHandler';
 import { CollaborationMessageHandler } from './CollaborationMessageHandler';
 import { CalendarMessageHandler } from './CalendarMessageHandler';
 import { RecentlyViewedMessageHandler } from './RecentlyViewedMessageHandler';
+import { PinnedItemsMessageHandler } from './PinnedItemsMessageHandler';
 import { CollaborationClient } from '../../libs/collaboration/collaborationClient';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
@@ -29,6 +30,7 @@ export class WebviewMessageDispatcher {
 	private collaborationHandler: CollaborationMessageHandler;
 	private calendarHandler: CalendarMessageHandler;
 	private recentlyViewedHandler: RecentlyViewedMessageHandler;
+	private pinnedItemsHandler: PinnedItemsMessageHandler;
 
 	constructor(
 		private errorHandler: ErrorHandler,
@@ -40,6 +42,7 @@ export class WebviewMessageDispatcher {
 		this.collaborationHandler = new CollaborationMessageHandler(errorHandler, collaborationClient);
 		this.calendarHandler = new CalendarMessageHandler(errorHandler, collaborationClient, context);
 		this.recentlyViewedHandler = new RecentlyViewedMessageHandler(errorHandler, context);
+		this.pinnedItemsHandler = new PinnedItemsMessageHandler(errorHandler, context);
 	}
 
 	/** Clears in-session navigation state (e.g. on extension reload). */
@@ -72,6 +75,9 @@ export class WebviewMessageDispatcher {
 				return true;
 			}
 			if (await this.recentlyViewedHandler.handle(command, webview, message)) {
+				return true;
+			}
+			if (await this.pinnedItemsHandler.handle(command, webview, message)) {
 				return true;
 			}
 

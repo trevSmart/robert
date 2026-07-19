@@ -3,12 +3,12 @@ import { ErrorHandler } from '../../ErrorHandler';
 import type { RecentlyViewedItem } from '../../types/rally';
 
 const STORAGE_KEY = 'robert.recentlyViewedItems';
-const MAX_UNPINNED_ITEMS = 10;
+const MAX_ITEMS = 10;
 
 /**
  * Persists the list of Rally items (user stories, defects, sprints) the user has recently
- * opened in a detail view, so Home can show a jump-back-in list across sessions. Pinned items
- * are exempt from the unpinned trim limit and never dropped except by explicit delete.
+ * opened in a detail view, so Home can show a jump-back-in list across sessions. This is a
+ * pure history: pinning is a separate concern handled by PinnedItemsMessageHandler.
  */
 export class RecentlyViewedMessageHandler {
 	constructor(
@@ -27,9 +27,6 @@ export class RecentlyViewedMessageHandler {
 			case 'deleteRecentlyViewedItem':
 				await this.handleDeleteRecentlyViewedItem(webview, message);
 				return true;
-			case 'toggleRecentlyViewedItemPin':
-				await this.handleToggleRecentlyViewedItemPin(webview, message);
-				return true;
 			default:
 				return false;
 		}
@@ -39,15 +36,9 @@ export class RecentlyViewedMessageHandler {
 		return (this.context.globalState.get<RecentlyViewedItem[]>(STORAGE_KEY, []) ?? []).filter(Boolean);
 	}
 
-	/** Pinned items first (most recently viewed first), then unpinned items trimmed to MAX_UNPINNED_ITEMS. */
+	/** Most recently viewed first, capped to MAX_ITEMS. */
 	private normalize(items: RecentlyViewedItem[]): RecentlyViewedItem[] {
-		const byViewedAtDesc = (a: RecentlyViewedItem, b: RecentlyViewedItem) => b.viewedAt - a.viewedAt;
-		const pinned = items.filter(item => item.pinned).sort(byViewedAtDesc);
-		const unpinned = items
-			.filter(item => !item.pinned)
-			.sort(byViewedAtDesc)
-			.slice(0, MAX_UNPINNED_ITEMS);
-		return [...pinned, ...unpinned];
+		return [...items].sort((a, b) => b.viewedAt - a.viewedAt).slice(0, MAX_ITEMS);
 	}
 
 	private async persist(webview: vscode.Webview, items: RecentlyViewedItem[]): Promise<void> {
@@ -67,11 +58,8 @@ export class RecentlyViewedMessageHandler {
 				return;
 			}
 
-			const current = this.getStoredItems();
-			const existing = current.find(item => item.objectId === incoming.objectId && item.type === incoming.type);
-			const rest = current.filter(item => !(item.objectId === incoming.objectId && item.type === incoming.type));
-			const newItem: RecentlyViewedItem = { ...incoming, pinned: existing?.pinned ?? false, viewedAt: Date.now() };
-
+			const rest = this.getStoredItems().filter(item => !(item.objectId === incoming.objectId && item.type === incoming.type));
+			const newItem: RecentlyViewedItem = { ...incoming, viewedAt: Date.now() };
 			await this.persist(webview, [newItem, ...rest]);
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'recordRecentlyViewedItem');
@@ -85,16 +73,6 @@ export class RecentlyViewedMessageHandler {
 			await this.persist(webview, remaining);
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'deleteRecentlyViewedItem');
-		}
-	}
-
-	private async handleToggleRecentlyViewedItemPin(webview: vscode.Webview, message: any): Promise<void> {
-		try {
-			const { objectId, type } = message;
-			const updated = this.getStoredItems().map(item => (item.objectId === objectId && item.type === type ? { ...item, pinned: !item.pinned } : item));
-			await this.persist(webview, updated);
-		} catch (error) {
-			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'toggleRecentlyViewedItemPin');
 		}
 	}
 }

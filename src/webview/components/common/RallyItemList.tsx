@@ -1,13 +1,19 @@
 import { FC, useState } from 'react';
 import { themeColors } from '../../utils/themeColors';
 import { UserStoryTypeIcon, DefectTypeIcon, SprintTypeIcon } from './icons/EntityTypeIcons';
-import type { RecentlyViewedItem, RecentlyViewedItemType } from '../../../types/rally';
+import type { RallyItemRef, RecentlyViewedItemType } from '../../../types/rally';
 
-interface RecentlyViewedListProps {
-	items: RecentlyViewedItem[];
-	onItemClick: (item: RecentlyViewedItem) => void;
-	onPinToggle: (item: RecentlyViewedItem) => void;
-	onDelete: (item: RecentlyViewedItem) => void;
+interface RowAction<T extends RallyItemRef> {
+	codiconName: string;
+	title: string;
+	onClick: (item: T) => void;
+}
+
+interface RallyItemListProps<T extends RallyItemRef> {
+	title: string;
+	items: T[];
+	onItemClick: (item: T) => void;
+	rowAction: RowAction<T>;
 }
 
 const TYPE_LABELS: Record<RecentlyViewedItemType, string> = {
@@ -22,36 +28,15 @@ const TYPE_ICONS: Record<RecentlyViewedItemType, FC> = {
 	sprint: SprintTypeIcon
 };
 
-const CodiconSpan: FC<{ name: string; style?: React.CSSProperties }> = ({ name, style }) => <span className={`codicon codicon-${name}`} style={{ fontSize: '14px', lineHeight: 1, display: 'inline-block', flexShrink: 0, ...style }} />;
+const CodiconSpan: FC<{ name: string }> = ({ name }) => <span className={`codicon codicon-${name}`} style={{ fontSize: '14px', lineHeight: 1, display: 'inline-block', flexShrink: 0 }} />;
 
-const RowActionButton: FC<{ title: string; onClick: (e: React.MouseEvent) => void; children: React.ReactNode; active?: boolean }> = ({ title, onClick, children, active }) => (
-	<button
-		type="button"
-		title={title}
-		onClick={onClick}
-		style={{
-			display: 'inline-flex',
-			alignItems: 'center',
-			justifyContent: 'center',
-			background: 'none',
-			border: 'none',
-			padding: '4px',
-			borderRadius: '4px',
-			cursor: 'pointer',
-			color: active ? 'var(--vscode-textLink-foreground)' : themeColors.descriptionForeground
-		}}
-	>
-		{children}
-	</button>
-);
-
-const RecentlyViewedList: FC<RecentlyViewedListProps> = ({ items, onItemClick, onPinToggle, onDelete }) => {
+function RallyItemList<T extends RallyItemRef>({ title, items, onItemClick, rowAction }: RallyItemListProps<T>) {
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
 	if (items.length === 0) return null;
 
 	return (
-		<collapsible-card title="Recently Viewed" compact>
+		<collapsible-card title={title} compact>
 			<div style={{ display: 'flex', flexDirection: 'column' }}>
 				{items.map(item => {
 					const key = `${item.type}-${item.objectId}`;
@@ -137,33 +122,29 @@ const RecentlyViewedList: FC<RecentlyViewedListProps> = ({ items, onItemClick, o
 									</span>
 								</>
 							)}
-							{item.pinned && !isHovered && (
-								<span style={{ display: 'inline-flex', color: 'var(--vscode-textLink-foreground)', opacity: 0.7 }}>
-									<CodiconSpan name="pinned" />
-								</span>
-							)}
 							{isHovered && (
-								<span style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', flexShrink: 0 }}>
-									<RowActionButton
-										title={item.pinned ? 'Unpin' : 'Pin'}
-										active={item.pinned}
-										onClick={e => {
-											e.stopPropagation();
-											onPinToggle(item);
-										}}
-									>
-										<CodiconSpan name={item.pinned ? 'pinned' : 'pin'} />
-									</RowActionButton>
-									<RowActionButton
-										title="Remove from history"
-										onClick={e => {
-											e.stopPropagation();
-											onDelete(item);
-										}}
-									>
-										<CodiconSpan name="close" />
-									</RowActionButton>
-								</span>
+								<button
+									type="button"
+									title={rowAction.title}
+									onClick={e => {
+										e.stopPropagation();
+										rowAction.onClick(item);
+									}}
+									style={{
+										display: 'inline-flex',
+										alignItems: 'center',
+										justifyContent: 'center',
+										background: 'none',
+										border: 'none',
+										padding: '4px',
+										borderRadius: '4px',
+										cursor: 'pointer',
+										flexShrink: 0,
+										color: themeColors.descriptionForeground
+									}}
+								>
+									<CodiconSpan name={rowAction.codiconName} />
+								</button>
 							)}
 						</div>
 					);
@@ -171,6 +152,6 @@ const RecentlyViewedList: FC<RecentlyViewedListProps> = ({ items, onItemClick, o
 			</div>
 		</collapsible-card>
 	);
-};
+}
 
-export default RecentlyViewedList;
+export default RallyItemList;

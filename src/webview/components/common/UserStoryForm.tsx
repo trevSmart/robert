@@ -480,6 +480,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
 							<DescriptionBody
 								tabIndex={0}
+								// Lenis (smooth scroll) captura els wheel del wrapper; això li diu que ignore aquest scroller.
+								data-lenis-prevent
 								onKeyDown={handleDescriptionKeyDown}
 								dangerouslySetInnerHTML={{
 									__html: userStory.description ? DOMPurify.sanitize(userStory.description, { FORBID_ATTR: ['style'] }) : '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'

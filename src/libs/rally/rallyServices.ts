@@ -1,4 +1,5 @@
-import { rallyData } from '../../extension.js';
+import { rallyData, rallyDataMeta, stampRallyData } from '../../extension.js';
+import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User, GlobalSearchResultItem } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId, clearUtilsCaches } from './utils';
 import { callRally, callRallyFetch, setRallyBroadcaster } from './rallyCall';
@@ -47,6 +48,41 @@ function yieldToEventLoop(): Promise<void> {
 // Constants for pagination
 const PAGE_SIZE = 100;
 
+/** Formata una durada en ms de forma llegible per als logs de cache (∞ per Infinity). */
+function formatCacheMs(ms: number): string {
+	if (!Number.isFinite(ms)) {
+		return '∞';
+	}
+	if (ms < 60_000) {
+		return `${Math.round(ms / 1000)}s`;
+	}
+	if (ms < 3_600_000) {
+		return `${Math.round(ms / 60_000)}m`;
+	}
+	return `${Math.round((ms / 3_600_000) * 10) / 10}h`;
+}
+
+/**
+ * Retorna true si la branca de fallback in-memory (rallyData) d'una entitat és prou
+ * fresca per servir-se sense tornar a l'API. Quan és stale, el cridant ha de fer fetch.
+ * `maxAge` (ms) permet forçar una finestra de frescor més curta que el TTL per defecte
+ * (p.ex. velocity forçant 24h sobre iterations de 48h).
+ *
+ * Deixa traça de la decisió al canal "Robert" amb nivell debug (entitat, edat, TTL, veredicte).
+ */
+function rallyDataFresh(entity: CacheEntity, maxAge?: number): boolean {
+	const fetchedAt = rallyDataMeta[entity] ?? 0;
+	const ttl = maxAge ?? ttlFor(entity);
+	const fresh = !isStale(fetchedAt, ttl);
+	const ageLabel = fetchedAt ? formatCacheMs(Date.now() - fetchedAt) : 'never';
+	const overrideLabel = maxAge != null ? ' [maxAge override]' : '';
+	errorHandler.logDebug(
+		`[cache] ${entity}: ${fresh ? 'FRESH → serve from rallyData' : 'STALE → refetch from API'} (age=${ageLabel}, ttl=${formatCacheMs(ttl)}${overrideLabel})`,
+		'rallyServices.cache'
+	);
+	return fresh;
+}
+
 export { setRallyBroadcaster };
 
 /**
@@ -94,6 +130,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const projectsCacheMgr = getProjectsCacheManager();
 	const cachedProjects = projectsCacheMgr.get(cacheKey);
 	if (cachedProjects) {
+		errorHandler.logDebug(`[cache] projects(ttl-layer): FRESH → serve from ttl-cache (ttl=${formatCacheMs(ttlFor('projects'))})`, 'rallyServices.cache');
 		return {
 			projects: cachedProjects,
 			source: 'ttl-cache',
@@ -101,8 +138,8 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 		};
 	}
 
-	// Fall back to in-memory cache for filtered results
-	if (Object.keys(query).length && rallyData.projects.length) {
+	// Fall back to in-memory cache for filtered results (only if not stale)
+	if (Object.keys(query).length && rallyData.projects.length && rallyDataFresh('projects')) {
 		const filteredProjects = rallyData.projects.filter((project: RallyProject) =>
 			Object.keys(query).every(key => {
 				if (project[key as keyof RallyProject] === undefined) {
@@ -156,7 +193,7 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) {
 		// Cache empty results too
-		projectsCacheMgr.set(cacheKey, []);
+		projectsCacheMgr.set(cacheKey, [], ttlFor('projects'));
 		return {
 			projects: [],
 			source: 'api',
@@ -179,9 +216,10 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 			rallyData.projects[existingProjectIndex] = newProject;
 		}
 	}
+	stampRallyData('projects');
 
 	// Store in TTL cache
-	projectsCacheMgr.set(cacheKey, projects);
+	projectsCacheMgr.set(cacheKey, projects, ttlFor('projects'));
 
 	return {
 		projects: projects,
@@ -191,8 +229,8 @@ export async function getProjects(query: Record<string, unknown> = {}, limit: nu
 }
 
 export async function getCurrentUser() {
-	// If we already have the current user from prefetch, return it
-	if (rallyData.currentUser) {
+	// If we already have the current user from prefetch, return it (only if not stale)
+	if (rallyData.currentUser && rallyDataFresh('currentUser')) {
 		return {
 			user: rallyData.currentUser,
 			source: 'cache'
@@ -275,6 +313,7 @@ export async function getCurrentUser() {
 
 			// Cache the user data
 			rallyData.currentUser = userData;
+			stampRallyData('currentUser');
 
 			return {
 				user: userData,
@@ -305,6 +344,7 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 	const usersCacheMgr = getUsersCacheManager();
 	const cachedUsers = usersCacheMgr.get(cacheKey);
 	if (cachedUsers) {
+		errorHandler.logDebug(`[cache] users(ttl-layer): FRESH → serve from ttl-cache (ttl=${formatCacheMs(ttlFor('users'))})`, 'rallyServices.cache');
 		return {
 			users: cachedUsers,
 			source: 'ttl-cache',
@@ -312,8 +352,8 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 		};
 	}
 
-	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
-	if (Object.keys(query).length && rallyData.users && rallyData.users.length) {
+	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache (només si no és stale)
+	if (Object.keys(query).length && rallyData.users && rallyData.users.length && rallyDataFresh('users')) {
 		const filteredUsers = rallyData.users.filter((user: RallyUser) =>
 			Object.keys(query).every(key => {
 				if (user[key as keyof RallyUser] === undefined) {
@@ -367,7 +407,7 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) {
-		usersCacheMgr.set(cacheKey, []);
+		usersCacheMgr.set(cacheKey, [], ttlFor('users'));
 		return {
 			users: [],
 			source: 'api',
@@ -393,9 +433,10 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 			rallyData.users[existingUserIndex] = newUser;
 		}
 	}
+	stampRallyData('users');
 
 	// Store in TTL cache
-	usersCacheMgr.set(cacheKey, users);
+	usersCacheMgr.set(cacheKey, users, ttlFor('users'));
 
 	return {
 		users: users,
@@ -747,26 +788,37 @@ function buildUserStoryQueryOptions(query: RallyQueryParams, offset: number = 0)
 	return queryOptions;
 }
 
-export async function getIterations(query: RallyQueryParams = {}, limit: number | null = null) {
+export async function getIterations(query: RallyQueryParams = {}, limit: number | null = null, opts?: { maxAge?: number }) {
 	errorHandler.logDebug(`getIterations called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getIterations');
 
 	// Generate cache key from query
 	const cacheKey = `iterations:${JSON.stringify(query)}`;
 
-	// Check TTL cache first
+	// Effective freshness window: a per-call maxAge (e.g. velocity forcing 24h) overrides the
+	// entity default (48h). Applied to BOTH cache layers so a caller can demand fresher data.
+	const iterationsTtl = opts?.maxAge ?? ttlFor('iterations');
+
+	// Check TTL cache first (honouring the effective freshness window, not the stored ttl)
 	const iterationsCacheMgr = getIterationsCacheManager();
-	const cachedIterations = iterationsCacheMgr.get(cacheKey);
-	if (cachedIterations) {
-		errorHandler.logDebug('Iterations retrieved from TTL cache', 'rallyServices.getIterations');
-		return {
-			iterations: cachedIterations,
-			source: 'ttl-cache',
-			count: cachedIterations.length
-		};
+	const cachedHit = iterationsCacheMgr.getWithMeta(cacheKey);
+	if (cachedHit) {
+		const fresh = !isStale(cachedHit.timestamp, iterationsTtl);
+		const overrideLabel = opts?.maxAge != null ? ' [maxAge override]' : '';
+		errorHandler.logDebug(
+			`[cache] iterations(ttl-layer): ${fresh ? 'FRESH → serve from ttl-cache' : 'STALE → refetch from API'} (age=${formatCacheMs(Date.now() - cachedHit.timestamp)}, ttl=${formatCacheMs(iterationsTtl)}${overrideLabel})`,
+			'rallyServices.cache'
+		);
+		if (fresh) {
+			return {
+				iterations: cachedHit.data,
+				source: 'ttl-cache',
+				count: cachedHit.data.length
+			};
+		}
 	}
 
-	// Fall back to in-memory cache for filtered results
-	if (Object.keys(query).length && rallyData.iterations && rallyData.iterations.length) {
+	// Fall back to in-memory cache for filtered results (only if not stale)
+	if (Object.keys(query).length && rallyData.iterations && rallyData.iterations.length && rallyDataFresh('iterations', opts?.maxAge)) {
 		const filteredIterations = rallyData.iterations.filter((iteration: any) =>
 			Object.keys(query).every(key => {
 				if (iteration[key as keyof any] === undefined) {
@@ -826,7 +878,7 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	if (!results.length) {
 		// Cache empty results too
 		const iterationsCacheMgr = getIterationsCacheManager();
-		iterationsCacheMgr.set(cacheKey, []);
+		iterationsCacheMgr.set(cacheKey, [], ttlFor('iterations'));
 		return {
 			iterations: [],
 			source: 'api',
@@ -864,9 +916,10 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 			rallyData.iterations[existingIterationIndex] = newIteration;
 		}
 	}
+	stampRallyData('iterations');
 
-	// Store in TTL cache
-	iterationsCacheMgr.set(cacheKey, iterations);
+	// Store in TTL cache (always with the entity default ttl; per-call maxAge only affects reads)
+	iterationsCacheMgr.set(cacheKey, iterations, ttlFor('iterations'));
 
 	return {
 		iterations: iterations,
@@ -916,6 +969,7 @@ async function fetchUserStoriesPage(query: RallyQueryParams, offset: number, loa
 		rallyData.userStories = [];
 	}
 	addToCache(userStories, rallyData.userStories, 'objectId');
+	stampRallyData('userStories');
 	return { userStories, rawCount: results.length };
 }
 
@@ -931,7 +985,7 @@ export async function getUserStories(query: RallyQueryParams = {}, offset: numbe
 
 	// For non-filtered queries (all user stories), only use cache if it's complete
 	// Check if cache has enough data for this offset
-	if (!hasFilters && offset > 0 && rallyData.userStories && rallyData.userStories.length > 0) {
+	if (!hasFilters && offset > 0 && rallyData.userStories && rallyData.userStories.length > 0 && rallyDataFresh('userStories')) {
 		const sorted = sortByFormattedIdDescending(rallyData.userStories);
 		// Only use cache if it has data at the requested offset
 		if (sorted.length > offset) {
@@ -1014,8 +1068,8 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
-	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
-	if (Object.keys(query).length && rallyData.tasks && rallyData.tasks.length) {
+	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache (només si no és stale)
+	if (Object.keys(query).length && rallyData.tasks && rallyData.tasks.length && rallyDataFresh('tasks')) {
 		const filteredTasks = rallyData.tasks.filter((task: any) =>
 			Object.keys(query).every(key => {
 				if (task[key as keyof any] === undefined) {
@@ -1094,6 +1148,7 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 			rallyData.tasks[existingTaskIndex] = newTask;
 		}
 	}
+	stampRallyData('tasks');
 
 	return {
 		tasks: tasks,
@@ -1111,8 +1166,8 @@ export async function getDefects(query: RallyQueryParams = {}, offset: number = 
 	// If filtered, skip pagination
 	const isFiltered = Object.keys(query).length > 0;
 
-	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache
-	if (isFiltered && rallyData.defects && rallyData.defects.length) {
+	//Si hi ha filtres específics, comprovem si podem satisfer-los amb la cache (només si no és stale)
+	if (isFiltered && rallyData.defects && rallyData.defects.length && rallyDataFresh('defects')) {
 		const filteredDefects = rallyData.defects.filter((defect: RallyDefect) =>
 			Object.keys(query).every(key => {
 				if (defect[key as keyof RallyDefect] === undefined) {
@@ -1134,7 +1189,7 @@ export async function getDefects(query: RallyQueryParams = {}, offset: number = 
 
 	// If offset > 0 and we have no filters, check if cache has enough data
 	// Only use cache if it contains data at the requested offset
-	if (offset > 0 && !isFiltered && rallyData.defects && rallyData.defects.length > 0) {
+	if (offset > 0 && !isFiltered && rallyData.defects && rallyData.defects.length > 0 && rallyDataFresh('defects')) {
 		const sorted = sortByFormattedIdDescending(rallyData.defects);
 		// Only use cache if it has data at the requested offset
 		if (sorted.length > offset) {
@@ -1225,6 +1280,7 @@ export async function getDefects(query: RallyQueryParams = {}, offset: number = 
 			rallyData.defects[existingDefectIndex] = newDefect;
 		}
 	}
+	stampRallyData('defects');
 
 	// If filtered query (e.g., defects of a user story), return all without pagination
 	if (isFiltered) {
@@ -1877,7 +1933,7 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 		errorHandler.logInfo(`Found ${teamMembers.length} unique team members: ${teamMembers.join(', ') || 'none'}`, 'rallyServices.getRecentTeamMembers');
 
 		// Cache the results
-		teamMembersCache.set(cacheKey, teamMembers);
+		teamMembersCache.set(cacheKey, teamMembers, ttlFor('teamMembers'));
 
 		return {
 			teamMembers: teamMembers,
@@ -2130,6 +2186,7 @@ async function getBatchTasks(userStoryIds: string[]): Promise<
 				rallyData.tasks[existingTaskIndex] = task;
 			}
 		}
+		stampRallyData('tasks');
 
 		return tasksByStory;
 	} catch (error) {

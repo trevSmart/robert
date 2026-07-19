@@ -1124,6 +1124,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			}
 
 			// Iteració seleccionada: buscar-la a les iterations ja carregades.
+			// Si l'ID no es pot resoldre (iterations encara no carregades o iteració
+			// ja no present), netegem la selecció perquè l'estat quedi determinista i
+			// no arrossegui la iteració anterior (que desincronitzaria l'historial).
 			if (key.selectedIterationId) {
 				const iteration = iterations.find(i => i.objectId === key.selectedIterationId);
 				if (iteration) {
@@ -1131,6 +1134,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					if (key.currentScreen === 'userStories' || key.currentScreen === 'userStoryDetail') {
 						loadUserStories(iteration);
 					}
+				} else {
+					setSelectedIteration(null);
 				}
 			} else {
 				setSelectedIteration(null);

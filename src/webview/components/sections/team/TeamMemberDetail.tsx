@@ -135,13 +135,9 @@ interface HoursHistoryChartProps {
 	history: SprintHoursPoint[];
 }
 
-// Shorten a sprint name for the compact x-axis labels (e.g. "Sprint 2024-12" -> "12").
-function shortSprintLabel(name: string): string {
-	const trimmed = (name || '').trim();
-	const match = trimmed.match(/(\d+)\s*$/);
-	if (match) return match[1];
-	const words = trimmed.split(/\s+/);
-	return words[words.length - 1] || trimmed;
+// Full sprint name for the x-axis labels (e.g. "Sprint 92" instead of just "92").
+function sprintLabel(name: string): string {
+	return (name || '').trim();
 }
 
 const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
@@ -175,7 +171,8 @@ const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
 								style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: 0 }}
 								title={`${point.iterationName}: ${point.totalHours}h of ${point.sprintTotalHours}h sprint total (${point.completedHours}h done)`}
 							>
-								<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--vscode-foreground)', marginBottom: '4px' }}>{point.totalHours}h</span>
+								{/* Sprint total hours above the bar */}
+								<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--vscode-foreground)', marginBottom: '4px' }}>{point.sprintTotalHours}h</span>
 								<div
 									style={{
 										width: '70%',
@@ -202,6 +199,8 @@ const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
 										/>
 									)}
 								</div>
+								{/* Member hours below the bar */}
+								<span style={{ fontSize: '10px', fontWeight: '600', color: barColor, marginTop: '4px' }}>{point.totalHours}h</span>
 							</div>
 						);
 					})}
@@ -211,7 +210,7 @@ const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
 				<div style={{ display: 'flex', justifyContent: 'space-around', gap: '8px', marginTop: '8px', borderTop: '1px solid var(--vscode-panel-border)', paddingTop: '8px' }}>
 					{history.map(point => (
 						<span key={point.iterationName} style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: 'var(--vscode-descriptionForeground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={point.iterationName}>
-							{shortSprintLabel(point.iterationName)}
+							{sprintLabel(point.iterationName)}
 						</span>
 					))}
 				</div>

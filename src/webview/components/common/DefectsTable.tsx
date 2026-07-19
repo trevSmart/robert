@@ -178,8 +178,26 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 				}}
 				title={`Sort by ${label}`}
 			>
-				<span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-					{label}
+				<span
+					style={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: showIndicator ? '8px' : '0',
+						minWidth: 0,
+						maxWidth: '100%',
+						justifyContent: textAlign === 'center' ? 'center' : textAlign === 'right' ? 'flex-end' : 'flex-start'
+					}}
+				>
+					<span
+						style={{
+							overflow: 'hidden',
+							textOverflow: 'ellipsis',
+							whiteSpace: 'nowrap',
+							minWidth: 0
+						}}
+					>
+						{label}
+					</span>
 					<span
 						style={{
 							opacity: showIndicator ? (isActive ? 1 : 0.6) : 0,

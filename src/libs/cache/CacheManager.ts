@@ -65,8 +65,12 @@ export class CacheManager<T> {
 	getWithMeta(key: string): { data: T; timestamp: number; ttl: number } | null {
 		const entry = this.cache.get(key);
 		if (!entry) {
+			this.stats.misses++;
 			return null;
 		}
+		// Compta com a hit quan l'entrada existeix. La decisió de staleness la pren el
+		// cridant (via maxAge), per això no s'aplica TTL ni evicció aquí.
+		this.stats.hits++;
 		return { data: entry.data, timestamp: entry.timestamp, ttl: entry.ttl };
 	}
 

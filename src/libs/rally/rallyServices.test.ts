@@ -20,7 +20,7 @@ const { rallyData, queryBuilder } = vi.hoisted(() => {
 
 // Mock vscode i extension per evitar efectes secundaris en importar rallyServices
 vi.mock('vscode', () => ({ default: {}, workspace: {}, window: {}, commands: {}, Uri: {} }));
-vi.mock('../../extension.js', () => ({ rallyData }));
+vi.mock('../../extension.js', () => ({ rallyData, rallyDataMeta: {}, stampRallyData: vi.fn() }));
 vi.mock('./utils', () => ({
 	getRallyApi: vi.fn(() => ({})),
 	queryUtils: {
@@ -50,11 +50,11 @@ vi.mock('../../ErrorHandler', () => ({
 }));
 vi.mock('../../SettingsManager', () => ({ SettingsManager: { getInstance: vi.fn(() => ({ getSettings: vi.fn(() => ({})) })) } }));
 vi.mock('./CacheService', () => ({
-	getUserStoriesCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn() })),
-	getProjectsCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn() })),
-	getIterationsCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn() })),
-	getTeamMembersCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn() })),
-	getUsersCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn() })),
+	getUserStoriesCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
+	getProjectsCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
+	getIterationsCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
+	getTeamMembersCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
+	getUsersCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
 	clearAllCaches: vi.fn()
 }));
 

@@ -5,6 +5,7 @@ import { SettingsManager } from './SettingsManager';
 import type { RallyData, Iteration } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
 import { clearAllRallyCaches } from './libs/rally/rallyServices';
+import type { CacheEntity } from './libs/cache/ttlConfig';
 import { detectDebugMode, getTestTabEnabledReason, initDevMode, isTestTabEnabled } from './utils/devMode';
 import { WebviewMessageDispatcher } from './webview/messageHandlers/WebviewMessageDispatcher';
 
@@ -18,6 +19,25 @@ export const rallyData: RallyData = {
 	defects: [],
 	currentUser: undefined
 };
+
+/**
+ * Timestamps paral·lels de l'última escriptura a rallyData, per entitat.
+ * Permet aplicar un TTL d'edat a la branca de fallback in-memory sense modificar
+ * el tipus RallyData ni la forma dels objectes cachejats.
+ */
+export const rallyDataMeta: Partial<Record<CacheEntity, number>> = {};
+
+/** Estampa el moment de l'últim upsert exitós d'una entitat a rallyData. */
+export function stampRallyData(entity: CacheEntity, when: number = Date.now()): void {
+	rallyDataMeta[entity] = when;
+}
+
+/** Buida tots els timestamps de rallyData (usat al reload). */
+export function clearRallyDataMeta(): void {
+	for (const key of Object.keys(rallyDataMeta) as CacheEntity[]) {
+		delete rallyDataMeta[key];
+	}
+}
 
 // Store global references for reload functionality
 let globalWebviewProvider: RobertWebviewProvider | null = null;
@@ -52,6 +72,7 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 		rallyData.tasks = [];
 		rallyData.defects = [];
 		rallyData.currentUser = undefined;
+		clearRallyDataMeta();
 
 		WebviewMessageDispatcher.clearSessionNavigationState();
 

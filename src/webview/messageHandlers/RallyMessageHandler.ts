@@ -4,6 +4,7 @@ import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCu
 import { HolidayService } from '../../libs/holidayService';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
+import { ttlFor } from '../../libs/cache/ttlConfig';
 
 /**
  * Handles all Rally API-related webview messages
@@ -238,7 +239,9 @@ export class RallyMessageHandler {
 	private async handleLoadVelocityData(webview: vscode.Webview): Promise<void> {
 		try {
 			this.errorHandler.logInfo('Loading velocity data (hours per sprint) from Rally API', 'RallyMessageHandler');
-			const iterationsResult = await getIterations();
+			// Velocity vol frescor de 24h; força un refetch d'iterations si les cachejades superen aquest límit,
+			// encara que la vista normal d'iterations (48h) encara les serviria de cache.
+			const iterationsResult = await getIterations({}, null, { maxAge: ttlFor('velocity') });
 			const iterations = iterationsResult?.iterations ?? [];
 			const today = new Date();
 			today.setHours(23, 59, 59, 999);

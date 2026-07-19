@@ -57,6 +57,20 @@ export class CacheManager<T> {
 	}
 
 	/**
+	 * Get value together with its cache metadata (timestamp + ttl) WITHOUT applying
+	 * the entry's own TTL. Lets the caller decide staleness with a per-call maxAge
+	 * (e.g. velocity forcing a shorter freshness window over iterations).
+	 * Returns null only when the key is absent.
+	 */
+	getWithMeta(key: string): { data: T; timestamp: number; ttl: number } | null {
+		const entry = this.cache.get(key);
+		if (!entry) {
+			return null;
+		}
+		return { data: entry.data, timestamp: entry.timestamp, ttl: entry.ttl };
+	}
+
+	/**
 	 * Set value in cache with optional custom TTL
 	 */
 	set(key: string, value: T, ttlMs?: number): void {

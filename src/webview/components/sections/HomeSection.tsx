@@ -1,28 +1,28 @@
 import { type ComponentProps, type FC } from 'react';
 import Calendar from '../common/Calendar';
-import RallyItemList from '../common/RallyItemList';
-import type { RecentlyViewedItem, PinnedItem } from '../../../types/rally';
+import RallyItemList, { CodiconSpan } from '../common/RallyItemList';
+import type { RecentlyViewedItem, FavoriteItem } from '../../../types/rally';
 
 export type HomeSectionProps = ComponentProps<typeof Calendar> & {
 	recentlyViewedItems: RecentlyViewedItem[];
 	onRecentlyViewedItemClick: (item: RecentlyViewedItem) => void;
 	onRecentlyViewedItemDelete: (item: RecentlyViewedItem) => void;
-	pinnedItems: PinnedItem[];
-	onPinnedItemClick: (item: PinnedItem) => void;
-	onPinnedItemUnpin: (item: PinnedItem) => void;
+	favoriteItems: FavoriteItem[];
+	onFavoriteItemClick: (item: FavoriteItem) => void;
+	onFavoriteItemRemove: (item: FavoriteItem) => void;
 };
 
-const HomeSection: FC<HomeSectionProps> = ({ recentlyViewedItems, onRecentlyViewedItemClick, onRecentlyViewedItemDelete, pinnedItems, onPinnedItemClick, onPinnedItemUnpin, ...calendarProps }) => (
+const HomeSection: FC<HomeSectionProps> = ({ recentlyViewedItems, onRecentlyViewedItemClick, onRecentlyViewedItemDelete, favoriteItems, onFavoriteItemClick, onFavoriteItemRemove, ...calendarProps }) => (
 	<>
 		<Calendar {...calendarProps} />
-		{pinnedItems.length > 0 && (
+		{favoriteItems.length > 0 && (
 			<div style={{ padding: '0 20px', marginTop: '24px' }}>
-				<RallyItemList title="Pinned" items={pinnedItems} onItemClick={onPinnedItemClick} rowAction={{ codiconName: 'pinned', title: 'Unpin', onClick: onPinnedItemUnpin }} />
+				<RallyItemList title="Favorites" titleIcon={<CodiconSpan name="star-full" />} items={favoriteItems} onItemClick={onFavoriteItemClick} rowAction={{ codiconName: 'star-full', title: 'Remove from favorites', onClick: onFavoriteItemRemove }} />
 			</div>
 		)}
 		{recentlyViewedItems.length > 0 && (
 			<div style={{ padding: '0 20px', marginTop: '24px' }}>
-				<RallyItemList title="Recently Viewed" items={recentlyViewedItems} onItemClick={onRecentlyViewedItemClick} rowAction={{ codiconName: 'close', title: 'Remove from history', onClick: onRecentlyViewedItemDelete }} />
+				<RallyItemList title="Recently Viewed" titleIcon={<CodiconSpan name="history" />} items={recentlyViewedItems} onItemClick={onRecentlyViewedItemClick} rowAction={{ codiconName: 'close', title: 'Remove from history', onClick: onRecentlyViewedItemDelete }} />
 			</div>
 		)}
 	</>

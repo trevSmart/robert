@@ -377,7 +377,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					{userStory.scheduleState && (
 						<div
 							style={{
-								fontSize: '14px',
+								fontSize: '13px',
 								fontWeight: '300',
 								color: getScheduleStateColor(userStory.scheduleState)
 							}}
@@ -385,6 +385,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							{userStory.scheduleState}
 						</div>
 					)}
+					<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
 				</div>
 
 				<div style={{ marginBottom: '16px' }}>
@@ -416,8 +417,8 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					}}
 				>
 					{/* Basic Information */}
-					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-					<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
+					<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
+					<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
 
 					<div style={{ minWidth: 0 }}>
 						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Plan Estimate</label>
@@ -439,18 +440,36 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					</div>
 
 					<div>
+						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Sprint</label>
+						<input
+							type="text"
+							value={
+								typeof userStory.iteration === 'string'
+									? userStory.iteration
+									: userStory.iteration?._refObjectName || 'N/A'
+							}
+							readOnly
+							style={{
+								width: '100%',
+								boxSizing: 'border-box',
+								padding: '6px 8px',
+								backgroundColor: 'var(--vscode-input-background)',
+								color: 'var(--vscode-input-foreground)',
+								border: '1px solid var(--vscode-input-border)',
+								borderRadius: '3px',
+								fontSize: '13px'
+							}}
+						/>
+					</div>
+
+					<div>
 						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Assigned To</label>
 						<AvatarFormField name={userStory.assignee || ''} emptyLabel="N/A" />
 					</div>
 
-					<div>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Blocked</label>
-						<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
-					</div>
-
 					{/* Description */}
 					<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-						<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+						<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
 						<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
 							<div

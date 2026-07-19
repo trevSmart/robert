@@ -125,8 +125,8 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						}}
 					>
 						{/* Basic Information */}
-						<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-						<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Status & Priority</h3>
+						<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
+						<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Status & Priority</h3>
 
 						<div style={{ display: 'flex', gap: '16px' }}>
 							<div style={{ flex: '1' }}>
@@ -213,7 +213,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 
 						{/* Description */}
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-							<h3 style={{ margin: '0 0 10px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+							<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
 							<div
 								dangerouslySetInnerHTML={{

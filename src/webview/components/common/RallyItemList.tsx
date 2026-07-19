@@ -56,11 +56,14 @@ function RallyItemList<T extends RallyItemRef>({ title, titleIcon, items, onItem
 						>
 							<EntityTypeBadge type={item.type} display="icon" />
 							{item.type === 'sprint' ? (
+								// Sprints have no formatted ID, so their name takes the identifier styling
+								// rather than the (lighter) name styling used for the other types.
 								<span
 									style={{
 										flex: 1,
 										fontSize: '12.5px',
-										color: 'var(--vscode-descriptionForeground)',
+										fontWeight: 400,
+										color: 'var(--vscode-foreground)',
 										overflow: 'hidden',
 										textOverflow: 'ellipsis',
 										whiteSpace: 'nowrap'
@@ -73,7 +76,7 @@ function RallyItemList<T extends RallyItemRef>({ title, titleIcon, items, onItem
 									<span
 										style={{
 											fontSize: '12.5px',
-											fontWeight: 500,
+											fontWeight: 400,
 											color: 'var(--vscode-foreground)',
 											flexShrink: 0
 										}}

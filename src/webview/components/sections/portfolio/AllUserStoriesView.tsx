@@ -7,6 +7,8 @@ import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
 import OpenInRallyButton from '../../common/OpenInRallyButton';
+import PinButton from '../../common/PinButton';
+import TitleActions from '../../common/TitleActions';
 import { type RallyTask } from '../../../../../types/rally';
 import type { Defect } from '../../../../../types/rally';
 import type { PortfolioViewProps } from './types';
@@ -86,7 +88,17 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInRallyButton objectId={selectedUserStory.objectId} />} />
+					<ScreenHeader
+						title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`}
+						showBackButton={true}
+						onBack={onBackToUserStories}
+						titleActions={
+							<TitleActions>
+								<PinButton item={{ objectId: selectedUserStory.objectId, formattedId: selectedUserStory.formattedId, name: selectedUserStory.name, type: 'userstory' }} />
+								<OpenInRallyButton objectId={selectedUserStory.objectId} />
+							</TitleActions>
+						}
+					/>
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} collaborationEnabled={collaborationEnabled} iterations={iterations} />
 				</>
 			)}

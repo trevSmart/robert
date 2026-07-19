@@ -9,6 +9,8 @@ import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
 import OpenInRallyButton from '../../common/OpenInRallyButton';
+import PinButton from '../../common/PinButton';
+import TitleActions from '../../common/TitleActions';
 import SprintDetailsForm from '../../common/SprintDetailsForm';
 import AssigneeHoursChart from '../../common/AssigneeHoursChart';
 import '../../common/CollapsibleCard';
@@ -128,7 +130,17 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStories' && selectedIteration && (
 				<>
-					<ScreenHeader title={`Sprint "${selectedIteration.name}"`} showBackButton={true} onBack={onBackToIterations} />
+					<ScreenHeader
+						title={`Sprint "${selectedIteration.name}"`}
+						showBackButton={true}
+						onBack={onBackToIterations}
+						titleActions={
+							<TitleActions>
+								<PinButton item={{ objectId: selectedIteration.objectId, formattedId: selectedIteration.name, name: selectedIteration.name, type: 'sprint' }} />
+								<OpenInRallyButton objectId={selectedIteration.objectId} artifactType="iteration" />
+							</TitleActions>
+						}
+					/>
 					<collapsible-card title="Details">
 						<SprintDetailsForm iteration={selectedIteration} />
 					</collapsible-card>
@@ -157,7 +169,17 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInRallyButton objectId={selectedUserStory.objectId} />} />
+					<ScreenHeader
+						title={`User story "${selectedUserStory.formattedId}: ${selectedUserStory.name}"`}
+						showBackButton={true}
+						onBack={onBackToUserStories}
+						titleActions={
+							<TitleActions>
+								<PinButton item={{ objectId: selectedUserStory.objectId, formattedId: selectedUserStory.formattedId, name: selectedUserStory.name, type: 'userstory' }} />
+								<OpenInRallyButton objectId={selectedUserStory.objectId} />
+							</TitleActions>
+						}
+					/>
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} collaborationEnabled={collaborationEnabled} iterations={iterations} />
 				</>
 			)}

@@ -119,13 +119,20 @@ export interface Project {
 
 export type RecentlyViewedItemType = 'userstory' | 'defect' | 'sprint';
 
-export interface RecentlyViewedItem {
+/** Shared reference shape for the Recently Viewed and Pinned lists. */
+export interface RallyItemRef {
 	objectId: string;
 	formattedId: string; // for sprints: the sprint name, since iterations have no FormattedID
 	name: string;
 	type: RecentlyViewedItemType;
+}
+
+export interface RecentlyViewedItem extends RallyItemRef {
 	viewedAt: number; // epoch ms, stamped by the extension host
-	pinned: boolean;
+}
+
+export interface PinnedItem extends RallyItemRef {
+	pinnedAt: number; // epoch ms, stamped by the extension host
 }
 
 export interface User {

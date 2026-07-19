@@ -8,18 +8,7 @@
  * `Infinity` = mai caduca després del primer fetch (viu tota la sessió).
  */
 
-export type CacheEntity =
-	| 'projects'
-	| 'holidays'
-	| 'users'
-	| 'iterations'
-	| 'velocity'
-	| 'userStories'
-	| 'tasks'
-	| 'defects'
-	| 'teamMembers'
-	| 'currentUser'
-	| 'revisions';
+export type CacheEntity = 'projects' | 'holidays' | 'users' | 'iterations' | 'velocity' | 'userStories' | 'tasks' | 'defects' | 'teamMembers' | 'currentUser' | 'revisions';
 
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;

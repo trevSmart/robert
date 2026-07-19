@@ -76,10 +76,7 @@ function rallyDataFresh(entity: CacheEntity, maxAge?: number): boolean {
 	const fresh = !isStale(fetchedAt, ttl);
 	const ageLabel = fetchedAt ? formatCacheMs(Date.now() - fetchedAt) : 'never';
 	const overrideLabel = maxAge != null ? ' [maxAge override]' : '';
-	errorHandler.logDebug(
-		`[cache] ${entity}: ${fresh ? 'FRESH → serve from rallyData' : 'STALE → refetch from API'} (age=${ageLabel}, ttl=${formatCacheMs(ttl)}${overrideLabel})`,
-		'rallyServices.cache'
-	);
+	errorHandler.logDebug(`[cache] ${entity}: ${fresh ? 'FRESH → serve from rallyData' : 'STALE → refetch from API'} (age=${ageLabel}, ttl=${formatCacheMs(ttl)}${overrideLabel})`, 'rallyServices.cache');
 	return fresh;
 }
 
@@ -804,10 +801,7 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	if (cachedHit) {
 		const fresh = !isStale(cachedHit.timestamp, iterationsTtl);
 		const overrideLabel = opts?.maxAge != null ? ' [maxAge override]' : '';
-		errorHandler.logDebug(
-			`[cache] iterations(ttl-layer): ${fresh ? 'FRESH → serve from ttl-cache' : 'STALE → refetch from API'} (age=${formatCacheMs(Date.now() - cachedHit.timestamp)}, ttl=${formatCacheMs(iterationsTtl)}${overrideLabel})`,
-			'rallyServices.cache'
-		);
+		errorHandler.logDebug(`[cache] iterations(ttl-layer): ${fresh ? 'FRESH → serve from ttl-cache' : 'STALE → refetch from API'} (age=${formatCacheMs(Date.now() - cachedHit.timestamp)}, ttl=${formatCacheMs(iterationsTtl)}${overrideLabel})`, 'rallyServices.cache');
 		if (fresh) {
 			return {
 				iterations: cachedHit.data,

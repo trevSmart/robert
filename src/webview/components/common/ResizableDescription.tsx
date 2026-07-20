@@ -1,4 +1,4 @@
-import { FC, useCallback, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import DOMPurify from 'dompurify';
 
@@ -30,6 +30,10 @@ interface ResizableDescriptionProps {
 const ResizableDescription: FC<ResizableDescriptionProps> = ({ description, initialHeight = DESCRIPTION_HEIGHT_DEFAULT }) => {
 	const [height, setHeight] = useState(initialHeight);
 	const resizeStartRef = useRef({ y: 0, height: 0 });
+	// Neteja del drag actiu. Viu en un ref perquè el desmuntatge també la pugui
+	// executar: el canvi de pantalla remunta l'arbre sencer, i sense això els
+	// listeners de `document` i el cursor/userSelect del body quedarien enganxats.
+	const endResizeRef = useRef<(() => void) | null>(null);
 
 	const handleResizeStart = useCallback(
 		(e: React.MouseEvent) => {
@@ -42,17 +46,21 @@ const ResizableDescription: FC<ResizableDescriptionProps> = ({ description, init
 				const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
 				setHeight(newHeight);
 			};
-			const onMouseUp = () => {
+			const onMouseUp = () => endResizeRef.current?.();
+			endResizeRef.current = () => {
 				document.removeEventListener('mousemove', onMouseMove);
 				document.removeEventListener('mouseup', onMouseUp);
 				document.body.style.cursor = '';
 				document.body.style.userSelect = '';
+				endResizeRef.current = null;
 			};
 			document.addEventListener('mousemove', onMouseMove);
 			document.addEventListener('mouseup', onMouseUp);
 		},
 		[height]
 	);
+
+	useEffect(() => () => endResizeRef.current?.(), []);
 
 	const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
 		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {

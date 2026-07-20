@@ -55,6 +55,13 @@ export function useNavigationHistory() {
 		[syncFlags]
 	);
 
+	// Consulta l'entrada anterior sense moure l'índex, per decidir si una fletxa
+	// de retrocés pot delegar a `goBack` en comptes de reconstruir l'estat a mà.
+	const peekBack = useCallback((): NavKey | null => {
+		if (indexRef.current <= 0) return null;
+		return entriesRef.current[indexRef.current - 1];
+	}, []);
+
 	const goBack = useCallback((): NavKey | null => {
 		if (indexRef.current <= 0) return null;
 		indexRef.current -= 1;
@@ -69,5 +76,5 @@ export function useNavigationHistory() {
 		return entriesRef.current[indexRef.current];
 	}, [syncFlags]);
 
-	return { pushEntry, goBack, goForward, canGoBack, canGoForward };
+	return { pushEntry, peekBack, goBack, goForward, canGoBack, canGoForward };
 }

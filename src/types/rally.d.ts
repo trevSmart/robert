@@ -19,6 +19,7 @@ export interface UserStory {
 	project: string | null;
 	iteration: string | IterationRef | null;
 	blocked: boolean;
+	blockedReason?: string | null; // Rally BlockedReason - motiu del bloqueig quan blocked=true
 	taskEstimateTotal: number;
 	taskStatus?: string; // Deprecated - use scheduleState instead
 	tasksCount: number;
@@ -64,6 +65,7 @@ export interface Defect {
 	iteration: string | null;
 	scheduleState: string; // PRIMARY: Rally ScheduleState (Defined, In-Progress, Completed, New)
 	blocked: boolean;
+	blockedReason?: string | null; // Rally BlockedReason - motiu del bloqueig quan blocked=true
 	discussionCount: number;
 	_ref?: string;
 }

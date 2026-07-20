@@ -625,6 +625,7 @@ async function formatDefectsAsync(results: any[]): Promise<RallyDefect[]> {
 			project: defect.Project ? (defect.Project._refObjectName ?? defect.Project.refObjectName) : defect.project ? (defect.project._refObjectName ?? defect.project.refObjectName) : null,
 			iteration: defect.Iteration ? (defect.Iteration._refObjectName ?? defect.Iteration.refObjectName) : defect.iteration ? (defect.iteration._refObjectName ?? defect.iteration.refObjectName) : null,
 			blocked: defect.Blocked ?? defect.blocked ?? false,
+			blockedReason: defect.BlockedReason ?? defect.blockedReason ?? null,
 			discussionCount: defect.Discussion?.Count ?? defect.discussion?.count ?? 0,
 			scheduleState: defect.ScheduleState ?? defect.scheduleState ?? 'Unknown'
 		});
@@ -676,6 +677,7 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 						: { _refObjectName: userStory.iteration }
 					: null,
 			blocked: userStory.Blocked ?? userStory.blocked,
+			blockedReason: userStory.BlockedReason ?? userStory.blockedReason ?? null,
 			taskEstimateTotal: userStory.TaskEstimateTotal ?? userStory.taskEstimateTotal,
 			taskStatus: userStory.TaskStatus ?? userStory.taskStatus,
 			scheduleState: userStory.ScheduleState ?? userStory.scheduleState ?? 'Unknown',
@@ -763,7 +765,31 @@ function addToCache(newItems: RallyUserStory[], cacheArray: RallyUserStory[], id
 function buildUserStoryQueryOptions(query: RallyQueryParams, offset: number = 0) {
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project', 'RevisionHistory', 'CreationDate'],
+		fetch: [
+			'FormattedID',
+			'Name',
+			'Description',
+			'Iteration',
+			'Blocked',
+			'BlockedReason',
+			'TaskEstimateTotal',
+			'ToDo',
+			'c_Assignee',
+			'Owner',
+			'State',
+			'PlanEstimate',
+			'TaskStatus',
+			'Tasks',
+			'TestCases',
+			'Defects',
+			'Discussion',
+			'ObjectID',
+			'c_Appgar',
+			'ScheduleState',
+			'Project',
+			'RevisionHistory',
+			'CreationDate'
+		],
 		order: 'FormattedID desc' // Order by FormattedID descending to get proper pagination
 	};
 
@@ -1207,7 +1233,7 @@ export async function getDefects(query: RallyQueryParams = {}, offset: number = 
 	//Si no hi ha filtres o no tenim dades suficients, anem a l'API
 	const queryOptions: RallyQueryOptions = {
 		type: 'defect',
-		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
+		fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'BlockedReason', 'Discussion', 'ObjectID', 'ScheduleState'],
 		order: 'FormattedID desc' // Order by FormattedID descending for pagination
 	};
 
@@ -1542,7 +1568,7 @@ export async function getUserStoryDefects(userStoryId: string) {
 			// If it's just a count, we need to query defects directly by Requirement
 			const defectQueryOptions: RallyQueryOptions = {
 				type: 'defect',
-				fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
+				fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'BlockedReason', 'Discussion', 'ObjectID', 'ScheduleState'],
 				query: queryUtils.where('Requirement.ObjectID', '=', userStoryId)
 			};
 
@@ -1613,7 +1639,7 @@ export async function getUserStoryDefects(userStoryId: string) {
 
 		const defectQueryOptions: RallyQueryOptions = {
 			type: 'defect',
-			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState']
+			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'BlockedReason', 'Discussion', 'ObjectID', 'ScheduleState']
 		};
 
 		if (defectQueries.length === 1) {
@@ -2650,7 +2676,31 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 	const rallyApi = getRallyApi();
 	const queryOptions: RallyQueryOptions = {
 		type: 'hierarchicalrequirement',
-		fetch: ['FormattedID', 'Name', 'Description', 'Iteration', 'Blocked', 'TaskEstimateTotal', 'ToDo', 'c_Assignee', 'Owner', 'State', 'PlanEstimate', 'TaskStatus', 'Tasks', 'TestCases', 'Defects', 'Discussion', 'ObjectID', 'c_Appgar', 'ScheduleState', 'Project', 'RevisionHistory', 'CreationDate'],
+		fetch: [
+			'FormattedID',
+			'Name',
+			'Description',
+			'Iteration',
+			'Blocked',
+			'BlockedReason',
+			'TaskEstimateTotal',
+			'ToDo',
+			'c_Assignee',
+			'Owner',
+			'State',
+			'PlanEstimate',
+			'TaskStatus',
+			'Tasks',
+			'TestCases',
+			'Defects',
+			'Discussion',
+			'ObjectID',
+			'c_Appgar',
+			'ScheduleState',
+			'Project',
+			'RevisionHistory',
+			'CreationDate'
+		],
 		query: queryUtils.where('ObjectID', '=', objectId)
 	};
 
@@ -2680,7 +2730,7 @@ export async function getDefectByObjectId(objectId: string): Promise<{ defect: R
 		rallyApi,
 		{
 			type: 'defect',
-			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'Discussion', 'ObjectID', 'ScheduleState'],
+			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Severity', 'Priority', 'Owner', 'Project', 'Iteration', 'Blocked', 'BlockedReason', 'Discussion', 'ObjectID', 'ScheduleState'],
 			query: queryUtils.where('ObjectID', '=', objectId)
 		},
 		'Loading defect...'

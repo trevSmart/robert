@@ -214,11 +214,12 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 		defectsCount: number;
 		discussionCount: number;
 		blocked?: boolean;
-	}> = ({ tasksCount, testCasesCount, defectsCount, discussionCount, blocked }) => {
+		blockedReason?: string | null;
+	}> = ({ tasksCount, testCasesCount, defectsCount, discussionCount, blocked, blockedReason }) => {
 		return (
 			<div style={{ display: 'flex', gap: '8px', alignItems: 'center', color: themeColors.foreground }}>
 				{blocked && (
-					<span title="Blocked" style={{ display: 'inline-flex', alignItems: 'center', color: 'color(srgb 0.82 0.32 0.32 / 1)' }}>
+					<span title={blockedReason ? `Blocked: ${blockedReason}` : 'Blocked'} style={{ display: 'inline-flex', alignItems: 'center', color: 'color(srgb 0.82 0.32 0.32 / 1)' }}>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
 							<path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
 						</svg>
@@ -345,7 +346,7 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 								<td style={{ padding: '10px 12px', fontWeight: '300', color: getScheduleStateColor(userStory.scheduleState || 'new'), overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.scheduleState || 'N/A'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}</td>
 								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center', overflow: 'hidden' }}>
-									<RelatedItemsIcons tasksCount={userStory.tasksCount} testCasesCount={userStory.testCasesCount} defectsCount={userStory.defectsCount} discussionCount={userStory.discussionCount} blocked={userStory.blocked} />
+									<RelatedItemsIcons tasksCount={userStory.tasksCount} testCasesCount={userStory.testCasesCount} defectsCount={userStory.defectsCount} discussionCount={userStory.discussionCount} blocked={userStory.blocked} blockedReason={userStory.blockedReason} />
 								</td>
 							</tr>
 						))}

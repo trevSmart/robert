@@ -2,6 +2,7 @@ import { FC } from 'react';
 import styled from 'styled-components';
 import { AvatarFormField } from './Avatar';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
+import BlockedReasonBanner from './BlockedReasonBanner';
 import ResizableDescription from './ResizableDescription';
 import './CollapsibleCard';
 
@@ -33,6 +34,7 @@ interface Defect {
 	project: string | null;
 	iteration: string | null;
 	blocked: boolean;
+	blockedReason?: string | null;
 	discussionCount: number;
 	environment?: string;
 	foundInBuild?: string;
@@ -82,7 +84,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 							{defect.scheduleState}
 						</div>
 					)}
-					<StatusPill isBlocked={defect.blocked}>{defect.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
+					<StatusPill isBlocked={defect.blocked} title={defect.blocked ? (defect.blockedReason ?? undefined) : undefined}>
+						{defect.blocked ? 'Blocked' : 'Not Blocked'}
+					</StatusPill>
 				</div>
 				<div
 					style={{
@@ -92,6 +96,8 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						gap: '20px'
 					}}
 				>
+					{defect.blocked && defect.blockedReason && <BlockedReasonBanner blocked={defect.blocked} blockedReason={defect.blockedReason} />}
+
 					<div style={{ marginBottom: '0px' }}>
 						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
 						<input

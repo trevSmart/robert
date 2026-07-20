@@ -1,10 +1,11 @@
 import { FC, useState, useCallback, useMemo, useRef, useEffect, type ReactNode } from 'react';
 import styled from 'styled-components';
-import DOMPurify from 'dompurify';
 import { AvatarFormField } from './Avatar';
-import { type UserStory } from '../../../types/rally';
+import { type Revision, type UserStory } from '../../../types/rally';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
 import { getVsCodeApi } from '../../utils/vscodeApi';
+import BlockedReasonBanner from './BlockedReasonBanner';
+import RevisionDescription from './RevisionDescription';
 import RevisionTimeline from './RevisionTimeline';
 import ResizableDescription from './ResizableDescription';
 import './CollapsibleCard';
@@ -143,7 +144,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
-	const [revisions, setRevisions] = useState<any[]>([]);
+	const [revisions, setRevisions] = useState<Revision[]>([]);
 	const [revisionsCount, setRevisionsCount] = useState<number | null>(null);
 	const [revisionsLoading, setRevisionsLoading] = useState(false);
 	const [revisionsLoaded, setRevisionsLoaded] = useState(false);
@@ -343,8 +344,16 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							{userStory.scheduleState}
 						</div>
 					)}
-					<StatusPill isBlocked={userStory.blocked}>{userStory.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
+					<StatusPill isBlocked={userStory.blocked} title={userStory.blocked ? (userStory.blockedReason ?? undefined) : undefined}>
+						{userStory.blocked ? 'Blocked' : 'Not Blocked'}
+					</StatusPill>
 				</div>
+
+				{userStory.blocked && userStory.blockedReason && (
+					<div style={{ marginBottom: '16px' }}>
+						<BlockedReasonBanner blocked={userStory.blocked} blockedReason={userStory.blockedReason} />
+					</div>
+				)}
 
 				<div style={{ marginBottom: '16px' }}>
 					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
@@ -481,9 +490,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 											Showing latest {revisions.length} of {revisionsCount} revisions
 										</div>
 									)}
-									{revisions.map((revision, index) => (
+									{revisions.map(revision => (
 										<div
-											key={index}
+											key={revision.revisionNumber}
 											style={{
 												padding: '12px',
 												backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
@@ -499,19 +508,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 											<div style={{ marginBottom: '6px', color: 'var(--vscode-descriptionForeground)' }}>
 												By: <strong>{revision.author}</strong>
 											</div>
-											<div
-												style={{
-													padding: '8px',
-													backgroundColor: 'var(--vscode-input-background)',
-													borderRadius: '2px',
-													color: 'var(--vscode-input-foreground)',
-													wordBreak: 'break-word',
-													overflowWrap: 'anywhere'
-												}}
-												dangerouslySetInnerHTML={{
-													__html: DOMPurify.sanitize(revision.description || '', { FORBID_ATTR: ['style'] })
-												}}
-											/>
+											<RevisionDescription description={revision.description || ''} />
 										</div>
 									))}
 								</div>

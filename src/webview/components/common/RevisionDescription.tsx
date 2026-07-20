@@ -78,7 +78,7 @@ const EmptyValue: FC = () => (
 	</span>
 );
 
-const Value: FC<{ field: string; value: string | null; accent: string; dim?: boolean }> = ({ field, value, accent, dim }) => {
+const Value: FC<{ field: string; value: string | null; accent: string; dim?: boolean; struck?: boolean }> = ({ field, value, accent, dim, struck }) => {
 	if (value === null) {
 		return <EmptyValue />;
 	}
@@ -106,7 +106,8 @@ const Value: FC<{ field: string; value: string | null; accent: string; dim?: boo
 			}}
 		>
 			{swatch && <Swatch color={swatch} dim={dim} />}
-			{value}
+			{/* Struck through on the span holding the text, not the chip, so the swatch stays untouched. */}
+			<span style={struck ? { textDecoration: 'line-through' } : undefined}>{value}</span>
 		</span>
 	);
 };
@@ -138,7 +139,7 @@ const ChangeRow: FC<{ change: RevisionChange }> = ({ change }) => {
 				{/* Always render the "before" side of an edit, empty included, so the diff never looks truncated. */}
 				{change.kind === 'changed' && <Value field={change.field} value={change.from} accent={accent} dim />}
 				<span style={{ color: change.kind === 'changed' ? 'var(--vscode-descriptionForeground)' : accent, flexShrink: 0 }}>{marker}</span>
-				<Value field={change.field} value={change.to} accent={accent} />
+				<Value field={change.field} value={change.to} accent={accent} struck={change.kind === 'removed'} />
 			</span>
 		</div>
 	);

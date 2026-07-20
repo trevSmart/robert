@@ -1,6 +1,7 @@
 import { FC } from 'react';
 import styled from 'styled-components';
 import { AvatarFormField } from './Avatar';
+import { EntityRefFormField } from './EntityTypeBadge';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
 import BlockedReasonBanner from './BlockedReasonBanner';
 import ResizableDescription from './ResizableDescription';
@@ -191,20 +192,7 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 
 						<div>
 							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Sprint</label>
-							<input
-								type="text"
-								value={defect.iteration || 'N/A'}
-								readOnly
-								style={{
-									width: '100%',
-									padding: '6px 8px',
-									backgroundColor: 'var(--vscode-input-background)',
-									color: 'var(--vscode-input-foreground)',
-									border: '1px solid var(--vscode-input-border)',
-									borderRadius: '3px',
-									fontSize: '13px'
-								}}
-							/>
+							<EntityRefFormField type="sprint" value={defect.iteration} emptyLabel="N/A" />
 						</div>
 
 						{/* Description */}

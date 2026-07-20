@@ -1,7 +1,12 @@
 // Small outline icons for Rally entity types, shared across global search results and the
 // Recently Viewed list so both surfaces use the exact same iconography.
-export const UserStoryTypeIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+
+export interface EntityTypeIconProps {
+	/** Costat de la icona en píxels. Per defecte 14px, la mida dels badges de tipus. */
+	size?: number;
+}
+export const UserStoryTypeIcon = ({ size = 14 }: EntityTypeIconProps) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: `${size}px`, height: `${size}px`, flexShrink: 0 }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -10,8 +15,8 @@ export const UserStoryTypeIcon = () => (
 	</svg>
 );
 
-export const TaskTypeIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+export const TaskTypeIcon = ({ size = 14 }: EntityTypeIconProps) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: `${size}px`, height: `${size}px`, flexShrink: 0 }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -21,14 +26,14 @@ export const TaskTypeIcon = () => (
 	</svg>
 );
 
-export const TestCaseTypeIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+export const TestCaseTypeIcon = ({ size = 14 }: EntityTypeIconProps) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: `${size}px`, height: `${size}px`, flexShrink: 0 }}>
 		<path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
 	</svg>
 );
 
-export const DefectTypeIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+export const DefectTypeIcon = ({ size = 14 }: EntityTypeIconProps) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: `${size}px`, height: `${size}px`, flexShrink: 0 }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -37,8 +42,8 @@ export const DefectTypeIcon = () => (
 	</svg>
 );
 
-export const SprintTypeIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: '14px', height: '14px', flexShrink: 0 }}>
+export const SprintTypeIcon = ({ size = 14 }: EntityTypeIconProps) => (
+	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" style={{ width: `${size}px`, height: `${size}px`, flexShrink: 0 }}>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"

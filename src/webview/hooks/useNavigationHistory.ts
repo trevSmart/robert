@@ -55,6 +55,25 @@ export function useNavigationHistory() {
 		[syncFlags]
 	);
 
+	// Substitueix l'entrada actual en comptes d'apilar-ne una de nova. Ho fa servir la
+	// fletxa enrere quan no hi ha entrada anterior a la qual tornar: apilar-ne una
+	// deixaria el detall que acabem de tancar a la branca "endavant".
+	const replaceEntry = useCallback(
+		(key: NavKey) => {
+			if (indexRef.current < 0) {
+				entriesRef.current = [key];
+				indexRef.current = 0;
+			} else {
+				// Igual que un push, invalida la branca cap endavant.
+				const truncated = entriesRef.current.slice(0, indexRef.current + 1);
+				truncated[indexRef.current] = key;
+				entriesRef.current = truncated;
+			}
+			syncFlags();
+		},
+		[syncFlags]
+	);
+
 	// Consulta l'entrada anterior sense moure l'índex, per decidir si una fletxa
 	// de retrocés pot delegar a `goBack` en comptes de reconstruir l'estat a mà.
 	const peekBack = useCallback((): NavKey | null => {
@@ -76,5 +95,5 @@ export function useNavigationHistory() {
 		return entriesRef.current[indexRef.current];
 	}, [syncFlags]);
 
-	return { pushEntry, peekBack, goBack, goForward, canGoBack, canGoForward };
+	return { pushEntry, replaceEntry, peekBack, goBack, goForward, canGoBack, canGoForward };
 }

@@ -488,10 +488,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
 
 	// Pila d'historial de navegació estil navegador (back/forward amb ratolí i teclat).
-	const { pushEntry, peekBack, goBack, goForward } = useNavigationHistory();
+	const { pushEntry, replaceEntry, peekBack, goBack, goForward } = useNavigationHistory();
 	// Es posa a true mentre apliquem una entrada d'historial, perquè l'effect de push
 	// no torni a apilar el canvi d'estat que provoca la pròpia navegació back/forward.
 	const isNavigatingViaHistoryRef = useRef(false);
+	// La fletxa enrere ha tancat un detall sense cap entrada anterior on tornar: el
+	// proper snapshot ha de substituir l'entrada del detall, no apilar-se al damunt.
+	const isReplacingHistoryEntryRef = useRef(false);
 
 	const sendMessage = useCallback(
 		(command: string | Record<string, unknown>, data?: any) => {
@@ -990,6 +993,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	const handleIterationClickFromHome = useCallback(
 		(iteration: Iteration) => {
+			// El calendari de la Home també obre el detall dins de Portfolio, així que
+			// la fletxa enrere ha de tornar a Home igual que des de Favorits/Recents.
+			detailOriginSectionRef.current = 'home';
 			setActiveSection('portfolio');
 			handleIterationSelected(iteration);
 		},
@@ -1166,6 +1172,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		if (peekBack()?.activeSection === 'home') {
 			navigateBack();
 		} else {
+			// Sense entrada de Home al darrere (p. ex. el detall va arribar dins la
+			// finestra de debounce del primer push): substituïm l'entrada del detall
+			// en comptes d'apilar-ne una, o quedaria a la branca "endavant".
+			isReplacingHistoryEntryRef.current = true;
 			setActiveSection('home');
 		}
 		return true;
@@ -2066,10 +2076,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				isNavigatingViaHistoryRef.current = false;
 				return;
 			}
+			if (isReplacingHistoryEntryRef.current) {
+				isReplacingHistoryEntryRef.current = false;
+				replaceEntry(getCurrentNavKey());
+				return;
+			}
 			pushEntry(getCurrentNavKey());
 		}, 100);
 		return () => clearTimeout(timeoutId);
-	}, [activeSection, currentScreen, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, getCurrentNavKey, pushEntry]);
+	}, [activeSection, currentScreen, selectedIteration?.objectId, selectedUserStory?.objectId, selectedDefect?.objectId, getCurrentNavKey, pushEntry, replaceEntry]);
 
 	// Track home year changes and load holidays for the new year
 	useEffect(() => {

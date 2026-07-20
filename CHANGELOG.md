@@ -1,3 +1,63 @@
+## 0.5.0
+
+### Favorites
+* Replace pinned items with a favorites system (`FavoriteButton`, `FavoritesContext`, `FavoritesMessageHandler`, `FavoriteItem`)
+* Migrate legacy pinned items to favorites on upgrade so existing pins are not lost
+* Show favorites alongside Recently Viewed on Home via `RallyItemList`
+* Add favorite actions on detail headers (user stories, defects, sprints) via `TitleActions`
+* Wire favorites through Portfolio, Search, Calendar, and detail forms (replacing pin UI end-to-end)
+
+### Navigation
+* Return to Home when backing out of a detail opened from Home favorites, recents, or the Home calendar (track `detailOriginSection`; do not leave users on Portfolio)
+* Add `peekBack` on navigation history and make the back arrow pop/replace history instead of stacking duplicate entries
+* Guard portfolio screen normalizations so Home calendar user-story loads do not rewrite the current screen
+* Always release `ResizableDescription` drag listeners on unmount when screens remount
+
+### Forms & entity detail
+* Fetch and show Rally `BlockedReason` on defects and user stories (`BlockedReasonBanner` on forms; indicator in user-stories table)
+* Parse and render Rally revision descriptions as structured, color-coded field changes (`RevisionDescription` + `parseRevisionDescription`) on the user story timeline
+* Add `EntityRefFormField` for sprint references on Defect and UserStory forms (badge + value, with scalable entity icons)
+* Show `EntityTypeBadge` in `ScreenHeader` and Search results for consistent entity type representation
+* Extract shared theme helpers (`themeColors`) for schedule-state and light/dark accent colors
+* Use a resizable description field on Defect and UserStory forms
+* Tighten form header margins and schedule-state typography
+
+### UI polish
+* Align sprint row styling and font weight in `RallyItemList`
+* Reduce CollapsibleCard SVG icon size for clearer alignment
+* Fix Calendar day/sprint tooltips sticking when the cursor leaves a cell through a sprint bar
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.4.2...0.5.0
+
+## 0.4.2
+
+### Navigation
+* Add browser-like back and forward commands (`robert.goBack` / `robert.goForward`) with Alt+Left / Alt+Right keybindings
+* Keep navigation history in sync when multiple webview panels are open (target the correct panel)
+* Reset selected iteration state when an iteration ID cannot be resolved
+
+### UI
+* Make table headers more responsive (flexible layout, alignment, overflow) across Defects, Tasks, Test Cases, and User Stories tables
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.4.1...0.4.2
+
+## 0.4.1
+
+### Recently Viewed & Pinned
+* Introduce `RallyItemList` for Recently Viewed and Pinned items on Home (replaces `RecentlyViewedList`)
+* Add pin actions with `PinButton`, `PinnedContext`, `PinnedItemsMessageHandler`, and `TitleActions` on detail headers
+* Keep Recently Viewed history separate from pinned items
+* Switch “Open in Rally” to a Codicon globe icon with clearer hover affordance
+
+### Cache & data freshness
+* Add `CacheManager.getWithMeta` to return cache entries with timestamp and TTL metadata
+* Stamp and clear update timestamps on `rallyData` so Rally services can check freshness before serving cached results
+
+### Charts
+* Show full sprint names on the Hours History chart x-axis (Team member detail) and clarify total vs sprint-total hours
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.4.0...0.4.1
+
 ## 0.4.0
 
 ### Recently Viewed (#263)

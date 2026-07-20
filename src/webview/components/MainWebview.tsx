@@ -488,7 +488,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
 
 	// Pila d'historial de navegació estil navegador (back/forward amb ratolí i teclat).
-	const { pushEntry, goBack, goForward } = useNavigationHistory();
+	const { pushEntry, peekBack, goBack, goForward } = useNavigationHistory();
 	// Es posa a true mentre apliquem una entrada d'historial, perquè l'effect de push
 	// no torni a apilar el canvi d'estat que provoca la pròpia navegació back/forward.
 	const isNavigatingViaHistoryRef = useRef(false);
@@ -922,16 +922,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[sendMessage]
 	);
 
-	const handleBackToDefects = useCallback(() => {
-		setSelectedDefect(null);
-		setCurrentScreen('defects');
-		// Opened from the Home lists: the detail renders inside Portfolio, but back belongs to Home.
-		if (detailOriginSectionRef.current === 'home') {
-			detailOriginSectionRef.current = null;
-			setActiveSection('home');
-		}
-	}, []);
-
 	const switchViewType = useCallback(
 		(newViewType: PortfolioViewType) => {
 			// State cleaners for each view type (only clear when necessary)
@@ -1083,45 +1073,6 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[loadTasks, wrapperRef, sendMessage]
 	);
 
-	const handleBackToIterations = useCallback(() => {
-		setCurrentScreen('iterations');
-		setSelectedIteration(null);
-		setSelectedUserStory(null);
-		setUserStories([]);
-		if (detailOriginSectionRef.current === 'home') {
-			detailOriginSectionRef.current = null;
-			setActiveSection('home');
-		}
-	}, []);
-
-	const handleBackToUserStories = useCallback(() => {
-		// Depenent de la vista activa, tornem a la pantalla correcta
-		if (portfolioActiveViewType === 'allUserStories') {
-			setCurrentScreen('allUserStories');
-		} else {
-			setCurrentScreen('userStories');
-		}
-		setSelectedUserStory(null);
-		setTasks([]);
-		setTasksError(null);
-		setUserStoryDefects([]);
-		setUserStoryDefectsError(null);
-		setUserStoryDiscussions([]);
-		setUserStoryDiscussionsError(null);
-		setUserStoryTestCases([]);
-		setUserStoryTestCasesError(null);
-		setActiveUserStoryTab('tasks');
-		// Clear the attempted tracking when going back
-		attemptedUserStoryDefects.current.clear();
-		attemptedUserStoryDiscussions.current.clear();
-		attemptedUserStoryTests.current.clear();
-		// Opened from the Home lists: the detail renders inside Portfolio, but back belongs to Home.
-		if (detailOriginSectionRef.current === 'home') {
-			detailOriginSectionRef.current = null;
-			setActiveSection('home');
-		}
-	}, [portfolioActiveViewType]);
-
 	// Snapshot de la navegació principal actual (per apilar a l'historial).
 	// El subtab del portfolio NO forma part de la clau: ja queda determinat pel
 	// currentScreen, i incloure'l provocaria falsos passos d'historial quan la
@@ -1204,6 +1155,59 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			applyNavKey(key);
 		}
 	}, [goForward, applyNavKey]);
+
+	// La fletxa enrere d'un detall obert des de la Home ha de CONSUMIR l'entrada
+	// d'historial del detall, no apilar-ne una de nova: si no, Alt+Left ens tornaria
+	// al detall que acabem de tancar. Deleguem a `navigateBack` perquè restaura
+	// l'entrada exacta d'on veníem; només si l'historial no la té reconstruïm l'estat.
+	const returnToHomeOrigin = useCallback((): boolean => {
+		if (detailOriginSectionRef.current !== 'home') return false;
+		detailOriginSectionRef.current = null;
+		if (peekBack()?.activeSection === 'home') {
+			navigateBack();
+		} else {
+			setActiveSection('home');
+		}
+		return true;
+	}, [peekBack, navigateBack]);
+
+	const handleBackToIterations = useCallback(() => {
+		setCurrentScreen('iterations');
+		setSelectedIteration(null);
+		setSelectedUserStory(null);
+		setUserStories([]);
+		returnToHomeOrigin();
+	}, [returnToHomeOrigin]);
+
+	const handleBackToDefects = useCallback(() => {
+		setSelectedDefect(null);
+		setCurrentScreen('defects');
+		returnToHomeOrigin();
+	}, [returnToHomeOrigin]);
+
+	const handleBackToUserStories = useCallback(() => {
+		// Depenent de la vista activa, tornem a la pantalla correcta
+		if (portfolioActiveViewType === 'allUserStories') {
+			setCurrentScreen('allUserStories');
+		} else {
+			setCurrentScreen('userStories');
+		}
+		setSelectedUserStory(null);
+		setTasks([]);
+		setTasksError(null);
+		setUserStoryDefects([]);
+		setUserStoryDefectsError(null);
+		setUserStoryDiscussions([]);
+		setUserStoryDiscussionsError(null);
+		setUserStoryTestCases([]);
+		setUserStoryTestCasesError(null);
+		setActiveUserStoryTab('tasks');
+		// Clear the attempted tracking when going back
+		attemptedUserStoryDefects.current.clear();
+		attemptedUserStoryDiscussions.current.clear();
+		attemptedUserStoryTests.current.clear();
+		returnToHomeOrigin();
+	}, [portfolioActiveViewType, returnToHomeOrigin]);
 
 	const handleSectionChange = useCallback(
 		(section: SectionType) => {
@@ -1681,8 +1685,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 							setPortfolioUserStoriesHasMore(message.hasMore || false);
 							setPortfolioUserStoriesOffset((message.offset || 0) + (message.userStories?.length || 0));
 							setUserStoriesError(null);
-							// Assegura que la pantalla es correcta quan es carreguen totes les user stories
-							if (portfolioActiveViewType === 'allUserStories' && currentScreen !== 'userStoryDetail') {
+							// Assegura que la pantalla es correcta quan es carreguen totes les user stories.
+							// Només dins de portfolio: la Home també carrega user stories (Calendar) i
+							// canviar-li currentScreen provocaria una segona transició després d'aterrar-hi.
+							if (activeSection === 'portfolio' && portfolioActiveViewType === 'allUserStories' && currentScreen !== 'userStoryDetail') {
 								setCurrentScreen('allUserStories');
 							}
 						}
@@ -1748,7 +1754,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						setDefectsError(null);
 						// Only navigate to defects list if we're not in detail view
 						// Don't override defectDetail when coming from search
-						if (portfolioActiveViewType === 'allDefects' && currentScreen !== 'defects' && currentScreen !== 'defectDetail') {
+						if (activeSection === 'portfolio' && portfolioActiveViewType === 'allDefects' && currentScreen !== 'defects' && currentScreen !== 'defectDetail') {
 							setCurrentScreen('defects');
 						}
 					} else {

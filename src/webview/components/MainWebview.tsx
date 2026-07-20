@@ -649,6 +649,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	// Ref for search input to focus when search tab is selected
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const previousSectionBeforeSearchRef = useRef<SectionType>('home');
+	// Records that the current detail screen was opened from the Home lists, so
+	// the back arrow returns to Home instead of the Portfolio list the detail renders in.
+	const detailOriginSectionRef = useRef<SectionType | null>(null);
 
 	// Navigation state
 	const [activeSection, setActiveSection] = useState<SectionType>('home');
@@ -768,6 +771,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	const openSearchResult = useCallback(
 		(item: GlobalSearchResultItem) => {
+			detailOriginSectionRef.current = null;
 			if (item.entityType === 'userstory') {
 				pendingSearchUserStoryTabRef.current = null;
 				sendMessage({ command: 'loadUserStoryByObjectId', objectId: item.objectId });
@@ -907,6 +911,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	const handleDefectSelected = useCallback(
 		(defect: RallyDefect) => {
+			detailOriginSectionRef.current = null;
 			setSelectedDefect(defect);
 			setCurrentScreen('defectDetail');
 			sendMessage({
@@ -920,6 +925,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const handleBackToDefects = useCallback(() => {
 		setSelectedDefect(null);
 		setCurrentScreen('defects');
+		// Opened from the Home lists: the detail renders inside Portfolio, but back belongs to Home.
+		if (detailOriginSectionRef.current === 'home') {
+			detailOriginSectionRef.current = null;
+			setActiveSection('home');
+		}
 	}, []);
 
 	const switchViewType = useCallback(
@@ -996,9 +1006,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[handleIterationSelected]
 	);
 
+	const handleIterationSelectedFromPortfolio = useCallback(
+		(iteration: Iteration) => {
+			detailOriginSectionRef.current = null;
+			handleIterationSelected(iteration);
+		},
+		[handleIterationSelected]
+	);
+
 	// Shared navigation for both the Recently Viewed and Favorites lists — same record kinds.
 	const navigateToItem = useCallback(
 		(item: RallyItemRef) => {
+			detailOriginSectionRef.current = 'home';
 			switch (item.type) {
 				case 'userstory':
 					sendMessage({ command: 'loadUserStoryByObjectId', objectId: item.objectId });
@@ -1050,6 +1069,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	const handleUserStorySelected = useCallback(
 		(userStory: UserStory) => {
+			detailOriginSectionRef.current = null;
 			setSelectedUserStory(userStory);
 			setCurrentScreen('userStoryDetail');
 			setActiveUserStoryTab('tasks');
@@ -1068,6 +1088,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		setSelectedIteration(null);
 		setSelectedUserStory(null);
 		setUserStories([]);
+		if (detailOriginSectionRef.current === 'home') {
+			detailOriginSectionRef.current = null;
+			setActiveSection('home');
+		}
 	}, []);
 
 	const handleBackToUserStories = useCallback(() => {
@@ -1091,6 +1115,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		attemptedUserStoryDefects.current.clear();
 		attemptedUserStoryDiscussions.current.clear();
 		attemptedUserStoryTests.current.clear();
+		// Opened from the Home lists: the detail renders inside Portfolio, but back belongs to Home.
+		if (detailOriginSectionRef.current === 'home') {
+			detailOriginSectionRef.current = null;
+			setActiveSection('home');
+		}
 	}, [portfolioActiveViewType]);
 
 	// Snapshot de la navegació principal actual (per apilar a l'historial).
@@ -1112,6 +1141,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	// que el case 'restoreState' (inclosa la càrrega asíncrona d'items de detall).
 	const applyNavKey = useCallback(
 		(key: NavKey) => {
+			// The history entry carries its own section, so any pending Home origin no longer applies.
+			detailOriginSectionRef.current = null;
 			setActiveSection(key.activeSection as SectionType);
 			setCurrentScreen(key.currentScreen as ScreenType);
 
@@ -2571,7 +2602,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 													activeUserStoryTab={activeUserStoryTab}
 													currentScreen={renderedScreen}
 													onLoadIterations={loadIterations}
-													onIterationSelected={handleIterationSelected}
+													onIterationSelected={handleIterationSelectedFromPortfolio}
 													onUserStorySelected={handleUserStorySelected}
 													onLoadUserStories={loadUserStories}
 													onClearUserStories={clearUserStories}

@@ -214,14 +214,23 @@ const ENTITY_TYPE_BASE_RGB: Record<RallyEntityType, string> = {
 };
 
 /**
+ * Alpha bump per type, en punts percentuals. L'ambre del sprint és el to més clar de tots
+ * i queda una mica desdibuixat amb l'alpha base, així que puja lleugerament.
+ */
+const ENTITY_TYPE_ALPHA_BOOST: Partial<Record<RallyEntityType, number>> = {
+	sprint: 2
+};
+
+/**
  * Background/border pair for an entity type badge. Both are alpha colours, so they blend
  * into whichever editor background is active — no light/dark branch needed, unlike
  * getScheduleStateColor which paints opaque text.
  */
 export const getEntityTypeColors = (type: RallyEntityType): { background: string; border: string } => {
 	const base = ENTITY_TYPE_BASE_RGB[type];
+	const boost = ENTITY_TYPE_ALPHA_BOOST[type] ?? 0;
 	return {
-		background: `rgb(${base} / 8%)`,
-		border: `rgb(${base} / 13%)`
+		background: `rgb(${base} / ${8 + boost}%)`,
+		border: `rgb(${base} / ${13 + boost}%)`
 	};
 };

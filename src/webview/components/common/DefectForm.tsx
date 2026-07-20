@@ -1,32 +1,23 @@
 import { FC } from 'react';
-import DOMPurify from 'dompurify';
 import styled from 'styled-components';
 import { AvatarFormField } from './Avatar';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
+import ResizableDescription from './ResizableDescription';
+import './CollapsibleCard';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	min-height: 24px;
-	padding: 0 8px;
-	border-radius: 999px;
+	min-height: 20px;
+	padding: 1px 8px;
+	border-radius: 6px;
 	font-size: 11px;
 	font-weight: 500;
 	letter-spacing: 0.2px;
-	background: ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.25)' : 'color(srgb 0.2 0.6 0.35 / 0.25)')};
-	color: ${props => (props.isBlocked ? 'color(srgb 0.9 0.2 0.2 / 1)' : 'color(srgb 0.2 0.75 0.45 / 1)')};
-	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.85 0.25 0.25 / 0.45)' : 'color(srgb 0.2 0.6 0.35 / 0.45)')};
-`;
-
-// Reset outer margins of the rendered HTML so text starts flush with the padding.
-const DescriptionBody = styled.div`
-	& > :first-child {
-		margin-top: 0;
-	}
-	& > :last-child {
-		margin-bottom: 0;
-	}
+	background: ${props => (props.isBlocked ? 'color(srgb 0.75 0.2 0.2 / 0.15)' : 'color(srgb 0.15 0.55 0.3 / 0.15)')};
+	color: ${props => (props.isBlocked ? 'color(srgb 0.82 0.32 0.32 / 1)' : 'color(srgb 0.28 0.72 0.46 / 1)')};
+	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.75 0.2 0.2 / 0.35)' : 'color(srgb 0.15 0.55 0.3 / 0.35)')};
 `;
 
 interface Defect {
@@ -78,7 +69,21 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 
 	return (
 		<>
-			<collapsible-card title={`${defect.formattedId}: ${defect.name}`}>
+			<collapsible-card title="Details">
+				<div slot="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginLeft: '12px' }}>
+					{defect.scheduleState && (
+						<div
+							style={{
+								fontSize: '13px',
+								fontWeight: '300',
+								color: getScheduleStateColor(defect.scheduleState)
+							}}
+						>
+							{defect.scheduleState}
+						</div>
+					)}
+					<StatusPill isBlocked={defect.blocked}>{defect.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
+				</div>
 				<div
 					style={{
 						padding: '20px',
@@ -87,26 +92,6 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						gap: '20px'
 					}}
 				>
-					<div
-						style={{
-							display: 'flex',
-							justifyContent: 'space-between',
-							alignItems: 'center'
-						}}
-					>
-						{defect.scheduleState && (
-							<div
-								style={{
-									fontSize: '14px',
-									fontWeight: '400',
-									color: getScheduleStateColor(defect.scheduleState)
-								}}
-							>
-								{defect.scheduleState}
-							</div>
-						)}
-					</div>
-
 					<div style={{ marginBottom: '0px' }}>
 						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
 						<input
@@ -216,33 +201,11 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 							/>
 						</div>
 
-						<div>
-							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Blocked</label>
-							<StatusPill isBlocked={defect.blocked}>{defect.blocked ? 'Blocked' : 'Not Blocked'}</StatusPill>
-						</div>
-
 						{/* Description */}
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
 							<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
-							<DescriptionBody
-								dangerouslySetInnerHTML={{
-									__html: defect.description ? DOMPurify.sanitize(defect.description, { FORBID_ATTR: ['style'] }) : '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
-								}}
-								style={{
-									width: '100%',
-									padding: '10px 12px',
-									backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-									color: 'var(--vscode-input-foreground)',
-									border: '1px solid var(--vscode-input-border)',
-									borderRadius: '3px',
-									fontSize: '13px',
-									fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-									lineHeight: '1.6',
-									minHeight: '120px',
-									overflow: 'auto'
-								}}
-							/>
+							<ResizableDescription description={defect.description} />
 						</div>
 					</div>
 				</div>

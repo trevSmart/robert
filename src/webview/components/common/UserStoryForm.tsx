@@ -6,6 +6,7 @@ import { type UserStory } from '../../../types/rally';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
 import { getVsCodeApi } from '../../utils/vscodeApi';
 import RevisionTimeline from './RevisionTimeline';
+import ResizableDescription from './ResizableDescription';
 import './CollapsibleCard';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
@@ -21,16 +22,6 @@ const StatusPill = styled.div<{ isBlocked: boolean }>`
 	background: ${props => (props.isBlocked ? 'color(srgb 0.75 0.2 0.2 / 0.15)' : 'color(srgb 0.15 0.55 0.3 / 0.15)')};
 	color: ${props => (props.isBlocked ? 'color(srgb 0.82 0.32 0.32 / 1)' : 'color(srgb 0.28 0.72 0.46 / 1)')};
 	border: 1px solid ${props => (props.isBlocked ? 'color(srgb 0.75 0.2 0.2 / 0.35)' : 'color(srgb 0.15 0.55 0.3 / 0.35)')};
-`;
-
-// Reset outer margins of the rendered HTML so text starts flush with the padding.
-const DescriptionBody = styled.div`
-	& > :first-child {
-		margin-top: 0;
-	}
-	& > :last-child {
-		margin-bottom: 0;
-	}
 `;
 
 // StatPill component with theme-aware styling
@@ -148,20 +139,14 @@ const RevisionsIcon = ({ size = '18px' }: { size?: string }) => (
 	</svg>
 );
 
-const DESCRIPTION_HEIGHT_MIN = 80;
-const DESCRIPTION_HEIGHT_MAX = 600;
-const DESCRIPTION_HEIGHT_DEFAULT = 300;
-
 const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange, additionalTabContent, collaborationEnabled = false, iterations }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
-	const [descriptionHeight, setDescriptionHeight] = useState(DESCRIPTION_HEIGHT_DEFAULT);
 	const [revisions, setRevisions] = useState<any[]>([]);
 	const [revisionsCount, setRevisionsCount] = useState<number | null>(null);
 	const [revisionsLoading, setRevisionsLoading] = useState(false);
 	const [revisionsLoaded, setRevisionsLoaded] = useState(false);
-	const resizeStartRef = useRef({ y: 0, height: 0 });
 	const timelineCardRef = useRef<HTMLElement | null>(null);
 	const timelineExpandedRef = useRef(false);
 
@@ -271,43 +256,6 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 		card.addEventListener('toggle', handleToggle);
 		return () => card.removeEventListener('toggle', handleToggle);
 	}, [revisionsLoaded, revisionsLoading, loadRevisions]);
-
-	const handleDescriptionResizeStart = useCallback(
-		(e: React.MouseEvent) => {
-			e.preventDefault();
-			resizeStartRef.current = { y: e.clientY, height: descriptionHeight };
-			document.body.style.cursor = 'ns-resize';
-			document.body.style.userSelect = 'none';
-			const onMouseMove = (moveEvent: MouseEvent) => {
-				const delta = moveEvent.clientY - resizeStartRef.current.y;
-				const newHeight = Math.min(DESCRIPTION_HEIGHT_MAX, Math.max(DESCRIPTION_HEIGHT_MIN, resizeStartRef.current.height + delta));
-				setDescriptionHeight(newHeight);
-			};
-			const onMouseUp = () => {
-				document.removeEventListener('mousemove', onMouseMove);
-				document.removeEventListener('mouseup', onMouseUp);
-				document.body.style.cursor = '';
-				document.body.style.userSelect = '';
-			};
-			document.addEventListener('mousemove', onMouseMove);
-			document.addEventListener('mouseup', onMouseUp);
-		},
-		[descriptionHeight]
-	);
-
-	const handleDescriptionKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-		if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'a') {
-			e.preventDefault();
-			const target = e.currentTarget;
-			const selection = window.getSelection();
-			if (selection) {
-				const range = document.createRange();
-				range.selectNodeContents(target);
-				selection.removeAllRanges();
-				selection.addRange(range);
-			}
-		}
-	}, []);
 
 	const handleRequestSupport = useCallback(() => {
 		if (!vscode) return;
@@ -477,54 +425,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
 						<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
 
-						<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
-							<DescriptionBody
-								tabIndex={0}
-								// Lenis (smooth scroll) captura els wheel del wrapper; això li diu que ignore aquest scroller.
-								data-lenis-prevent
-								onKeyDown={handleDescriptionKeyDown}
-								dangerouslySetInnerHTML={{
-									__html: userStory.description ? DOMPurify.sanitize(userStory.description, { FORBID_ATTR: ['style'] }) : '<p style="color: var(--vscode-descriptionForeground); font-style: italic;">No description available</p>'
-								}}
-								style={{
-									width: '100%',
-									minHeight: `${DESCRIPTION_HEIGHT_MIN}px`,
-									maxHeight: `${descriptionHeight}px`,
-									boxSizing: 'border-box',
-									padding: '10px 12px',
-									backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-									color: 'color-mix(in srgb, var(--vscode-input-foreground) 85%, transparent)',
-									fontSize: '13px',
-									fontFamily: "'Inter', var(--vscode-font-family), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-									lineHeight: '1.6',
-									overflow: 'auto'
-								}}
-							/>
-							<div
-								role="separator"
-								aria-label="Resize description"
-								onMouseDown={handleDescriptionResizeStart}
-								style={{
-									height: '8px',
-									backgroundColor: 'var(--vscode-panel-border)',
-									cursor: 'ns-resize',
-									display: 'flex',
-									alignItems: 'center',
-									justifyContent: 'center',
-									flexShrink: 0
-								}}
-							>
-								<div
-									style={{
-										width: '32px',
-										height: '3px',
-										borderRadius: '2px',
-										backgroundColor: 'var(--vscode-descriptionForeground)',
-										opacity: 0.6
-									}}
-								/>
-							</div>
-						</div>
+						<ResizableDescription description={userStory.description} />
 					</div>
 				</div>
 			</collapsible-card>

@@ -224,7 +224,7 @@
 		"eslint-plugin-react-hooks": "^7.1.1",
 		"glob": "^13.0.6",
 		"knip": "^6.34.0",
-		"mocha": "^11.8.0",
+		"mocha": "^12.0.0",
 		"prettier": "^3.9.6",
 		"typescript": "~6.0.2",
 		"vitest": "^5.0.0"

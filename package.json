@@ -214,7 +214,7 @@
 		"@types/react-dom": "^19.2.5",
 		"@types/vscode": "1.134.0",
 		"@typescript-eslint/eslint-plugin": "^8.68.0",
-		"@typescript-eslint/parser": "^8.67.0",
+		"@typescript-eslint/parser": "^8.69.0",
 		"@vitejs/plugin-react": "^6.1.1",
 		"@vitest/ui": "^4.1.10",
 		"@vscode/test-cli": "^0.0.15",

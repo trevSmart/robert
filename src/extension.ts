@@ -5,6 +5,7 @@ import { SettingsManager } from './SettingsManager';
 import type { RallyData, Iteration } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
 import { clearAllRallyCaches } from './libs/rally/rallyServices';
+import { resetBackend } from './libs/backend';
 import type { CacheEntity } from './libs/cache/ttlConfig';
 import { detectDebugMode, getTestTabEnabledReason, initDevMode, isTestTabEnabled } from './utils/devMode';
 import { WebviewMessageDispatcher } from './webview/messageHandlers/WebviewMessageDispatcher';
@@ -223,6 +224,11 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			if (e.affectsConfiguration('robert.debugMode')) {
 				webviewProvider.broadcastTestTabVisibility();
+			}
+			// Switching backend (or its credentials) invalidates every cached response.
+			if (e.affectsConfiguration('robert.backend') || e.affectsConfiguration('robert.jiraInstance') || e.affectsConfiguration('robert.jiraEmail') || e.affectsConfiguration('robert.jiraApiToken') || e.affectsConfiguration('robert.jiraProjectKey') || e.affectsConfiguration('robert.jiraBoardId')) {
+				resetBackend();
+				void webviewProvider.resetAndRefreshWebviews();
 			}
 		})
 	);

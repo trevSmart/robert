@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
-import { getCurrentUser, getProjects, getIterations } from './libs/rally/rallyServices';
 import { setRallyBroadcaster } from './libs/rally/rallyCall';
-import { validateRallyConfiguration } from './libs/rally/utils';
+import { getBackend } from './libs/backend';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
 import { WebSocketClient } from './libs/collaboration/websocketClient';
@@ -46,6 +45,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		collaborationEnabled: boolean;
 		devMode: boolean;
 		debugMode: boolean;
+		backendName: string;
 	};
 
 	// Resolves when the in-flight prefetch finishes (success or failure), so the
@@ -109,7 +109,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			let displayName = 'Unknown User';
 
 			try {
-				const userResult = await getCurrentUser();
+				const userResult = await getBackend().getCurrentUser();
 				if (userResult?.user) {
 					rallyUserId = userResult.user.objectId || userResult.user.userName || '';
 					displayName = userResult.user.displayName || userResult.user.userName || 'Unknown User';
@@ -238,7 +238,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			this._errorHandler.logDebug(`Prefetching Rally data (${trigger})`, 'RobertWebviewProvider.prefetchRallyData');
 
 			this._errorHandler.logDebug('Starting Rally configuration validation...', 'RobertWebviewProvider.prefetchRallyData');
-			const validation = await validateRallyConfiguration();
+			const backend = getBackend();
+			const validation = await backend.validateConfiguration();
 
 			if (!validation.isValid) {
 				this._errorHandler.logWarning(`Skipping Rally prefetch: ${validation.errors.join(', ')}`, 'RobertWebviewProvider.prefetchRallyData');
@@ -250,7 +251,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			// so the result can be injected directly into the initial HTML.
 			const holidayService = HolidayService.getInstance();
 			const currentYear = new Date().getFullYear();
-			const [projectsResult, iterationsResult, userResult, holidays] = await Promise.all([getProjects(), getIterations(), getCurrentUser(), holidayService.getHolidays(currentYear, 'ES')]);
+			const [projectsResult, iterationsResult, userResult, holidays] = await Promise.all([backend.getProjects(), backend.getIterations(), backend.getCurrentUser(), holidayService.getHolidays(currentYear, 'ES')]);
 
 			if (iterationsResult?.iterations) {
 				this._preloadedData = {
@@ -259,7 +260,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					holidays: holidays || [],
 					collaborationEnabled: this._settingsManager.getSetting('collaborationEnabled') || false,
 					devMode: isTestTabEnabled(),
-					debugMode: this._settingsManager.getSetting('debugMode')
+					debugMode: this._settingsManager.getSetting('debugMode'),
+					backendName: backend.displayName
 				};
 			}
 
@@ -777,7 +779,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				.postMessage({
 					command: 'devModeInit',
 					devMode: isTestTabEnabled(),
-					debugMode
+					debugMode,
+					backendName: getBackend().displayName
 				})
 				.then(undefined, error => {
 					this._errorHandler.logDebug(`Failed to post devModeInit: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider._postDevModeInit');
@@ -795,7 +798,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		this.broadcastToWebviews({
 			command: 'devModeInit',
 			devMode: isTestTabEnabled(),
-			debugMode
+			debugMode,
+			backendName: getBackend().displayName
 		});
 	}
 

@@ -1,18 +1,45 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
 
+/** Which agile backend the extension talks to. Only one is active at a time. */
+export type BackendKind = 'rally' | 'jira';
+
 export interface RobertSettings {
 	autoRefresh: boolean;
 	debugMode: boolean;
+	backend: BackendKind;
 	rallyInstance: string;
 	rallyApiKey: string;
 	rallyProjectName: string;
+	jiraInstance: string;
+	jiraEmail: string;
+	jiraApiToken: string;
+	jiraProjectKey: string;
+	jiraBoardId: string;
+	jiraStoryPointsField: string;
 	collaborationServerUrl: string;
 	collaborationEnabled: boolean;
 	collaborationAutoConnect: boolean;
 	statusBarShowSprintDaysLeft: boolean;
 	showWelcomeAnimation: boolean;
 }
+
+/**
+ * Environment-variable name for each string setting whose name does not follow the
+ * plain `ROBERT_<KEY>` convention (camelCase keys would otherwise collapse, e.g.
+ * `jiraInstance` -> `ROBERT_JIRAINSTANCE`).
+ */
+const ENV_VAR_BY_KEY: Partial<Record<keyof RobertSettings, string>> = {
+	rallyInstance: 'ROBERT_RALLY_INSTANCE',
+	rallyApiKey: 'ROBERT_RALLY_API_KEY',
+	rallyProjectName: 'ROBERT_RALLY_PROJECT_NAME',
+	jiraInstance: 'ROBERT_JIRA_INSTANCE',
+	jiraEmail: 'ROBERT_JIRA_EMAIL',
+	jiraApiToken: 'ROBERT_JIRA_API_TOKEN',
+	jiraProjectKey: 'ROBERT_JIRA_PROJECT_KEY',
+	jiraBoardId: 'ROBERT_JIRA_BOARD_ID',
+	jiraStoryPointsField: 'ROBERT_JIRA_STORY_POINTS_FIELD'
+};
 
 export class SettingsManager {
 	private static instance: SettingsManager;
@@ -41,9 +68,16 @@ export class SettingsManager {
 				const settings: RobertSettings = {
 					autoRefresh: this.resolveBooleanSettingWithFallback('autoRefresh', config.get<boolean>('autoRefresh'), 'ROBERT_AUTO_REFRESH', true),
 					debugMode: this.resolveBooleanSettingWithFallback('debugMode', config.get<boolean>('debugMode'), 'ROBERT_DEBUG_MODE', false),
+					backend: this.resolveBackendSetting(config.get<string>('backend', '')),
 					rallyInstance: this.resolveSettingWithFallback('rallyInstance', config.get<string>('rallyInstance', ''), 'ROBERT_RALLY_INSTANCE', 'https://rally1.rallydev.com'),
 					rallyApiKey: this.resolveSettingWithFallback('rallyApiKey', config.get<string>('rallyApiKey', ''), 'ROBERT_RALLY_API_KEY', ''),
 					rallyProjectName: this.resolveSettingWithFallback('rallyProjectName', config.get<string>('rallyProjectName', ''), 'ROBERT_RALLY_PROJECT_NAME', ''),
+					jiraInstance: this.resolveSettingWithFallback('jiraInstance', config.get<string>('jiraInstance', ''), 'ROBERT_JIRA_INSTANCE', ''),
+					jiraEmail: this.resolveSettingWithFallback('jiraEmail', config.get<string>('jiraEmail', ''), 'ROBERT_JIRA_EMAIL', ''),
+					jiraApiToken: this.resolveSettingWithFallback('jiraApiToken', config.get<string>('jiraApiToken', ''), 'ROBERT_JIRA_API_TOKEN', ''),
+					jiraProjectKey: this.resolveSettingWithFallback('jiraProjectKey', config.get<string>('jiraProjectKey', ''), 'ROBERT_JIRA_PROJECT_KEY', ''),
+					jiraBoardId: this.resolveSettingWithFallback('jiraBoardId', config.get<string>('jiraBoardId', ''), 'ROBERT_JIRA_BOARD_ID', ''),
+					jiraStoryPointsField: this.resolveSettingWithFallback('jiraStoryPointsField', config.get<string>('jiraStoryPointsField', ''), 'ROBERT_JIRA_STORY_POINTS_FIELD', ''),
 					collaborationServerUrl: this.resolveSettingWithFallback('collaboration.serverUrl', config.get<string>('collaboration.serverUrl', ''), 'ROBERT_COLLABORATION_SERVER_URL', 'https://robert-8vdt.onrender.com'),
 					collaborationEnabled: this.resolveBooleanSettingWithFallback('collaboration.enabled', config.get<boolean>('collaboration.enabled'), 'ROBERT_COLLABORATION_ENABLED', false),
 					collaborationAutoConnect: this.resolveBooleanSettingWithFallback('collaboration.autoConnect', config.get<boolean>('collaboration.autoConnect'), 'ROBERT_COLLABORATION_AUTO_CONNECT', true),
@@ -78,6 +112,14 @@ export class SettingsManager {
 			if (settings.rallyProjectName !== undefined) {
 				await config.update('rallyProjectName', settings.rallyProjectName, vscode.ConfigurationTarget.Global);
 			}
+			if (settings.backend !== undefined) {
+				await config.update('backend', settings.backend, vscode.ConfigurationTarget.Global);
+			}
+			for (const key of ['jiraInstance', 'jiraEmail', 'jiraApiToken', 'jiraProjectKey', 'jiraBoardId', 'jiraStoryPointsField'] as const) {
+				if (settings[key] !== undefined) {
+					await config.update(key, settings[key], vscode.ConfigurationTarget.Global);
+				}
+			}
 			if (settings.collaborationServerUrl !== undefined) {
 				await config.update('collaboration.serverUrl', settings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
 			}
@@ -111,6 +153,10 @@ export class SettingsManager {
 			await config.update('rallyInstance', defaultSettings.rallyInstance, vscode.ConfigurationTarget.Global);
 			await config.update('rallyApiKey', defaultSettings.rallyApiKey, vscode.ConfigurationTarget.Global);
 			await config.update('rallyProjectName', defaultSettings.rallyProjectName, vscode.ConfigurationTarget.Global);
+			await config.update('backend', defaultSettings.backend, vscode.ConfigurationTarget.Global);
+			for (const key of ['jiraInstance', 'jiraEmail', 'jiraApiToken', 'jiraProjectKey', 'jiraBoardId', 'jiraStoryPointsField'] as const) {
+				await config.update(key, defaultSettings[key], vscode.ConfigurationTarget.Global);
+			}
 			await config.update('collaboration.serverUrl', defaultSettings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.enabled', defaultSettings.collaborationEnabled, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.autoConnect', defaultSettings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
@@ -143,17 +189,14 @@ export class SettingsManager {
 					return this.resolveBooleanSettingWithFallback('collaboration.autoConnect', vscodeVal, 'ROBERT_COLLABORATION_AUTO_CONNECT', defaultValue as boolean) as RobertSettings[K];
 				}
 
-				if (key === 'rallyApiKey') {
-					const vscodeVal = config.get<string>(key, '');
-					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_API_KEY', defaultValue as string) as RobertSettings[K];
+				if (key === 'backend') {
+					return this.resolveBackendSetting(config.get<string>('backend', '')) as RobertSettings[K];
 				}
-				if (key === 'rallyInstance') {
+
+				const mappedEnvVar = ENV_VAR_BY_KEY[key];
+				if (mappedEnvVar) {
 					const vscodeVal = config.get<string>(key, '');
-					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_INSTANCE', defaultValue as string) as RobertSettings[K];
-				}
-				if (key === 'rallyProjectName') {
-					const vscodeVal = config.get<string>(key, '');
-					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_PROJECT_NAME', defaultValue as string) as RobertSettings[K];
+					return this.resolveSettingWithFallback(key, vscodeVal, mappedEnvVar, defaultValue as string) as RobertSettings[K];
 				}
 
 				if (typeof defaultValue === 'boolean') {
@@ -198,15 +241,40 @@ export class SettingsManager {
 		return {
 			autoRefresh: true,
 			debugMode: false,
+			backend: 'rally',
 			rallyInstance: 'https://rally1.rallydev.com',
 			rallyApiKey: '',
 			rallyProjectName: '',
+			jiraInstance: '',
+			jiraEmail: '',
+			jiraApiToken: '',
+			jiraProjectKey: '',
+			jiraBoardId: '',
+			jiraStoryPointsField: '',
 			collaborationServerUrl: 'https://robert-8vdt.onrender.com',
 			collaborationEnabled: false,
 			collaborationAutoConnect: true,
 			statusBarShowSprintDaysLeft: true,
 			showWelcomeAnimation: true
 		};
+	}
+
+	/**
+	 * Resolve the active backend with priority: VS Code setting > ROBERT_BACKEND > 'rally'.
+	 * Unrecognised values fall back to 'rally' so a typo never leaves the extension without a backend.
+	 */
+	private resolveBackendSetting(vscodeValue: string | undefined): BackendKind {
+		const raw = (vscodeValue && vscodeValue.trim()) || process.env.ROBERT_BACKEND?.trim() || '';
+		const normalized = raw.toLowerCase();
+
+		if (normalized === 'jira' || normalized === 'rally') {
+			return normalized;
+		}
+
+		if (normalized !== '') {
+			this._errorHandler.logWarning(`Unknown backend '${raw}', falling back to 'rally'`, 'SettingsManager.resolveBackendSetting');
+		}
+		return 'rally';
 	}
 
 	/**
@@ -271,6 +339,18 @@ export class SettingsManager {
 
 		if (settings.rallyProjectName !== undefined && settings.rallyProjectName.trim() === '') {
 			errors.push('Rally project name cannot be empty');
+		}
+
+		if (settings.jiraInstance !== undefined && settings.jiraInstance.trim() !== '' && !settings.jiraInstance.startsWith('https://')) {
+			errors.push('Jira instance must be a valid HTTPS URL');
+		}
+
+		if (settings.jiraEmail !== undefined && settings.jiraEmail.trim() !== '' && !settings.jiraEmail.includes('@')) {
+			errors.push('Jira email must be a valid email address');
+		}
+
+		if (settings.jiraBoardId !== undefined && settings.jiraBoardId.trim() !== '' && !/^\d+$/.test(settings.jiraBoardId.trim())) {
+			errors.push('Jira board ID must be numeric');
 		}
 
 		if (settings.collaborationServerUrl !== undefined) {

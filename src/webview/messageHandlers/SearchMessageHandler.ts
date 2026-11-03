@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getTestCaseWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchRallyImageAsBase64 } from '../../libs/rally/rallyServices';
-import { SettingsManager } from '../../SettingsManager';
+import { getBackend } from '../../libs/backend';
 
 /**
  * Handles search and lookup-related webview messages
@@ -46,16 +45,14 @@ export class SearchMessageHandler {
 
 	private async handleOpenInRally(message: any): Promise<void> {
 		try {
-			const rallyInstance = SettingsManager.getInstance().getSetting('rallyInstance');
-			if (!rallyInstance || !message.objectId) {
+			const backend = getBackend();
+			const url = backend.buildOpenInUrl(String(message.artifactType ?? 'userstory'), String(message.objectId ?? ''));
+			if (!url) {
 				return;
 			}
-			const artifactType = encodeURIComponent(String(message.artifactType ?? 'userstory'));
-			const objectId = encodeURIComponent(String(message.objectId));
-			const url = `${rallyInstance.replace(/\/$/, '')}/#/detail/${artifactType}/${objectId}`;
 			const uri = vscode.Uri.parse(url);
 			if (uri.scheme !== 'http' && uri.scheme !== 'https') {
-				this.errorHandler.logWarning(`Refused to open non-http(s) Rally URL (scheme: ${uri.scheme})`, 'openInRally');
+				this.errorHandler.logWarning(`Refused to open non-http(s) ${backend.displayName} URL (scheme: ${uri.scheme})`, 'openInRally');
 				return;
 			}
 			await vscode.env.openExternal(uri);
@@ -66,7 +63,7 @@ export class SearchMessageHandler {
 
 	private async handleGlobalSearch(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const searchResult = await globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 50, searchType: message.searchType, offset: message.offset ?? 0 });
+			const searchResult = await getBackend().globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 50, searchType: message.searchType, offset: message.offset ?? 0 });
 			webview.postMessage({
 				command: 'globalSearchResults',
 				results: searchResult.results,
@@ -86,7 +83,7 @@ export class SearchMessageHandler {
 
 	private async handleLoadUserStoryByObjectId(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const usResult = await getUserStoryByObjectId(message.objectId);
+			const usResult = await getBackend().getUserStoryByObjectId(message.objectId);
 			webview.postMessage({
 				command: 'userStoryByObjectIdLoaded',
 				userStory: usResult.userStory,
@@ -105,7 +102,7 @@ export class SearchMessageHandler {
 
 	private async handleLoadDefectByObjectId(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const defResult = await getDefectByObjectId(message.objectId);
+			const defResult = await getBackend().getDefectByObjectId(message.objectId);
 			webview.postMessage({
 				command: 'defectByObjectIdLoaded',
 				defect: defResult.defect,
@@ -124,7 +121,7 @@ export class SearchMessageHandler {
 
 	private async handleLoadTaskWithParent(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const taskResult = await getTaskWithParent(message.objectId);
+			const taskResult = await getBackend().getTaskWithParent(message.objectId);
 			webview.postMessage({
 				command: 'taskWithParentLoaded',
 				task: taskResult.task,
@@ -144,7 +141,7 @@ export class SearchMessageHandler {
 
 	private async handleLoadTestCaseWithParent(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const tcResult = await getTestCaseWithParent(message.objectId);
+			const tcResult = await getBackend().getTestCaseWithParent(message.objectId);
 			webview.postMessage({
 				command: 'testCaseWithParentLoaded',
 				testCase: tcResult.testCase,
@@ -165,7 +162,7 @@ export class SearchMessageHandler {
 	private async handleGetUserStoryRevisionsCount(webview: vscode.Webview, message: any): Promise<void> {
 		try {
 			this.errorHandler.logInfo(`Fetching revisions count for user story: ${message.userStoryObjectId}`, 'SearchMessageHandler');
-			const result = await getUserStoryRevisionsCount(message.userStoryObjectId);
+			const result = await getBackend().getUserStoryRevisionsCount(message.userStoryObjectId);
 			webview.postMessage({
 				type: 'revisionsCountLoaded',
 				objectId: message.userStoryObjectId,
@@ -184,7 +181,7 @@ export class SearchMessageHandler {
 	private async handleGetUserStoryRevisions(webview: vscode.Webview, message: any): Promise<void> {
 		try {
 			this.errorHandler.logInfo(`Fetching revisions for user story: ${message.userStoryObjectId}`, 'SearchMessageHandler');
-			const result = await getUserStoryRevisions(message.userStoryObjectId);
+			const result = await getBackend().getUserStoryRevisions(message.userStoryObjectId);
 			webview.postMessage({
 				type: 'revisionsLoaded',
 				revisions: result.revisions
@@ -208,7 +205,7 @@ export class SearchMessageHandler {
 		}
 
 		try {
-			const result = await fetchRallyImageAsBase64(url);
+			const result = await getBackend().fetchImageAsBase64(url);
 			webview.postMessage({ type: 'rallyImageFetched', url, requestId, ...result });
 		} catch (error) {
 			const err = error instanceof Error ? error.message : String(error);

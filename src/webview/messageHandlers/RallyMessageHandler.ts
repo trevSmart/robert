@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress, getUsers, getMemberHoursHistory } from '../../libs/rally/rallyServices';
+import { getBackend } from '../../libs/backend';
 import { HolidayService } from '../../libs/holidayService';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
@@ -65,7 +65,7 @@ export class RallyMessageHandler {
 	private async handleLoadProjects(webview: vscode.Webview): Promise<void> {
 		try {
 			this.errorHandler.logInfo('Loading projects from Rally API', 'RallyMessageHandler');
-			const projectsResult = await getProjects();
+			const projectsResult = await getBackend().getProjects();
 
 			if (projectsResult?.projects) {
 				webview.postMessage({
@@ -106,7 +106,7 @@ export class RallyMessageHandler {
 
 			const holidayService = HolidayService.getInstance();
 			const currentYear = new Date().getFullYear();
-			const [iterationsResult, userResult, holidays] = await Promise.all([getIterations(), getCurrentUser(), holidayService.getHolidays(currentYear, 'ES')]);
+			const [iterationsResult, userResult, holidays] = await Promise.all([getBackend().getIterations(), getBackend().getCurrentUser(), holidayService.getHolidays(currentYear, 'ES')]);
 
 			if (iterationsResult?.iterations) {
 				const collaborationEnabled = SettingsManager.getInstance().getSetting('collaborationEnabled');
@@ -151,7 +151,7 @@ export class RallyMessageHandler {
 
 	private async handleGetRallyCurrentUser(webview: vscode.Webview): Promise<void> {
 		try {
-			const userResult = await getCurrentUser();
+			const userResult = await getBackend().getCurrentUser();
 			webview.postMessage({
 				command: 'rallyCurrentUser',
 				user: userResult?.user || null
@@ -198,7 +198,7 @@ export class RallyMessageHandler {
 
 			const query = message.iteration ? { Iteration: message.iteration } : {};
 			const offset = message.offset || 0;
-			const userStoriesResult = await getUserStories(query, offset);
+			const userStoriesResult = await getBackend().getUserStories(query, offset);
 
 			if (userStoriesResult?.userStories) {
 				webview.postMessage({
@@ -241,7 +241,7 @@ export class RallyMessageHandler {
 			this.errorHandler.logInfo('Loading velocity data (hours per sprint) from Rally API', 'RallyMessageHandler');
 			// Velocity vol frescor de 24h; força un refetch d'iterations si les cachejades superen aquest límit,
 			// encara que la vista normal d'iterations (48h) encara les serviria de cache.
-			const iterationsResult = await getIterations({}, null, { maxAge: ttlFor('velocity') });
+			const iterationsResult = await getBackend().getIterations({}, null, { maxAge: ttlFor('velocity') });
 			const iterations = iterationsResult?.iterations ?? [];
 			const today = new Date();
 			today.setHours(23, 59, 59, 999);
@@ -281,7 +281,7 @@ export class RallyMessageHandler {
 			this.errorHandler.logInfo('Loading tasks from Rally API', 'RallyMessageHandler');
 			this.errorHandler.logDebug(`Webview received loadTasks command for user story: ${message.userStoryId}`, 'RallyMessageHandler');
 
-			const tasksResult = await getTasks(message.userStoryId);
+			const tasksResult = await getBackend().getTasks(message.userStoryId);
 
 			if (tasksResult?.tasks) {
 				webview.postMessage({
@@ -325,7 +325,7 @@ export class RallyMessageHandler {
 			this.errorHandler.logDebug(`Webview received loadDefects command, offset: ${message.offset || 0}`, 'RallyMessageHandler');
 
 			const offset = message.offset || 0;
-			const defectsResult = await getDefects({}, offset);
+			const defectsResult = await getBackend().getDefects({}, offset);
 
 			if (defectsResult?.defects) {
 				webview.postMessage({
@@ -367,7 +367,7 @@ export class RallyMessageHandler {
 			this.errorHandler.logInfo('Loading defects for user story from Rally API', 'RallyMessageHandler');
 			this.errorHandler.logDebug(`Webview received loadUserStoryDefects command for user story: ${message.userStoryId}`, 'RallyMessageHandler');
 
-			const defectsResult = await getUserStoryDefects(message.userStoryId);
+			const defectsResult = await getBackend().getUserStoryDefects(message.userStoryId);
 
 			if (defectsResult?.defects && defectsResult.defects.length > 0) {
 				webview.postMessage({
@@ -410,7 +410,7 @@ export class RallyMessageHandler {
 			this.errorHandler.logInfo('Loading test cases for user story from Rally API', 'RallyMessageHandler');
 			this.errorHandler.logDebug(`Webview received loadUserStoryTests command for user story: ${message.userStoryId}`, 'RallyMessageHandler');
 
-			const testCasesResult = await getUserStoryTests(message.userStoryId);
+			const testCasesResult = await getBackend().getUserStoryTests(message.userStoryId);
 
 			if (testCasesResult?.testCases && testCasesResult.testCases.length > 0) {
 				webview.postMessage({
@@ -453,7 +453,7 @@ export class RallyMessageHandler {
 			this.errorHandler.logInfo('Loading discussions for user story from Rally API', 'RallyMessageHandler');
 			this.errorHandler.logDebug(`Webview received loadUserStoryDiscussions command for user story: ${message.userStoryId}`, 'RallyMessageHandler');
 
-			const discussionsResult = await getUserStoryDiscussions(message.userStoryId);
+			const discussionsResult = await getBackend().getUserStoryDiscussions(message.userStoryId);
 
 			if (discussionsResult?.discussions && discussionsResult.discussions.length > 0) {
 				webview.postMessage({
@@ -496,7 +496,7 @@ export class RallyMessageHandler {
 		try {
 			// Targeted query by display name (getUsers uses a 'contains' match for DisplayName),
 			// so this avoids the pagination limits of fetching the full user list.
-			const usersResult = await getUsers({ DisplayName: name }, 10);
+			const usersResult = await getBackend().getUsers({ DisplayName: name }, 10);
 			const users = (usersResult.users as Array<{ displayName?: string; emailAddress?: string; userName?: string }>) || [];
 
 			// Prefer an exact display-name match; fall back to the first result.
@@ -523,7 +523,7 @@ export class RallyMessageHandler {
 	private async handleGetMemberHoursHistory(webview: vscode.Webview, message: any): Promise<void> {
 		const name = message.name as string;
 		try {
-			const { history } = await getMemberHoursHistory(name, 6);
+			const { history } = await getBackend().getMemberHoursHistory(name, 6);
 			webview.postMessage({
 				type: 'memberHoursHistoryLoaded',
 				name,
@@ -547,7 +547,7 @@ export class RallyMessageHandler {
 		try {
 			this.errorHandler.logDebug('Loading team members — phase 1 (active members)', 'RallyMessageHandler');
 
-			const { progressMap, members: activeMembers } = await getAllTeamMembersProgress(undefined, selectedIterationId);
+			const { progressMap, members: activeMembers } = await getBackend().getAllTeamMembersProgress(undefined, selectedIterationId);
 
 			const activeWithProgress = activeMembers.map(name => ({
 				name,
@@ -563,7 +563,7 @@ export class RallyMessageHandler {
 
 			// Phase 2 (deferred): historical roster from the last 6 sprints.
 			try {
-				const recent = await getRecentTeamMembers(6);
+				const recent = await getBackend().getRecentTeamMembers(6);
 				const otherWithProgress = (recent?.teamMembers || []).map(name => ({
 					name,
 					progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'historical', userStoriesCount: 0 }

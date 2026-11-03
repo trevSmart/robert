@@ -1,5 +1,6 @@
 import { FC, useCallback, useMemo } from 'react';
 import { getVsCodeApi } from '../../utils/vscodeApi';
+import { getBackendName } from '../../utils/backendInfo';
 
 interface OpenInRallyButtonProps {
 	objectId: string;
@@ -19,12 +20,15 @@ const OpenInRallyButton: FC<OpenInRallyButtonProps> = ({ objectId, artifactType 
 		});
 	}, [vscode, objectId, artifactType]);
 
+	// Label follows the active backend; the command name stays `openInRally` for compatibility.
+	const label = `Open in ${getBackendName('Rally')}`;
+
 	return (
 		<button
 			type="button"
 			onClick={handleClick}
-			title="Open in Rally"
-			aria-label="Open in Rally"
+			title={label}
+			aria-label={label}
 			style={{
 				display: 'inline-flex',
 				verticalAlign: 'middle',

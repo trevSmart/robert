@@ -34,6 +34,19 @@
 					"default": false,
 					"description": "Enable debug mode"
 				},
+				"robert.backend": {
+					"type": "string",
+					"enum": [
+						"rally",
+						"jira"
+					],
+					"enumDescriptions": [
+						"Broadcom/IBM Rally",
+						"Jira Cloud"
+					],
+					"default": "rally",
+					"description": "Which agile backend to connect to. Only one is active at a time."
+				},
 				"robert.rallyInstance": {
 					"type": "string",
 					"default": "https://rally1.rallydev.com",
@@ -48,6 +61,36 @@
 					"type": "string",
 					"default": "",
 					"description": "Rally project name to connect to"
+				},
+				"robert.jiraInstance": {
+					"type": "string",
+					"default": "",
+					"description": "Jira Cloud site URL (e.g., https://your-site.atlassian.net)"
+				},
+				"robert.jiraEmail": {
+					"type": "string",
+					"default": "",
+					"description": "Atlassian account email used together with the Jira API token"
+				},
+				"robert.jiraApiToken": {
+					"type": "string",
+					"default": "",
+					"description": "Jira Cloud API token for authentication"
+				},
+				"robert.jiraProjectKey": {
+					"type": "string",
+					"default": "",
+					"description": "Jira project key to connect to (e.g., ROB)"
+				},
+				"robert.jiraBoardId": {
+					"type": "string",
+					"default": "",
+					"description": "Jira board ID used to resolve sprints. Leave empty to auto-detect the first scrum board of the project."
+				},
+				"robert.jiraStoryPointsField": {
+					"type": "string",
+					"default": "",
+					"description": "Custom field ID holding story points (e.g., customfield_10016). Leave empty to auto-detect."
 				},
 				"robert.collaboration.serverUrl": {
 					"type": "string",

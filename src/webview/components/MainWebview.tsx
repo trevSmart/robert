@@ -37,6 +37,7 @@ import { RallyLoadingIndicator } from './common/RallyLoadingIndicator';
 
 import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
+import { setBackendName } from '../utils/backendInfo';
 import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
 
 type SectionType = 'search' | 'home' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration' | 'test';
@@ -1565,6 +1566,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					const debugModeEnabled = Boolean(message.debugMode);
 					setDebugMode(debugModeEnabled);
 					setDevMode(Boolean(message.devMode) || debugModeEnabled);
+					setBackendName(message.backendName);
 					break;
 				}
 				case 'refresh':

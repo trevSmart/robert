@@ -19,7 +19,7 @@ This means if you set a value in VS Code settings, it will always be used even i
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `ROBERT_RALLY_API_KEY` | string | `""` | Rally API authentication key (required for Rally connection) |
-| `ROBERT_RALLY_INSTANCE` | string | `https://rally1.rallydev.com` | Rally server instance URL |
+| `ROBERT_RALLY_INSTANCE` | string | `https://eu1.rallydev.com` | Rally server instance URL |
 | `ROBERT_RALLY_PROJECT_NAME` | string | `""` | Target Rally project name |
 
 ### Extension Settings
@@ -65,7 +65,7 @@ Set up environment variables for automated agent testing:
 
 ```bash
 export ROBERT_RALLY_API_KEY="your-api-key-here"
-export ROBERT_RALLY_INSTANCE="https://rally1.rallydev.com"
+export ROBERT_RALLY_INSTANCE="https://eu1.rallydev.com"
 export ROBERT_RALLY_PROJECT_NAME="Your Project Name"
 ```
 
@@ -76,7 +76,7 @@ For a GitHub Actions or similar CI/CD pipeline:
 ```yaml
 env:
   ROBERT_RALLY_API_KEY: ${{ secrets.RALLY_API_KEY }}
-  ROBERT_RALLY_INSTANCE: https://rally1.rallydev.com
+  ROBERT_RALLY_INSTANCE: https://eu1.rallydev.com
   ROBERT_RALLY_PROJECT_NAME: MyProject
   ROBERT_DEBUG_MODE: "true"
 ```

@@ -1,4 +1,6 @@
+import { readFileSync } from 'node:fs';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import * as vscode from 'vscode';
 import { SettingsManager } from '../src/SettingsManager.js';
 
 vi.mock('vscode', () => ({
@@ -36,6 +38,13 @@ vi.mock('vscode', () => ({
 	}
 }));
 
+function mockRallyInstance(value: string): void {
+	vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+		get: (key: string, defaultValue?: unknown) => (key === 'rallyInstance' ? value : defaultValue),
+		update: vi.fn()
+	} as unknown as ReturnType<typeof vscode.workspace.getConfiguration>);
+}
+
 describe('SettingsManager', () => {
 	let settingsManager: SettingsManager;
 
@@ -44,7 +53,25 @@ describe('SettingsManager', () => {
 	});
 
 	afterEach(() => {
-		// Reset settings after each test if needed
+		vi.mocked(vscode.workspace.getConfiguration).mockReset();
+		vi.mocked(vscode.workspace.getConfiguration).mockImplementation(() => ({
+			get: (key: string, defaultValue: unknown) => {
+				const defaults: Record<string, unknown> = {
+					autoRefresh: true,
+					debugMode: false,
+					rallyInstance: 'https://rally1.rallydev.com',
+					rallyApiKey: '',
+					rallyProjectName: '',
+					'collaboration.serverUrl': 'https://robert-8vdt.onrender.com',
+					'collaboration.enabled': false,
+					'collaboration.autoConnect': true,
+					showOutputChannelOnStartup: false,
+					statusBarShowSprintDaysLeft: true
+				};
+				return defaults[key] ?? defaultValue;
+			},
+			update: vi.fn()
+		}) as unknown as ReturnType<typeof vscode.workspace.getConfiguration>);
 	});
 
 	describe('getInstance', () => {
@@ -85,6 +112,37 @@ describe('SettingsManager', () => {
 			
 			expect(typeof autoRefresh).toBe('boolean');
 			expect(typeof debugMode).toBe('boolean');
+		});
+
+		it('strips trailing slashes from the Rally instance', () => {
+			mockRallyInstance('https://eu1.rallydev.com///');
+
+			expect(settingsManager.getSetting('rallyInstance')).toBe('https://eu1.rallydev.com');
+			expect(settingsManager.getSettings().rallyInstance).toBe('https://eu1.rallydev.com');
+		});
+
+		it('defaults the Rally instance to the EU cluster when unset', () => {
+			const previous = process.env.ROBERT_RALLY_INSTANCE;
+			delete process.env.ROBERT_RALLY_INSTANCE;
+			mockRallyInstance('');
+
+			expect(settingsManager.getSetting('rallyInstance')).toBe('https://eu1.rallydev.com');
+
+			if (previous === undefined) {
+				delete process.env.ROBERT_RALLY_INSTANCE;
+			} else {
+				process.env.ROBERT_RALLY_INSTANCE = previous;
+			}
+		});
+	});
+
+	describe('package contribution', () => {
+		it('contributes eu1 as the Rally instance default', () => {
+			const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+				contributes: { configuration: { properties: Record<string, { default: string }> } };
+			};
+
+			expect(pkg.contributes.configuration.properties['robert.rallyInstance'].default).toBe('https://eu1.rallydev.com');
 		});
 	});
 

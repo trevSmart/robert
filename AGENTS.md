@@ -89,7 +89,7 @@ Robert/
 | `robert.advancedFeatures` | boolean | `false` | Funcions avançades |
 | `robert.maxResults` | number | `100` | Màxim resultats (10-1000) |
 | `robert.timeout` | number | `5000` | Timeout peticions (1000-60000ms) |
-| `robert.rallyInstance` | string | `https://rally1.rallydev.com` | URL instància Rally |
+| `robert.rallyInstance` | string | `https://eu1.rallydev.com` | URL instància Rally |
 | `robert.rallyApiKey` | string | `""` | Clau API Rally |
 | `robert.rallyProjectName` | string | `""` | Nom projecte Rally |
 
@@ -115,7 +115,7 @@ Per a entorns de testing automatitzat i agentes IA:
 ```bash
 # Rally Configuration
 export ROBERT_RALLY_API_KEY="your-api-key"
-export ROBERT_RALLY_INSTANCE="https://rally1.rallydev.com"
+export ROBERT_RALLY_INSTANCE="https://eu1.rallydev.com"
 export ROBERT_RALLY_PROJECT_NAME="YourProject"
 
 # Extension Settings

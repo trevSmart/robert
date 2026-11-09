@@ -36,8 +36,8 @@
 				},
 				"robert.rallyInstance": {
 					"type": "string",
-					"default": "https://rally1.rallydev.com",
-					"description": "Rally instance URL (e.g., https://rally1.rallydev.com)"
+					"default": "https://eu1.rallydev.com",
+					"description": "Rally instance URL (e.g., https://eu1.rallydev.com)"
 				},
 				"robert.rallyApiKey": {
 					"type": "string",

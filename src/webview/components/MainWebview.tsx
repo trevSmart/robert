@@ -1,7 +1,7 @@
 /// <reference path="./common/CollapsibleCard.d.ts" />
 import React, { FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import 'vscrui/dist/codicon.css';
+import '@vscode/codicons/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
 import UserStoryForm from './common/UserStoryForm';
 import TasksTable from './common/TasksTable';

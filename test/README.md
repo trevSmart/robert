@@ -82,7 +82,7 @@ The extension supports environment variable configuration, making it easy to tes
 ```bash
 # Set Rally configuration via environment variables
 export ROBERT_RALLY_API_KEY="your-api-key"
-export ROBERT_RALLY_INSTANCE="https://rally1.rallydev.com"
+export ROBERT_RALLY_INSTANCE="https://eu1.rallydev.com"
 export ROBERT_RALLY_PROJECT_NAME="TestProject"
 
 # Run tests

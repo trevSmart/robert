@@ -72,7 +72,7 @@ Connect Robert to your Rally instance once; settings are saved across sessions.
 1. Open VS Code Settings (`Cmd+,` / `Ctrl+,`).
 2. Search for **Robert**.
 3. Set:
-   - **Rally Instance URL** — e.g. `https://rally1.rallydev.com`
+   - **Rally Instance URL** — e.g. `https://eu1.rallydev.com`
    - **Rally API Key** — your personal Rally API key
    - **Rally Project Name** — the project you work on
 

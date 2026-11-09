@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import * as vscode from 'vscode';
 import { SettingsManager } from '../src/SettingsManager.js';
@@ -138,7 +139,7 @@ describe('SettingsManager', () => {
 
 	describe('package contribution', () => {
 		it('contributes eu1 as the Rally instance default', () => {
-			const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as {
+			const pkg = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as {
 				contributes: { configuration: { properties: Record<string, { default: string }> } };
 			};
 

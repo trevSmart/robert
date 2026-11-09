@@ -38,7 +38,7 @@ If you prefer to set variables directly:
 
 ```bash
 export ROBERT_RALLY_API_KEY="your-api-key"
-export ROBERT_RALLY_INSTANCE="https://rally1.rallydev.com"
+export ROBERT_RALLY_INSTANCE="https://eu1.rallydev.com"
 export ROBERT_RALLY_PROJECT_NAME="TestProject"
 export ROBERT_DEBUG_MODE="true"
 
@@ -143,7 +143,7 @@ jobs:
       - name: Run tests with Rally configuration
         env:
           ROBERT_RALLY_API_KEY: ${{ secrets.RALLY_API_KEY }}
-          ROBERT_RALLY_INSTANCE: https://rally1.rallydev.com
+          ROBERT_RALLY_INSTANCE: https://eu1.rallydev.com
           ROBERT_RALLY_PROJECT_NAME: ${{ secrets.RALLY_PROJECT }}
           ROBERT_DEBUG_MODE: "true"
         run: npm test
@@ -156,7 +156,7 @@ jobs:
 | Variable | Required | Example |
 |----------|----------|---------|
 | `ROBERT_RALLY_API_KEY` | Yes | `your-api-key` |
-| `ROBERT_RALLY_INSTANCE` | No | `https://rally1.rallydev.com` |
+| `ROBERT_RALLY_INSTANCE` | No | `https://eu1.rallydev.com` |
 | `ROBERT_RALLY_PROJECT_NAME` | Yes | `MyProject` |
 
 ### Optional for Agent Testing
@@ -263,4 +263,4 @@ Use these values for boolean settings:
 
 - [Environment Variables Reference](../ENVIRONMENT_VARIABLES.md)
 - [SettingsManager Implementation](../src/SettingsManager.ts)
-- [Rally API Documentation](https://rally1.rallydev.com/slm/doc/webservice)
+- [Rally API Documentation](https://eu1.rallydev.com/slm/doc/webservice)

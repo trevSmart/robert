@@ -41,7 +41,7 @@ export class SettingsManager {
 				const settings: RobertSettings = {
 					autoRefresh: this.resolveBooleanSettingWithFallback('autoRefresh', config.get<boolean>('autoRefresh'), 'ROBERT_AUTO_REFRESH', true),
 					debugMode: this.resolveBooleanSettingWithFallback('debugMode', config.get<boolean>('debugMode'), 'ROBERT_DEBUG_MODE', false),
-					rallyInstance: this.resolveSettingWithFallback('rallyInstance', config.get<string>('rallyInstance', ''), 'ROBERT_RALLY_INSTANCE', 'https://rally1.rallydev.com'),
+					rallyInstance: this.resolveSettingWithFallback('rallyInstance', config.get<string>('rallyInstance', ''), 'ROBERT_RALLY_INSTANCE', 'https://eu1.rallydev.com'),
 					rallyApiKey: this.resolveSettingWithFallback('rallyApiKey', config.get<string>('rallyApiKey', ''), 'ROBERT_RALLY_API_KEY', ''),
 					rallyProjectName: this.resolveSettingWithFallback('rallyProjectName', config.get<string>('rallyProjectName', ''), 'ROBERT_RALLY_PROJECT_NAME', ''),
 					collaborationServerUrl: this.resolveSettingWithFallback('collaboration.serverUrl', config.get<string>('collaboration.serverUrl', ''), 'ROBERT_COLLABORATION_SERVER_URL', 'https://robert-8vdt.onrender.com'),
@@ -198,7 +198,7 @@ export class SettingsManager {
 		return {
 			autoRefresh: true,
 			debugMode: false,
-			rallyInstance: 'https://rally1.rallydev.com',
+			rallyInstance: 'https://eu1.rallydev.com',
 			rallyApiKey: '',
 			rallyProjectName: '',
 			collaborationServerUrl: 'https://robert-8vdt.onrender.com',
@@ -217,17 +217,23 @@ export class SettingsManager {
 	 * @param defaultValue - Fallback default value
 	 */
 	private resolveSettingWithFallback(settingKey: string, vscodeValue: string, envVarName: string, defaultValue: string): string {
+		let resolved = defaultValue;
+
 		if (vscodeValue && vscodeValue.trim() !== '') {
-			return vscodeValue;
+			resolved = vscodeValue;
+		} else {
+			const envValue = process.env[envVarName];
+			if (envValue && envValue.trim() !== '') {
+				this._errorHandler.logDebug(`Setting '${settingKey}' loaded from environment variable '${envVarName}'`, 'SettingsManager.resolveSettingWithFallback');
+				resolved = envValue;
+			}
 		}
 
-		const envValue = process.env[envVarName];
-		if (envValue && envValue.trim() !== '') {
-			this._errorHandler.logDebug(`Setting '${settingKey}' loaded from environment variable '${envVarName}'`, 'SettingsManager.resolveSettingWithFallback');
-			return envValue;
+		if (settingKey === 'rallyInstance') {
+			return resolved.trim().replace(/\/+$/, '');
 		}
 
-		return defaultValue;
+		return resolved;
 	}
 
 	/**

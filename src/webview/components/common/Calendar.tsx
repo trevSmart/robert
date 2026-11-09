@@ -45,6 +45,11 @@ interface CalendarProps {
 
 const PRESET_COLORS = ['#e05252', '#e07c52', '#e0c452', '#7bc67b', '#52a0e0', '#8a52e0', '#e052b8', '#808080'];
 
+// Rally returns ObjectID as a number even though the type declares string, so never call
+// string methods on it directly (a.objectId.localeCompare crashed the whole webview when two
+// iterations shared the same start date).
+const compareObjectIds = (a: unknown, b: unknown): number => String(a ?? '').localeCompare(String(b ?? ''), undefined, { numeric: true });
+
 const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iterations = [], userStories = [], onMonthChange, debugMode = false, currentUser, holidays = [], onIterationClick, customEvents = [], onSaveCustomEvent, onDeleteCustomEvent }) => {
 	const today = new Date();
 	const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -651,7 +656,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
 		if (aStart !== bStart) return aStart - bStart;
 		// When start dates are equal, use objectId for deterministic ordering (no alphabetical fallback)
-		return a.objectId.localeCompare(b.objectId);
+		return compareObjectIds(a.objectId, b.objectId);
 	});
 
 	// Assign colors with overlap detection to prevent similar colors for overlapping sprints
@@ -759,7 +764,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
 		if (aStart !== bStart) return aStart - bStart;
 		// When start dates are equal, use objectId for deterministic ordering (no alphabetical fallback)
-		return a.objectId.localeCompare(b.objectId);
+		return compareObjectIds(a.objectId, b.objectId);
 	});
 
 	// Helper function to check if a day is an end date for any iteration in the month
@@ -966,7 +971,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
 			const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
 			if (aStart !== bStart) return aStart - bStart;
-			return a.objectId.localeCompare(b.objectId);
+			return compareObjectIds(a.objectId, b.objectId);
 		});
 
 		// Assign slots using interval scheduling: non-overlapping iterations share a slot

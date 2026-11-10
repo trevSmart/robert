@@ -33,6 +33,20 @@ export interface WorkspaceConfiguration {
 /** Settings whose values are stored encrypted when a {@link SecretCodec} is available. */
 export const SECRET_SETTING_KEYS: ReadonlySet<string> = new Set(['robert.jiraApiToken', 'robert.rallyApiKey']);
 
+/** Environment variables that can provide each secret when secure storage is unavailable. */
+const SECRET_ENV_VARS: Record<string, string> = {
+	'robert.jiraApiToken': 'ROBERT_JIRA_API_TOKEN',
+	'robert.rallyApiKey': 'ROBERT_RALLY_API_KEY'
+};
+
+export class SecureStorageUnavailableError extends Error {
+	constructor(public readonly keys: string[]) {
+		const envVars = keys.map(key => SECRET_ENV_VARS[key] ?? key).join(', ');
+		super(`Secure storage (OS keychain) is not available, so credentials cannot be saved encrypted. Set them through environment variables instead (${envVars}).`);
+		this.name = 'SecureStorageUnavailableError';
+	}
+}
+
 type EncryptedValue = { __encrypted: string };
 
 function isEncryptedValue(value: unknown): value is EncryptedValue {
@@ -127,12 +141,21 @@ export class ConfigurationStore {
 	 * Returns the keys whose effective value actually changed.
 	 */
 	public update(changes: Record<string, unknown>): string[] {
+		// Never persist credentials in plain text: without OS secure storage (e.g. Linux
+		// without a keyring) reject the whole update before touching anything.
+		if (!this.secretCodec?.isAvailable()) {
+			const blocked = Object.entries(changes).filter(([key, value]) => SECRET_SETTING_KEYS.has(key) && typeof value === 'string' && value !== '');
+			if (blocked.length > 0) {
+				throw new SecureStorageUnavailableError(blocked.map(([key]) => key));
+			}
+		}
+
 		const changed: string[] = [];
 		for (const [fullKey, value] of Object.entries(changes)) {
 			const before = this.getValue(fullKey);
 			if (value === undefined) {
 				delete this.values[fullKey];
-			} else if (SECRET_SETTING_KEYS.has(fullKey) && typeof value === 'string' && value !== '' && this.secretCodec?.isAvailable()) {
+			} else if (SECRET_SETTING_KEYS.has(fullKey) && typeof value === 'string' && value !== '' && this.secretCodec) {
 				this.values[fullKey] = { __encrypted: this.secretCodec.encrypt(value) } satisfies EncryptedValue;
 			} else {
 				this.values[fullKey] = value;

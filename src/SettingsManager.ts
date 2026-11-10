@@ -19,6 +19,17 @@ export interface RobertSettings {
 	showWelcomeAnimation: boolean;
 }
 
+/**
+ * Environment variable names for settings resolved by getSetting()'s generic
+ * branch. Must match getSettings() and ENVIRONMENT_VARIABLES.md.
+ */
+const GENERIC_ENV_VARS: Partial<Record<keyof RobertSettings, string>> = {
+	autoRefresh: 'ROBERT_AUTO_REFRESH',
+	debugMode: 'ROBERT_DEBUG_MODE',
+	statusBarShowSprintDaysLeft: 'ROBERT_STATUS_BAR_SPRINT_DAYS',
+	showWelcomeAnimation: 'ROBERT_SHOW_WELCOME_ANIMATION'
+};
+
 export class SettingsManager {
 	private static instance: SettingsManager;
 	private _errorHandler: ErrorHandler;
@@ -44,21 +55,21 @@ export class SettingsManager {
 				const config = vscode.workspace.getConfiguration('robert');
 
 				const settings: RobertSettings = {
-					autoRefresh: this.resolveBooleanSettingWithFallback('autoRefresh', config.get<boolean>('autoRefresh'), 'ROBERT_AUTO_REFRESH', true),
-					debugMode: this.resolveBooleanSettingWithFallback('debugMode', config.get<boolean>('debugMode'), 'ROBERT_DEBUG_MODE', false),
-					provider: this.resolveProvider(config.get<string>('provider', '')),
-					rallyInstance: this.resolveSettingWithFallback('rallyInstance', config.get<string>('rallyInstance', ''), 'ROBERT_RALLY_INSTANCE', 'https://eu1.rallydev.com'),
-					rallyApiKey: this.resolveSettingWithFallback('rallyApiKey', config.get<string>('rallyApiKey', ''), 'ROBERT_RALLY_API_KEY', ''),
-					rallyProjectName: this.resolveSettingWithFallback('rallyProjectName', config.get<string>('rallyProjectName', ''), 'ROBERT_RALLY_PROJECT_NAME', ''),
-					jiraBaseUrl: this.resolveSettingWithFallback('jiraBaseUrl', config.get<string>('jiraBaseUrl', ''), 'ROBERT_JIRA_BASE_URL', 'https://jiracloudab.atlassian.net'),
-					jiraEmail: this.resolveSettingWithFallback('jiraEmail', config.get<string>('jiraEmail', ''), 'ROBERT_JIRA_EMAIL', ''),
-					jiraApiToken: this.resolveSettingWithFallback('jiraApiToken', config.get<string>('jiraApiToken', ''), 'ROBERT_JIRA_API_TOKEN', ''),
-					jiraProjectKey: this.resolveSettingWithFallback('jiraProjectKey', config.get<string>('jiraProjectKey', ''), 'ROBERT_JIRA_PROJECT_KEY', ''),
-					collaborationServerUrl: this.resolveSettingWithFallback('collaboration.serverUrl', config.get<string>('collaboration.serverUrl', ''), 'ROBERT_COLLABORATION_SERVER_URL', 'https://robert-8vdt.onrender.com'),
-					collaborationEnabled: this.resolveBooleanSettingWithFallback('collaboration.enabled', config.get<boolean>('collaboration.enabled'), 'ROBERT_COLLABORATION_ENABLED', false),
-					collaborationAutoConnect: this.resolveBooleanSettingWithFallback('collaboration.autoConnect', config.get<boolean>('collaboration.autoConnect'), 'ROBERT_COLLABORATION_AUTO_CONNECT', true),
-					statusBarShowSprintDaysLeft: this.resolveBooleanSettingWithFallback('statusBarShowSprintDaysLeft', config.get<boolean>('statusBarShowSprintDaysLeft'), 'ROBERT_STATUS_BAR_SPRINT_DAYS', true),
-					showWelcomeAnimation: this.resolveBooleanSettingWithFallback('showWelcomeAnimation', config.get<boolean>('showWelcomeAnimation'), 'ROBERT_SHOW_WELCOME_ANIMATION', true)
+					autoRefresh: this.resolveBooleanSettingWithFallback('autoRefresh', this.readExplicit<boolean>(config, 'autoRefresh'), 'ROBERT_AUTO_REFRESH', true),
+					debugMode: this.resolveBooleanSettingWithFallback('debugMode', this.readExplicit<boolean>(config, 'debugMode'), 'ROBERT_DEBUG_MODE', false),
+					provider: this.resolveProvider(this.readExplicit<string>(config, 'provider') ?? ''),
+					rallyInstance: this.resolveSettingWithFallback('rallyInstance', this.readExplicit<string>(config, 'rallyInstance') ?? '', 'ROBERT_RALLY_INSTANCE', 'https://eu1.rallydev.com'),
+					rallyApiKey: this.resolveSettingWithFallback('rallyApiKey', this.readExplicit<string>(config, 'rallyApiKey') ?? '', 'ROBERT_RALLY_API_KEY', ''),
+					rallyProjectName: this.resolveSettingWithFallback('rallyProjectName', this.readExplicit<string>(config, 'rallyProjectName') ?? '', 'ROBERT_RALLY_PROJECT_NAME', ''),
+					jiraBaseUrl: this.resolveSettingWithFallback('jiraBaseUrl', this.readExplicit<string>(config, 'jiraBaseUrl') ?? '', 'ROBERT_JIRA_BASE_URL', 'https://jiracloudab.atlassian.net'),
+					jiraEmail: this.resolveSettingWithFallback('jiraEmail', this.readExplicit<string>(config, 'jiraEmail') ?? '', 'ROBERT_JIRA_EMAIL', ''),
+					jiraApiToken: this.resolveSettingWithFallback('jiraApiToken', this.readExplicit<string>(config, 'jiraApiToken') ?? '', 'ROBERT_JIRA_API_TOKEN', ''),
+					jiraProjectKey: this.resolveSettingWithFallback('jiraProjectKey', this.readExplicit<string>(config, 'jiraProjectKey') ?? '', 'ROBERT_JIRA_PROJECT_KEY', ''),
+					collaborationServerUrl: this.resolveSettingWithFallback('collaboration.serverUrl', this.readExplicit<string>(config, 'collaboration.serverUrl') ?? '', 'ROBERT_COLLABORATION_SERVER_URL', 'https://robert-8vdt.onrender.com'),
+					collaborationEnabled: this.resolveBooleanSettingWithFallback('collaboration.enabled', this.readExplicit<boolean>(config, 'collaboration.enabled'), 'ROBERT_COLLABORATION_ENABLED', false),
+					collaborationAutoConnect: this.resolveBooleanSettingWithFallback('collaboration.autoConnect', this.readExplicit<boolean>(config, 'collaboration.autoConnect'), 'ROBERT_COLLABORATION_AUTO_CONNECT', true),
+					statusBarShowSprintDaysLeft: this.resolveBooleanSettingWithFallback('statusBarShowSprintDaysLeft', this.readExplicit<boolean>(config, 'statusBarShowSprintDaysLeft'), 'ROBERT_STATUS_BAR_SPRINT_DAYS', true),
+					showWelcomeAnimation: this.resolveBooleanSettingWithFallback('showWelcomeAnimation', this.readExplicit<boolean>(config, 'showWelcomeAnimation'), 'ROBERT_SHOW_WELCOME_ANIMATION', true)
 				};
 
 				return settings;
@@ -153,20 +164,20 @@ export class SettingsManager {
 				const defaultValue = this.getDefaultSettings()[key];
 
 				if (key === 'collaborationServerUrl') {
-					const vscodeVal = config.get('collaboration.serverUrl', '');
+					const vscodeVal = this.readExplicit<string>(config, 'collaboration.serverUrl') ?? '';
 					return this.resolveSettingWithFallback('collaboration.serverUrl', vscodeVal, 'ROBERT_COLLABORATION_SERVER_URL', defaultValue as string) as RobertSettings[K];
 				}
 				if (key === 'collaborationEnabled') {
-					const vscodeVal = config.get<boolean>('collaboration.enabled');
+					const vscodeVal = this.readExplicit<boolean>(config, 'collaboration.enabled');
 					return this.resolveBooleanSettingWithFallback('collaboration.enabled', vscodeVal, 'ROBERT_COLLABORATION_ENABLED', defaultValue as boolean) as RobertSettings[K];
 				}
 				if (key === 'collaborationAutoConnect') {
-					const vscodeVal = config.get<boolean>('collaboration.autoConnect');
+					const vscodeVal = this.readExplicit<boolean>(config, 'collaboration.autoConnect');
 					return this.resolveBooleanSettingWithFallback('collaboration.autoConnect', vscodeVal, 'ROBERT_COLLABORATION_AUTO_CONNECT', defaultValue as boolean) as RobertSettings[K];
 				}
 
 				if (key === 'provider') {
-					return this.resolveProvider(config.get<string>('provider', '')) as RobertSettings[K];
+					return this.resolveProvider(this.readExplicit<string>(config, 'provider') ?? '') as RobertSettings[K];
 				}
 				const rallyEnv: Record<string, string> = {
 					rallyInstance: 'ROBERT_RALLY_INSTANCE',
@@ -174,37 +185,37 @@ export class SettingsManager {
 					rallyProjectName: 'ROBERT_RALLY_PROJECT_NAME'
 				};
 				if (key in rallyEnv) {
-					const vscodeVal = config.get<string>(key, '');
+					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
 					return this.resolveSettingWithFallback(key, vscodeVal, rallyEnv[key], defaultValue as string) as RobertSettings[K];
 				}
 
 				if (key === 'jiraApiToken') {
-					const vscodeVal = config.get<string>(key, '');
+					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
 					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_API_TOKEN', defaultValue as string) as RobertSettings[K];
 				}
 				if (key === 'jiraBaseUrl') {
-					const vscodeVal = config.get<string>(key, '');
+					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
 					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_BASE_URL', defaultValue as string) as RobertSettings[K];
 				}
 				if (key === 'jiraEmail') {
-					const vscodeVal = config.get<string>(key, '');
+					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
 					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_EMAIL', defaultValue as string) as RobertSettings[K];
 				}
 				if (key === 'jiraProjectKey') {
-					const vscodeVal = config.get<string>(key, '');
+					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
 					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_PROJECT_KEY', defaultValue as string) as RobertSettings[K];
 				}
 
 				if (typeof defaultValue === 'boolean') {
-					const vscodeVal = config.get<boolean>(key);
-					const envVarName = `ROBERT_${key.toUpperCase()}`;
+					const vscodeVal = this.readExplicit<boolean>(config, key);
+					const envVarName = GENERIC_ENV_VARS[key] ?? `ROBERT_${key.toUpperCase()}`;
 					return this.resolveBooleanSettingWithFallback(key, vscodeVal, envVarName, defaultValue as boolean) as RobertSettings[K];
 				}
 
-				const vscodeVal = config.get<string>(key, '');
-				const envVarName = `ROBERT_${key.toUpperCase()}`;
+				const vscodeVal = this.readExplicit<string>(config, key) ?? '';
+				const envVarName = GENERIC_ENV_VARS[key] ?? `ROBERT_${key.toUpperCase()}`;
 				return this.resolveSettingWithFallback(key, vscodeVal, envVarName, defaultValue as string) as RobertSettings[K];
-			}, `SettingsManager.getSetting.${key}`) || this.getDefaultSettings()[key]
+			}, `SettingsManager.getSetting.${key}`) ?? this.getDefaultSettings()[key]
 		);
 	}
 
@@ -228,6 +239,21 @@ export class SettingsManager {
 
 			this._errorHandler.logInfo(`Setting ${key} updated to ${value}`, 'SettingsManager.updateSetting');
 		}, `SettingsManager.updateSetting.${key}`);
+	}
+
+	/**
+	 * Value the user explicitly configured (user, workspace or folder scope),
+	 * ignoring the manifest default. `config.get()` returns the package.json
+	 * default for unset keys, which would hide ROBERT_* environment variables
+	 * and break the documented precedence: settings > environment > defaults.
+	 * Falls back to `get()` when `inspect()` is unavailable (e.g. test doubles).
+	 */
+	private readExplicit<T>(config: vscode.WorkspaceConfiguration, key: string): T | undefined {
+		const inspected = typeof config.inspect === 'function' ? config.inspect<T>(key) : undefined;
+		if (!inspected) {
+			return config.get<T>(key);
+		}
+		return inspected.workspaceFolderValue ?? inspected.workspaceValue ?? inspected.globalValue;
 	}
 
 	/**

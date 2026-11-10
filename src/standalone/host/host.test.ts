@@ -2,7 +2,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ConfigurationStore, type SecretCodec, type SettingSchema } from './ConfigurationStore';
+import { ConfigurationStore, type SecretCodec, SecureStorageUnavailableError, type SettingSchema } from './ConfigurationStore';
 import { FileMemento } from './FileMemento';
 import { injectTheme, buildThemeCss } from './theme';
 import { Uri } from './Uri';
@@ -78,6 +78,21 @@ describe('ConfigurationStore', () => {
 		expect(raw).not.toContain('top-secret');
 		expect(raw).toContain('me@example.com');
 		expect(new ConfigurationStore(file, SCHEMA, fakeCodec).getConfiguration('robert').get('jiraApiToken')).toBe('top-secret');
+	});
+
+	it('refuses to store secrets in plain text when secure storage is unavailable', () => {
+		const file = path.join(tmpDir, 'settings.json');
+		const unavailable: SecretCodec = { ...fakeCodec, isAvailable: () => false };
+		for (const codec of [unavailable, undefined]) {
+			const store = new ConfigurationStore(file, SCHEMA, codec);
+			expect(() => store.update({ 'robert.jiraEmail': 'me@example.com', 'robert.jiraApiToken': 'top-secret' })).toThrow(SecureStorageUnavailableError);
+			expect(() => store.update({ 'robert.jiraApiToken': 'top-secret' })).toThrow(/ROBERT_JIRA_API_TOKEN/);
+			// The whole batch is rejected and nothing reaches disk.
+			expect(fs.existsSync(file)).toBe(false);
+			expect(store.getConfiguration('robert').get('jiraEmail')).toBe('');
+			// Clearing a secret is still allowed.
+			expect(() => store.update({ 'robert.jiraApiToken': undefined })).not.toThrow();
+		}
 	});
 
 	it('treats an undecryptable secret as unset instead of throwing', () => {

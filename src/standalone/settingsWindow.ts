@@ -273,7 +273,8 @@ function buildSettingsHtml(nonce: string): string {
 			}
 		} catch (error) {
 			status.className = 'error';
-			status.textContent = 'Could not save settings: ' + (error && error.message ? error.message : error);
+			const message = String(error && error.message ? error.message : error).replace(/^Error invoking remote method '[^']+': (\w*Error: )?/, '');
+			status.textContent = 'Could not save settings: ' + message;
 		}
 	});
 })();

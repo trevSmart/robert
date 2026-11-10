@@ -9,7 +9,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type * as vscode from 'vscode';
-import { app, BrowserWindow, clipboard, Menu, type MenuItemConstructorOptions, nativeTheme, Notification, safeStorage, session, shell } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, Menu, type MenuItemConstructorOptions, nativeTheme, Notification, safeStorage, session, shell } from 'electron';
 import { APP_SCHEME, AppProtocol, registerAppSchemeAsPrivileged } from './appProtocol';
 import { ElectronWebview, ElectronWebviewView } from './ElectronWebview';
 import { ConfigurationStore, type SecretCodec } from './host/ConfigurationStore';
@@ -37,10 +37,15 @@ registerAppSchemeAsPrivileged();
 if (!app.requestSingleInstanceLock()) {
 	app.quit();
 } else {
-	app.whenReady().then(start, error => {
-		console.error('[Robert] Failed to start', error);
-		app.exit(1);
-	});
+	app
+		.whenReady()
+		.then(start)
+		.catch(error => {
+			// Covers both whenReady() and failures inside start() (e.g. unwritable profile dir).
+			console.error('[Robert] Failed to start', error);
+			dialog.showErrorBox(`${APP_NAME} could not start`, error instanceof Error ? error.message : String(error));
+			app.exit(1);
+		});
 }
 
 const safeStorageCodec: SecretCodec = {
@@ -55,6 +60,11 @@ function currentTheme(): ThemeKind {
 
 function isHttpUrl(url: string): boolean {
 	return /^https?:\/\//i.test(url);
+}
+
+/** Links handed to the OS: web pages and e-mail addresses (e.g. team member mailto: links). */
+function isExternalUrl(url: string): boolean {
+	return isHttpUrl(url) || /^mailto:/i.test(url);
 }
 
 function openLogFile(filePath: string): void {
@@ -106,7 +116,7 @@ async function start(): Promise<void> {
 			}
 		},
 		openExternal: async url => {
-			if (!isHttpUrl(url) && !url.startsWith('mailto:')) {
+			if (!isExternalUrl(url)) {
 				return false;
 			}
 			await shell.openExternal(url);
@@ -179,9 +189,9 @@ async function start(): Promise<void> {
 		mainWindow = window;
 		window.once('ready-to-show', () => window.show());
 
-		// Keep the window on Robert's own pages; open web links in the browser.
+		// Keep the window on Robert's own pages; open web and mailto: links with the OS.
 		window.webContents.setWindowOpenHandler(({ url }) => {
-			if (isHttpUrl(url)) {
+			if (isExternalUrl(url)) {
 				void shell.openExternal(url);
 			}
 			return { action: 'deny' };
@@ -189,7 +199,7 @@ async function start(): Promise<void> {
 		window.webContents.on('will-navigate', (event, url) => {
 			if (!url.startsWith(`${APP_SCHEME}://`)) {
 				event.preventDefault();
-				if (isHttpUrl(url)) {
+				if (isExternalUrl(url)) {
 					void shell.openExternal(url);
 				}
 			}

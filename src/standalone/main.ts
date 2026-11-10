@@ -181,6 +181,10 @@ async function start(): Promise<void> {
 
 	let mainWindow: BrowserWindow | undefined;
 	let mainWebview: ElectronWebview | undefined;
+	// Set when the app is really quitting (Cmd+Q, Dock "Quit", logout), so closing the window is allowed.
+	let isQuitting = false;
+	// On macOS, closing the window only hides it: the app keeps running in the Dock and keeps its state.
+	const hideOnClose = process.platform === 'darwin';
 
 	const createMainWindow = async () => {
 		const window = new BrowserWindow({
@@ -234,6 +238,20 @@ async function start(): Promise<void> {
 
 		const webview = new ElectronWebview(window, appProtocol, 'main', currentTheme);
 		mainWebview = webview;
+		window.on('close', event => {
+			if (!hideOnClose || isQuitting) {
+				return;
+			}
+			event.preventDefault();
+			// Hiding a full-screen window would leave an empty full-screen Space behind.
+			if (window.isFullScreen()) {
+				window.once('leave-full-screen', () => window.hide());
+				window.setFullScreen(false);
+			} else {
+				window.hide();
+			}
+			output.appendLine('[Robert] 🪟 Main window closed; the app keeps running (Dock icon or Cmd+Q to quit)');
+		});
 		window.on('closed', () => {
 			if (mainWindow === window) {
 				mainWindow = undefined;
@@ -268,6 +286,9 @@ async function start(): Promise<void> {
 		}, 'standalone.reload');
 	};
 
+	// The settings window is a child of the main window only while the main window is visible.
+	const settingsParent = () => (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() ? mainWindow : undefined);
+
 	const settingsWindow = new SettingsWindowController(config, appProtocol, path.join(__dirname, 'preload.js'), iconPath, currentTheme, changedKeys => {
 		output.appendLine(`[Robert] ⚙️  Settings saved: ${changedKeys.join(', ') || 'no changes'}`);
 	});
@@ -290,8 +311,8 @@ async function start(): Promise<void> {
 	// Commands the shared code may execute through vscode.commands.
 	shim.commands.registerCommand('workbench.view.extension.robert', showMainWindow);
 	shim.commands.registerCommand('robert.openMainView', showMainWindow);
-	shim.commands.registerCommand('workbench.action.openSettings', () => settingsWindow.open(mainWindow));
-	shim.commands.registerCommand('robert.openSettings', () => settingsWindow.open(mainWindow));
+	shim.commands.registerCommand('workbench.action.openSettings', () => settingsWindow.open(settingsParent()));
+	shim.commands.registerCommand('robert.openSettings', () => settingsWindow.open(settingsParent()));
 	shim.commands.registerCommand('robert.reload', reload);
 	shim.commands.registerCommand('robert.showOutput', () => output.show());
 	shim.commands.registerCommand('robert.goBack', () => provider.navigateHistory('back'));
@@ -301,7 +322,7 @@ async function start(): Promise<void> {
 
 	Menu.setApplicationMenu(
 		buildMenu({
-			openSettings: () => settingsWindow.open(mainWindow),
+			openSettings: () => settingsWindow.open(settingsParent()),
 			reload: () => void reload(),
 			back: () => provider.navigateHistory('back'),
 			forward: () => provider.navigateHistory('forward'),
@@ -311,8 +332,13 @@ async function start(): Promise<void> {
 
 	app.on('second-instance', () => void showMainWindow());
 	app.on('activate', () => void showMainWindow());
-	app.on('window-all-closed', () => app.quit());
+	app.on('window-all-closed', () => {
+		if (!hideOnClose) {
+			app.quit();
+		}
+	});
 	app.on('before-quit', () => {
+		isQuitting = true;
 		provider.dispose();
 		for (const disposable of context.subscriptions) {
 			disposable.dispose();

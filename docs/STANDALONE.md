@@ -42,6 +42,7 @@ SettingsManager, ErrorHandler, Jira/Rally providers
 - `appProtocol.ts` serves the webview bundle and resources over a private `robert-app://` scheme (the counterpart of `vscode-webview://` URIs) and confines reads to the app root.
 - `host/theme.ts` injects the `--vscode-*` CSS variables and the `vscode-dark` / `vscode-light` body class that VS Code normally provides, following the OS theme.
 - Windows run with `contextIsolation` and `sandbox`; navigation away from the app is blocked and web links open in the default browser.
+- On macOS, closing the main window (red button or Cmd+W) only hides it: the app keeps running in the Dock with its state, clicking the Dock icon brings the window back, and Cmd+Q quits. On Windows and Linux, closing the window quits the app.
 
 ## Developing
 

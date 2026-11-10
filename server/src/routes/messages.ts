@@ -79,7 +79,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 
@@ -128,7 +128,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
 
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 
@@ -169,7 +169,7 @@ router.delete('/:id', async (req: AuthenticatedRequest, res: Response) => {
 
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 
@@ -213,7 +213,7 @@ router.post('/:id/replies', async (req: AuthenticatedRequest, res: Response) => 
 
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 
@@ -259,7 +259,7 @@ router.post('/:id/attend', async (req: AuthenticatedRequest, res: Response) => {
 
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 
@@ -290,7 +290,7 @@ router.delete('/:id/attend', async (req: AuthenticatedRequest, res: Response) =>
 
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 
@@ -321,7 +321,7 @@ router.post('/:id/read', async (req: AuthenticatedRequest, res: Response) => {
 
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 
@@ -349,7 +349,7 @@ router.delete('/:id/read', async (req: AuthenticatedRequest, res: Response) => {
 
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 

@@ -7,7 +7,7 @@ import { CalendarEvent } from '../models/CalendarEvent';
 
 type WebSocketServerClient = WebSocket & {
 	userId?: string;
-	jiraUserId?: string;
+	rallyUserId?: string;
 	subscribedUserStories?: Set<string>;
 	isAlive?: boolean;
 };
@@ -93,20 +93,20 @@ async function handleWebSocketMessage(client: WebSocketServerClient, message: an
 }
 
 async function handleAuthenticate(client: WebSocketServerClient, message: any): Promise<void> {
-	const { jiraUserId, displayName } = message;
+	const { rallyUserId, displayName } = message;
 
-	if (!jiraUserId) {
+	if (!rallyUserId) {
 		client.send(JSON.stringify({
 			type: 'error',
-			message: 'jiraUserId is required'
+			message: 'rallyUserId is required'
 		}));
 		return;
 	}
 
 	try {
-		const user = await getOrCreateUser(jiraUserId, displayName || 'Unknown User');
+		const user = await getOrCreateUser(rallyUserId, displayName || 'Unknown User');
 		client.userId = user.id;
-		client.jiraUserId = jiraUserId;
+		client.rallyUserId = rallyUserId;
 
 		client.send(JSON.stringify({
 			type: 'authenticated',

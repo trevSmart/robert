@@ -4,7 +4,7 @@ import { findUserById } from './userService';
 
 export async function getMessagesByUserStory(userStoryId: string): Promise<Message[]> {
 	const result = await query(
-		`SELECT m.*, u.display_name, u.jira_user_id
+		`SELECT m.*, u.display_name, u.rally_user_id
 		 FROM messages m
 		 JOIN users u ON m.user_id = u.id
 		 WHERE m.user_story_id = $1
@@ -25,7 +25,7 @@ export async function getMessagesByUserStory(userStoryId: string): Promise<Messa
 
 export async function getAllMessages(): Promise<Message[]> {
 	const result = await query(
-		`SELECT m.*, u.display_name, u.jira_user_id
+		`SELECT m.*, u.display_name, u.rally_user_id
 		 FROM messages m
 		 JOIN users u ON m.user_id = u.id
 		 ORDER BY m.created_at DESC`
@@ -44,7 +44,7 @@ export async function getAllMessages(): Promise<Message[]> {
 
 export async function getMessageById(id: string): Promise<Message | null> {
 	const result = await query(
-		`SELECT m.*, u.display_name, u.jira_user_id
+		`SELECT m.*, u.display_name, u.rally_user_id
 		 FROM messages m
 		 JOIN users u ON m.user_id = u.id
 		 WHERE m.id = $1`,
@@ -76,7 +76,7 @@ export async function createMessage(userId: string, input: CreateMessageInput): 
 	if (user) {
 		message.user = {
 			displayName: user.displayName,
-			jiraUserId: user.jiraUserId
+			rallyUserId: user.rallyUserId
 		};
 	}
 
@@ -121,7 +121,7 @@ export async function updateMessage(id: string, input: UpdateMessageInput): Prom
 	if (user) {
 		message.user = {
 			displayName: user.displayName,
-			jiraUserId: user.jiraUserId
+			rallyUserId: user.rallyUserId
 		};
 	}
 
@@ -136,7 +136,7 @@ export async function deleteMessage(id: string): Promise<void> {
 
 export async function getMessageReplies(messageId: string): Promise<MessageReply[]> {
 	const result = await query(
-		`SELECT mr.*, u.display_name, u.jira_user_id
+		`SELECT mr.*, u.display_name, u.rally_user_id
 		 FROM message_replies mr
 		 JOIN users u ON mr.user_id = u.id
 		 WHERE mr.message_id = $1
@@ -162,7 +162,7 @@ export async function createMessageReply(userId: string, input: CreateMessageRep
 	if (user) {
 		reply.user = {
 			displayName: user.displayName,
-			jiraUserId: user.jiraUserId
+			rallyUserId: user.rallyUserId
 		};
 	}
 
@@ -171,7 +171,7 @@ export async function createMessageReply(userId: string, input: CreateMessageRep
 
 export async function getMessageAttendees(messageId: string): Promise<MessageAttendee[]> {
 	const result = await query(
-		`SELECT ma.*, u.display_name, u.jira_user_id
+		`SELECT ma.*, u.display_name, u.rally_user_id
 		 FROM message_attendees ma
 		 JOIN users u ON ma.user_id = u.id
 		 WHERE ma.message_id = $1
@@ -194,7 +194,7 @@ export async function addAttendee(messageId: string, userId: string): Promise<Me
 	if (result.rows.length === 0) {
 		// Already exists, fetch it
 		const existing = await query(
-			`SELECT ma.*, u.display_name, u.jira_user_id
+			`SELECT ma.*, u.display_name, u.rally_user_id
 			 FROM message_attendees ma
 			 JOIN users u ON ma.user_id = u.id
 			 WHERE ma.message_id = $1 AND ma.user_id = $2`,
@@ -209,7 +209,7 @@ export async function addAttendee(messageId: string, userId: string): Promise<Me
 	const user = await findUserById(userId);
 	if (user) {
 		attendee.displayName = user.displayName;
-		attendee.jiraUserId = user.jiraUserId;
+		attendee.rallyUserId = user.rallyUserId;
 	}
 
 	return attendee;
@@ -252,7 +252,7 @@ export async function isMessageReadByUser(messageId: string, userId: string): Pr
 // Get all messages with read status for a specific user
 export async function getMessagesWithReadStatus(userId: string): Promise<Message[]> {
 	const result = await query(
-		`SELECT m.*, u.display_name, u.jira_user_id,
+		`SELECT m.*, u.display_name, u.rally_user_id,
 		        EXISTS(SELECT 1 FROM message_reads mr WHERE mr.message_id = m.id AND mr.user_id = $1) as is_read
 		 FROM messages m
 		 JOIN users u ON m.user_id = u.id
@@ -285,7 +285,7 @@ function mapRowToMessage(row: any): Message {
 		updatedAt: row.updated_at,
 		user: row.display_name ? {
 			displayName: row.display_name,
-					jiraUserId: row.jira_user_id
+			rallyUserId: row.rally_user_id
 		} : undefined
 	};
 }
@@ -299,7 +299,7 @@ function mapRowToReply(row: any): MessageReply {
 		createdAt: row.created_at,
 		user: row.display_name ? {
 			displayName: row.display_name,
-					jiraUserId: row.jira_user_id
+			rallyUserId: row.rally_user_id
 		} : undefined
 	};
 }
@@ -310,7 +310,7 @@ function mapRowToAttendee(row: any): MessageAttendee {
 		messageId: row.message_id,
 		userId: row.user_id,
 		displayName: row.display_name || '',
-		jiraUserId: row.jira_user_id || '',
+		rallyUserId: row.rally_user_id || '',
 		createdAt: row.created_at
 	};
 }

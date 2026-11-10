@@ -5,7 +5,7 @@ export interface MessageAttendee {
 	messageId: string;
 	userId: string;
 	displayName: string;
-	jiraUserId: string;
+	rallyUserId: string;
 	createdAt: Date;
 }
 
@@ -19,7 +19,7 @@ export interface Message {
 	updatedAt: Date;
 	user?: {
 		displayName: string;
-		jiraUserId: string;
+		rallyUserId: string;
 	};
 	replies?: MessageReply[];
 	attendees?: MessageAttendee[];
@@ -43,7 +43,7 @@ export interface MessageReply {
 	createdAt: Date;
 	user?: {
 		displayName: string;
-		jiraUserId: string;
+		rallyUserId: string;
 	};
 }
 

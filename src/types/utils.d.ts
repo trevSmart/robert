@@ -41,6 +41,6 @@ export interface CustomCalendarEvent {
 	color: string; // Hex color code
 	// Public/collaborative fields
 	isPublic?: boolean; // false by default (local only)
-	creatorJiraUserId?: string; // For public events only
+	creatorRallyUserId?: string; // For public events only
 	creatorDisplayName?: string; // For public events only
 }

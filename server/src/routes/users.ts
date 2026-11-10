@@ -12,7 +12,7 @@ router.use(authenticate);
 router.get('/me', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			req.user!.displayName
 		);
 
@@ -29,7 +29,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
 		const { displayName, email } = req.body;
 
 		const user = await getOrCreateUser(
-			req.user!.jiraUserId,
+			req.user!.rallyUserId,
 			displayName || req.user!.displayName,
 			email
 		);

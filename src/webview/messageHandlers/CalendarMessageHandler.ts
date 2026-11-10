@@ -109,7 +109,7 @@ export class CalendarMessageHandler {
 	private async handleSavePublicCalendarEvent(webview: vscode.Webview, message: any): Promise<void> {
 		try {
 			const incoming = (message.data?.event ?? message.event) as CustomCalendarEvent;
-			const saved = incoming.creatorJiraUserId
+			const saved = incoming.creatorRallyUserId
 				? await this.collaborationClient.updateCalendarEvent(incoming.id, {
 						date: incoming.date,
 						time: incoming.time,

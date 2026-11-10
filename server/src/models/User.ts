@@ -1,6 +1,6 @@
 export interface User {
 	id: string;
-	jiraUserId: string;
+	rallyUserId: string;
 	displayName: string;
 	email?: string;
 	createdAt: Date;
@@ -8,7 +8,7 @@ export interface User {
 }
 
 export interface CreateUserInput {
-	jiraUserId: string;
+	rallyUserId: string;
 	displayName: string;
 	email?: string;
 }

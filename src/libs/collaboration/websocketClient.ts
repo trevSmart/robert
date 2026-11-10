@@ -14,7 +14,7 @@ export class WebSocketClient {
 	private _settingsManager: SettingsManager;
 	private _ws: WebSocket | null = null;
 	private _serverUrl: string | null = null;
-	private _jiraUserId: string | null = null;
+	private _rallyUserId: string | null = null;
 	private _displayName: string | null = null;
 	private _reconnectAttempts: number = 0;
 	private _maxReconnectAttempts: number = 5;
@@ -39,8 +39,8 @@ export class WebSocketClient {
 		this._serverUrl = url;
 	}
 
-	public setUserInfo(jiraUserId: string, displayName: string): void {
-		this._jiraUserId = jiraUserId;
+	public setUserInfo(rallyUserId: string, displayName: string): void {
+		this._rallyUserId = rallyUserId;
 		this._displayName = displayName;
 	}
 
@@ -83,10 +83,10 @@ export class WebSocketClient {
 					this._reconnectAttempts = 0;
 
 					// Authenticate
-					if (this._jiraUserId) {
+					if (this._rallyUserId) {
 						this.send({
 							type: 'authenticate',
-							jiraUserId: this._jiraUserId,
+							rallyUserId: this._rallyUserId,
 							displayName: this._displayName || 'Unknown User'
 						});
 					}

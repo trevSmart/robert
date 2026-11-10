@@ -54,7 +54,7 @@ async function runMigrations(): Promise<void> {
 		await client.query(`
 			CREATE TABLE IF NOT EXISTS users (
 				id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-				jira_user_id VARCHAR(255) UNIQUE NOT NULL,
+				rally_user_id VARCHAR(255) UNIQUE NOT NULL,
 				display_name VARCHAR(255) NOT NULL,
 				email VARCHAR(255),
 				created_at TIMESTAMP DEFAULT NOW(),
@@ -125,7 +125,7 @@ async function runMigrations(): Promise<void> {
 			CREATE TABLE IF NOT EXISTS calendar_events (
 				id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 				creator_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-				creator_jira_user_id VARCHAR(255) NOT NULL,
+				creator_rally_user_id VARCHAR(255) NOT NULL,
 				creator_display_name VARCHAR(255) NOT NULL,
 				date VARCHAR(10) NOT NULL,
 				time VARCHAR(5),

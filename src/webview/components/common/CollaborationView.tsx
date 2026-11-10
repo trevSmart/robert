@@ -7,7 +7,7 @@ interface MessageAttendee {
 	messageId: string;
 	userId: string;
 	displayName: string;
-	jiraUserId: string;
+	rallyUserId: string;
 	createdAt: string;
 }
 
@@ -22,7 +22,7 @@ interface Message {
 	isRead?: boolean;
 	user?: {
 		displayName: string;
-		jiraUserId: string;
+		rallyUserId: string;
 	};
 	replies?: MessageReply[];
 	attendees?: MessageAttendee[];
@@ -36,7 +36,7 @@ interface MessageReply {
 	createdAt: string;
 	user?: {
 		displayName: string;
-		jiraUserId: string;
+		rallyUserId: string;
 	};
 }
 

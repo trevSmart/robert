@@ -27,7 +27,7 @@ interface DayInfo {
 
 interface CalendarCurrentUser {
 	objectId: string;
-	jiraUserId?: string;
+	rallyUserId?: string;
 }
 
 interface CalendarProps {
@@ -2100,7 +2100,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						{/* Action buttons */}
 						{(() => {
 							// Check if editing a public event from another user (read-only mode)
-							const isReadOnly = editingEvent && editingEvent.isPublic && editingEvent.creatorJiraUserId && currentUser?.objectId !== editingEvent.creatorJiraUserId;
+							const isReadOnly = editingEvent && editingEvent.isPublic && editingEvent.creatorRallyUserId && currentUser?.objectId !== editingEvent.creatorRallyUserId;
 
 							return (
 								<div

@@ -71,7 +71,7 @@ You can also open Robert in a full editor tab via the **Open in Editor** button 
 
 Robert is also available as a standalone desktop app (macOS, Windows, Linux) built from the same codebase as the extension. It offers the same views — Home, Portfolio, Team, Metrics, Search — in its own window.
 
-- **Settings**: open **Settings…** from the app menu (`Cmd+,` / `Ctrl+,`). They are the same `robert.*` settings as in the extension, and the `ROBERT_*` environment variables still work as fallbacks. API tokens are stored encrypted with your operating system's keychain.
+- **Settings**: open **Settings…** from the app menu (`Cmd+,` / `Ctrl+,`). They are the same `robert.*` settings as in the extension. Settings you leave unset follow the `ROBERT_*` environment variables, then the defaults; **Reset** next to a setting goes back to that behaviour. API tokens are stored encrypted with your operating system's keychain (on Linux without a keyring, provide them through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY` instead).
 - **Reload data**: **View → Reload Data** (`Cmd+R` / `Ctrl+R`).
 - **Back / forward**: `Cmd+[` / `Cmd+]` on macOS, `Alt+←` / `Alt+→` on Windows and Linux, plus mouse side buttons and trackpad swipes.
 - **Logs**: **View → Show Logs**.

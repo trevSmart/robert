@@ -48,8 +48,25 @@ if (!app.requestSingleInstanceLock()) {
 		});
 }
 
+/**
+ * On Linux, safeStorage may fall back to the `basic_text` backend (no keyring
+ * detected), which "encrypts" with a hardcoded password. That is not real
+ * protection, so treat it as unavailable and let ConfigurationStore refuse to
+ * store secrets (users then provide them through ROBERT_* env vars).
+ */
+function isSecureStorageAvailable(): boolean {
+	if (!safeStorage.isEncryptionAvailable()) {
+		return false;
+	}
+	if (process.platform === 'linux') {
+		const backend = safeStorage.getSelectedStorageBackend();
+		return backend !== 'basic_text' && backend !== 'unknown';
+	}
+	return true;
+}
+
 const safeStorageCodec: SecretCodec = {
-	isAvailable: () => safeStorage.isEncryptionAvailable(),
+	isAvailable: isSecureStorageAvailable,
 	encrypt: plain => safeStorage.encryptString(plain).toString('base64'),
 	decrypt: encoded => safeStorage.decryptString(Buffer.from(encoded, 'base64'))
 };

@@ -54,12 +54,14 @@ describe('ConfigurationStore', () => {
 		expect(reloaded.getConfiguration('robert').get('collaboration.enabled')).toBe(true);
 	});
 
-	it('fires change events only for keys whose effective value changed', () => {
-		const store = new ConfigurationStore(path.join(tmpDir, 'settings.json'), SCHEMA);
+	it('fires change events when the explicit user value changes', () => {
+		const file = path.join(tmpDir, 'settings.json');
+		const store = new ConfigurationStore(file, SCHEMA);
 		const events: Array<(key: string) => boolean> = [];
 		store.onDidChange(event => events.push(key => event.affectsConfiguration(key)));
 
-		expect(store.update({ 'robert.provider': 'jira' })).toEqual([]);
+		// No-op updates: unset -> unset, and the same explicit value twice.
+		expect(store.update({ 'robert.provider': undefined })).toEqual([]);
 		expect(events).toHaveLength(0);
 
 		expect(store.update({ 'robert.provider': 'rally', 'robert.collaboration.enabled': true })).toEqual(['robert.provider', 'robert.collaboration.enabled']);
@@ -67,6 +69,35 @@ describe('ConfigurationStore', () => {
 		expect(events[0]('robert.provider')).toBe(true);
 		expect(events[0]('robert.collaboration')).toBe(true);
 		expect(events[0]('robert.jiraEmail')).toBe(false);
+
+		expect(store.update({ 'robert.provider': 'rally' })).toEqual([]);
+		expect(events).toHaveLength(1);
+	});
+
+	it('treats choosing or removing a default-valued setting as a change (it overrides env vars)', () => {
+		const file = path.join(tmpDir, 'settings.json');
+		const store = new ConfigurationStore(file, SCHEMA);
+		const events: Array<(key: string) => boolean> = [];
+		store.onDidChange(event => events.push(key => event.affectsConfiguration(key)));
+
+		// Unset -> explicit value equal to the manifest default.
+		expect(store.update({ 'robert.provider': 'jira', 'robert.debugMode': false })).toEqual(['robert.provider', 'robert.debugMode']);
+		expect(events).toHaveLength(1);
+		const reloaded = new ConfigurationStore(file, SCHEMA);
+		expect(reloaded.getUserValue('robert.provider')).toBe('jira');
+		expect(reloaded.getUserValue('robert.debugMode')).toBe(false);
+
+		// Explicit default -> unset.
+		expect(store.update({ 'robert.provider': undefined })).toEqual(['robert.provider']);
+		expect(events).toHaveLength(2);
+		expect(new ConfigurationStore(file, SCHEMA).getUserValue('robert.provider')).toBeUndefined();
+	});
+
+	it('does not re-encrypt or report a secret that did not change', () => {
+		const file = path.join(tmpDir, 'settings.json');
+		const store = new ConfigurationStore(file, SCHEMA, fakeCodec);
+		expect(store.update({ 'robert.jiraApiToken': 'top-secret' })).toEqual(['robert.jiraApiToken']);
+		expect(store.update({ 'robert.jiraApiToken': 'top-secret' })).toEqual([]);
 	});
 
 	it('encrypts secret settings at rest when a codec is available', () => {

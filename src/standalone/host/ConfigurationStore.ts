@@ -138,7 +138,10 @@ export class ConfigurationStore {
 	/**
 	 * Applies several changes at once, persists them and fires a single change
 	 * event. Setting a key to `undefined` removes the user value (back to default).
-	 * Returns the keys whose effective value actually changed.
+	 * Returns the keys whose explicit user value changed. Explicit values are
+	 * compared (not effective ones): choosing a value equal to the manifest
+	 * default, or removing it, still matters because an explicit value takes
+	 * precedence over ROBERT_* environment variables.
 	 */
 	public update(changes: Record<string, unknown>): string[] {
 		// Never persist credentials in plain text: without OS secure storage (e.g. Linux
@@ -152,7 +155,9 @@ export class ConfigurationStore {
 
 		const changed: string[] = [];
 		for (const [fullKey, value] of Object.entries(changes)) {
-			const before = this.getValue(fullKey);
+			if (JSON.stringify(this.getUserValue(fullKey)) === JSON.stringify(value)) {
+				continue;
+			}
 			if (value === undefined) {
 				delete this.values[fullKey];
 			} else if (SECRET_SETTING_KEYS.has(fullKey) && typeof value === 'string' && value !== '' && this.secretCodec) {
@@ -160,9 +165,7 @@ export class ConfigurationStore {
 			} else {
 				this.values[fullKey] = value;
 			}
-			if (JSON.stringify(before) !== JSON.stringify(this.getValue(fullKey))) {
-				changed.push(fullKey);
-			}
+			changed.push(fullKey);
 		}
 
 		if (changed.length === 0) {

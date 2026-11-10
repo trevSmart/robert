@@ -13,6 +13,8 @@ Robert ships in two flavours built from **the same codebase**:
 | "Robert" output channel | Output panel | `<userData>/logs/robert.log` (View → Show Logs) |
 | Package | `npm run package` → `dist/*.vsix` | `npm run standalone:package` → `dist/standalone/` |
 
+Settings follow the same precedence in both versions: an explicitly configured value > `ROBERT_*` environment variable > `package.json` default. In the standalone Settings window, settings that are not set show the value they currently resolve to (and whether it comes from the environment); **Reset** removes an explicit value. Only the fields you edit are saved, so untouched settings keep following the environment. If the OS has no real secure storage (Linux without a keyring, where Electron would fall back to its `basic_text` backend), API tokens cannot be saved and must be provided through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY`.
+
 `<userData>` is `~/Library/Application Support/IBM Robert` on macOS, `%APPDATA%\IBM Robert` on Windows and `~/.config/IBM Robert` on Linux. Set `ROBERT_STANDALONE_USER_DATA` to use another profile directory. The `ROBERT_*` environment variables documented in [ENVIRONMENT_VARIABLES.md](../ENVIRONMENT_VARIABLES.md) keep working as fallbacks.
 
 ## How it works

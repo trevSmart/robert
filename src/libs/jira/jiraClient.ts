@@ -3,18 +3,6 @@ import { ErrorHandler } from '../../ErrorHandler';
 
 const errorHandler = ErrorHandler.getInstance();
 
-export const JIRA_FIELDS = {
-	sprint: 'customfield_10020',
-	storyPoints: 'customfield_10016',
-	epicLink: 'customfield_10014',
-	flagged: 'customfield_10021',
-	team: 'customfield_10001'
-} as const;
-
-export const STORY_ISSUE_TYPES = ['Historia', 'Cambios Evolutivos', 'Entrega', 'Epic'] as const;
-export const BUG_ISSUE_TYPES = ['Incidencias'] as const;
-export const SUBTASK_ISSUE_TYPE = 'Subtarea';
-
 export interface JiraSettings {
 	baseUrl: string;
 	email: string;

@@ -2,7 +2,8 @@ import { jiraData, jiraDataMeta, stampJiraData } from '../../extension.js';
 import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
 import type { JiraProject, JiraUser, JiraUserStory, GlobalSearchResultItem } from '../../types/jira';
 import { validateJiraConfiguration, clearUtilsCaches } from './utils';
-import { getJiraSettings, jiraRequest, searchIssues, projectJql, quoteJql, JIRA_FIELDS, BUG_ISSUE_TYPES, SUBTASK_ISSUE_TYPE } from './jiraClient';
+import { getJiraSettings, jiraRequest, searchIssues, projectJql, quoteJql } from './jiraClient';
+import { JIRA_FIELDS, bugTypesJqlList, isBugIssueType, isSubtaskIssueType, resetJiraMetadata, storyPointsOf, subtaskJql } from './jiraMetadata';
 import { setJiraBroadcaster, callJira } from './jiraCall';
 import { ErrorHandler } from '../../ErrorHandler';
 import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
@@ -12,8 +13,9 @@ const errorHandler = ErrorHandler.getInstance();
 const PAGE_SIZE = 100;
 const CHUNK_SIZE = 25;
 
-const STORY_FIELDS = ['summary', 'description', 'status', 'priority', 'assignee', 'project', 'created', 'subtasks', 'issuetype', 'aggregatetimeoriginalestimate', 'aggregatetimeestimate', 'aggregatetimespent', JIRA_FIELDS.sprint, JIRA_FIELDS.storyPoints, JIRA_FIELDS.flagged];
-const DEFECT_FIELDS = ['summary', 'description', 'status', 'priority', 'assignee', 'project', 'created', 'issuetype', JIRA_FIELDS.sprint, JIRA_FIELDS.flagged];
+// Field lists are functions: custom-field IDs are discovered per site (see jiraMetadata.ts).
+const storyFields = () => ['summary', 'description', 'status', 'priority', 'assignee', 'project', 'created', 'subtasks', 'issuetype', 'aggregatetimeoriginalestimate', 'aggregatetimeestimate', 'aggregatetimespent', JIRA_FIELDS.sprint, ...JIRA_FIELDS.storyPoints, JIRA_FIELDS.flagged];
+const defectFields = () => ['summary', 'description', 'status', 'priority', 'assignee', 'project', 'created', 'issuetype', JIRA_FIELDS.sprint, JIRA_FIELDS.flagged];
 const TASK_FIELDS = ['summary', 'description', 'status', 'assignee', 'parent', 'issuetype', 'project', 'timeoriginalestimate', 'timeestimate', 'timespent', 'created'];
 
 const SCHEDULE_STATE_BY_CATEGORY: Record<string, string> = {
@@ -150,7 +152,7 @@ function formatStory(issue: any): any {
 		name: f.summary ?? '',
 		description: descriptionToHtml(f.description),
 		state: f.status?.name ?? 'Unknown',
-		planEstimate: f[JIRA_FIELDS.storyPoints] ?? 0,
+		planEstimate: storyPointsOf(f),
 		toDo: hours(f.aggregatetimeestimate),
 		owner: assignee,
 		assignee,
@@ -278,19 +280,23 @@ function storyJql(query: Record<string, unknown> = {}): string {
 	const clauses = buildJqlClauses(query)
 		.map(clause => ` AND ${clause}`)
 		.join('');
-	return `${projectJql()} AND issuetype != ${quoteJql(SUBTASK_ISSUE_TYPE)}${clauses} ORDER BY created DESC`;
+	return `${projectJql()} AND ${subtaskJql(false)}${clauses} ORDER BY created DESC`;
 }
 
-function defectJql(query: Record<string, unknown> = {}): string {
-	const types = BUG_ISSUE_TYPES.map(quoteJql).join(', ');
+/** JQL for defects, or null when the site has no bug issue type. */
+function defectJql(query: Record<string, unknown> = {}): string | null {
+	const types = bugTypesJqlList();
+	if (!types) {
+		return null;
+	}
 	const clauses = buildJqlClauses(query)
 		.map(clause => ` AND ${clause}`)
 		.join('');
-	return `${projectJql()} AND issuetype in (${types})${clauses} ORDER BY created DESC`;
+	return `${projectJql()} AND issuetype in ${types}${clauses} ORDER BY created DESC`;
 }
 
 function taskJqlForParents(parentIds: string[]): string {
-	return `${projectJql()} AND issuetype = ${quoteJql(SUBTASK_ISSUE_TYPE)} AND parent in (${parentIds.join(', ')})`;
+	return `${projectJql()} AND ${subtaskJql(true)} AND parent in (${parentIds.join(', ')})`;
 }
 
 /** Comprova la capa de cache en memòria (jiraData) per a les queries filtrades. */
@@ -427,7 +433,7 @@ export async function getIterations(query: Record<string, unknown> = {}, limit: 
 			}
 		}
 		const current = currentSprintOf(issue);
-		if (current && issue.fields.issuetype?.name !== SUBTASK_ISSUE_TYPE) {
+		if (current && !isSubtaskIssueType(issue.fields.issuetype)) {
 			byId.get(String(current.id)).taskEstimateTotal += hours(issue.fields.aggregatetimeoriginalestimate);
 		}
 	}
@@ -477,7 +483,7 @@ export async function getUserStories(query: Record<string, unknown> = {}, offset
 
 	// Filtered queries (sprint, owner) need the complete set for hours and progress views.
 	if (hasFilters && offset === 0) {
-		const issues = await callJira(() => searchIssues(jql, STORY_FIELDS, 5000), 'Loading user stories...');
+		const issues = await callJira(() => searchIssues(jql, storyFields(), 5000), 'Loading user stories...');
 		const userStories = issues.map(formatStory);
 		addToCache(userStories, jiraData.userStories, 'objectId');
 		stampJiraData('userStories');
@@ -491,7 +497,7 @@ export async function getUserStories(query: Record<string, unknown> = {}, offset
 		};
 	}
 
-	const issues = await callJira(() => searchIssues(jql, STORY_FIELDS, offset + PAGE_SIZE + 1), 'Loading user stories...');
+	const issues = await callJira(() => searchIssues(jql, storyFields(), offset + PAGE_SIZE + 1), 'Loading user stories...');
 	const userStories = issues.slice(offset, offset + PAGE_SIZE).map(formatStory);
 	addToCache(userStories, jiraData.userStories, 'objectId');
 	stampJiraData('userStories');
@@ -510,7 +516,7 @@ export async function getTasks(userStoryId: string, query: Record<string, unknow
 	errorHandler.logDebug(`getTasks called for user story: ${userStoryId}, with query: ${JSON.stringify(query)}, limit: ${limit}`, 'jiraServices.getTasks');
 
 	await ensureConfigured();
-	const jql = `${projectJql()} AND issuetype = ${quoteJql(SUBTASK_ISSUE_TYPE)} AND parent = ${userStoryId} ORDER BY created ASC`;
+	const jql = `${projectJql()} AND ${subtaskJql(true)} AND parent = ${userStoryId} ORDER BY created ASC`;
 	const issues = await callJira(() => searchIssues(jql, TASK_FIELDS, limit ?? 1000), 'Loading tasks...');
 	const tasks = issues.map(formatTask);
 
@@ -526,9 +532,12 @@ export async function getDefects(query: Record<string, unknown> = {}, offset: nu
 	await ensureConfigured();
 	const jql = defectJql(query);
 	const isFiltered = Object.keys(query).length > 0;
+	if (!jql) {
+		return { defects: [], source: 'api', count: 0, hasMore: false, totalCount: 0, offset: 0 };
+	}
 
 	if (isFiltered) {
-		const issues = await callJira(() => searchIssues(jql, DEFECT_FIELDS, 5000), 'Loading defects...');
+		const issues = await callJira(() => searchIssues(jql, defectFields(), 5000), 'Loading defects...');
 		const defects = issues.map(formatDefect);
 		addToCache(defects, jiraData.defects, 'objectId');
 		stampJiraData('defects');
@@ -542,7 +551,7 @@ export async function getDefects(query: Record<string, unknown> = {}, offset: nu
 		};
 	}
 
-	const issues = await callJira(() => searchIssues(jql, DEFECT_FIELDS, offset + PAGE_SIZE + 1), 'Loading defects...');
+	const issues = await callJira(() => searchIssues(jql, defectFields(), offset + PAGE_SIZE + 1), 'Loading defects...');
 	const defects = issues.slice(offset, offset + PAGE_SIZE).map(formatDefect);
 	addToCache(defects, jiraData.defects, 'objectId');
 	stampJiraData('defects');
@@ -561,11 +570,10 @@ export async function getDefects(query: Record<string, unknown> = {}, offset: nu
 export async function getUserStoryDefects(userStoryId: string) {
 	await ensureConfigured();
 	const story = await callJira(() => jiraRequest<any>(`/rest/api/3/issue/${userStoryId}?fields=issuelinks`), 'Loading defects...');
-	const bugTypes = new Set<string>(BUG_ISSUE_TYPES);
 	const keys: string[] = [];
 	for (const link of story.fields?.issuelinks ?? []) {
 		const linked = link.outwardIssue ?? link.inwardIssue;
-		if (linked && bugTypes.has(linked.fields?.issuetype?.name)) {
+		if (linked && isBugIssueType(linked.fields?.issuetype)) {
 			keys.push(linked.key);
 		}
 	}
@@ -574,7 +582,7 @@ export async function getUserStoryDefects(userStoryId: string) {
 		return { defects: [], source: 'api', count: 0, hasMore: false };
 	}
 
-	const issues = await searchIssues(`${projectJql()} AND key in (${keys.map(quoteJql).join(', ')}) ORDER BY created DESC`, DEFECT_FIELDS, 1000);
+	const issues = await searchIssues(`${projectJql()} AND key in (${keys.map(quoteJql).join(', ')}) ORDER BY created DESC`, defectFields(), 1000);
 	const defects = issues.map(formatDefect);
 	return { defects, source: 'api', count: defects.length, hasMore: false };
 }
@@ -856,6 +864,7 @@ export function clearAllJiraCaches(): void {
 		getIterationsCacheManager().clear();
 		_clearAllCachesService();
 		clearUtilsCaches();
+		resetJiraMetadata();
 		errorHandler.logInfo('All Jira caches cleared', 'jiraServices.clearAllJiraCaches');
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'jiraServices.clearAllJiraCaches');
@@ -884,33 +893,29 @@ export async function globalSearch(
 	const searchType = options?.searchType ?? 'all';
 
 	const textClause = ISSUE_KEY_PATTERN.test(trimmed) ? `(key = ${quoteJql(trimmed.toUpperCase())} OR text ~ ${quoteJql(trimmed)})` : `text ~ ${quoteJql(trimmed)}`;
+	// Issue-type filter per scope. Sub-tasks use Jira's built-in subTaskIssueTypes();
+	// bug types come from the site's metadata (no defect scope if the site has none).
+	const bugTypes = bugTypesJqlList();
 	const scopes: Array<{
 		entityType: GlobalSearchResultItem['entityType'];
-		types: string[];
-		/** Si es true, `types` se excluye en vez de incluirse. */
-		exclude?: boolean;
+		typeClause: string;
 		kind: string;
 	}> = [
 		{
 			entityType: 'userstory',
-			// Sin filtro por tipo: todo salvo subtareas y defectos, que tienen su propio ámbito.
-			types: [SUBTASK_ISSUE_TYPE, ...BUG_ISSUE_TYPES],
-			exclude: true,
+			// Everything except sub-tasks and defects, which have their own scope.
+			typeClause: bugTypes ? `${subtaskJql(false)} AND issuetype not in ${bugTypes}` : subtaskJql(false),
 			kind: 'user-stories'
 		},
-		{
-			entityType: 'defect',
-			types: BUG_ISSUE_TYPES as unknown as string[],
-			kind: 'defects'
-		},
-		{ entityType: 'task', types: [SUBTASK_ISSUE_TYPE], kind: 'tasks' }
+		...(bugTypes ? [{ entityType: 'defect' as const, typeClause: `issuetype in ${bugTypes}`, kind: 'defects' }] : []),
+		{ entityType: 'task', typeClause: subtaskJql(true), kind: 'tasks' }
 	];
 	const selected = searchType === 'all' ? scopes : scopes.filter(scope => scope.kind === searchType);
 
 	const runOne = async (scope: (typeof scopes)[0]): Promise<{ items: GlobalSearchResultItem[]; hasMore: boolean }> => {
 		try {
-			const jql = `${projectJql()} AND issuetype ${scope.exclude ? 'not in' : 'in'} (${scope.types.map(quoteJql).join(', ')}) AND ${textClause} ORDER BY created DESC`;
-			const fields = scope.entityType === 'userstory' ? STORY_FIELDS : scope.entityType === 'defect' ? DEFECT_FIELDS : TASK_FIELDS;
+			const jql = `${projectJql()} AND ${scope.typeClause} AND ${textClause} ORDER BY created DESC`;
+			const fields = scope.entityType === 'userstory' ? storyFields() : scope.entityType === 'defect' ? defectFields() : TASK_FIELDS;
 			const issues = await searchIssues(jql, fields, offset + limitPerType + 1);
 			const page = issues.slice(offset, offset + limitPerType);
 			const items = page.map(issue => ({
@@ -939,13 +944,13 @@ export async function globalSearch(
 
 export async function getUserStoryByObjectId(objectId: string): Promise<{ userStory: JiraUserStory | null }> {
 	await ensureConfigured();
-	const issue = await fetchIssueOrNull(objectId, STORY_FIELDS);
+	const issue = await fetchIssueOrNull(objectId, storyFields());
 	return { userStory: issue ? (formatStory(issue) as JiraUserStory) : null };
 }
 
 export async function getDefectByObjectId(objectId: string): Promise<{ defect: any | null }> {
 	await ensureConfigured();
-	const issue = await fetchIssueOrNull(objectId, DEFECT_FIELDS);
+	const issue = await fetchIssueOrNull(objectId, defectFields());
 	return { defect: issue ? formatDefect(issue) : null };
 }
 

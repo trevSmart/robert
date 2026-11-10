@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.5.1",
+	"version": "0.5.4",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",
@@ -49,8 +49,8 @@
 				},
 				"robert.rallyInstance": {
 					"type": "string",
-					"default": "https://rally1.rallydev.com",
-					"description": "Rally instance URL (e.g., https://rally1.rallydev.com). Used when robert.provider is \"rally\"."
+					"default": "https://eu1.rallydev.com",
+					"description": "Rally instance URL (e.g., https://eu1.rallydev.com). Used when robert.provider is \"rally\"."
 				},
 				"robert.rallyApiKey": {
 					"type": "string",
@@ -234,8 +234,8 @@
 		"test:vscode:run": "node out/test/runTest.js",
 		"pretest:vscode": "tsc -p ./ && tsc -p ./tsconfig.test.json",
 		"version:patch": "npm version patch --no-git-tag-version",
-		"package": "vsce package --out dist/",
-		"package:pre-release": "vsce package --pre-release --out dist/",
+		"package": "node -e \"require('fs').mkdirSync('dist',{recursive:true})\" && vsce package --out dist/",
+		"package:pre-release": "node -e \"require('fs').mkdirSync('dist',{recursive:true})\" && vsce package --pre-release --out dist/",
 		"package:patch": "npm run version:patch && npm run package",
 		"install:cursor": "node scripts/installCursor.cjs",
 		"install:vscode-insiders": "node scripts/installVSCodeInsiders.cjs",
@@ -250,19 +250,19 @@
 		"@types/vscode": "1.105.0",
 		"@typescript-eslint/eslint-plugin": "^8.72.1",
 		"@typescript-eslint/parser": "^8.72.0",
-		"@vitejs/plugin-react": "^6.1.2",
+		"@vitejs/plugin-react": "^6.2.1",
 		"@vitest/ui": "^5.0.5",
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.1.0",
 		"@vscode/vsce": "^4.1.0",
-		"eslint": "^10.13.0",
+		"eslint": "^10.14.0",
 		"eslint-plugin-react-hooks": "^7.1.1",
-		"glob": "^14.0.3",
-		"knip": "^6.44.0",
+		"glob": "^14.0.4",
+		"knip": "^6.44.1",
 		"mocha": "^12.0.3",
 		"prettier": "^3.9.10",
 		"typescript": "~6.0.2",
-		"vitest": "^5.0.5"
+		"vitest": "^5.1.0"
 	},
 	"dependencies": {
 		"@vscode/codicons": "^0.0.45",
@@ -274,7 +274,7 @@
 		"react": "^19.3.1",
 		"react-dom": "^19.3.1",
 		"styled-components": "^6.6.0",
-		"vite": "^8.3.5",
+		"vite": "^8.3.6",
 		"vscrui": "^1.1.0"
 	},
 	"overrides": {

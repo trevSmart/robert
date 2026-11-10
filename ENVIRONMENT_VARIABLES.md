@@ -25,7 +25,7 @@ This means if you set a value in VS Code settings, it will always be used even i
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
 | `ROBERT_RALLY_API_KEY` | string | `""` | Rally API key (required) |
-| `ROBERT_RALLY_INSTANCE` | string | `https://rally1.rallydev.com` | Rally instance URL |
+| `ROBERT_RALLY_INSTANCE` | string | `https://eu1.rallydev.com` | Rally instance URL |
 | `ROBERT_RALLY_PROJECT_NAME` | string | `""` | Rally project name |
 
 ### Jira Configuration (used when provider is `jira`)

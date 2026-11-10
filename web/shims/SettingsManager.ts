@@ -51,7 +51,7 @@ export class SettingsManager {
 			autoRefresh: envBoolean('ROBERT_AUTO_REFRESH', true),
 			debugMode: envBoolean('ROBERT_DEBUG_MODE', false),
 			provider: envString('ROBERT_PROVIDER', 'jira').toLowerCase() === 'rally' ? 'rally' : 'jira',
-			rallyInstance: envString('ROBERT_RALLY_INSTANCE', 'https://rally1.rallydev.com'),
+			rallyInstance: envString('ROBERT_RALLY_INSTANCE', 'https://eu1.rallydev.com'),
 			rallyApiKey: envString('ROBERT_RALLY_API_KEY', ''),
 			rallyProjectName: envString('ROBERT_RALLY_PROJECT_NAME', ''),
 			jiraBaseUrl: envString('ROBERT_JIRA_BASE_URL', 'https://jiracloudab.atlassian.net'),

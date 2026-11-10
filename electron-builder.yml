@@ -29,7 +29,9 @@ asar: true
 
 mac:
   category: public.app-category.productivity
-  icon: resources/icons/robert-logo4.png
+  # Follows Apple's icon template (824px rounded rect with transparent margin on a
+  # 1024px canvas). A full-bleed icon gets boxed in a light plate by recent macOS.
+  icon: resources/icons/robert-logo-macos.png
   target:
     - dmg
     - zip

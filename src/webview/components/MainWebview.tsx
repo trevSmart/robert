@@ -2675,7 +2675,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 													otherMembersLoading={teamOtherLoading}
 												/>
 											)}
-											{(renderedSection === 'library' || selectedTutorial) && (
+											{renderedSection === 'library' && (
 												<LibrarySection
 													selectedTutorial={selectedTutorial}
 													onTutorialSelect={setSelectedTutorial}

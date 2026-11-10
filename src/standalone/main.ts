@@ -23,14 +23,21 @@ import { SettingsWindowController } from './settingsWindow';
 
 /** Repository / app.asar root: this file lives in out/src/standalone/. */
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
-const APP_NAME = 'IBM Robert';
+/** Name shown to the user (Dock, menus, dialogs, notifications). Must match productName in electron-builder.yml. */
+const APP_NAME = 'Robert';
+/**
+ * Internal app name. It names the profile directory (<appData>/IBM Robert) and the
+ * macOS Keychain item that safeStorage uses ("IBM Robert Safe Storage"), so changing
+ * it would lose existing settings and saved API tokens.
+ */
+const APP_INTERNAL_NAME = 'IBM Robert';
 /** Robert's version (app.getVersion() reports Electron's when running from source). */
 const APP_VERSION = (JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')) as { version: string }).version;
 const MAX_LOG_BYTES = 5 * 1024 * 1024;
 
-app.setName(APP_NAME);
+app.setName(APP_INTERNAL_NAME);
 // ROBERT_STANDALONE_USER_DATA lets tests and power users run an isolated profile.
-app.setPath('userData', process.env.ROBERT_STANDALONE_USER_DATA || path.join(app.getPath('appData'), APP_NAME));
+app.setPath('userData', process.env.ROBERT_STANDALONE_USER_DATA || path.join(app.getPath('appData'), APP_INTERNAL_NAME));
 app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: APP_VERSION, copyright: 'For IBM internal use only.' });
 registerAppSchemeAsPrivileged();
 
@@ -304,7 +311,7 @@ async function start(): Promise<void> {
 			void reload();
 		}
 		if (event.affectsConfiguration('robert.collaboration')) {
-			shim.window.showInformationMessage('Collaboration settings take effect after restarting IBM Robert.');
+			shim.window.showInformationMessage(`Collaboration settings take effect after restarting ${APP_NAME}.`);
 		}
 	});
 

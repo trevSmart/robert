@@ -167,7 +167,7 @@ export class SettingsWindowController {
 		this.window = new BrowserWindow({
 			width: 720,
 			height: 760,
-			title: 'IBM Robert — Settings',
+			title: 'Robert — Settings',
 			parent,
 			icon: this.iconPath,
 			backgroundColor: getThemeBackground(theme),
@@ -212,7 +212,7 @@ function buildSettingsHtml(nonce: string): string {
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}'">
-<title>IBM Robert — Settings</title>
+<title>Robert — Settings</title>
 <style>
 	body { padding: 24px 32px 96px; max-width: 760px; }
 	h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }

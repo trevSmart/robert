@@ -4,6 +4,7 @@ import { themeColors, isLightTheme } from '../../utils/themeColors';
 import type { Holiday, DayEvent, CustomCalendarEvent } from '../../../types/utils';
 import type { UserStory } from '../../../types/rally';
 import { logDebug } from '../../utils/vscodeApi';
+import { compareIterationsByStart } from '../../utils/iterationSort';
 
 interface Iteration {
 	objectId: string;
@@ -646,13 +647,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	}
 
 	// Assign colors deterministically across all iterations for cross-month consistency
-	const orderedAllIterations = [...iterations].sort((a, b) => {
-		const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
-		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
-		if (aStart !== bStart) return aStart - bStart;
-		// When start dates are equal, use objectId for deterministic ordering (no alphabetical fallback)
-		return a.objectId.localeCompare(b.objectId);
-	});
+	const orderedAllIterations = [...iterations].sort(compareIterationsByStart);
 
 	// Assign colors with overlap detection to prevent similar colors for overlapping sprints
 	const iterationColorMap = new Map<string, string>();
@@ -754,13 +749,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	};
 
 	// Order current-month iterations for legend display
-	const orderedIterations = [...currentMonthIterations].sort((a, b) => {
-		const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
-		const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
-		if (aStart !== bStart) return aStart - bStart;
-		// When start dates are equal, use objectId for deterministic ordering (no alphabetical fallback)
-		return a.objectId.localeCompare(b.objectId);
-	});
+	const orderedIterations = [...currentMonthIterations].sort(compareIterationsByStart);
 
 	// Helper function to check if a day is an end date for any iteration in the month
 	const isSprintEndDay = (dayDate: Date) => {
@@ -962,12 +951,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			}
 		}
 		// Sort consistently: by start date, then objectId
-		const sorted = [...iterationSet.values()].sort((a, b) => {
-			const aStart = a.startDate ? new Date(a.startDate).getTime() : 0;
-			const bStart = b.startDate ? new Date(b.startDate).getTime() : 0;
-			if (aStart !== bStart) return aStart - bStart;
-			return a.objectId.localeCompare(b.objectId);
-		});
+		const sorted = [...iterationSet.values()].sort(compareIterationsByStart);
 
 		// Assign slots using interval scheduling: non-overlapping iterations share a slot
 		const slotAssignments: { iteration: Iteration; slotIndex: number }[] = [];

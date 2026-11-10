@@ -20,7 +20,7 @@ vi.mock('./jiraClient', () => ({
 	quoteJql: (value: string) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 }));
 
-import { JIRA_FIELDS, JIRA_ISSUE_TYPES, bugTypesJqlList, ensureJiraMetadata, isBugIssueType, isSubtaskIssueType, parseIssueTypeNames, resetJiraMetadata, resolveFieldIds, resolveIssueTypes, storyPointsOf, subtaskJql } from './jiraMetadata';
+import { bugTypesJqlList, ensureJiraMetadata, isBugIssueType, isSubtaskIssueType, JIRA_FIELDS, JIRA_ISSUE_TYPES, onJiraMetadataChanged, parseIssueTypeNames, resetJiraMetadata, resolveFieldIds, resolveIssueTypes, storyPointsOf, subtaskJql } from './jiraMetadata';
 import { getJiraSettings } from './jiraClient';
 
 const SITE_FIELDS = [
@@ -202,5 +202,50 @@ describe('ensureJiraMetadata with overlapping loads', () => {
 		await load;
 
 		expect(JIRA_FIELDS.sprint).toBe('customfield_10020');
+	});
+});
+
+describe('mapping changes', () => {
+	const answer = (path: string) => (path === '/rest/api/3/field' ? SITE_FIELDS : SITE_TYPES);
+
+	it("falls back to the defaults, not the previous site's mappings, when the active load fails", async () => {
+		const site = { current: 'a' };
+		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKey: '' }));
+		jiraRequest.mockImplementation(async (path: string) => answer(path));
+		await ensureJiraMetadata();
+		expect(JIRA_FIELDS.sprint).toBe('customfield_20001');
+
+		const changed = vi.fn();
+		const unsubscribe = onJiraMetadataChanged(changed);
+		site.current = 'b';
+		jiraRequest.mockRejectedValue(new Error('401'));
+		await ensureJiraMetadata();
+
+		expect(JIRA_FIELDS.sprint).toBe('customfield_10020');
+		expect(JIRA_ISSUE_TYPES.discovered).toBe(false);
+		expect(changed).toHaveBeenCalledTimes(1);
+		unsubscribe();
+	});
+
+	it('notifies listeners only when the mappings actually change', async () => {
+		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: 'https://tenant.atlassian.net', email: 'a@b.c', apiToken: 't', projectKey: '' }));
+		const changed = vi.fn();
+		const unsubscribe = onJiraMetadataChanged(changed);
+
+		// Failure while on the defaults: nothing changes.
+		jiraRequest.mockRejectedValueOnce(new Error('timeout'));
+		await ensureJiraMetadata();
+		expect(changed).not.toHaveBeenCalled();
+
+		// Retry succeeds with other IDs: data cached with the defaults must be invalidated.
+		jiraRequest.mockImplementation(async (path: string) => answer(path));
+		await ensureJiraMetadata();
+		expect(changed).toHaveBeenCalledTimes(1);
+
+		// Same mappings again (new bug-type setting that resolves identically): no notification.
+		bugSetting.value = 'Bug, Incidencias';
+		await ensureJiraMetadata();
+		expect(changed).toHaveBeenCalledTimes(1);
+		unsubscribe();
 	});
 });

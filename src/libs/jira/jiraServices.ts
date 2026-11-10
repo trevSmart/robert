@@ -3,12 +3,26 @@ import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
 import type { JiraProject, JiraUser, JiraUserStory, GlobalSearchResultItem } from '../../types/jira';
 import { validateJiraConfiguration, clearUtilsCaches } from './utils';
 import { getJiraSettings, jiraRequest, searchIssues, projectJql, quoteJql } from './jiraClient';
-import { JIRA_FIELDS, bugTypesJqlList, isBugIssueType, isSubtaskIssueType, resetJiraMetadata, storyPointsOf, subtaskJql } from './jiraMetadata';
+import { JIRA_FIELDS, bugTypesJqlList, isBugIssueType, isSubtaskIssueType, onJiraMetadataChanged, resetJiraMetadata, storyPointsOf, subtaskJql } from './jiraMetadata';
 import { setJiraBroadcaster, callJira } from './jiraCall';
 import { ErrorHandler } from '../../ErrorHandler';
 import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
 
 const errorHandler = ErrorHandler.getInstance();
+
+// Sprints, story points, blocked state and defect lists are read through the
+// site's custom-field / issue-type mappings. When those change (e.g. metadata
+// loaded after an earlier failure), drop data cached with the old mappings so it
+// isn't served for the rest of its TTL.
+onJiraMetadataChanged(() => {
+	getIterationsCacheManager().clear();
+	getUserStoriesCacheManager().clear();
+	for (const entity of ['iterations', 'userStories', 'defects', 'tasks'] as const) {
+		jiraData[entity] = [];
+		delete jiraDataMeta[entity];
+	}
+	errorHandler.logInfo('Jira field/issue-type mappings changed; cleared sprint and work-item caches', 'jiraServices.onJiraMetadataChanged');
+});
 
 const PAGE_SIZE = 100;
 const CHUNK_SIZE = 25;

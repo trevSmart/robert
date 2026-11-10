@@ -175,10 +175,43 @@ export function storyPointsOf(fields: Record<string, unknown>, ids: JiraFieldIds
 
 let loaded: { key: string; promise: Promise<void>; token: object } | null = null;
 
+const changeListeners = new Set<() => void>();
+
+/**
+ * Registers a callback fired when the live field / issue-type mappings change
+ * (e.g. metadata loaded after an earlier failure, or a failed load for a new
+ * site resetting to defaults). Data cached with the previous mappings must be
+ * invalidated. Returns an unsubscribe function.
+ */
+export function onJiraMetadataChanged(listener: () => void): () => void {
+	changeListeners.add(listener);
+	return () => changeListeners.delete(listener);
+}
+
+function defaultFieldIds(): JiraFieldIds {
+	return { ...DEFAULT_FIELDS, storyPoints: [...DEFAULT_FIELDS.storyPoints] };
+}
+
+/** Replaces the live mappings; notifies listeners when they actually changed. */
+function applyMappings(fields: JiraFieldIds, types: JiraIssueTypes, notify: boolean): void {
+	const before = JSON.stringify([JIRA_FIELDS, JIRA_ISSUE_TYPES]);
+	Object.assign(JIRA_FIELDS, fields);
+	Object.assign(JIRA_ISSUE_TYPES, types);
+	if (notify && JSON.stringify([JIRA_FIELDS, JIRA_ISSUE_TYPES]) !== before) {
+		for (const listener of [...changeListeners]) {
+			try {
+				listener();
+			} catch (error) {
+				errorHandler.logWarning(`Jira metadata change listener failed: ${error instanceof Error ? error.message : String(error)}`, 'jiraMetadata.applyMappings');
+			}
+		}
+	}
+}
+
 /**
  * Loads field and issue-type metadata for the configured site once (cached per
- * site and bug-type setting). Never throws: on failure the defaults stay in
- * place and the next call retries.
+ * site and bug-type setting). Never throws: on failure the defaults are used
+ * (never another site's mappings) and the next call retries.
  */
 export function ensureJiraMetadata(): Promise<void> {
 	if (!validateJiraSettings().isValid) {
@@ -191,7 +224,8 @@ export function ensureJiraMetadata(): Promise<void> {
 	}
 
 	// Identifies this load: a reset or a newer load (another site / bug-type setting)
-	// replaces `loaded`, and this load must then not publish its (stale) mappings.
+	// replaces `loaded`, and this load must then neither publish its (stale) mappings
+	// nor reset the newer ones when it fails.
 	const token = {};
 	const isActive = () => loaded?.token === token;
 	const promise = (async () => {
@@ -199,8 +233,7 @@ export function ensureJiraMetadata(): Promise<void> {
 		if (!isActive()) {
 			return;
 		}
-		Object.assign(JIRA_FIELDS, resolveFieldIds(Array.isArray(fields) ? fields : []));
-		Object.assign(JIRA_ISSUE_TYPES, resolveIssueTypes(Array.isArray(types) ? types : [], bugTypeNames));
+		applyMappings(resolveFieldIds(Array.isArray(fields) ? fields : []), resolveIssueTypes(Array.isArray(types) ? types : [], bugTypeNames), true);
 		errorHandler.logInfo(
 			`Jira metadata loaded: sprint=${JIRA_FIELDS.sprint}, storyPoints=${JIRA_FIELDS.storyPoints.join('|')}, flagged=${JIRA_FIELDS.flagged}, subtask types=[${JIRA_ISSUE_TYPES.subtaskNames.join(', ')}], bug types=[${JIRA_ISSUE_TYPES.bugNames.join(', ')}]`,
 			'jiraMetadata.ensureJiraMetadata'
@@ -209,18 +242,20 @@ export function ensureJiraMetadata(): Promise<void> {
 			errorHandler.logWarning('No bug issue type found on this Jira site; defects will be empty. Set robert.jiraBugIssueTypes to the names of your bug issue types.', 'jiraMetadata.ensureJiraMetadata');
 		}
 	})().catch(error => {
-		errorHandler.logWarning(`Could not load Jira field/issue-type metadata, using defaults: ${error instanceof Error ? error.message : String(error)}`, 'jiraMetadata.ensureJiraMetadata');
-		if (isActive()) {
-			loaded = null;
+		if (!isActive()) {
+			return;
 		}
+		errorHandler.logWarning(`Could not load Jira field/issue-type metadata, using defaults: ${error instanceof Error ? error.message : String(error)}`, 'jiraMetadata.ensureJiraMetadata');
+		loaded = null;
+		// Don't keep a previous site's mappings: fall back to the defaults.
+		applyMappings(defaultFieldIds(), defaultIssueTypes(), true);
 	});
 	loaded = { key, promise, token };
 	return promise;
 }
 
-/** Forgets loaded metadata (provider/site change, reload). */
+/** Forgets loaded metadata (provider/site change, reload). Callers clear their own caches. */
 export function resetJiraMetadata(): void {
 	loaded = null;
-	Object.assign(JIRA_FIELDS, { ...DEFAULT_FIELDS, storyPoints: [...DEFAULT_FIELDS.storyPoints] });
-	Object.assign(JIRA_ISSUE_TYPES, defaultIssueTypes());
+	applyMappings(defaultFieldIds(), defaultIssueTypes(), false);
 }

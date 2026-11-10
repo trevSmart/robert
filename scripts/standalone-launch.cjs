@@ -18,7 +18,8 @@ const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
 const ENTRY = path.join(ROOT, 'out', 'src', 'standalone', 'main.js');
-const ICON_PNG = path.join(ROOT, 'resources', 'icons', 'robert-logo4.png');
+// Same icon as the packaged macOS app (see electron-builder.yml).
+const ICON_PNG = path.join(ROOT, 'resources', 'icons', 'robert-logo-macos.png');
 const APP_NAME = 'IBM Robert';
 const BUNDLE_ID = 'com.ibm.robert.dev';
 const CACHE_DIR = path.join(ROOT, 'node_modules', '.cache', 'robert-standalone');
@@ -34,7 +35,7 @@ function ensureMacDevBundle(electronBinary) {
 	const stampFile = path.join(CACHE_DIR, 'stamp.json');
 
 	const electronVersion = require('electron/package.json').version;
-	const stamp = JSON.stringify({ electronVersion, iconMtime: fs.statSync(ICON_PNG).mtimeMs, bundleId: BUNDLE_ID });
+	const stamp = JSON.stringify({ electronVersion, icon: ICON_PNG, iconMtime: fs.statSync(ICON_PNG).mtimeMs, bundleId: BUNDLE_ID });
 	if (fs.existsSync(targetBinary) && fs.existsSync(stampFile) && fs.readFileSync(stampFile, 'utf8') === stamp) {
 		return targetBinary;
 	}

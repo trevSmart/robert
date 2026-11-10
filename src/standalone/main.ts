@@ -261,6 +261,8 @@ async function start(): Promise<void> {
 			output.appendLine('[Robert] 🔄 Reloading data');
 			resetProviderData(output);
 			await provider.prefetchJiraData('reload');
+			// The provider (or its credentials) may have changed: rebind collaboration to the current user.
+			await provider.refreshCollaborationIdentity();
 			await provider.resetAndRefreshWebviews();
 			output.appendLine('[Robert] ✅ Reload completed');
 		}, 'standalone.reload');

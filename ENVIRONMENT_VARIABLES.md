@@ -36,6 +36,7 @@ This means if you set a value in VS Code settings, it will always be used even i
 | `ROBERT_JIRA_API_TOKEN` | string | `""` | Jira Cloud API token (required) |
 | `ROBERT_JIRA_BASE_URL` | string | `https://your-site.atlassian.net` | Jira Cloud base URL |
 | `ROBERT_JIRA_PROJECT_KEY` | string | `""` | Jira project key (optional). Empty or unset means **all projects** (JQL `project is not EMPTY`). Previously defaulted to `DSS` |
+| `ROBERT_JIRA_BUG_ISSUE_TYPES` | string | `""` | Comma-separated Jira issue-type names treated as bugs/defects (e.g. `Bug, Incidencias`). Empty means auto-detect (Bug, Defect, Incidencia…) |
 
 ### Extension Settings
 

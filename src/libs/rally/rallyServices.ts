@@ -443,22 +443,34 @@ export async function getUsers(query: RallyQueryParams = {}, limit: number | nul
 }
 
 // Helper function to reduce complexity
+/**
+ * Maps one user-story filter entry to a Rally WSAPI condition `[field, operator, value]`.
+ * Exported for tests.
+ */
+export function userStoryCondition(key: string, value: unknown): [string, string, unknown] {
+	//Per al camp Name, utilitzem 'contains' per fer cerca parcial
+	if (key === 'Name') {
+		return [key, 'contains', value];
+	}
+	//Per al camp Owner, afegim el prefix /user/ si no el porta
+	if (key === 'Owner' && value !== 'currentuser') {
+		const ownerValue = String(value);
+		return [key, '=', ownerValue.startsWith('/user/') ? ownerValue : `/user/${ownerValue}`];
+	}
+	// Project is a reference field. The portfolio filter sends the project's display
+	// name, so compare by name unless we were given a /project/<ObjectID> reference.
+	if (key === 'Project') {
+		const projectValue = String(value);
+		return /\/project\/\d+$/.test(projectValue) ? [key, '=', projectValue] : ['Project.Name', '=', projectValue];
+	}
+	//Per a altres camps, mantenim la cerca exacta
+	return [key, '=', value];
+}
+
 function buildUserStoryQuery(query: RallyQueryParams) {
 	const rallyQueries = Object.keys(query).map(key => {
-		//Per al camp Name, utilitzem 'contains' per fer cerca parcial
-		if (key === 'Name') {
-			return queryUtils.where(key, 'contains', query[key]);
-		}
-		//Per al camp Owner, afegim el prefix /user/ si no el porta
-		if (key === 'Owner' && query[key] !== 'currentuser') {
-			let ownerValue = String(query[key]);
-			if (!ownerValue.startsWith('/user/')) {
-				ownerValue = `/user/${ownerValue}`;
-			}
-			return queryUtils.where(key, '=', ownerValue);
-		}
-		//Per a altres camps, mantenim la cerca exacta
-		return queryUtils.where(key, '=', query[key]);
+		const [field, operator, value] = userStoryCondition(key, query[key]);
+		return queryUtils.where(field, operator, value);
 	});
 
 	return rallyQueries.length ? rallyQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.and(b)) : null;

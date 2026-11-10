@@ -82,6 +82,11 @@
 					"default": "",
 					"description": "Jira project key to connect to (e.g., DSS). Leave empty to query all projects"
 				},
+				"robert.jiraBugIssueTypes": {
+					"type": "string",
+					"default": "",
+					"description": "Comma-separated Jira issue-type names treated as bugs/defects (e.g. \"Bug, Incidencias\"). Leave empty to detect them automatically (Bug, Defect, Incidencia…)."
+				},
 				"robert.collaboration.serverUrl": {
 					"type": "string",
 					"default": "https://robert-8vdt.onrender.com",

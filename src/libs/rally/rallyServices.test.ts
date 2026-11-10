@@ -100,7 +100,7 @@ vi.mock('./CacheService', () => ({
 	clearAllCaches: vi.fn()
 }));
 
-import { extractIterationId, checkCacheForFilteredResults, getUserStories } from './rallyServices';
+import { extractIterationId, checkCacheForFilteredResults, getUserStories, userStoryCondition } from './rallyServices';
 import { callRally } from './rallyCall';
 
 function rawStory(overrides: Record<string, unknown>) {
@@ -275,5 +275,22 @@ describe('getUserStories (Iteration filter completeness)', () => {
 		expect(result.userStories).toHaveLength(101);
 		expect(result.hasMore).toBe(false);
 		expect(result.userStories.some((s: any) => s.formattedId === 'US1313591' && s.taskEstimateTotal === 210)).toBe(true);
+	});
+});
+
+describe('userStoryCondition', () => {
+	it('filters the portfolio project by name, since the filter sends the display name', () => {
+		expect(userStoryCondition('Project', 'Team Alpha')).toEqual(['Project.Name', '=', 'Team Alpha']);
+	});
+
+	it('keeps project references as reference filters', () => {
+		expect(userStoryCondition('Project', '/project/74278607305')).toEqual(['Project', '=', '/project/74278607305']);
+		expect(userStoryCondition('Project', 'https://eu1.rallydev.com/slm/webservice/v2.0/project/74278607305')).toEqual(['Project', '=', 'https://eu1.rallydev.com/slm/webservice/v2.0/project/74278607305']);
+	});
+
+	it('keeps the existing Name and Owner conditions', () => {
+		expect(userStoryCondition('Name', 'login')).toEqual(['Name', 'contains', 'login']);
+		expect(userStoryCondition('Owner', '12345')).toEqual(['Owner', '=', '/user/12345']);
+		expect(userStoryCondition('Owner', 'currentuser')).toEqual(['Owner', '=', 'currentuser']);
 	});
 });

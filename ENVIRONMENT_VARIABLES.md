@@ -37,8 +37,6 @@ This means if you set a value in VS Code settings, it will always be used even i
 | `ROBERT_JIRA_BASE_URL` | string | `https://your-site.atlassian.net` | Jira Cloud base URL |
 | `ROBERT_JIRA_PROJECT_KEY` | string | `""` | Jira project key (optional). Empty or unset means **all projects** (JQL `project is not EMPTY`). Previously defaulted to `DSS` |
 
-> **Web version (`npm run web`)**: it has its own settings manager and Jira client in `web/shims/` and reads only these `ROBERT_*` variables, never VS Code settings. The VS Code extension uses `src/SettingsManager.ts` and `robert.jiraProjectKey`, which also treats an empty value as "all projects".
-
 ### Extension Settings
 
 | Variable | Type | Default | Description |

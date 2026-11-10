@@ -220,8 +220,6 @@
 		"compile:fast": "tsc -p ./ && npm run build:webview",
 		"watch": "tsc -p ./ -w",
 		"build:webview": "vite build",
-		"web:build": "vite build && vite build --config web/vite.config.ts",
-		"web": "npm run web:build && node out/web/server.mjs",
 		"lint": "eslint src/**/*.{ts,tsx} --ext .ts,.tsx",
 		"lint:fix": "node scripts/lint-fix.cjs",
 		"knip": "knip",

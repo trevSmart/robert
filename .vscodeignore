@@ -7,16 +7,12 @@ test-workspace/**
 out/test/**
 docs/**
 server/**
-mcp/**
-web/**
-out/web/**
 scripts/**
 dist/**
 tmp/**
 **/*.map
 **/*.test.ts
 **/*.vsix
-opencode.jsonc
 tsconfig*.json
 vite.config.ts
 vitest.config.ts

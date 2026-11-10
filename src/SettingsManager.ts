@@ -12,6 +12,8 @@ export interface RobertSettings {
 	jiraEmail: string;
 	jiraApiToken: string;
 	jiraProjectKey: string;
+	/** Comma-separated Jira issue-type names treated as bugs/defects. Empty = auto-detect. */
+	jiraBugIssueTypes: string;
 	collaborationServerUrl: string;
 	collaborationEnabled: boolean;
 	collaborationAutoConnect: boolean;
@@ -65,6 +67,7 @@ export class SettingsManager {
 					jiraEmail: this.resolveSettingWithFallback('jiraEmail', this.readExplicit<string>(config, 'jiraEmail') ?? '', 'ROBERT_JIRA_EMAIL', ''),
 					jiraApiToken: this.resolveSettingWithFallback('jiraApiToken', this.readExplicit<string>(config, 'jiraApiToken') ?? '', 'ROBERT_JIRA_API_TOKEN', ''),
 					jiraProjectKey: this.resolveSettingWithFallback('jiraProjectKey', this.readExplicit<string>(config, 'jiraProjectKey') ?? '', 'ROBERT_JIRA_PROJECT_KEY', ''),
+					jiraBugIssueTypes: this.resolveSettingWithFallback('jiraBugIssueTypes', this.readExplicit<string>(config, 'jiraBugIssueTypes') ?? '', 'ROBERT_JIRA_BUG_ISSUE_TYPES', ''),
 					collaborationServerUrl: this.resolveSettingWithFallback('collaboration.serverUrl', this.readExplicit<string>(config, 'collaboration.serverUrl') ?? '', 'ROBERT_COLLABORATION_SERVER_URL', 'https://robert-8vdt.onrender.com'),
 					collaborationEnabled: this.resolveBooleanSettingWithFallback('collaboration.enabled', this.readExplicit<boolean>(config, 'collaboration.enabled'), 'ROBERT_COLLABORATION_ENABLED', false),
 					collaborationAutoConnect: this.resolveBooleanSettingWithFallback('collaboration.autoConnect', this.readExplicit<boolean>(config, 'collaboration.autoConnect'), 'ROBERT_COLLABORATION_AUTO_CONNECT', true),
@@ -107,6 +110,9 @@ export class SettingsManager {
 			if (settings.jiraProjectKey !== undefined) {
 				await config.update('jiraProjectKey', settings.jiraProjectKey, vscode.ConfigurationTarget.Global);
 			}
+			if (settings.jiraBugIssueTypes !== undefined) {
+				await config.update('jiraBugIssueTypes', settings.jiraBugIssueTypes, vscode.ConfigurationTarget.Global);
+			}
 			if (settings.collaborationServerUrl !== undefined) {
 				await config.update('collaboration.serverUrl', settings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
 			}
@@ -144,6 +150,7 @@ export class SettingsManager {
 			await config.update('jiraEmail', defaultSettings.jiraEmail, vscode.ConfigurationTarget.Global);
 			await config.update('jiraApiToken', defaultSettings.jiraApiToken, vscode.ConfigurationTarget.Global);
 			await config.update('jiraProjectKey', defaultSettings.jiraProjectKey, vscode.ConfigurationTarget.Global);
+			await config.update('jiraBugIssueTypes', defaultSettings.jiraBugIssueTypes, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.serverUrl', defaultSettings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.enabled', defaultSettings.collaborationEnabled, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.autoConnect', defaultSettings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
@@ -204,6 +211,10 @@ export class SettingsManager {
 				if (key === 'jiraProjectKey') {
 					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
 					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_PROJECT_KEY', defaultValue as string) as RobertSettings[K];
+				}
+				if (key === 'jiraBugIssueTypes') {
+					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
+					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_BUG_ISSUE_TYPES', defaultValue as string) as RobertSettings[K];
 				}
 
 				if (typeof defaultValue === 'boolean') {
@@ -271,6 +282,7 @@ export class SettingsManager {
 			jiraEmail: '',
 			jiraApiToken: '',
 			jiraProjectKey: '',
+			jiraBugIssueTypes: '',
 			collaborationServerUrl: 'https://robert-8vdt.onrender.com',
 			collaborationEnabled: false,
 			collaborationAutoConnect: true,

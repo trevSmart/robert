@@ -11,6 +11,7 @@ import * as rally from '../rally/rallyServices';
 import { setJiraBroadcaster } from '../jira/jiraCall';
 import { setRallyBroadcaster } from '../rally/rallyCall';
 import { validateJiraConfiguration } from '../jira/utils';
+import { ensureJiraMetadata } from '../jira/jiraMetadata';
 import { validateRallyConfiguration } from '../rally/utils';
 import { SettingsManager } from '../../SettingsManager';
 
@@ -31,9 +32,13 @@ export function getProviderLabel(): string {
 
 type Fn = (...args: any[]) => any;
 
-/** Picks the implementation of the active provider at call time. */
+/**
+ * Picks the implementation of the active provider at call time. Jira calls
+ * first make sure the site's field / issue-type metadata is loaded (cached per
+ * site, see jiraMetadata.ts), since custom-field IDs differ between tenants.
+ */
 function route<J extends Fn, R extends Fn>(jiraFn: J, rallyFn: R): J {
-	return ((...args: Parameters<J>) => (isRally() ? rallyFn(...args) : jiraFn(...args))) as J;
+	return ((...args: Parameters<J>) => (isRally() ? rallyFn(...args) : ensureJiraMetadata().then(() => jiraFn(...args)))) as J;
 }
 
 export const getProjects = route(jira.getProjects, rally.getProjects);
@@ -56,7 +61,8 @@ export const getTaskWithParent = route(jira.getTaskWithParent, rally.getTaskWith
 export const getUserStoryRevisions = route(jira.getUserStoryRevisions, rally.getUserStoryRevisions);
 export const getUserStoryRevisionsCount = route(jira.getUserStoryRevisionsCount, rally.getUserStoryRevisionsCount);
 export const fetchImageAsBase64 = route(jira.fetchJiraImageAsBase64, rally.fetchRallyImageAsBase64);
-export const validateConfiguration = route(validateJiraConfiguration, validateRallyConfiguration);
+// Validation must not trigger metadata requests (credentials may be missing).
+export const validateConfiguration: typeof validateJiraConfiguration = (...args) => (isRally() ? validateRallyConfiguration(...args) : validateJiraConfiguration(...args));
 
 /** Rally-only: test cases linked to a user story. Jira has no test cases. */
 export async function getUserStoryTests(userStoryId: string) {

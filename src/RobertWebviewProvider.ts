@@ -103,32 +103,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			this._collaborationClient.setServerUrl(settings.collaborationServerUrl);
 			this._websocketClient.setServerUrl(settings.collaborationServerUrl);
 
-			// Get current user from Jira
-			let jiraUserId = '';
-			let displayName = 'Unknown User';
-
-			try {
-				const userResult = await getCurrentUser();
-				if (userResult?.user) {
-					jiraUserId = userResult.user.objectId || userResult.user.userName || '';
-					displayName = userResult.user.displayName || userResult.user.userName || 'Unknown User';
-					this._errorHandler.logInfo(`Jira user retrieved: ${displayName} (${jiraUserId})`, 'RobertWebviewProvider.initializeCollaboration');
-				}
-			} catch (error) {
-				this._errorHandler.logWarning(`Failed to get Jira user: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.initializeCollaboration');
-			}
-
-			// Fallback: Use machine username if Jira user not available
-			if (!jiraUserId) {
-				const os = await import('os');
-				const fallbackUserId = `local-${os.userInfo().username}`;
-				const fallbackDisplayName = os.userInfo().username || 'Local User';
-
-				this._errorHandler.logWarning(`Jira user not available, using fallback: ${fallbackDisplayName} (${fallbackUserId})`, 'RobertWebviewProvider.initializeCollaboration');
-
-				jiraUserId = fallbackUserId;
-				displayName = fallbackDisplayName;
-			}
+			const { userId: jiraUserId, displayName } = await this.resolveCollaborationIdentity();
 
 			// Set user info for collaboration clients
 			this._collaborationClient.setUserInfo(jiraUserId, displayName);
@@ -174,6 +149,60 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				}
 			}
 		}, 'RobertWebviewProvider.initializeCollaboration');
+	}
+
+	/**
+	 * Identity used by the collaboration clients: the active provider's current
+	 * user, or a machine-local fallback when it can't be retrieved.
+	 */
+	private async resolveCollaborationIdentity(): Promise<{ userId: string; displayName: string }> {
+		let userId = '';
+		let displayName = 'Unknown User';
+
+		try {
+			const userResult = await getCurrentUser();
+			if (userResult?.user) {
+				userId = userResult.user.objectId || userResult.user.userName || '';
+				displayName = userResult.user.displayName || userResult.user.userName || 'Unknown User';
+				this._errorHandler.logInfo(`${getProviderLabel()} user retrieved: ${displayName} (${userId})`, 'RobertWebviewProvider.resolveCollaborationIdentity');
+			}
+		} catch (error) {
+			this._errorHandler.logWarning(`Failed to get ${getProviderLabel()} user: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.resolveCollaborationIdentity');
+		}
+
+		// Fallback: Use machine username if the provider user is not available
+		if (!userId) {
+			const os = await import('os');
+			userId = `local-${os.userInfo().username}`;
+			displayName = os.userInfo().username || 'Local User';
+			this._errorHandler.logWarning(`${getProviderLabel()} user not available, using fallback: ${displayName} (${userId})`, 'RobertWebviewProvider.resolveCollaborationIdentity');
+		}
+
+		return { userId, displayName };
+	}
+
+	/**
+	 * Rebinds the collaboration clients to the active provider's user (after a
+	 * provider switch or a reload) and, if the WebSocket is connected,
+	 * reconnects it so the server authenticates the new identity. Event handlers
+	 * registered on the WebSocket client survive the reconnection.
+	 */
+	public async refreshCollaborationIdentity(): Promise<void> {
+		await this._errorHandler.executeWithErrorHandling(async () => {
+			const { userId, displayName } = await this.resolveCollaborationIdentity();
+			this._collaborationClient.setUserInfo(userId, displayName);
+			const wasConnected = this._websocketClient.isConnected();
+			this._websocketClient.setUserInfo(userId, displayName);
+
+			if (wasConnected) {
+				this._websocketClient.disconnect();
+				await this._websocketClient.connect();
+				this._websocketClient.subscribeNotifications();
+				this._errorHandler.logInfo(`Collaboration WebSocket reconnected as ${displayName} (${userId})`, 'RobertWebviewProvider.refreshCollaborationIdentity');
+			} else {
+				this._errorHandler.logInfo(`Collaboration identity set to ${displayName} (${userId})`, 'RobertWebviewProvider.refreshCollaborationIdentity');
+			}
+		}, 'RobertWebviewProvider.refreshCollaborationIdentity');
 	}
 
 	private broadcastToWebviews(message: Record<string, unknown>): void {

@@ -122,6 +122,8 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 			outputManager.appendLine('[Robert] 🔄 Refreshing webview provider...');
 			// Prefetch Jira data to warm the cache and trigger webview refresh
 			await globalWebviewProvider.prefetchJiraData('reload');
+			// The provider (or its credentials) may have changed: rebind collaboration to the current user.
+			await globalWebviewProvider.refreshCollaborationIdentity();
 			// Notify webview to refresh (via postMessage)
 			await globalWebviewProvider.resetAndRefreshWebviews();
 			if (globalStatusBarItem) {

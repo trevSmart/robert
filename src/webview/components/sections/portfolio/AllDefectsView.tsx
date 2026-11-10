@@ -2,11 +2,11 @@ import type { FC } from 'react';
 import DefectsTable from '../../common/DefectsTable';
 import DefectForm from '../../common/DefectForm';
 import ScreenHeader from '../../common/ScreenHeader';
-import OpenInRallyButton from '../../common/OpenInRallyButton';
+import OpenInJiraButton from '../../common/OpenInJiraButton';
 import FavoriteButton from '../../common/FavoriteButton';
 import TitleActions from '../../common/TitleActions';
 import { logDebug } from '../../../utils/vscodeApi';
-import type { Defect } from '../../../../../types/rally';
+import type { Defect } from '../../../../../types/jira';
 import type { PortfolioViewProps } from './types';
 
 const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defectsError, selectedDefect, currentScreen, onLoadDefects, onDefectSelected, onBackToDefects, defectsHasMore = false, defectsLoadingMore = false, onLoadMoreDefects }) => {
@@ -38,8 +38,16 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defec
 						onBack={onBackToDefects}
 						titleActions={
 							<TitleActions>
-								<FavoriteButton item={{ objectId: selectedDefect.objectId, formattedId: selectedDefect.formattedId, name: selectedDefect.name, type: 'defect' }} />
-								<OpenInRallyButton objectId={selectedDefect.objectId} artifactType="defect" />
+								<FavoriteButton
+									item={{
+										objectId: selectedDefect.objectId,
+										formattedId: selectedDefect.formattedId,
+										name: selectedDefect.name,
+										type: 'defect',
+										project: selectedDefect.project
+									}}
+								/>
+								<OpenInJiraButton objectId={selectedDefect.objectId} artifactType="defect" />
 							</TitleActions>
 						}
 					/>

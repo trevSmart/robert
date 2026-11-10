@@ -1,9 +1,9 @@
 import { FC } from 'react';
 import { UserStoryTypeIcon, DefectTypeIcon, SprintTypeIcon, TaskTypeIcon, TestCaseTypeIcon, type EntityTypeIconProps } from './icons/EntityTypeIcons';
 import { getEntityTypeColors } from '../../utils/themeColors';
-import type { RallyEntityType } from '../../../types/rally';
+import type { JiraEntityType } from '../../../types/jira';
 
-const TYPE_LABELS: Record<RallyEntityType, string> = {
+const TYPE_LABELS: Record<JiraEntityType, string> = {
 	userstory: 'User Story',
 	defect: 'Defect',
 	sprint: 'Sprint',
@@ -11,7 +11,7 @@ const TYPE_LABELS: Record<RallyEntityType, string> = {
 	testcase: 'Test Case'
 };
 
-const TYPE_ICONS: Record<RallyEntityType, FC<EntityTypeIconProps>> = {
+const TYPE_ICONS: Record<JiraEntityType, FC<EntityTypeIconProps>> = {
 	userstory: UserStoryTypeIcon,
 	defect: DefectTypeIcon,
 	sprint: SprintTypeIcon,
@@ -22,7 +22,7 @@ const TYPE_ICONS: Record<RallyEntityType, FC<EntityTypeIconProps>> = {
 export type EntityTypeBadgeDisplay = 'full' | 'text' | 'icon';
 
 interface EntityTypeBadgeProps {
-	type: RallyEntityType;
+	type: JiraEntityType;
 	/** 'full' (icon + label, default), 'text' (label only) or 'icon' (icon only). */
 	display?: EntityTypeBadgeDisplay;
 	/** Encongeix el badge a 18px per encabir-lo en camps de formulari sense fer-los créixer. */
@@ -30,7 +30,7 @@ interface EntityTypeBadgeProps {
 }
 
 /**
- * Type badge shown on Rally item rows — Recently Viewed, Favorites and global search results
+ * Type badge shown on Jira item rows — Recently Viewed, Favorites and global search results
  * all render it, so the three surfaces stay visually identical.
  */
 const EntityTypeBadge: FC<EntityTypeBadgeProps> = ({ type, display = 'full', compact = false }) => {
@@ -71,7 +71,7 @@ export default EntityTypeBadge;
 
 interface EntityRefFormFieldProps {
 	/** Tipus de l'entitat referenciada — determina la icona i el color del badge. */
-	type: RallyEntityType;
+	type: JiraEntityType;
 	/** Nom del registre referenciat; buit mostra `emptyLabel`. */
 	value?: string | null;
 	emptyLabel?: string;
@@ -102,7 +102,15 @@ export const EntityRefFormField: FC<EntityRefFormFieldProps> = ({ type, value, e
 			}}
 		>
 			<EntityTypeBadge type={type} display="icon" compact />
-			<span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{empty ? emptyLabel : value}</span>
+			<span
+				style={{
+					overflow: 'hidden',
+					textOverflow: 'ellipsis',
+					whiteSpace: 'nowrap'
+				}}
+			>
+				{empty ? emptyLabel : value}
+			</span>
 		</div>
 	);
 };

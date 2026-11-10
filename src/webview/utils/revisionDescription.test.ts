@@ -5,13 +5,25 @@ describe('parseRevisionDescription', () => {
 	it('parses a simple from/to change', () => {
 		const result = parseRevisionDescription('ITERATION changed from [Sprint 91] to [Sprint 92]');
 		expect(result.structured).toBe(true);
-		expect(result.changes).toEqual([{ field: 'ITERATION', kind: 'changed', from: 'Sprint 91', to: 'Sprint 92' }]);
+		expect(result.changes).toEqual([
+			{
+				field: 'ITERATION',
+				kind: 'changed',
+				from: 'Sprint 91',
+				to: 'Sprint 92'
+			}
+		]);
 	});
 
 	it('parses multi-word field names', () => {
 		const result = parseRevisionDescription('TASK ESTIMATE TOTAL changed from [118.0] to [88.0]');
 		expect(result.structured).toBe(true);
-		expect(result.changes[0]).toEqual({ field: 'TASK ESTIMATE TOTAL', kind: 'changed', from: '118.0', to: '88.0' });
+		expect(result.changes[0]).toEqual({
+			field: 'TASK ESTIMATE TOTAL',
+			kind: 'changed',
+			from: '118.0',
+			to: '88.0'
+		});
 	});
 
 	it('parses several changes in one description', () => {
@@ -19,7 +31,12 @@ describe('parseRevisionDescription', () => {
 		expect(result.structured).toBe(true);
 		expect(result.changes).toEqual([
 			{ field: 'RELEASE', kind: 'added', from: null, to: '2026-Q3' },
-			{ field: 'MILESTONES', kind: 'added', from: null, to: 'MI43737: (2026-09-22) IOP Salesforce' }
+			{
+				field: 'MILESTONES',
+				kind: 'added',
+				from: null,
+				to: 'MI43737: (2026-09-22) IOP Salesforce'
+			}
 		]);
 	});
 
@@ -33,7 +50,12 @@ describe('parseRevisionDescription', () => {
 	it('keeps brackets nested inside a value', () => {
 		const result = parseRevisionDescription('TAGS added [[US Quality] 28/100 - KO]');
 		expect(result.structured).toBe(true);
-		expect(result.changes[0]).toEqual({ field: 'TAGS', kind: 'added', from: null, to: '[US Quality] 28/100 - KO' });
+		expect(result.changes[0]).toEqual({
+			field: 'TAGS',
+			kind: 'added',
+			from: null,
+			to: '[US Quality] 28/100 - KO'
+		});
 	});
 
 	it('keeps nested brackets when another clause follows', () => {
@@ -41,20 +63,33 @@ describe('parseRevisionDescription', () => {
 		expect(result.structured).toBe(true);
 		expect(result.changes).toEqual([
 			{ field: 'TASK STATUS', kind: 'changed', from: 'NONE', to: 'DEFINED' },
-			{ field: 'TASKS', kind: 'added', from: null, to: 'TA1110817: [AGENTQA] Evaluation 28/100' }
+			{
+				field: 'TASKS',
+				kind: 'added',
+				from: null,
+				to: 'TA1110817: [AGENTQA] Evaluation 28/100'
+			}
 		]);
 	});
 
 	it('reports no previous value for "changed to"', () => {
 		const result = parseRevisionDescription('BLOCKED REASON changed to [waiting for API]');
 		expect(result.structured).toBe(true);
-		expect(result.changes[0]).toEqual({ field: 'BLOCKED REASON', kind: 'changed', from: null, to: 'waiting for API' });
+		expect(result.changes[0]).toEqual({
+			field: 'BLOCKED REASON',
+			kind: 'changed',
+			from: null,
+			to: 'waiting for API'
+		});
 	});
 
 	it('parses removals', () => {
 		const result = parseRevisionDescription('MILESTONES removed [MI43737: IOP Salesforce]');
 		expect(result.structured).toBe(true);
-		expect(result.changes[0]).toMatchObject({ kind: 'removed', to: 'MI43737: IOP Salesforce' });
+		expect(result.changes[0]).toMatchObject({
+			kind: 'removed',
+			to: 'MI43737: IOP Salesforce'
+		});
 	});
 
 	it('mixes verbs within one description', () => {
@@ -116,10 +151,22 @@ describe('parseRevisionDescription', () => {
 	});
 
 	it('handles empty and missing input', () => {
-		expect(parseRevisionDescription('')).toEqual({ changes: [], structured: false });
-		expect(parseRevisionDescription('   ')).toEqual({ changes: [], structured: false });
-		expect(parseRevisionDescription(null)).toEqual({ changes: [], structured: false });
-		expect(parseRevisionDescription(undefined)).toEqual({ changes: [], structured: false });
+		expect(parseRevisionDescription('')).toEqual({
+			changes: [],
+			structured: false
+		});
+		expect(parseRevisionDescription('   ')).toEqual({
+			changes: [],
+			structured: false
+		});
+		expect(parseRevisionDescription(null)).toEqual({
+			changes: [],
+			structured: false
+		});
+		expect(parseRevisionDescription(undefined)).toEqual({
+			changes: [],
+			structured: false
+		});
 	});
 
 	it('is reusable across calls (global regex state is reset)', () => {

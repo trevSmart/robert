@@ -19,7 +19,7 @@ The test suite is organized into the following test files:
   - Singleton pattern
   - Getting and setting configuration values
   - Settings validation
-  - Rally configuration validation
+  - Jira configuration validation
 
 - **ErrorHandler.test.ts** - Tests for error handling
   - Singleton pattern
@@ -35,7 +35,7 @@ The test suite is organized into the following test files:
 - **extension.test.ts** - Tests for extension lifecycle
   - Extension activation
   - Extension deactivation
-  - Rally data structure
+  - Jira data structure
 
 ## Running Tests
 
@@ -80,10 +80,11 @@ If you're testing the Robert extension with automated AI agents in virtual envir
 The extension supports environment variable configuration, making it easy to test without modifying VS Code settings:
 
 ```bash
-# Set Rally configuration via environment variables
-export ROBERT_RALLY_API_KEY="your-api-key"
-export ROBERT_RALLY_INSTANCE="https://eu1.rallydev.com"
-export ROBERT_RALLY_PROJECT_NAME="TestProject"
+# Set Jira configuration via environment variables
+export ROBERT_JIRA_EMAIL="you@example.com"
+export ROBERT_JIRA_API_TOKEN="your-api-token"
+export ROBERT_JIRA_BASE_URL="https://your-site.atlassian.net"
+export ROBERT_JIRA_PROJECT_KEY="DSS"
 
 # Run tests
 npm test

@@ -1,6 +1,6 @@
 import type React from 'react';
 import EntityTypeBadge from './EntityTypeBadge';
-import type { RallyEntityType } from '../../../types/rally';
+import type { JiraEntityType } from '../../../types/jira';
 
 interface ScreenHeaderProps {
 	title: string;
@@ -10,10 +10,12 @@ interface ScreenHeaderProps {
 	rightContent?: React.ReactNode;
 	titleActions?: React.ReactNode;
 	/** Detail screens pass the record type so it shows as a badge instead of a text prefix in the title. */
-	entityType?: RallyEntityType;
+	entityType?: JiraEntityType;
+	/** Jira project key of the record, shown as a tag next to the title. */
+	projectKey?: string | null;
 }
 
-const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButton = false, sticky = false, rightContent, titleActions, entityType }) => {
+const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButton = false, sticky = false, rightContent, titleActions, entityType, projectKey }) => {
 	const stickyHeader = Boolean(sticky || (showBackButton && onBack));
 	return (
 		<div
@@ -75,6 +77,23 @@ const ScreenHeader: React.FC<ScreenHeaderProps> = ({ title, onBack, showBackButt
 					{title}
 					{titleActions}
 				</span>
+				{projectKey && (
+					<span
+						title={`Project ${projectKey}`}
+						style={{
+							marginLeft: '10px',
+							padding: '1px 8px',
+							fontSize: '11px',
+							fontWeight: 400,
+							borderRadius: '10px',
+							flexShrink: 0,
+							color: 'var(--vscode-badge-foreground)',
+							backgroundColor: 'var(--vscode-badge-background)'
+						}}
+					>
+						{projectKey}
+					</span>
+				)}
 			</div>
 			{rightContent && <div style={{ display: 'flex', alignItems: 'center' }}>{rightContent}</div>}
 		</div>

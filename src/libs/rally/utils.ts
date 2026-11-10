@@ -36,13 +36,21 @@ export const getRallyApi = () => {
 		}
 	});
 
-	_rallyApiCache = { api: rallyApi, instance: rallyInstance, apiKey: rallyApiKey };
+	_rallyApiCache = {
+		api: rallyApi,
+		instance: rallyInstance,
+		apiKey: rallyApiKey
+	};
 	return rallyApi;
 };
 
 // Cache for the last successful validation result.  TTL: 5 minutes.
 const VALIDATION_CACHE_TTL_MS = 5 * 60 * 1000;
-let _validationCache: { result: { isValid: boolean; errors: string[] }; timestamp: number; settingsKey: string } | null = null;
+let _validationCache: {
+	result: { isValid: boolean; errors: string[] };
+	timestamp: number;
+	settingsKey: string;
+} | null = null;
 
 // Cache for the resolved project ObjectID.
 // Keyed on a settings fingerprint (instance + apiKey + projectName) so that a change to
@@ -64,7 +72,10 @@ export function clearUtilsCaches(): void {
  * Valida la configuració de Rally abans de fer crides a l'API
  * @returns {Promise<{isValid: boolean, errors: string[]}>} - Resultat de la validació
  */
-export async function validateRallyConfiguration(): Promise<{ isValid: boolean; errors: string[] }> {
+export async function validateRallyConfiguration(): Promise<{
+	isValid: boolean;
+	errors: string[];
+}> {
 	errorHandler.logDebug('Starting Rally configuration validation...', 'rallyUtils.validateRallyConfiguration');
 
 	const settingsManager = SettingsManager.getInstance();
@@ -128,7 +139,10 @@ export async function validateRallyConfiguration(): Promise<{ isValid: boolean; 
 			},
 			'Validating Rally configuration...'
 		);
-		const resultData = result as { Results?: unknown[]; QueryResult?: { Results?: unknown[] } };
+		const resultData = result as {
+			Results?: unknown[];
+			QueryResult?: { Results?: unknown[] };
+		};
 		const results = resultData.Results || resultData.QueryResult?.Results || [];
 		errorHandler.logDebug(`Test query successful, found ${results.length} projects`, 'rallyUtils.validateRallyConfiguration');
 	} catch (error: unknown) {
@@ -194,7 +208,9 @@ export async function getProjectId(): Promise<string> {
 		'Resolving Rally project...'
 	);
 
-	const resultData = result as { Results?: Array<{ ObjectID: string; Name?: string }> };
+	const resultData = result as {
+		Results?: Array<{ ObjectID: string; Name?: string }>;
+	};
 	if (!resultData.Results || resultData.Results.length === 0) {
 		throw new Error(`No project found with name "${rallyProjectName}"`);
 	}

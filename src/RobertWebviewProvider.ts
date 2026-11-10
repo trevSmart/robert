@@ -1,8 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
-import { getCurrentUser, getProjects, getIterations } from './libs/rally/rallyServices';
-import { setRallyBroadcaster } from './libs/rally/rallyCall';
-import { validateRallyConfiguration } from './libs/rally/utils';
+import { getCurrentUser, getProjects, getIterations, getProviderLabel, setProviderBroadcaster, validateConfiguration } from './libs/provider';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
 import { WebSocketClient } from './libs/collaboration/websocketClient';
@@ -36,7 +34,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	// video plays once each time the activity bar view is first opened after a restart.
 	private _introVideoShown: boolean = false;
 
-	// Rally data computed by the latest prefetch, ready to inject into the main UI's
+	// Jira data computed by the latest prefetch, ready to inject into the main UI's
 	// initial HTML so it renders without a loading spinner. Mirrors the
 	// `iterationsLoaded` message payload. Undefined until a prefetch succeeds.
 	private _preloadedData?: {
@@ -44,6 +42,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		currentUser: unknown;
 		holidays: unknown[];
 		collaborationEnabled: boolean;
+		provider: 'jira' | 'rally';
 		devMode: boolean;
 		debugMode: boolean;
 	};
@@ -89,8 +88,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		if (/Collaboration server URL not configured/i.test(raw)) {
 			return 'Collaboration server URL is not set. Configure it in extension settings.';
 		}
-		if (/Rally User ID is required/i.test(raw)) {
-			return 'Rally user is required for collaboration. Ensure you are signed in to Rally.';
+		if (/Jira User ID is required/i.test(raw)) {
+			return 'Jira user is required for collaboration. Ensure you are signed in to Jira.';
 		}
 		return raw || 'Something went wrong with the collaboration service.';
 	}
@@ -104,36 +103,36 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			this._collaborationClient.setServerUrl(settings.collaborationServerUrl);
 			this._websocketClient.setServerUrl(settings.collaborationServerUrl);
 
-			// Get current user from Rally
-			let rallyUserId = '';
+			// Get current user from Jira
+			let jiraUserId = '';
 			let displayName = 'Unknown User';
 
 			try {
 				const userResult = await getCurrentUser();
 				if (userResult?.user) {
-					rallyUserId = userResult.user.objectId || userResult.user.userName || '';
+					jiraUserId = userResult.user.objectId || userResult.user.userName || '';
 					displayName = userResult.user.displayName || userResult.user.userName || 'Unknown User';
-					this._errorHandler.logInfo(`Rally user retrieved: ${displayName} (${rallyUserId})`, 'RobertWebviewProvider.initializeCollaboration');
+					this._errorHandler.logInfo(`Jira user retrieved: ${displayName} (${jiraUserId})`, 'RobertWebviewProvider.initializeCollaboration');
 				}
 			} catch (error) {
-				this._errorHandler.logWarning(`Failed to get Rally user: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.initializeCollaboration');
+				this._errorHandler.logWarning(`Failed to get Jira user: ${error instanceof Error ? error.message : String(error)}`, 'RobertWebviewProvider.initializeCollaboration');
 			}
 
-			// Fallback: Use machine username if Rally user not available
-			if (!rallyUserId) {
+			// Fallback: Use machine username if Jira user not available
+			if (!jiraUserId) {
 				const os = await import('os');
 				const fallbackUserId = `local-${os.userInfo().username}`;
 				const fallbackDisplayName = os.userInfo().username || 'Local User';
 
-				this._errorHandler.logWarning(`Rally user not available, using fallback: ${fallbackDisplayName} (${fallbackUserId})`, 'RobertWebviewProvider.initializeCollaboration');
+				this._errorHandler.logWarning(`Jira user not available, using fallback: ${fallbackDisplayName} (${fallbackUserId})`, 'RobertWebviewProvider.initializeCollaboration');
 
-				rallyUserId = fallbackUserId;
+				jiraUserId = fallbackUserId;
 				displayName = fallbackDisplayName;
 			}
 
 			// Set user info for collaboration clients
-			this._collaborationClient.setUserInfo(rallyUserId, displayName);
-			this._websocketClient.setUserInfo(rallyUserId, displayName);
+			this._collaborationClient.setUserInfo(jiraUserId, displayName);
+			this._websocketClient.setUserInfo(jiraUserId, displayName);
 
 			// Only connect WebSocket if collaboration is enabled
 			if (!settings.collaborationEnabled) {
@@ -226,27 +225,27 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	}
 
 	/**
-	 * Prefetch Rally data to warm the cache when the extension activates.
+	 * Prefetch Jira data to warm the cache when the extension activates.
 	 */
-	public async prefetchRallyData(trigger: string = 'activation'): Promise<void> {
+	public async prefetchJiraData(trigger: string = 'activation'): Promise<void> {
 		const run = this._errorHandler.executeWithErrorHandling(async () => {
 			const settings = this._settingsManager.getSettings();
 			if (!settings.autoRefresh) {
 				return;
 			}
 
-			this._errorHandler.logDebug(`Prefetching Rally data (${trigger})`, 'RobertWebviewProvider.prefetchRallyData');
+			this._errorHandler.logDebug(`Prefetching ${getProviderLabel()} data (${trigger})`, 'RobertWebviewProvider.prefetchJiraData');
 
-			this._errorHandler.logDebug('Starting Rally configuration validation...', 'RobertWebviewProvider.prefetchRallyData');
-			const validation = await validateRallyConfiguration();
+			this._errorHandler.logDebug(`Starting ${getProviderLabel()} configuration validation...`, 'RobertWebviewProvider.prefetchJiraData');
+			const validation = await validateConfiguration();
 
 			if (!validation.isValid) {
-				this._errorHandler.logWarning(`Skipping Rally prefetch: ${validation.errors.join(', ')}`, 'RobertWebviewProvider.prefetchRallyData');
+				this._errorHandler.logWarning(`Skipping ${getProviderLabel()} prefetch: ${validation.errors.join(', ')}`, 'RobertWebviewProvider.prefetchJiraData');
 				return;
 			}
 
 			// Fetch everything the main UI needs on first render, mirroring the
-			// `iterationsLoaded` payload built by RallyMessageHandler.handleLoadIterations,
+			// `iterationsLoaded` payload built by JiraMessageHandler.handleLoadIterations,
 			// so the result can be injected directly into the initial HTML.
 			const holidayService = HolidayService.getInstance();
 			const currentYear = new Date().getFullYear();
@@ -258,13 +257,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					currentUser: userResult?.user || null,
 					holidays: holidays || [],
 					collaborationEnabled: this._settingsManager.getSetting('collaborationEnabled') || false,
+					provider: this._settingsManager.getSetting('provider'),
 					devMode: isTestTabEnabled(),
 					debugMode: this._settingsManager.getSetting('debugMode')
 				};
 			}
 
-			this._errorHandler.logDebug(`Prefetch completed: ${projectsResult?.count ?? 0} projects, ${iterationsResult?.count ?? 0} iterations`, 'RobertWebviewProvider.prefetchRallyData');
-		}, 'RobertWebviewProvider.prefetchRallyData');
+			this._errorHandler.logDebug(`Prefetch completed: ${projectsResult?.count ?? 0} projects, ${iterationsResult?.count ?? 0} iterations`, 'RobertWebviewProvider.prefetchJiraData');
+		}, 'RobertWebviewProvider.prefetchJiraData');
 
 		this._prefetchInFlight = run.then(() => undefined);
 		await this._prefetchInFlight;
@@ -279,7 +279,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			};
 
 			this._currentView = webviewView;
-			setRallyBroadcaster(msg => this.broadcastToWebviews(msg));
+			setProviderBroadcaster(msg => this.broadcastToWebviews(msg));
 			this._errorHandler.logViewCreation('Activity Bar View', 'RobertWebviewProvider.resolveWebviewView');
 
 			// On the first opening after an extension-host restart (or after a
@@ -301,7 +301,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					this._currentView = undefined;
 					// Deregister broadcaster when all webviews are closed
 					if (!this._currentView && !this._currentPanel) {
-						setRallyBroadcaster(null);
+						setProviderBroadcaster(null);
 					}
 				},
 				undefined,
@@ -341,7 +341,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		this._preloadedData = undefined;
 		// Dispose any prior listener bound to this view (a previous render or the
 		// intro screen) so reloads don't stack duplicate message handlers, which
-		// would otherwise cause duplicate Rally calls and "Unknown command" warnings.
+		// would otherwise cause duplicate Jira calls and "Unknown command" warnings.
 		this._viewMessageListener?.dispose();
 		this._viewMessageListener = this._setWebviewMessageListener(webviewView.webview, webviewId);
 		this._postDevModeInit(webviewView.webview);
@@ -354,11 +354,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	private async _showIntroVideoInView(webviewView: vscode.WebviewView): Promise<void> {
 		webviewView.webview.html = await this._getHtmlForLoading(webviewView.webview);
 
-		// Warm the Rally cache while the video plays so the main UI can render with
+		// Warm the Jira cache while the video plays so the main UI can render with
 		// data already in hand instead of showing its loading spinner afterwards.
-		// Fire-and-forget: prefetchRallyData handles its own errors/validation and
+		// Fire-and-forget: prefetchJiraData handles its own errors/validation and
 		// writes to the shared TTL cache, so loadIterations finds it ready.
-		void this.prefetchRallyData('intro-video');
+		void this.prefetchJiraData('intro-video');
 
 		let switched = false;
 		const switchToMain = async (reason: string) => {
@@ -420,7 +420,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				});
 
 				this._currentPanel = panel;
-				setRallyBroadcaster(msg => this.broadcastToWebviews(msg));
+				setProviderBroadcaster(msg => this.broadcastToWebviews(msg));
 				this._errorHandler.logViewCreation('Webview Panel', 'RobertWebviewProvider.createWebviewPanel');
 
 				// Generate unique ID for this webview instance
@@ -439,7 +439,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						this._currentPanel = undefined;
 						// Deregister broadcaster when all webviews are closed
 						if (!this._currentView && !this._currentPanel) {
-							setRallyBroadcaster(null);
+							setProviderBroadcaster(null);
 						}
 					},
 					undefined,
@@ -812,7 +812,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			this._introVideoShown = false;
 
 			// Refresh the activity bar view. If the welcome animation is enabled,
-			// replay the intro video (which also re-warms the Rally cache); otherwise
+			// replay the intro video (which also re-warms the Jira cache); otherwise
 			// fall back to the lightweight in-place refresh message.
 			if (this._currentView) {
 				try {

@@ -1,4 +1,4 @@
-import type { UserStory, RallyDefect, Iteration } from '../../types/rally';
+import type { UserStory, JiraDefect, Iteration } from '../../types/jira';
 
 /**
  * Interface per mètriques de velocitat per sprint
@@ -39,7 +39,7 @@ export interface DefectsBySeverity {
 
 /**
  * Calcula la velocitat (hores totals planificades del sprint) per cada sprint
- * Uses iteration.taskEstimateTotal when available (Rally API pre-calculates); otherwise sums from user stories.
+ * Uses iteration.taskEstimateTotal when available (Jira API pre-calculates); otherwise sums from user stories.
  * @param userStories - Llista de user stories (used for completedStories count and fallback when iteration.taskEstimateTotal is null)
  * @param iterations - Llista d'iteracions (taskEstimateTotal preferred for points)
  * @param numberOfSprints - Nombre de sprints a incloure (per defecte 6)
@@ -65,7 +65,7 @@ export function calculateVelocity(userStories: UserStory[], iterations: Iteratio
 		.slice(0, numberOfSprints)
 		.reverse(); // Invertir per tenir més antic primer
 
-	// Use iteration.taskEstimateTotal when available (Rally API pre-calculates); fallback to summing user stories
+	// Use iteration.taskEstimateTotal when available (Jira API pre-calculates); fallback to summing user stories
 	const velocityData: VelocityData[] = sortedIterations.map(iteration => {
 		const sprintStories = userStories.filter(story => story.iteration === iteration.name);
 		const completedStories = sprintStories.filter(story => story.scheduleState === 'Completed' || story.scheduleState === 'Accepted');
@@ -108,7 +108,7 @@ export function calculateWIP(userStories: UserStory[]): number {
  * @param defects - Llista de defects (opcional)
  * @returns Nombre total d'items bloquejats
  */
-export function calculateBlockedItems(userStories: UserStory[], defects: RallyDefect[] = []): number {
+export function calculateBlockedItems(userStories: UserStory[], defects: JiraDefect[] = []): number {
 	const blockedStories = userStories.filter(story => story.blocked === true).length;
 	const blockedDefects = defects.filter(defect => defect.blocked === true).length;
 	return blockedStories + blockedDefects;
@@ -199,17 +199,17 @@ export function groupByBlockedStatus(userStories: UserStory[], iterationName?: s
 }
 
 /**
- * Normalitza els valors de severitat que retorna Rally a les categories del gràfic.
- * Rally retorna valors com "Minor Problem", "Major Problem", "Crash/Data Loss", "Cosmetic",
+ * Normalitza els valors de severitat que retorna Jira a les categories del gràfic.
+ * Jira retorna valors com "Minor Problem", "Major Problem", "Crash/Data Loss", "Cosmetic",
  * "None"/"Unset" o buit, que no coincideixen directament amb les etiquetes del gràfic.
  */
 export function normalizeSeverity(severity: string | null | undefined): 'Critical' | 'Major' | 'Minor' | 'Cosmetic' | 'Unset' {
 	const value = (severity || '').trim().toLowerCase();
 
-	if (value.includes('crash') || value.includes('data loss') || value.includes('critical')) return 'Critical';
-	if (value.includes('major')) return 'Major';
-	if (value.includes('minor')) return 'Minor';
-	if (value.includes('cosmetic')) return 'Cosmetic';
+	if (value.includes('crash') || value.includes('data loss') || value.includes('critical') || value.includes('crítica') || value.includes('highest') || value.includes('impedimento')) return 'Critical';
+	if (value.includes('major') || value.includes('alta') || value === 'high' || value.includes('high (')) return 'Major';
+	if (value.includes('minor') || value.includes('media') || value === 'medium' || value.includes('medium (')) return 'Minor';
+	if (value.includes('cosmetic') || value.includes('baja') || value === 'low' || value === 'lowest') return 'Cosmetic';
 	return 'Unset';
 }
 
@@ -220,7 +220,7 @@ export function normalizeSeverity(severity: string | null | undefined): 'Critica
  * @param numberOfSprints - Nombre de sprints a incloure
  * @returns Array de DefectsBySeverity
  */
-export function aggregateDefectsBySeverity(defects: RallyDefect[], iterations: Iteration[], numberOfSprints: number = 6): DefectsBySeverity[] {
+export function aggregateDefectsBySeverity(defects: JiraDefect[], iterations: Iteration[], numberOfSprints: number = 6): DefectsBySeverity[] {
 	// Filtrar només sprints passats o actuals
 	const today = new Date();
 	today.setHours(23, 59, 59, 999);
@@ -246,7 +246,7 @@ export function aggregateDefectsBySeverity(defects: RallyDefect[], iterations: I
 	pastIterations.forEach(iteration => {
 		const sprintDefects = defects.filter(defect => defect.iteration === iteration.name);
 
-		// Agrupar per severitat (normalitzant els valors reals de Rally a les categories del gràfic)
+		// Agrupar per severitat (normalitzant els valors reals de Jira a les categories del gràfic)
 		const severities = ['Critical', 'Major', 'Minor', 'Cosmetic', 'Unset'];
 		severities.forEach(severity => {
 			const defectsWithSeverity = sprintDefects.filter(defect => normalizeSeverity(defect.severity) === severity);

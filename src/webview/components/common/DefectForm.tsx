@@ -73,7 +73,16 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 	return (
 		<>
 			<collapsible-card title="Details">
-				<div slot="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginLeft: '12px' }}>
+				<div
+					slot="header-actions"
+					style={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: '12px',
+						flexWrap: 'wrap',
+						marginLeft: '12px'
+					}}
+				>
 					{defect.scheduleState && (
 						<div
 							style={{
@@ -100,7 +109,16 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 					{defect.blocked && defect.blockedReason && <BlockedReasonBanner blocked={defect.blocked} blockedReason={defect.blockedReason} />}
 
 					<div style={{ marginBottom: '0px' }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
+						<label
+							style={{
+								display: 'block',
+								marginBottom: '4px',
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Name
+						</label>
 						<input
 							type="text"
 							value={defect.name}
@@ -127,12 +145,37 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						}}
 					>
 						{/* Basic Information */}
-						<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-						<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Status & Priority</h3>
+						<h3
+							style={{
+								margin: '18px 0 3px 0',
+								color: 'var(--vscode-foreground)',
+								fontSize: '14px'
+							}}
+						>
+							Basic Information
+						</h3>
+						<h3
+							style={{
+								margin: '18px 0 3px 0',
+								color: 'var(--vscode-foreground)',
+								fontSize: '14px'
+							}}
+						>
+							Status & Priority
+						</h3>
 
 						<div style={{ display: 'flex', gap: '16px' }}>
 							<div style={{ flex: '1' }}>
-								<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>State</label>
+								<label
+									style={{
+										display: 'block',
+										marginBottom: '4px',
+										fontSize: '12px',
+										color: 'var(--vscode-descriptionForeground)'
+									}}
+								>
+									State
+								</label>
 								<input
 									type="text"
 									value={defect.state || 'N/A'}
@@ -149,7 +192,16 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 								/>
 							</div>
 							<div style={{ flex: '1' }}>
-								<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Severity</label>
+								<label
+									style={{
+										display: 'block',
+										marginBottom: '4px',
+										fontSize: '12px',
+										color: 'var(--vscode-descriptionForeground)'
+									}}
+								>
+									Severity
+								</label>
 								<input
 									type="text"
 									value={defect.severity || 'N/A'}
@@ -168,7 +220,16 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						</div>
 
 						<div>
-							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Priority</label>
+							<label
+								style={{
+									display: 'block',
+									marginBottom: '4px',
+									fontSize: '12px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Priority
+							</label>
 							<input
 								type="text"
 								value={defect.priority || 'N/A'}
@@ -186,18 +247,51 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						</div>
 
 						<div>
-							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Assigned To</label>
+							<label
+								style={{
+									display: 'block',
+									marginBottom: '4px',
+									fontSize: '12px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Assigned To
+							</label>
 							<AvatarFormField name={defect.owner || ''} emptyLabel="N/A" />
 						</div>
 
 						<div>
-							<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Sprint</label>
+							<label
+								style={{
+									display: 'block',
+									marginBottom: '4px',
+									fontSize: '12px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Sprint
+							</label>
 							<EntityRefFormField type="sprint" value={defect.iteration} emptyLabel="N/A" />
 						</div>
 
 						{/* Description */}
-						<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-							<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+						<div
+							style={{
+								display: 'flex',
+								flexDirection: 'column',
+								gap: '10px',
+								gridColumn: '1 / -1'
+							}}
+						>
+							<h3
+								style={{
+									margin: '18px 0 3px 0',
+									color: 'var(--vscode-foreground)',
+									fontSize: '14px'
+								}}
+							>
+								Description
+							</h3>
 
 							<ResizableDescription description={defect.description} />
 						</div>

@@ -7,7 +7,7 @@ interface RevisionTimelineProps {
 	revisions: RevisionLike[];
 	loading: boolean;
 	loaded: boolean;
-	/** Total revisions in Rally; used to warn when only the latest slice is shown. */
+	/** Total revisions in Jira; used to warn when only the latest slice is shown. */
 	totalCount: number | null;
 	/** Story creation date — timeline zero point. */
 	creationDate?: string | null;
@@ -36,7 +36,11 @@ const GUIDE_OVERSHOOT = 10;
 function formatShortDate(ms: number): string {
 	const date = new Date(ms);
 	if (Number.isNaN(date.getTime())) return '';
-	return date.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
+	return date.toLocaleDateString('en-US', {
+		day: '2-digit',
+		month: 'short',
+		year: 'numeric'
+	});
 }
 
 function formatAxisDate(ms: number): string {
@@ -65,7 +69,10 @@ function detectFirstDayOfWeek(): number {
 		// Intl.Locale weekInfo (where supported) reports the region's actual calendar convention.
 		// Its firstDay uses ISO weekday numbering (1 = Monday ... 7 = Sunday); `% 7` maps that
 		// onto Date#getDay()'s 0 = Sunday convention (7 % 7 === 0).
-		const localeInfo = new Intl.Locale(locale ?? 'en') as Intl.Locale & { weekInfo?: { firstDay: number }; getWeekInfo?: () => { firstDay: number } };
+		const localeInfo = new Intl.Locale(locale ?? 'en') as Intl.Locale & {
+			weekInfo?: { firstDay: number };
+			getWeekInfo?: () => { firstDay: number };
+		};
 		const weekInfo = localeInfo.weekInfo ?? localeInfo.getWeekInfo?.();
 		if (weekInfo && typeof weekInfo.firstDay === 'number') {
 			return weekInfo.firstDay % 7;
@@ -134,8 +141,28 @@ const HoverTooltip: FC<{ tooltip: TooltipState | null }> = ({ tooltip }) => {
 
 const TooltipRow: FC<{ label: string; value: ReactNode; swatch?: string }> = ({ label, value, swatch }) => (
 	<div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
-		{swatch && <span style={{ width: '10px', height: '10px', backgroundColor: swatch, borderRadius: '2px', display: 'inline-block', flexShrink: 0, marginTop: '2px' }} />}
-		<span style={{ flex: 1, color: themeColors.descriptionForeground, whiteSpace: 'nowrap' }}>{label}</span>
+		{swatch && (
+			<span
+				style={{
+					width: '10px',
+					height: '10px',
+					backgroundColor: swatch,
+					borderRadius: '2px',
+					display: 'inline-block',
+					flexShrink: 0,
+					marginTop: '2px'
+				}}
+			/>
+		)}
+		<span
+			style={{
+				flex: 1,
+				color: themeColors.descriptionForeground,
+				whiteSpace: 'nowrap'
+			}}
+		>
+			{label}
+		</span>
 		<span style={{ whiteSpace: 'nowrap', fontWeight: 500 }}>{value}</span>
 	</div>
 );
@@ -143,7 +170,13 @@ const TooltipRow: FC<{ label: string; value: ReactNode; swatch?: string }> = ({ 
 // "From X to Y" on one line, right-aligned so it sits under the current state — the title row
 // above is left-heavy (previous state + arrow) with the current state trailing on the right.
 const TooltipDateRange: FC<{ from: string; to: string }> = ({ from, to }) => (
-	<div style={{ textAlign: 'right', color: themeColors.descriptionForeground, whiteSpace: 'nowrap' }}>
+	<div
+		style={{
+			textAlign: 'right',
+			color: themeColors.descriptionForeground,
+			whiteSpace: 'nowrap'
+		}}
+	>
 		From <span style={{ color: themeColors.foreground, fontWeight: 500 }}>{from}</span> to <span style={{ color: themeColors.foreground, fontWeight: 500 }}>{to}</span>
 	</div>
 );
@@ -158,25 +191,76 @@ const TooltipTitle: FC<{ steps: { label: string; color: string }[] }> = ({ steps
 	const previous = steps.length > 1 ? steps[0] : null;
 	const current = steps[steps.length - 1];
 	return (
-		<div style={{ display: 'flex', alignItems: 'center', flexWrap: 'nowrap', whiteSpace: 'nowrap', gap: '10px', fontSize: '12.5px', fontWeight: 500, marginBottom: '6px' }}>
+		<div
+			style={{
+				display: 'flex',
+				alignItems: 'center',
+				flexWrap: 'nowrap',
+				whiteSpace: 'nowrap',
+				gap: '10px',
+				fontSize: '12.5px',
+				fontWeight: 500,
+				marginBottom: '6px'
+			}}
+		>
 			{previous && (
 				<>
-					<span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', opacity: PREVIOUS_STATE_OPACITY }}>
-						<span style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: previous.color, display: 'inline-block', flexShrink: 0 }} />
+					<span
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							gap: '7px',
+							opacity: PREVIOUS_STATE_OPACITY
+						}}
+					>
+						<span
+							style={{
+								width: '8px',
+								height: '8px',
+								borderRadius: '2px',
+								backgroundColor: previous.color,
+								display: 'inline-block',
+								flexShrink: 0
+							}}
+						/>
 						<span>{previous.label}</span>
 					</span>
-					<span style={{ color: themeColors.descriptionForeground, fontWeight: 400, opacity: PREVIOUS_STATE_OPACITY }}>→</span>
+					<span
+						style={{
+							color: themeColors.descriptionForeground,
+							fontWeight: 400,
+							opacity: PREVIOUS_STATE_OPACITY
+						}}
+					>
+						→
+					</span>
 				</>
 			)}
 			<span style={{ display: 'inline-flex', alignItems: 'center', gap: '7px' }}>
-				<span style={{ width: '8px', height: '8px', borderRadius: '2px', backgroundColor: current.color, display: 'inline-block', flexShrink: 0 }} />
+				<span
+					style={{
+						width: '8px',
+						height: '8px',
+						borderRadius: '2px',
+						backgroundColor: current.color,
+						display: 'inline-block',
+						flexShrink: 0
+					}}
+				/>
 				<span>{current.label}</span>
 			</span>
 		</div>
 	);
 };
 
-const Segment: FC<{ segment: TimelineSegment; color: string; showLabel: boolean; onShowTooltip: ShowTooltip; onHideTooltip: () => void; tooltipContent: ReactNode }> = ({ segment, color, showLabel, onShowTooltip, onHideTooltip, tooltipContent }) => (
+const Segment: FC<{
+	segment: TimelineSegment;
+	color: string;
+	showLabel: boolean;
+	onShowTooltip: ShowTooltip;
+	onHideTooltip: () => void;
+	tooltipContent: ReactNode;
+}> = ({ segment, color, showLabel, onShowTooltip, onHideTooltip, tooltipContent }) => (
 	<div
 		onMouseMove={e => onShowTooltip(e, tooltipContent)}
 		onMouseLeave={onHideTooltip}
@@ -254,7 +338,11 @@ const WeekGuides: FC<{ markers: WeekMarker[] }> = ({ markers }) => (
 );
 
 // Solid, colored annotation lines marking sprint starts — layered above the plain gridlines.
-const SprintMarkerLines: FC<{ markers: SprintMarker[]; onShowTooltip: ShowTooltip; onHideTooltip: () => void }> = ({ markers, onShowTooltip, onHideTooltip }) => (
+const SprintMarkerLines: FC<{
+	markers: SprintMarker[];
+	onShowTooltip: ShowTooltip;
+	onHideTooltip: () => void;
+}> = ({ markers, onShowTooltip, onHideTooltip }) => (
 	<>
 		{markers.map((m, i) => {
 			const content = (
@@ -279,7 +367,16 @@ const SprintMarkerLines: FC<{ markers: SprintMarker[]; onShowTooltip: ShowToolti
 						zIndex: 2
 					}}
 				>
-					<div style={{ position: 'absolute', left: '4px', top: 0, bottom: 0, borderLeft: `1px solid ${SPRINT_MARKER_COLOR}`, opacity: 0.4 }} />
+					<div
+						style={{
+							position: 'absolute',
+							left: '4px',
+							top: 0,
+							bottom: 0,
+							borderLeft: `1px solid ${SPRINT_MARKER_COLOR}`,
+							opacity: 0.4
+						}}
+					/>
 				</div>
 			);
 		})}
@@ -287,7 +384,13 @@ const SprintMarkerLines: FC<{ markers: SprintMarker[]; onShowTooltip: ShowToolti
 );
 
 const AxisTicks: FC<{ ticks: AxisTick[] }> = ({ ticks }) => (
-	<div style={{ position: 'relative', height: '100%', borderTop: `1px solid ${GRID_LINE_COLOR}` }}>
+	<div
+		style={{
+			position: 'relative',
+			height: '100%',
+			borderTop: `1px solid ${GRID_LINE_COLOR}`
+		}}
+	>
 		{ticks.map((t, i) => {
 			const isFirst = i === 0;
 			const isLast = i === ticks.length - 1;
@@ -353,7 +456,17 @@ const Crosshair: FC<{ fraction: number; dateLabel: string }> = ({ fraction, date
 const COLUMN_GAP = 10;
 
 const RevisionTimeline: FC<RevisionTimelineProps> = ({ revisions, loading, loaded, totalCount, creationDate, currentState, currentBlocked, iterations }) => {
-	const tracks = useMemo(() => buildTimelineTracks(revisions, { creationDate, now: new Date().getTime(), currentState, currentBlocked, iterations }), [revisions, creationDate, currentState, currentBlocked, iterations]);
+	const tracks = useMemo(
+		() =>
+			buildTimelineTracks(revisions, {
+				creationDate,
+				now: new Date().getTime(),
+				currentState,
+				currentBlocked,
+				iterations
+			}),
+		[revisions, creationDate, currentState, currentBlocked, iterations]
+	);
 	const axisTicks = useMemo(() => buildAxisTicks(tracks.startMs, tracks.endMs, TICK_COUNT), [tracks.startMs, tracks.endMs]);
 	const firstDayOfWeek = useMemo(() => detectFirstDayOfWeek(), []);
 	const weekMarkers = useMemo(() => buildWeekMarkers(tracks.startMs, tracks.endMs, firstDayOfWeek), [tracks.startMs, tracks.endMs, firstDayOfWeek]);
@@ -378,15 +491,45 @@ const RevisionTimeline: FC<RevisionTimelineProps> = ({ revisions, loading, loade
 	const handleChartMouseLeave = useCallback(() => setCrosshairFraction(null), []);
 
 	if (loading) {
-		return <div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading history...</div>;
+		return (
+			<div
+				style={{
+					padding: '12px',
+					textAlign: 'center',
+					color: 'var(--vscode-descriptionForeground)'
+				}}
+			>
+				Loading history...
+			</div>
+		);
 	}
 
 	if (!loaded) {
-		return <div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading history...</div>;
+		return (
+			<div
+				style={{
+					padding: '12px',
+					textAlign: 'center',
+					color: 'var(--vscode-descriptionForeground)'
+				}}
+			>
+				Loading history...
+			</div>
+		);
 	}
 
 	if (!tracks.hasData) {
-		return <div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No state or blocked changes recorded.</div>;
+		return (
+			<div
+				style={{
+					padding: '12px',
+					textAlign: 'center',
+					color: 'var(--vscode-descriptionForeground)'
+				}}
+			>
+				No state or blocked changes recorded.
+			</div>
+		);
 	}
 
 	const truncated = totalCount !== null && revisions.length > 0 && totalCount > revisions.length;
@@ -397,8 +540,14 @@ const RevisionTimeline: FC<RevisionTimelineProps> = ({ revisions, loading, loade
 
 	return (
 		<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-			<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
-				From creation ({formatShortDate(tracks.startMs)}) to now{totalLabel ? ` · ${totalLabel}` : ''}
+			<div
+				style={{
+					fontSize: '11px',
+					color: 'var(--vscode-descriptionForeground)'
+				}}
+			>
+				From creation ({formatShortDate(tracks.startMs)}) to now
+				{totalLabel ? ` · ${totalLabel}` : ''}
 				{truncated && (
 					<span style={{ fontStyle: 'italic' }}>
 						{' '}
@@ -425,20 +574,41 @@ const RevisionTimeline: FC<RevisionTimelineProps> = ({ revisions, loading, loade
 				    alignSelf: 'stretch' is required — the grid's `align-items: center` would otherwise
 				    shrink this div to its content height (0, since all its children are position:absolute
 				    and don't contribute to intrinsic height), collapsing every top:0/bottom:0 line inside it. */}
-				<div style={{ gridColumn: 2, gridRow: '1 / 3', position: 'relative', alignSelf: 'stretch', pointerEvents: 'none' }}>
+				<div
+					style={{
+						gridColumn: 2,
+						gridRow: '1 / 3',
+						position: 'relative',
+						alignSelf: 'stretch',
+						pointerEvents: 'none'
+					}}
+				>
 					<WeekGuides markers={weekMarkers} />
 					<GridLines ticks={axisTicks} />
 					<SprintMarkerLines markers={tracks.sprintMarkers} onShowTooltip={showTooltip} onHideTooltip={hideTooltip} />
 				</div>
 
-				<div style={{ gridColumn: 1, gridRow: 1, fontSize: '12px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>State</div>
+				<div
+					style={{
+						gridColumn: 1,
+						gridRow: 1,
+						fontSize: '12px',
+						fontWeight: 500,
+						color: 'var(--vscode-foreground)'
+					}}
+				>
+					State
+				</div>
 				<div style={{ gridColumn: 2, gridRow: 1, ...trackRowStyle }}>
 					{tracks.stateSegments.map((seg, i) => {
 						const color = getScheduleStateColor(seg.label);
 						const previousLabel = tracks.stateSegments[i - 1]?.label;
 						const steps = previousLabel
 							? [
-									{ label: previousLabel, color: getScheduleStateColor(previousLabel) },
+									{
+										label: previousLabel,
+										color: getScheduleStateColor(previousLabel)
+									},
 									{ label: seg.label, color }
 								]
 							: [{ label: seg.label, color }];
@@ -453,14 +623,27 @@ const RevisionTimeline: FC<RevisionTimelineProps> = ({ revisions, loading, loade
 					})}
 				</div>
 
-				<div style={{ gridColumn: 1, gridRow: 2, fontSize: '12px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>Blocked</div>
+				<div
+					style={{
+						gridColumn: 1,
+						gridRow: 2,
+						fontSize: '12px',
+						fontWeight: 500,
+						color: 'var(--vscode-foreground)'
+					}}
+				>
+					Blocked
+				</div>
 				<div style={{ gridColumn: 2, gridRow: 2, ...trackRowStyle }}>
 					{tracks.blockedSegments.map((seg, i) => {
 						const color = seg.blocked ? muted(BLOCKED_COLOR) : muted(UNBLOCKED_COLOR);
 						const previousLabel = tracks.blockedSegments[i - 1]?.label;
 						const steps = previousLabel
 							? [
-									{ label: previousLabel, color: blockedLabelColor(previousLabel) },
+									{
+										label: previousLabel,
+										color: blockedLabelColor(previousLabel)
+									},
 									{ label: seg.label, color: blockedLabelColor(seg.label) }
 								]
 							: [{ label: seg.label, color: blockedLabelColor(seg.label) }];
@@ -481,7 +664,17 @@ const RevisionTimeline: FC<RevisionTimelineProps> = ({ revisions, loading, loade
 				</div>
 
 				{/* Crosshair, spanning bar rows + axis so the reader can align the pointer with a date */}
-				<div style={{ gridColumn: 2, gridRow: '1 / 4', position: 'relative', alignSelf: 'stretch', pointerEvents: 'none' }}>{crosshairFraction !== null && <Crosshair fraction={crosshairFraction} dateLabel={formatShortDate(tracks.startMs + crosshairFraction * tracks.totalMs)} />}</div>
+				<div
+					style={{
+						gridColumn: 2,
+						gridRow: '1 / 4',
+						position: 'relative',
+						alignSelf: 'stretch',
+						pointerEvents: 'none'
+					}}
+				>
+					{crosshairFraction !== null && <Crosshair fraction={crosshairFraction} dateLabel={formatShortDate(tracks.startMs + crosshairFraction * tracks.totalMs)} />}
+				</div>
 			</div>
 
 			<HoverTooltip tooltip={tooltip} />

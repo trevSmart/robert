@@ -4,8 +4,15 @@ export type ColumnWidths = Record<string, number>;
 
 export function useColumnResize(initialWidths: ColumnWidths) {
 	const [columnWidths, setColumnWidths] = useState<ColumnWidths>(initialWidths);
-	const resizingRef = useRef<{ key: string; startX: number; startWidth: number } | null>(null);
-	const listenersRef = useRef<{ onMouseMove: (e: MouseEvent) => void; onMouseUp: () => void } | null>(null);
+	const resizingRef = useRef<{
+		key: string;
+		startX: number;
+		startWidth: number;
+	} | null>(null);
+	const listenersRef = useRef<{
+		onMouseMove: (e: MouseEvent) => void;
+		onMouseUp: () => void;
+	} | null>(null);
 
 	useEffect(() => {
 		return () => {
@@ -21,7 +28,11 @@ export function useColumnResize(initialWidths: ColumnWidths) {
 		e.preventDefault();
 		e.stopPropagation();
 
-		resizingRef.current = { key, startX: e.clientX, startWidth: columnWidths[key] };
+		resizingRef.current = {
+			key,
+			startX: e.clientX,
+			startWidth: columnWidths[key]
+		};
 
 		const onMouseMove = (moveEvent: MouseEvent) => {
 			const resizing = resizingRef.current;

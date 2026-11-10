@@ -228,8 +228,24 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 			}}
 		>
 			{showSelector && (
-				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-					<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '500' }}>Next Sprint Readiness</h3>
+				<div
+					style={{
+						display: 'flex',
+						justifyContent: 'space-between',
+						alignItems: 'center',
+						marginBottom: '8px'
+					}}
+				>
+					<h3
+						style={{
+							margin: 0,
+							color: 'var(--vscode-foreground)',
+							fontSize: '18px',
+							fontWeight: '500'
+						}}
+					>
+						Next Sprint Readiness
+					</h3>
 					<select
 						value={selectedSprint}
 						onChange={e => onSprintChange?.(e.target.value)}

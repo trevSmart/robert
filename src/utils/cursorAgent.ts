@@ -2,14 +2,14 @@ import * as vscode from 'vscode';
 
 const CURSOR_AGENT_OPEN_DELAY_MS = 150;
 
-export const DEFAULT_CURSOR_AGENT_PROMPT = `You are helping via the IBM Robert VS Code extension (Rally integration).
+export const DEFAULT_CURSOR_AGENT_PROMPT = `You are helping via the IBM Robert VS Code extension (Jira integration).
 
-Review the current workspace and Rally sprint context, then provide 3 concise insights I can show in the extension UI:
+Review the current workspace and Jira sprint context, then provide 3 concise insights I can show in the extension UI:
 1. Sprint health (scope, blockers, at-risk items)
 2. Team focus (ownership gaps, WIP, unassigned work)
 3. One concrete next action for today
 
-Keep each insight to 1–2 sentences. If Rally data is not visible in the repo, say what you would need to analyze the sprint.`;
+Keep each insight to 1–2 sentences. If Jira data is not visible in the repo, say what you would need to analyze the sprint.`;
 
 async function openViaCursorClipboard(prompt: string): Promise<void> {
 	const originalClipboard = await vscode.env.clipboard.readText();

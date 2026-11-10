@@ -4,9 +4,14 @@ import { ErrorHandler } from './ErrorHandler';
 export interface RobertSettings {
 	autoRefresh: boolean;
 	debugMode: boolean;
+	provider: 'jira' | 'rally';
 	rallyInstance: string;
 	rallyApiKey: string;
 	rallyProjectName: string;
+	jiraBaseUrl: string;
+	jiraEmail: string;
+	jiraApiToken: string;
+	jiraProjectKey: string;
 	collaborationServerUrl: string;
 	collaborationEnabled: boolean;
 	collaborationAutoConnect: boolean;
@@ -41,9 +46,14 @@ export class SettingsManager {
 				const settings: RobertSettings = {
 					autoRefresh: this.resolveBooleanSettingWithFallback('autoRefresh', config.get<boolean>('autoRefresh'), 'ROBERT_AUTO_REFRESH', true),
 					debugMode: this.resolveBooleanSettingWithFallback('debugMode', config.get<boolean>('debugMode'), 'ROBERT_DEBUG_MODE', false),
+					provider: this.resolveProvider(config.get<string>('provider', '')),
 					rallyInstance: this.resolveSettingWithFallback('rallyInstance', config.get<string>('rallyInstance', ''), 'ROBERT_RALLY_INSTANCE', 'https://eu1.rallydev.com'),
 					rallyApiKey: this.resolveSettingWithFallback('rallyApiKey', config.get<string>('rallyApiKey', ''), 'ROBERT_RALLY_API_KEY', ''),
 					rallyProjectName: this.resolveSettingWithFallback('rallyProjectName', config.get<string>('rallyProjectName', ''), 'ROBERT_RALLY_PROJECT_NAME', ''),
+					jiraBaseUrl: this.resolveSettingWithFallback('jiraBaseUrl', config.get<string>('jiraBaseUrl', ''), 'ROBERT_JIRA_BASE_URL', 'https://jiracloudab.atlassian.net'),
+					jiraEmail: this.resolveSettingWithFallback('jiraEmail', config.get<string>('jiraEmail', ''), 'ROBERT_JIRA_EMAIL', ''),
+					jiraApiToken: this.resolveSettingWithFallback('jiraApiToken', config.get<string>('jiraApiToken', ''), 'ROBERT_JIRA_API_TOKEN', ''),
+					jiraProjectKey: this.resolveSettingWithFallback('jiraProjectKey', config.get<string>('jiraProjectKey', ''), 'ROBERT_JIRA_PROJECT_KEY', ''),
 					collaborationServerUrl: this.resolveSettingWithFallback('collaboration.serverUrl', config.get<string>('collaboration.serverUrl', ''), 'ROBERT_COLLABORATION_SERVER_URL', 'https://robert-8vdt.onrender.com'),
 					collaborationEnabled: this.resolveBooleanSettingWithFallback('collaboration.enabled', config.get<boolean>('collaboration.enabled'), 'ROBERT_COLLABORATION_ENABLED', false),
 					collaborationAutoConnect: this.resolveBooleanSettingWithFallback('collaboration.autoConnect', config.get<boolean>('collaboration.autoConnect'), 'ROBERT_COLLABORATION_AUTO_CONNECT', true),
@@ -69,14 +79,22 @@ export class SettingsManager {
 			if (settings.debugMode !== undefined) {
 				await config.update('debugMode', settings.debugMode, vscode.ConfigurationTarget.Global);
 			}
-			if (settings.rallyInstance !== undefined) {
-				await config.update('rallyInstance', settings.rallyInstance, vscode.ConfigurationTarget.Global);
+			for (const key of ['provider', 'rallyInstance', 'rallyApiKey', 'rallyProjectName'] as const) {
+				if (settings[key] !== undefined) {
+					await config.update(key, settings[key], vscode.ConfigurationTarget.Global);
+				}
 			}
-			if (settings.rallyApiKey !== undefined) {
-				await config.update('rallyApiKey', settings.rallyApiKey, vscode.ConfigurationTarget.Global);
+			if (settings.jiraBaseUrl !== undefined) {
+				await config.update('jiraBaseUrl', settings.jiraBaseUrl, vscode.ConfigurationTarget.Global);
 			}
-			if (settings.rallyProjectName !== undefined) {
-				await config.update('rallyProjectName', settings.rallyProjectName, vscode.ConfigurationTarget.Global);
+			if (settings.jiraEmail !== undefined) {
+				await config.update('jiraEmail', settings.jiraEmail, vscode.ConfigurationTarget.Global);
+			}
+			if (settings.jiraApiToken !== undefined) {
+				await config.update('jiraApiToken', settings.jiraApiToken, vscode.ConfigurationTarget.Global);
+			}
+			if (settings.jiraProjectKey !== undefined) {
+				await config.update('jiraProjectKey', settings.jiraProjectKey, vscode.ConfigurationTarget.Global);
 			}
 			if (settings.collaborationServerUrl !== undefined) {
 				await config.update('collaboration.serverUrl', settings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
@@ -108,9 +126,13 @@ export class SettingsManager {
 
 			await config.update('autoRefresh', defaultSettings.autoRefresh, vscode.ConfigurationTarget.Global);
 			await config.update('debugMode', defaultSettings.debugMode, vscode.ConfigurationTarget.Global);
-			await config.update('rallyInstance', defaultSettings.rallyInstance, vscode.ConfigurationTarget.Global);
-			await config.update('rallyApiKey', defaultSettings.rallyApiKey, vscode.ConfigurationTarget.Global);
-			await config.update('rallyProjectName', defaultSettings.rallyProjectName, vscode.ConfigurationTarget.Global);
+			for (const key of ['provider', 'rallyInstance', 'rallyApiKey', 'rallyProjectName'] as const) {
+				await config.update(key, defaultSettings[key], vscode.ConfigurationTarget.Global);
+			}
+			await config.update('jiraBaseUrl', defaultSettings.jiraBaseUrl, vscode.ConfigurationTarget.Global);
+			await config.update('jiraEmail', defaultSettings.jiraEmail, vscode.ConfigurationTarget.Global);
+			await config.update('jiraApiToken', defaultSettings.jiraApiToken, vscode.ConfigurationTarget.Global);
+			await config.update('jiraProjectKey', defaultSettings.jiraProjectKey, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.serverUrl', defaultSettings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.enabled', defaultSettings.collaborationEnabled, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.autoConnect', defaultSettings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
@@ -143,17 +165,34 @@ export class SettingsManager {
 					return this.resolveBooleanSettingWithFallback('collaboration.autoConnect', vscodeVal, 'ROBERT_COLLABORATION_AUTO_CONNECT', defaultValue as boolean) as RobertSettings[K];
 				}
 
-				if (key === 'rallyApiKey') {
-					const vscodeVal = config.get<string>(key, '');
-					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_API_KEY', defaultValue as string) as RobertSettings[K];
+				if (key === 'provider') {
+					return this.resolveProvider(config.get<string>('provider', '')) as RobertSettings[K];
 				}
-				if (key === 'rallyInstance') {
+				const rallyEnv: Record<string, string> = {
+					rallyInstance: 'ROBERT_RALLY_INSTANCE',
+					rallyApiKey: 'ROBERT_RALLY_API_KEY',
+					rallyProjectName: 'ROBERT_RALLY_PROJECT_NAME'
+				};
+				if (key in rallyEnv) {
 					const vscodeVal = config.get<string>(key, '');
-					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_INSTANCE', defaultValue as string) as RobertSettings[K];
+					return this.resolveSettingWithFallback(key, vscodeVal, rallyEnv[key], defaultValue as string) as RobertSettings[K];
 				}
-				if (key === 'rallyProjectName') {
+
+				if (key === 'jiraApiToken') {
 					const vscodeVal = config.get<string>(key, '');
-					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_RALLY_PROJECT_NAME', defaultValue as string) as RobertSettings[K];
+					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_API_TOKEN', defaultValue as string) as RobertSettings[K];
+				}
+				if (key === 'jiraBaseUrl') {
+					const vscodeVal = config.get<string>(key, '');
+					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_BASE_URL', defaultValue as string) as RobertSettings[K];
+				}
+				if (key === 'jiraEmail') {
+					const vscodeVal = config.get<string>(key, '');
+					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_EMAIL', defaultValue as string) as RobertSettings[K];
+				}
+				if (key === 'jiraProjectKey') {
+					const vscodeVal = config.get<string>(key, '');
+					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_PROJECT_KEY', defaultValue as string) as RobertSettings[K];
 				}
 
 				if (typeof defaultValue === 'boolean') {
@@ -198,15 +237,28 @@ export class SettingsManager {
 		return {
 			autoRefresh: true,
 			debugMode: false,
+			provider: 'jira',
 			rallyInstance: 'https://eu1.rallydev.com',
 			rallyApiKey: '',
 			rallyProjectName: '',
+			jiraBaseUrl: 'https://jiracloudab.atlassian.net',
+			jiraEmail: '',
+			jiraApiToken: '',
+			jiraProjectKey: '',
 			collaborationServerUrl: 'https://robert-8vdt.onrender.com',
 			collaborationEnabled: false,
 			collaborationAutoConnect: true,
 			statusBarShowSprintDaysLeft: true,
 			showWelcomeAnimation: true
 		};
+	}
+
+	/**
+	 * Resolve the active data provider: VS Code setting > ROBERT_PROVIDER env var > "jira"
+	 */
+	private resolveProvider(vscodeValue: string | undefined): 'jira' | 'rally' {
+		const raw = (vscodeValue && vscodeValue.trim() !== '' ? vscodeValue : process.env.ROBERT_PROVIDER || '').trim().toLowerCase();
+		return raw === 'rally' ? 'rally' : 'jira';
 	}
 
 	/**
@@ -264,8 +316,27 @@ export class SettingsManager {
 	/**
 	 * Validate settings values
 	 */
-	public validateSettings(settings: Partial<RobertSettings>): { isValid: boolean; errors: string[] } {
+	public validateSettings(settings: Partial<RobertSettings>): {
+		isValid: boolean;
+		errors: string[];
+	} {
 		const errors: string[] = [];
+
+		if (settings.jiraBaseUrl !== undefined && !settings.jiraBaseUrl.startsWith('https://')) {
+			errors.push('Jira base URL must be a valid HTTPS URL');
+		}
+
+		if (settings.jiraEmail !== undefined && settings.jiraEmail.trim() === '') {
+			errors.push('Jira email cannot be empty');
+		}
+
+		if (settings.jiraApiToken !== undefined && settings.jiraApiToken.trim() === '') {
+			errors.push('Jira API token cannot be empty');
+		}
+
+		if (settings.provider !== undefined && settings.provider !== 'jira' && settings.provider !== 'rally') {
+			errors.push('Provider must be "jira" or "rally"');
+		}
 
 		if (settings.rallyInstance !== undefined && !settings.rallyInstance.startsWith('https://')) {
 			errors.push('Rally instance must be a valid HTTPS URL');

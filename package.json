@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.5.4",
+	"version": "0.6.0",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",
@@ -34,20 +34,53 @@
 					"default": false,
 					"description": "Enable debug mode"
 				},
+				"robert.provider": {
+					"type": "string",
+					"enum": [
+						"jira",
+						"rally"
+					],
+					"enumDescriptions": [
+						"Use Jira Cloud (robert.jira* settings)",
+						"Use Rally (robert.rally* settings)"
+					],
+					"default": "jira",
+					"description": "Work-tracking backend used by Robert. Changing it reloads all data."
+				},
 				"robert.rallyInstance": {
 					"type": "string",
 					"default": "https://eu1.rallydev.com",
-					"description": "Rally instance URL (e.g., https://eu1.rallydev.com)"
+					"description": "Rally instance URL (e.g., https://eu1.rallydev.com). Used when robert.provider is \"rally\"."
 				},
 				"robert.rallyApiKey": {
 					"type": "string",
 					"default": "",
-					"description": "Rally API key for authentication"
+					"description": "Rally API key for authentication. Used when robert.provider is \"rally\"."
 				},
 				"robert.rallyProjectName": {
 					"type": "string",
 					"default": "",
-					"description": "Rally project name to connect to"
+					"description": "Rally project name to connect to. Used when robert.provider is \"rally\"."
+				},
+				"robert.jiraBaseUrl": {
+					"type": "string",
+					"default": "https://jiracloudab.atlassian.net",
+					"description": "Jira Cloud base URL (e.g., https://your-site.atlassian.net). Used when robert.provider is \"jira\"."
+				},
+				"robert.jiraEmail": {
+					"type": "string",
+					"default": "",
+					"description": "Email of the Jira account used for authentication"
+				},
+				"robert.jiraApiToken": {
+					"type": "string",
+					"default": "",
+					"description": "Jira API token for authentication"
+				},
+				"robert.jiraProjectKey": {
+					"type": "string",
+					"default": "",
+					"description": "Jira project key to connect to (e.g., DSS). Leave empty to query all projects"
 				},
 				"robert.collaboration.serverUrl": {
 					"type": "string",

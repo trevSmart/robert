@@ -40,7 +40,10 @@ const NavTab = styled.button<{ $isActive: boolean; $lightTheme: boolean }>`
 	}
 `;
 
-const NavOverflowBtn = styled.button<{ $isActive: boolean; $lightTheme: boolean }>`
+const NavOverflowBtn = styled.button<{
+	$isActive: boolean;
+	$lightTheme: boolean;
+}>`
 	${baseNavButtonStyles}
 	cursor: pointer;
 
@@ -186,11 +189,35 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		const baseTabs = [
 			{ id: 'search' as const, label: '', Icon: SearchIcon, iconOnly: true },
 			{ id: 'home' as const, label: 'Home', Icon: HomeIcon, iconOnly: false },
-			{ id: 'portfolio' as const, label: 'Portfolio', Icon: PortfolioIcon, iconOnly: false },
+			{
+				id: 'portfolio' as const,
+				label: 'Portfolio',
+				Icon: PortfolioIcon,
+				iconOnly: false
+			},
 			{ id: 'team' as const, label: 'Team', Icon: TeamIcon, iconOnly: false },
-			{ id: 'metrics' as const, label: 'Metrics', Icon: MetricsIcon, iconOnly: false },
-			...(showCollaborationTab ? [{ id: 'collaboration' as const, label: 'Collaboration', Icon: CollaborationIcon, iconOnly: false }] : []),
-			{ id: 'library' as const, label: 'Library', Icon: LibraryIcon, iconOnly: false }
+			{
+				id: 'metrics' as const,
+				label: 'Metrics',
+				Icon: MetricsIcon,
+				iconOnly: false
+			},
+			...(showCollaborationTab
+				? [
+						{
+							id: 'collaboration' as const,
+							label: 'Collaboration',
+							Icon: CollaborationIcon,
+							iconOnly: false
+						}
+					]
+				: []),
+			{
+				id: 'library' as const,
+				label: 'Library',
+				Icon: LibraryIcon,
+				iconOnly: false
+			}
 		];
 
 		if (!showTestTab) {
@@ -198,7 +225,12 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 		}
 
 		// Insert before Collaboration/Library so Test is easier to find in the overflow menu
-		const testTab = { id: 'test' as const, label: 'Test', Icon: TestIcon, iconOnly: false };
+		const testTab = {
+			id: 'test' as const,
+			label: 'Test',
+			Icon: TestIcon,
+			iconOnly: false
+		};
 		const metricsIndex = baseTabs.findIndex(tab => tab.id === 'metrics');
 		const insertAt = metricsIndex >= 0 ? metricsIndex + 1 : baseTabs.length;
 		return [...baseTabs.slice(0, insertAt), testTab, ...baseTabs.slice(insertAt)];
@@ -496,7 +528,15 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 							</button>
 						))}
 					</div>
-					<button ref={measureOverflowRef} type="button" style={{ ...getTabStyles(false), padding: '12px 14px', minWidth: '44px' }}>
+					<button
+						ref={measureOverflowRef}
+						type="button"
+						style={{
+							...getTabStyles(false),
+							padding: '12px 14px',
+							minWidth: '44px'
+						}}
+					>
 						<span style={{ fontSize: '18px', lineHeight: 1 }}>…</span>
 					</button>
 				</div>

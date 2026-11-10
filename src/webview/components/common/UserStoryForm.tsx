@@ -2,13 +2,14 @@ import { FC, useState, useCallback, useMemo, useRef, useEffect, type ReactNode }
 import styled from 'styled-components';
 import { AvatarFormField } from './Avatar';
 import { EntityRefFormField } from './EntityTypeBadge';
-import { type Revision, type UserStory } from '../../../types/rally';
+import { type Revision, type UserStory } from '../../../types/jira';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
 import { getVsCodeApi } from '../../utils/vscodeApi';
 import BlockedReasonBanner from './BlockedReasonBanner';
 import RevisionDescription from './RevisionDescription';
 import RevisionTimeline from './RevisionTimeline';
 import ResizableDescription from './ResizableDescription';
+import { useProvider } from '../../utils/providerState';
 import './CollapsibleCard';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
@@ -142,6 +143,7 @@ const RevisionsIcon = ({ size = '18px' }: { size?: string }) => (
 );
 
 const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTab = 'tasks', onAdditionalTabChange, additionalTabContent, collaborationEnabled = false, iterations }) => {
+	const { isRally } = useProvider();
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [requestSupportLoading, setRequestSupportLoading] = useState(false);
 	const [requestSupportSuccess, setRequestSupportSuccess] = useState(false);
@@ -284,7 +286,16 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	return (
 		<div>
 			<collapsible-card title="Details" style={{ margin: '20px 0' } as React.CSSProperties}>
-				<div slot="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginLeft: '12px' }}>
+				<div
+					slot="header-actions"
+					style={{
+						display: 'flex',
+						alignItems: 'center',
+						gap: '12px',
+						flexWrap: 'wrap',
+						marginLeft: '12px'
+					}}
+				>
 					{collaborationEnabled && requestSupportSuccess && (
 						<span
 							style={{
@@ -357,7 +368,16 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 				)}
 
 				<div style={{ marginBottom: '16px' }}>
-					<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Name</label>
+					<label
+						style={{
+							display: 'block',
+							marginBottom: '4px',
+							fontSize: '12px',
+							color: 'var(--vscode-descriptionForeground)'
+						}}
+					>
+						Name
+					</label>
 					<input
 						type="text"
 						value={userStory.name}
@@ -385,11 +405,36 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					}}
 				>
 					{/* Basic Information */}
-					<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Basic Information</h3>
-					<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Estimates & Status</h3>
+					<h3
+						style={{
+							margin: '18px 0 3px 0',
+							color: 'var(--vscode-foreground)',
+							fontSize: '14px'
+						}}
+					>
+						Basic Information
+					</h3>
+					<h3
+						style={{
+							margin: '18px 0 3px 0',
+							color: 'var(--vscode-foreground)',
+							fontSize: '14px'
+						}}
+					>
+						Estimates & Status
+					</h3>
 
 					<div style={{ minWidth: 0 }}>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Plan Estimate</label>
+						<label
+							style={{
+								display: 'block',
+								marginBottom: '4px',
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Plan Estimate
+						</label>
 						<input
 							type="number"
 							value={userStory.planEstimate || 0}
@@ -408,18 +453,79 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					</div>
 
 					<div>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Sprint</label>
+						<label
+							style={{
+								display: 'block',
+								marginBottom: '4px',
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Time Spent (h)
+						</label>
+						<input
+							type="number"
+							value={userStory.timeSpent || 0}
+							readOnly
+							style={{
+								width: '100%',
+								boxSizing: 'border-box',
+								padding: '6px 8px',
+								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+								color: 'var(--vscode-input-foreground)',
+								border: '1px solid var(--vscode-input-border)',
+								borderRadius: '3px',
+								fontSize: '13px'
+							}}
+						/>
+					</div>
+
+					<div>
+						<label
+							style={{
+								display: 'block',
+								marginBottom: '4px',
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Sprint
+						</label>
 						<EntityRefFormField type="sprint" value={typeof userStory.iteration === 'string' ? userStory.iteration : userStory.iteration?._refObjectName} emptyLabel="N/A" />
 					</div>
 
 					<div>
-						<label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>Assigned To</label>
+						<label
+							style={{
+								display: 'block',
+								marginBottom: '4px',
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Assigned To
+						</label>
 						<AvatarFormField name={userStory.assignee || ''} emptyLabel="N/A" />
 					</div>
 
 					{/* Description */}
-					<div style={{ display: 'flex', flexDirection: 'column', gap: '10px', gridColumn: '1 / -1' }}>
-						<h3 style={{ margin: '18px 0 3px 0', color: 'var(--vscode-foreground)', fontSize: '14px' }}>Description</h3>
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'column',
+							gap: '10px',
+							gridColumn: '1 / -1'
+						}}
+					>
+						<h3
+							style={{
+								margin: '18px 0 3px 0',
+								color: 'var(--vscode-foreground)',
+								fontSize: '14px'
+							}}
+						>
+							Description
+						</h3>
 
 						<ResizableDescription description={userStory.description} />
 					</div>
@@ -427,38 +533,126 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 			</collapsible-card>
 			<collapsible-card title="Related Records" style={{ margin: '20px 0' } as React.CSSProperties}>
 				<div>
-					<div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '12px' }}>
+					<div
+						style={{
+							display: 'grid',
+							gridTemplateColumns: `repeat(${isRally ? 5 : 4}, minmax(0, 1fr))`,
+							gap: '12px'
+						}}
+					>
 						<StatPill isSelected={selectedAdditionalTab === 'tasks'} onClick={() => handleTabChange('tasks')} title="Click to view tasks">
-							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Tasks</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
+							<span
+								style={{
+									fontSize: '11px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Tasks
+							</span>
+							<span
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: '6px',
+									fontSize: '18px',
+									fontWeight: 500,
+									color: 'var(--vscode-foreground)'
+								}}
+							>
 								<TasksIcon />
 								{userStory.tasksCount}
 							</span>
 						</StatPill>
-						<StatPill isSelected={selectedAdditionalTab === 'tests'} onClick={() => handleTabChange('tests')} title="Click to view test cases">
-							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Test cases</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
-								<TestsIcon />
-								{userStory.testCasesCount}
-							</span>
-						</StatPill>
+						{isRally && (
+							<StatPill isSelected={selectedAdditionalTab === 'tests'} onClick={() => handleTabChange('tests')} title="Click to view test cases">
+								<span
+									style={{
+										fontSize: '11px',
+										color: 'var(--vscode-descriptionForeground)'
+									}}
+								>
+									Test cases
+								</span>
+								<span
+									style={{
+										display: 'flex',
+										alignItems: 'center',
+										gap: '6px',
+										fontSize: '18px',
+										fontWeight: 500,
+										color: 'var(--vscode-foreground)'
+									}}
+								>
+									<TestsIcon />
+									{userStory.testCasesCount ?? 0}
+								</span>
+							</StatPill>
+						)}
 						<StatPill isSelected={selectedAdditionalTab === 'defects'} onClick={() => handleTabChange('defects')} title="Click to view defects">
-							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Defects</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
+							<span
+								style={{
+									fontSize: '11px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Defects
+							</span>
+							<span
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: '6px',
+									fontSize: '18px',
+									fontWeight: 500,
+									color: 'var(--vscode-foreground)'
+								}}
+							>
 								<DefectsIcon />
 								{userStory.defectsCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'discussions'} onClick={() => handleTabChange('discussions')} title="Click to view discussions">
-							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Discussions</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
+							<span
+								style={{
+									fontSize: '11px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Discussions
+							</span>
+							<span
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: '6px',
+									fontSize: '18px',
+									fontWeight: 500,
+									color: 'var(--vscode-foreground)'
+								}}
+							>
 								<DiscussionsIcon />
 								{userStory.discussionCount}
 							</span>
 						</StatPill>
 						<StatPill isSelected={selectedAdditionalTab === 'revisions'} onClick={() => handleTabChange('revisions')} title="Click to view revisions">
-							<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>Revisions</span>
-							<span style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '18px', fontWeight: 500, color: 'var(--vscode-foreground)' }}>
+							<span
+								style={{
+									fontSize: '11px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Revisions
+							</span>
+							<span
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: '6px',
+									fontSize: '18px',
+									fontWeight: 500,
+									color: 'var(--vscode-foreground)'
+								}}
+							>
 								<RevisionsIcon />
 								{revisionsCount !== null ? revisionsCount : '—'}
 							</span>
@@ -467,13 +661,44 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					{selectedAdditionalTab === 'revisions' && (
 						<div style={{ marginTop: '20px' }}>
 							{revisionsLoading ? (
-								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>Loading revisions...</div>
+								<div
+									style={{
+										padding: '12px',
+										textAlign: 'center',
+										color: 'var(--vscode-descriptionForeground)'
+									}}
+								>
+									Loading revisions...
+								</div>
 							) : revisions.length === 0 ? (
-								<div style={{ padding: '12px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No revisions found</div>
+								<div
+									style={{
+										padding: '12px',
+										textAlign: 'center',
+										color: 'var(--vscode-descriptionForeground)'
+									}}
+								>
+									No revisions found
+								</div>
 							) : (
-								<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+								<div
+									style={{
+										display: 'flex',
+										flexDirection: 'column',
+										gap: '8px'
+									}}
+								>
 									{revisionsCount !== null && revisions.length > 0 && revisionsCount > revisions.length && (
-										<div style={{ padding: '8px 12px', backgroundColor: 'color(srgb 0.2 0.5 0.8 / 0.12)', borderRadius: '3px', fontSize: '12px', color: 'var(--vscode-descriptionForeground)', borderLeft: '3px solid color(srgb 0.2 0.5 0.8 / 0.5)' }}>
+										<div
+											style={{
+												padding: '8px 12px',
+												backgroundColor: 'color(srgb 0.2 0.5 0.8 / 0.12)',
+												borderRadius: '3px',
+												fontSize: '12px',
+												color: 'var(--vscode-descriptionForeground)',
+												borderLeft: '3px solid color(srgb 0.2 0.5 0.8 / 0.5)'
+											}}
+										>
 											Showing latest {revisions.length} of {revisionsCount} revisions
 										</div>
 									)}
@@ -488,11 +713,37 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 												fontSize: '12px'
 											}}
 										>
-											<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-												<div style={{ fontWeight: '500', color: 'var(--vscode-foreground)' }}>Revision #{revision.revisionNumber}</div>
-												<div style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>{new Date(revision.createdDate).toLocaleString('en-US')}</div>
+											<div
+												style={{
+													display: 'flex',
+													justifyContent: 'space-between',
+													alignItems: 'center',
+													marginBottom: '6px'
+												}}
+											>
+												<div
+													style={{
+														fontWeight: '500',
+														color: 'var(--vscode-foreground)'
+													}}
+												>
+													Revision #{revision.revisionNumber}
+												</div>
+												<div
+													style={{
+														fontSize: '11px',
+														color: 'var(--vscode-descriptionForeground)'
+													}}
+												>
+													{new Date(revision.createdDate).toLocaleString('en-US')}
+												</div>
 											</div>
-											<div style={{ marginBottom: '6px', color: 'var(--vscode-descriptionForeground)' }}>
+											<div
+												style={{
+													marginBottom: '6px',
+													color: 'var(--vscode-descriptionForeground)'
+												}}
+											>
 												By: <strong>{revision.author}</strong>
 											</div>
 											<RevisionDescription description={revision.description || ''} />

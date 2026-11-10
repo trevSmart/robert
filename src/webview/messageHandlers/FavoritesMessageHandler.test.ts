@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
-vi.mock('vscode', () => ({ default: {}, workspace: {}, window: {}, commands: {}, Uri: {} }));
+vi.mock('vscode', () => ({
+	default: {},
+	workspace: {},
+	window: {},
+	commands: {},
+	Uri: {}
+}));
 
 import { FavoritesMessageHandler } from './FavoritesMessageHandler';
 
@@ -28,7 +34,13 @@ function createContext(seed: Record<string, unknown> = {}) {
 const createWebview = () => ({ postMessage: vi.fn() });
 const errorHandler = { handleError: vi.fn() };
 
-const legacyItem = { objectId: '123', formattedId: 'US1', name: 'Story one', type: 'userstory', pinnedAt: 1000 };
+const legacyItem = {
+	objectId: '123',
+	formattedId: 'US1',
+	name: 'Story one',
+	type: 'userstory',
+	pinnedAt: 1000
+};
 
 describe('FavoritesMessageHandler legacy migration', () => {
 	let context: ReturnType<typeof createContext>;
@@ -46,7 +58,15 @@ describe('FavoritesMessageHandler legacy migration', () => {
 
 		await makeHandler().handle('getFavoriteItems', webview as any, {});
 
-		expect(context.__store.get(STORAGE_KEY)).toEqual([{ objectId: '123', formattedId: 'US1', name: 'Story one', type: 'userstory', favoritedAt: 1000 }]);
+		expect(context.__store.get(STORAGE_KEY)).toEqual([
+			{
+				objectId: '123',
+				formattedId: 'US1',
+				name: 'Story one',
+				type: 'userstory',
+				favoritedAt: 1000
+			}
+		]);
 	});
 
 	it('drops the legacy key once migrated so it never runs twice', async () => {
@@ -62,12 +82,28 @@ describe('FavoritesMessageHandler legacy migration', () => {
 
 		await makeHandler().handle('getFavoriteItems', webview as any, {});
 
-		expect(webview.postMessage).toHaveBeenCalledWith(expect.objectContaining({ command: 'favoriteItemsLoaded', items: [expect.objectContaining({ objectId: '123', favoritedAt: 1000 })] }));
+		expect(webview.postMessage).toHaveBeenCalledWith(
+			expect.objectContaining({
+				command: 'favoriteItemsLoaded',
+				items: [expect.objectContaining({ objectId: '123', favoritedAt: 1000 })]
+			})
+		);
 	});
 
 	it('leaves an existing favorites list untouched', async () => {
-		const existing = [{ objectId: '999', formattedId: 'US9', name: 'Kept', type: 'userstory', favoritedAt: 5000 }];
-		context = createContext({ [STORAGE_KEY]: existing, [LEGACY_STORAGE_KEY]: [legacyItem] });
+		const existing = [
+			{
+				objectId: '999',
+				formattedId: 'US9',
+				name: 'Kept',
+				type: 'userstory',
+				favoritedAt: 5000
+			}
+		];
+		context = createContext({
+			[STORAGE_KEY]: existing,
+			[LEGACY_STORAGE_KEY]: [legacyItem]
+		});
 
 		await makeHandler().handle('getFavoriteItems', webview as any, {});
 
@@ -75,7 +111,10 @@ describe('FavoritesMessageHandler legacy migration', () => {
 	});
 
 	it('does not resurrect legacy items when the user has emptied their favorites', async () => {
-		context = createContext({ [STORAGE_KEY]: [], [LEGACY_STORAGE_KEY]: [legacyItem] });
+		context = createContext({
+			[STORAGE_KEY]: [],
+			[LEGACY_STORAGE_KEY]: [legacyItem]
+		});
 
 		await makeHandler().handle('getFavoriteItems', webview as any, {});
 
@@ -85,7 +124,14 @@ describe('FavoritesMessageHandler legacy migration', () => {
 	it('migrates on toggle too, so favoriting before the list loads keeps the old items', async () => {
 		context = createContext({ [LEGACY_STORAGE_KEY]: [legacyItem] });
 
-		await makeHandler().handle('toggleFavoriteItem', webview as any, { item: { objectId: '456', formattedId: 'US2', name: 'Story two', type: 'userstory' } });
+		await makeHandler().handle('toggleFavoriteItem', webview as any, {
+			item: {
+				objectId: '456',
+				formattedId: 'US2',
+				name: 'Story two',
+				type: 'userstory'
+			}
+		});
 
 		const stored = context.__store.get(STORAGE_KEY) as { objectId: string }[];
 		expect(stored.map(i => i.objectId).sort()).toEqual(['123', '456']);
@@ -97,6 +143,9 @@ describe('FavoritesMessageHandler legacy migration', () => {
 		await makeHandler().handle('getFavoriteItems', webview as any, {});
 
 		expect(context.__store.has(STORAGE_KEY)).toBe(false);
-		expect(webview.postMessage).toHaveBeenCalledWith({ command: 'favoriteItemsLoaded', items: [] });
+		expect(webview.postMessage).toHaveBeenCalledWith({
+			command: 'favoriteItemsLoaded',
+			items: []
+		});
 	});
 });

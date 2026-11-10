@@ -142,10 +142,40 @@ export function destroyAllCaches(): void {
  */
 export function getCacheStats() {
 	return {
-		userStories: userStoriesCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
-		projects: projectsCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
-		iterations: iterationsCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
-		teamMembers: teamMembersCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 },
-		users: usersCacheManager?.getStats() ?? { hits: 0, misses: 0, evictions: 0, size: 0, hitRate: 0 }
+		userStories: userStoriesCacheManager?.getStats() ?? {
+			hits: 0,
+			misses: 0,
+			evictions: 0,
+			size: 0,
+			hitRate: 0
+		},
+		projects: projectsCacheManager?.getStats() ?? {
+			hits: 0,
+			misses: 0,
+			evictions: 0,
+			size: 0,
+			hitRate: 0
+		},
+		iterations: iterationsCacheManager?.getStats() ?? {
+			hits: 0,
+			misses: 0,
+			evictions: 0,
+			size: 0,
+			hitRate: 0
+		},
+		teamMembers: teamMembersCacheManager?.getStats() ?? {
+			hits: 0,
+			misses: 0,
+			evictions: 0,
+			size: 0,
+			hitRate: 0
+		},
+		users: usersCacheManager?.getStats() ?? {
+			hits: 0,
+			misses: 0,
+			evictions: 0,
+			size: 0,
+			hitRate: 0
+		}
 	};
 }

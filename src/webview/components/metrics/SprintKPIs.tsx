@@ -30,8 +30,24 @@ const SprintKPIs: React.FC<SprintKPIsProps> = ({ averageVelocity, completedPoint
 							border: '1px solid var(--vscode-panel-border)'
 						}}
 					>
-						<div style={{ fontSize: '20px', fontWeight: '600', marginBottom: '4px', color: 'var(--vscode-descriptionForeground)' }}>...</div>
-						<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)' }}>Loading...</div>
+						<div
+							style={{
+								fontSize: '20px',
+								fontWeight: '600',
+								marginBottom: '4px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							...
+						</div>
+						<div
+							style={{
+								fontSize: '10px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Loading...
+						</div>
 					</div>
 				))}
 			</div>

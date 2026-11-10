@@ -19,7 +19,7 @@
   "ignoreExportsUsedInFile": true,
   "ignoreUnresolved": [
     "collaborationClient$",
-    "/types/rally$"
+    "/types/jira$"
   ],
   "rules": {
     "exports": "off",

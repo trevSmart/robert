@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { themeColors } from '../../utils/themeColors';
-import type { TestCase } from '../../../types/rally';
+import type { TestCase } from '../../../types/jira';
 import { useColumnResize } from '../../hooks/useColumnResize';
 import { useTableSort } from '../../hooks/useTableSort';
 import { AvatarWithName } from './Avatar';
@@ -37,7 +37,10 @@ const INITIAL_WIDTHS: Record<ColumnKey, number> = {
 };
 
 const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading = false, error, embedded = false }) => {
-	const { sortedItems, sortConfig, requestSort } = useTableSort(testCases, { key: 'formattedId', direction: 'asc' });
+	const { sortedItems, sortConfig, requestSort } = useTableSort(testCases, {
+		key: 'formattedId',
+		direction: 'asc'
+	});
 	const { columnWidths, startResize } = useColumnResize(INITIAL_WIDTHS);
 	const totalColumnWidth = Object.values(columnWidths).reduce((sum, width) => sum + width, 0);
 	const getColumnPercent = (key: ColumnKey) => (totalColumnWidth > 0 ? (columnWidths[key] / totalColumnWidth) * 100 : 0);
@@ -152,7 +155,16 @@ const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading = fa
 	return (
 		<div style={containerStyle}>
 			{loading && (
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						minHeight: '200px',
+						gap: '10px'
+					}}
+				>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -192,7 +204,14 @@ const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading = fa
 			)}
 
 			{sortedItems.length > 0 && !loading && !error && (
-				<table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
+				<table
+					style={{
+						width: '100%',
+						tableLayout: 'fixed',
+						borderCollapse: 'collapse',
+						border: `1px solid ${themeColors.panelBorder}`
+					}}
+				>
 					<colgroup>
 						<col style={{ width: `${getColumnPercent('formattedId')}%` }} />
 						<col style={{ width: `${getColumnPercent('name')}%` }} />
@@ -202,7 +221,12 @@ const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading = fa
 						<col style={{ width: `${getColumnPercent('owner')}%` }} />
 					</colgroup>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
+						<tr
+							style={{
+								backgroundColor: themeColors.titleBarActiveBackground,
+								color: themeColors.titleBarActiveForeground
+							}}
+						>
 							<SortableHeader label="ID" sortKey="formattedId" colKey="formattedId" />
 							<SortableHeader label="Name" sortKey="name" colKey="name" />
 							<SortableHeader label="State" sortKey="state" colKey="state" />
@@ -230,12 +254,70 @@ const TestCasesTable: React.FC<TestCasesTableProps> = ({ testCases, loading = fa
 									e.currentTarget.style.boxShadow = 'none';
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.formattedId}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.state}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.type || '—'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{tc.priority || '—'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{tc.formattedId}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{tc.name}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{tc.state}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{tc.type || '—'}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{tc.priority || '—'}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
 									<AvatarWithName name={tc.owner || ''} size={20} emptyLabel="N/A" />
 								</td>
 							</tr>

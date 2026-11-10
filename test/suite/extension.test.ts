@@ -50,9 +50,9 @@ suite('Extension Integration Test Suite', () => {
 		
 		assert.ok(config.has('autoRefresh'));
 		assert.ok(config.has('debugMode'));
-		assert.ok(config.has('rallyInstance'));
-		assert.ok(config.has('rallyApiKey'));
-		assert.ok(config.has('rallyProjectName'));
+		assert.ok(config.has('jiraBaseUrl'));
+		assert.ok(config.has('jiraApiToken'));
+		assert.ok(config.has('jiraProjectKey'));
 	});
 
 	test('Configuration defaults should be correct', () => {

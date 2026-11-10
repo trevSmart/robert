@@ -4,7 +4,7 @@ import { parseRevisionDescription, type RevisionChange } from '../../utils/revis
 import { createHoverState, getScheduleStateColor, isLightTheme } from '../../utils/themeColors';
 
 interface RevisionDescriptionProps {
-	/** Raw Rally revision `Description`. */
+	/** Raw Jira revision `Description`. */
 	description: string;
 }
 
@@ -56,7 +56,7 @@ const Swatch: FC<{ color: string; dim?: boolean }> = ({ color, dim }) => (
 );
 
 /**
- * Placeholder for a side of the diff that carries no value — either Rally wrote an empty `[]` or
+ * Placeholder for a side of the diff that carries no value — either Jira wrote an empty `[]` or
  * it used the "changed to [X]" form, which it only does when the field had nothing before. Painted
  * as a dashed outline so "was empty" reads as deliberate instead of looking like a missing value.
  */
@@ -78,7 +78,13 @@ const EmptyValue: FC = () => (
 	</span>
 );
 
-const Value: FC<{ field: string; value: string | null; accent: string; dim?: boolean; struck?: boolean }> = ({ field, value, accent, dim, struck }) => {
+const Value: FC<{
+	field: string;
+	value: string | null;
+	accent: string;
+	dim?: boolean;
+	struck?: boolean;
+}> = ({ field, value, accent, dim, struck }) => {
 	if (value === null) {
 		return <EmptyValue />;
 	}
@@ -118,7 +124,14 @@ const ChangeRow: FC<{ change: RevisionChange }> = ({ change }) => {
 	const marker = change.kind === 'added' ? '+' : change.kind === 'removed' ? '−' : '→';
 
 	return (
-		<div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+		<div
+			style={{
+				display: 'flex',
+				alignItems: 'baseline',
+				gap: '8px',
+				flexWrap: 'wrap'
+			}}
+		>
 			<span
 				style={{
 					fontSize: '10.5px',
@@ -135,10 +148,24 @@ const ChangeRow: FC<{ change: RevisionChange }> = ({ change }) => {
 			>
 				{change.field}
 			</span>
-			<span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+			<span
+				style={{
+					display: 'inline-flex',
+					alignItems: 'center',
+					gap: '6px',
+					flexWrap: 'wrap'
+				}}
+			>
 				{/* Always render the "before" side of an edit, empty included, so the diff never looks truncated. */}
 				{change.kind === 'changed' && <Value field={change.field} value={change.from} accent={accent} dim />}
-				<span style={{ color: change.kind === 'changed' ? 'var(--vscode-descriptionForeground)' : accent, flexShrink: 0 }}>{marker}</span>
+				<span
+					style={{
+						color: change.kind === 'changed' ? 'var(--vscode-descriptionForeground)' : accent,
+						flexShrink: 0
+					}}
+				>
+					{marker}
+				</span>
 				<Value field={change.field} value={change.to} accent={accent} struck={change.kind === 'removed'} />
 			</span>
 		</div>
@@ -146,8 +173,8 @@ const ChangeRow: FC<{ change: RevisionChange }> = ({ change }) => {
 };
 
 /**
- * Renders a Rally revision description. Most of them follow the "FIELD changed from [x] to [y]"
- * grammar and get painted as a diff; anything else falls back to the sanitized raw HTML Rally sent,
+ * Renders a Jira revision description. Most of them follow the "FIELD changed from [x] to [y]"
+ * grammar and get painted as a diff; anything else falls back to the sanitized raw HTML Jira sent,
  * which is what this view always used to show.
  */
 const RevisionDescription: FC<RevisionDescriptionProps> = ({ description }) => {
@@ -165,7 +192,9 @@ const RevisionDescription: FC<RevisionDescriptionProps> = ({ description }) => {
 					overflowWrap: 'anywhere'
 				}}
 				dangerouslySetInnerHTML={{
-					__html: DOMPurify.sanitize(description || '', { FORBID_ATTR: ['style'] })
+					__html: DOMPurify.sanitize(description || '', {
+						FORBID_ATTR: ['style']
+					})
 				}}
 			/>
 		);

@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getTestCaseWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchRallyImageAsBase64 } from '../../libs/rally/rallyServices';
-import { SettingsManager } from '../../SettingsManager';
+import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchImageAsBase64, getTestCaseWithParent, getItemUrl, getProviderLabel } from '../../libs/provider';
 
 /**
  * Handles search and lookup-related webview messages
@@ -24,49 +23,74 @@ export class SearchMessageHandler {
 			case 'loadTaskWithParent':
 				await this.handleLoadTaskWithParent(webview, message);
 				return true;
-			case 'loadTestCaseWithParent':
-				await this.handleLoadTestCaseWithParent(webview, message);
-				return true;
 			case 'getUserStoryRevisionsCount':
 				await this.handleGetUserStoryRevisionsCount(webview, message);
 				return true;
 			case 'getUserStoryRevisions':
 				await this.handleGetUserStoryRevisions(webview, message);
 				return true;
-			case 'fetchRallyImage':
-				await this.handleFetchRallyImage(webview, message);
+			case 'loadTestCaseWithParent':
+				await this.handleLoadTestCaseWithParent(webview, message);
 				return true;
-			case 'openInRally':
-				await this.handleOpenInRally(message);
+			case 'fetchJiraImage':
+				await this.handleFetchJiraImage(webview, message);
+				return true;
+			case 'openInJira':
+				await this.handleOpenInJira(message);
 				return true;
 			default:
 				return false;
 		}
 	}
 
-	private async handleOpenInRally(message: any): Promise<void> {
+	private async handleLoadTestCaseWithParent(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const rallyInstance = SettingsManager.getInstance().getSetting('rallyInstance');
-			if (!rallyInstance || !message.objectId) {
+			const tcResult = await getTestCaseWithParent(message.objectId);
+			webview.postMessage({
+				command: 'testCaseWithParentLoaded',
+				testCase: tcResult.testCase,
+				userStoryObjectId: tcResult.userStoryObjectId,
+				objectId: message.objectId
+			});
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadTestCaseWithParent');
+			webview.postMessage({
+				command: 'testCaseWithParentError',
+				error: errorMessage,
+				objectId: message.objectId
+			});
+		}
+	}
+
+	private async handleOpenInJira(message: any): Promise<void> {
+		try {
+			if (!message.objectId) {
 				return;
 			}
-			const artifactType = encodeURIComponent(String(message.artifactType ?? 'userstory'));
-			const objectId = encodeURIComponent(String(message.objectId));
-			const url = `${rallyInstance.replace(/\/$/, '')}/#/detail/${artifactType}/${objectId}`;
+			const url = await getItemUrl(String(message.objectId), String(message.artifactType ?? 'userstory'));
+			if (!url) {
+				this.errorHandler.logWarning(`Could not build ${getProviderLabel()} URL for ${String(message.objectId)}`, 'openInJira');
+				return;
+			}
 			const uri = vscode.Uri.parse(url);
 			if (uri.scheme !== 'http' && uri.scheme !== 'https') {
-				this.errorHandler.logWarning(`Refused to open non-http(s) Rally URL (scheme: ${uri.scheme})`, 'openInRally');
+				this.errorHandler.logWarning(`Refused to open non-http(s) ${getProviderLabel()} URL (scheme: ${uri.scheme})`, 'openInJira');
 				return;
 			}
 			await vscode.env.openExternal(uri);
 		} catch (error) {
-			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openInRally');
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openInJira');
 		}
 	}
 
 	private async handleGlobalSearch(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const searchResult = await globalSearch(message.term ?? '', { limitPerType: message.limitPerType ?? 50, searchType: message.searchType, offset: message.offset ?? 0 });
+			const searchResult = await globalSearch(message.term ?? '', {
+				limitPerType: message.limitPerType ?? 50,
+				searchType: message.searchType,
+				offset: message.offset ?? 0
+			});
 			webview.postMessage({
 				command: 'globalSearchResults',
 				results: searchResult.results,
@@ -142,26 +166,6 @@ export class SearchMessageHandler {
 		}
 	}
 
-	private async handleLoadTestCaseWithParent(webview: vscode.Webview, message: any): Promise<void> {
-		try {
-			const tcResult = await getTestCaseWithParent(message.objectId);
-			webview.postMessage({
-				command: 'testCaseWithParentLoaded',
-				testCase: tcResult.testCase,
-				userStoryObjectId: tcResult.userStoryObjectId,
-				objectId: message.objectId
-			});
-		} catch (error) {
-			const errorMessage = error instanceof Error ? error.message : String(error);
-			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadTestCaseWithParent');
-			webview.postMessage({
-				command: 'testCaseWithParentError',
-				error: errorMessage,
-				objectId: message.objectId
-			});
-		}
-	}
-
 	private async handleGetUserStoryRevisionsCount(webview: vscode.Webview, message: any): Promise<void> {
 		try {
 			this.errorHandler.logInfo(`Fetching revisions count for user story: ${message.userStoryObjectId}`, 'SearchMessageHandler');
@@ -198,21 +202,36 @@ export class SearchMessageHandler {
 		}
 	}
 
-	private async handleFetchRallyImage(webview: vscode.Webview, message: any): Promise<void> {
+	private async handleFetchJiraImage(webview: vscode.Webview, message: any): Promise<void> {
 		const url = typeof message?.url === 'string' ? message.url : '';
 		const requestId = typeof message?.requestId === 'string' ? message.requestId : '';
 
 		if (!url || !requestId) {
-			webview.postMessage({ type: 'rallyImageFetched', url, requestId, error: 'Invalid image request' });
+			webview.postMessage({
+				type: 'jiraImageFetched',
+				url,
+				requestId,
+				error: 'Invalid image request'
+			});
 			return;
 		}
 
 		try {
-			const result = await fetchRallyImageAsBase64(url);
-			webview.postMessage({ type: 'rallyImageFetched', url, requestId, ...result });
+			const result = await fetchImageAsBase64(url);
+			webview.postMessage({
+				type: 'jiraImageFetched',
+				url,
+				requestId,
+				...result
+			});
 		} catch (error) {
 			const err = error instanceof Error ? error.message : String(error);
-			webview.postMessage({ type: 'rallyImageFetched', url, requestId, error: err });
+			webview.postMessage({
+				type: 'jiraImageFetched',
+				url,
+				requestId,
+				error: err
+			});
 		}
 	}
 }

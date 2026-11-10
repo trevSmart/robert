@@ -88,13 +88,39 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 		<div style={{ padding: '20px' }}>
 			{/* Team Header */}
 			<div style={{ marginBottom: '30px', textAlign: 'center' }}>
-				<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '500' }}>Team Dashboard</h2>
-				<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Monitor team activity, collaboration, and project progress</p>
+				<h2
+					style={{
+						margin: '0 0 8px 0',
+						color: 'var(--vscode-foreground)',
+						fontSize: '24px',
+						fontWeight: '500'
+					}}
+				>
+					Team Dashboard
+				</h2>
+				<p
+					style={{
+						margin: 0,
+						color: 'var(--vscode-descriptionForeground)',
+						fontSize: '14px'
+					}}
+				>
+					Monitor team activity, collaboration, and project progress
+				</p>
 			</div>
 
 			{/* Loading Spinner */}
 			{teamMembersLoading && (
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						minHeight: '200px',
+						gap: '10px'
+					}}
+				>
 					<div
 						style={{
 							border: '2px solid var(--vscode-panel-border)',
@@ -113,8 +139,24 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 			{!teamMembersLoading && (
 				<>
 					<div style={{ marginBottom: '20px' }}>
-						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-							<h3 style={{ margin: 0, color: 'var(--vscode-foreground)', fontSize: '18px', fontWeight: '500' }}>Team Members</h3>
+						<div
+							style={{
+								display: 'flex',
+								justifyContent: 'space-between',
+								alignItems: 'center',
+								marginBottom: '16px'
+							}}
+						>
+							<h3
+								style={{
+									margin: 0,
+									color: 'var(--vscode-foreground)',
+									fontSize: '18px',
+									fontWeight: '500'
+								}}
+							>
+								Team Members
+							</h3>
 							<select
 								value={selectedTeamIteration}
 								onChange={e => onTeamIterationChange(e.target.value)}
@@ -137,12 +179,38 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 							</select>
 						</div>
 
-						{teamMembersError && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-errorForeground)' }}>{teamMembersError}</div>}
+						{teamMembersError && (
+							<div
+								style={{
+									padding: '20px',
+									textAlign: 'center',
+									color: 'var(--vscode-errorForeground)'
+								}}
+							>
+								{teamMembersError}
+							</div>
+						)}
 
-						{!teamMembersError && teamMembers.length === 0 && <div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>No team members found in the last 6 sprints</div>}
+						{!teamMembersError && teamMembers.length === 0 && (
+							<div
+								style={{
+									padding: '20px',
+									textAlign: 'center',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								No team members found in the last 6 sprints
+							</div>
+						)}
 
 						{!teamMembersError && teamMembers.length > 0 && (
-							<div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+							<div
+								style={{
+									display: 'flex',
+									flexDirection: 'column',
+									gap: '20px'
+								}}
+							>
 								{/* Active Members Section */}
 								{activeMembers.length > 0 && (
 									<div>
@@ -199,10 +267,41 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 
 														{/* Member Info */}
 														<div style={{ width: '100%', minWidth: 0 }}>
-															<div style={{ marginBottom: '6px', marginTop: '8px' }}>
-																<h4 style={{ margin: '0 0 2px 0', color: 'var(--vscode-foreground)', fontSize: '13px', fontWeight: '300', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
-																<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px' }}>{percentage}% complete</div>
-																<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '2px' }}>
+															<div
+																style={{
+																	marginBottom: '6px',
+																	marginTop: '8px'
+																}}
+															>
+																<h4
+																	style={{
+																		margin: '0 0 2px 0',
+																		color: 'var(--vscode-foreground)',
+																		fontSize: '13px',
+																		fontWeight: '300',
+																		overflow: 'hidden',
+																		textOverflow: 'ellipsis',
+																		whiteSpace: 'nowrap'
+																	}}
+																>
+																	{member.name}
+																</h4>
+																<div
+																	style={{
+																		fontSize: '12px',
+																		color: 'var(--vscode-descriptionForeground)',
+																		marginTop: '4px'
+																	}}
+																>
+																	{percentage}% complete
+																</div>
+																<div
+																	style={{
+																		fontSize: '10px',
+																		color: 'var(--vscode-descriptionForeground)',
+																		marginTop: '2px'
+																	}}
+																>
 																	{member.progress.completedHours}h / {member.progress.totalHours}h
 																</div>
 															</div>
@@ -232,7 +331,15 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 											Other Team Members
 										</h4>
 										{inactiveMembers.length === 0 && otherMembersLoading ? (
-											<div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 0', color: 'var(--vscode-descriptionForeground)' }}>
+											<div
+												style={{
+													display: 'flex',
+													alignItems: 'center',
+													gap: '8px',
+													padding: '8px 0',
+													color: 'var(--vscode-descriptionForeground)'
+												}}
+											>
 												<div
 													style={{
 														border: '2px solid var(--vscode-panel-border)',
@@ -282,8 +389,25 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 
 															{/* Member Info */}
 															<div style={{ width: '100%', minWidth: 0 }}>
-																<div style={{ marginBottom: '6px', marginTop: '8px' }}>
-																	<h4 style={{ margin: '0', color: 'var(--vscode-foreground)', fontSize: '12px', fontWeight: '300', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{member.name}</h4>
+																<div
+																	style={{
+																		marginBottom: '6px',
+																		marginTop: '8px'
+																	}}
+																>
+																	<h4
+																		style={{
+																			margin: '0',
+																			color: 'var(--vscode-foreground)',
+																			fontSize: '12px',
+																			fontWeight: '300',
+																			overflow: 'hidden',
+																			textOverflow: 'ellipsis',
+																			whiteSpace: 'nowrap'
+																		}}
+																	>
+																		{member.name}
+																	</h4>
 																</div>
 															</div>
 														</div>

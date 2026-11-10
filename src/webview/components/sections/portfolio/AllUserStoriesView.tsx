@@ -6,11 +6,12 @@ import TestCasesTable from '../../common/TestCasesTable';
 import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
-import OpenInRallyButton from '../../common/OpenInRallyButton';
+import OpenInJiraButton from '../../common/OpenInJiraButton';
 import FavoriteButton from '../../common/FavoriteButton';
 import TitleActions from '../../common/TitleActions';
-import { type RallyTask } from '../../../../../types/rally';
-import type { Defect } from '../../../../../types/rally';
+import { type JiraTask } from '../../../../../types/jira';
+import type { Defect } from '../../../../../types/jira';
+import UserStoryFiltersBar from '../../common/UserStoryFiltersBar';
 import type { PortfolioViewProps } from './types';
 
 const AllUserStoriesView: FC<PortfolioViewProps> = ({
@@ -45,11 +46,14 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 	onBackToUserStories,
 	onActiveUserStoryTabChange,
 	loadMoreUserStories,
-	collaborationEnabled
+	collaborationEnabled,
+	userStoryFilters,
+	userStoryFilterProjects = [],
+	onUserStoryFiltersChange
 }) => {
 	const additionalTabContent = selectedUserStory
 		? {
-				tasks: <TasksTable tasks={tasks as RallyTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} embedded />,
+				tasks: <TasksTable tasks={tasks as JiraTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} embedded />,
 				tests: <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError} embedded />,
 				defects: (
 					<DefectsTable
@@ -71,6 +75,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 			{currentScreen === 'allUserStories' && !selectedUserStory && (
 				<>
 					<ScreenHeader title="All User Stories" sticky={true} />
+					{userStoryFilters && onUserStoryFiltersChange && <UserStoryFiltersBar filters={userStoryFilters} projects={userStoryFilterProjects} sprints={iterations} onChange={onUserStoryFiltersChange} />}
 					<UserStoriesTable
 						userStories={portfolioUserStories}
 						loading={portfolioUserStoriesLoading}
@@ -91,12 +96,21 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 					<ScreenHeader
 						entityType="userstory"
 						title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`}
+						projectKey={selectedUserStory.project}
 						showBackButton={true}
 						onBack={onBackToUserStories}
 						titleActions={
 							<TitleActions>
-								<FavoriteButton item={{ objectId: selectedUserStory.objectId, formattedId: selectedUserStory.formattedId, name: selectedUserStory.name, type: 'userstory' }} />
-								<OpenInRallyButton objectId={selectedUserStory.objectId} />
+								<FavoriteButton
+									item={{
+										objectId: selectedUserStory.objectId,
+										formattedId: selectedUserStory.formattedId,
+										name: selectedUserStory.name,
+										type: 'userstory',
+										project: selectedUserStory.project
+									}}
+								/>
+								<OpenInJiraButton objectId={selectedUserStory.objectId} />
 							</TitleActions>
 						}
 					/>

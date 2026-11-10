@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useProvider } from '../../utils/providerState';
 import { themeColors } from '../../utils/themeColors';
 
 // Chevron icon component
@@ -41,6 +42,8 @@ const typeLabels: Record<SearchType, string> = {
 const typeOptions: SearchType[] = ['all', 'user-stories', 'defects', 'tasks', 'test-cases'];
 
 const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder = 'Search...', value, onChange, selectedType, onTypeChange, onSearchClick, onClear, onEscapeWhenEmpty, disableButton = false, inputRef }) => {
+	const { isRally } = useProvider();
+	const visibleTypeOptions = isRally ? typeOptions : typeOptions.filter(type => type !== 'test-cases');
 	const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
 	const [selectWidth, setSelectWidth] = useState('auto');
 	const selectRef = React.useRef<HTMLSelectElement>(null);
@@ -66,7 +69,15 @@ const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder
 	}, [selectedType]);
 
 	return (
-		<div style={{ position: 'relative', width: '100%', display: 'flex', alignItems: 'center', gap: '8px' }}>
+		<div
+			style={{
+				position: 'relative',
+				width: '100%',
+				display: 'flex',
+				alignItems: 'center',
+				gap: '8px'
+			}}
+		>
 			<div
 				style={{
 					display: 'flex',
@@ -86,7 +97,15 @@ const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder
 				}}
 			>
 				{/* Type selector dropdown */}
-				<div style={{ position: 'relative', display: 'flex', alignItems: 'center', flexShrink: 0, borderRight: `1px solid ${themeColors.inputBorder}` }}>
+				<div
+					style={{
+						position: 'relative',
+						display: 'flex',
+						alignItems: 'center',
+						flexShrink: 0,
+						borderRight: `1px solid ${themeColors.inputBorder}`
+					}}
+				>
 					<select
 						ref={selectRef}
 						value={selectedType}
@@ -107,7 +126,7 @@ const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder
 							overflow: 'hidden'
 						}}
 					>
-						{typeOptions.map(type => (
+						{visibleTypeOptions.map(type => (
 							<option key={type} value={type}>
 								{typeLabels[type]}
 							</option>

@@ -1,54 +1,37 @@
-# Source files
-src/
-# ...except the standalone intro-video screen, which is read from src at runtime
+.vscode/**
+.vscode-test/**
+src/**
 !src/webview/loading.html
-tsconfig.json
+test/**
+test-workspace/**
+out/test/**
+docs/**
+server/**
+scripts/**
+dist/**
+tmp/**
+**/*.map
+**/*.test.ts
+**/*.vsix
+tsconfig*.json
+vite.config.ts
+vitest.config.ts
+eslint.config.js
+knip.json
+REFACTORING_SUMMARY.md
+**/*.test.js
 
-# Server backend (separate from extension)
-server/
-
-# Development files
-.vscode/
-.git/
+# Local secrets and tooling (never ship)
+.env
+.env.*
+.git/**
 .gitignore
 .gitattributes
-scripts/
-
-# Build artifacts (but keep compiled output)
-dist/
-tmp/
-
-# Dependencies (keep runtime packages bundled)
-package-lock.json
-
-# Documentation
-README.md
-SETTINGS.md
-LICENSE
-
-# IDE files
-*.swp
-*.swo
-*~
-
-# OS files
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Coverage
-coverage/
-*.lcov
-
-# Test files
-test/
-tests/
-**/*.test.*
-**/*.spec.*
-
-.env
+.github/**
+.cursor/**
+.claude/**
+.prettierrc
+.prettierignore
+.vscode-test.js
+coverage/**
+**/*.log

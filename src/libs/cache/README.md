@@ -17,7 +17,7 @@ Un sistema de cache eficiente con soporte para TTL (Time To Live) e invalidació
 import { CacheManager } from './cache/CacheManager';
 
 // Crear un cache con TTL de 5 minutos
-const cache = new CacheManager<RallyUserStory[]>(5 * 60 * 1000);
+const cache = new CacheManager<JiraUserStory[]>(5 * 60 * 1000);
 ```
 
 ## Uso Básico
@@ -76,12 +76,12 @@ console.log(`Evictions: ${stats.evictions}`); // 5
 console.log(`Size: ${stats.size}`); // 42 entradas
 ```
 
-## Implementación en Rally Services
+## Implementación en Jira Services
 
 ### Usuario Stories con Cache TTL
 
 ```typescript
-export async function getUserStories(query: RallyQuery = {}, limit: number | null = null) {
+export async function getUserStories(query: JiraQuery = {}, limit: number | null = null) {
 	// Generar clave única basada en parámetros
 	const cacheKey = `userStories:${JSON.stringify(query)}`;
 
@@ -97,7 +97,7 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	}
 
 	// 2. Intentar cache en memoria como fallback
-	const cacheResult = checkCacheForFilteredResults(query, rallyData.userStories);
+	const cacheResult = checkCacheForFilteredResults(query, jiraData.userStories);
 	if (cacheResult) {
 		return {
 			userStories: cacheResult.results,
@@ -107,12 +107,12 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	}
 
 	// 3. Llamar a la API si todo lo anterior falla
-	const rallyApi = getRallyApi();
+	const jiraApi = getJiraApi();
 	const queryOptions = buildUserStoryQueryOptions(query, limit);
 	handleDefaultProject(query, queryOptions);
 
-	const result = await rallyApi.query(queryOptions);
-	const resultData = result as RallyApiResult;
+	const result = await jiraApi.query(queryOptions);
+	const resultData = result as JiraApiResult;
 
 	if (!resultData.Results.length) {
 		userStoriesCacheManager.set(cacheKey, []);
@@ -120,7 +120,7 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 	}
 
 	const userStories = formatUserStories(resultData);
-	addToCache(userStories, rallyData.userStories, 'objectId');
+	addToCache(userStories, jiraData.userStories, 'objectId');
 
 	// 4. Guardar en cache TTL para futuras solicitudes
 	userStoriesCacheManager.set(cacheKey, userStories);
@@ -158,14 +158,14 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
            │
            ▼
 ┌─────────────────────────────────────┐
-│   Rally API                         │
+│   Jira API                         │
 │   (siempre llamar si nada lo hit)   │
 └──────────┬──────────────────────────┘
            │
            ▼
 ┌─────────────────────────────────────┐
 │   Almacenar en ambos caches         │
-│   1. Rally Data (in-memory)         │
+│   1. Jira Data (in-memory)         │
 │   2. TTL Cache Manager              │
 └─────────────────────────────────────┘
 ```
@@ -176,22 +176,22 @@ export async function getUserStories(query: RallyQuery = {}, limit: number | nul
 
 ```typescript
 // User Stories - 5 minutos (datos más frecuentemente solicitados)
-const userStoriesCacheManager = new CacheManager<RallyUserStory[]>(5 * 60 * 1000);
+const userStoriesCacheManager = new CacheManager<JiraUserStory[]>(5 * 60 * 1000);
 
 // Projects - 10 minutos (cambian con menos frecuencia)
-const projectsCacheManager = new CacheManager<RallyProject[]>(10 * 60 * 1000);
+const projectsCacheManager = new CacheManager<JiraProject[]>(10 * 60 * 1000);
 
 // Iterations - 15 minutos (cambian muy rara vez)
-const iterationsCacheManager = new CacheManager<RallyIteration[]>(15 * 60 * 1000);
+const iterationsCacheManager = new CacheManager<JiraIteration[]>(15 * 60 * 1000);
 
 // Tasks - 3 minutos (pueden cambiar frecuentemente)
 const tasksCacheManager = new CacheManager<any[]>(3 * 60 * 1000);
 
 // Defects - 5 minutos
-const defectsCacheManager = new CacheManager<RallyDefect[]>(5 * 60 * 1000);
+const defectsCacheManager = new CacheManager<JiraDefect[]>(5 * 60 * 1000);
 
 // Users - 30 minutos (muy estable)
-const usersCacheManager = new CacheManager<RallyUser[]>(30 * 60 * 1000);
+const usersCacheManager = new CacheManager<JiraUser[]>(30 * 60 * 1000);
 ```
 
 ## Monitoreo y Debugging
@@ -245,13 +245,13 @@ cache.destroy();
 
 ### ⚡ Rendimiento
 
-- Reduce llamadas a la API de Rally
+- Reduce llamadas a la API de Jira
 - Disminuye la latencia de respuesta
 - Mejora la experiencia del usuario
 
 ### 💰 Ahorro de Recursos
 
-- Limita el número de solicitudes a Rally
+- Limita el número de solicitudes a Jira
 - Reduce el consumo de ancho de banda
 - Aprovecha recursos locales
 
@@ -273,9 +273,9 @@ cache.destroy();
 import { CacheManager } from './cache/CacheManager';
 
 // Crear cache para user stories (5 min TTL)
-const userStoriesCacheManager = new CacheManager<RallyUserStory[]>(5 * 60 * 1000);
+const userStoriesCacheManager = new CacheManager<JiraUserStory[]>(5 * 60 * 1000);
 
-async function loadUserStoriesWithCache(query: RallyQuery) {
+async function loadUserStoriesWithCache(query: JiraQuery) {
 	const cacheKey = `userStories:${JSON.stringify(query)}`;
 
 	// Verificar cache

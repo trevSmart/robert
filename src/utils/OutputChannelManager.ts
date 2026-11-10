@@ -5,7 +5,9 @@ export class OutputChannelManager {
 	private outputChannel: vscode.LogOutputChannel;
 
 	private constructor() {
-		this.outputChannel = vscode.window.createOutputChannel('Robert', { log: true });
+		this.outputChannel = vscode.window.createOutputChannel('Robert', {
+			log: true
+		});
 	}
 
 	public static getInstance(): OutputChannelManager {

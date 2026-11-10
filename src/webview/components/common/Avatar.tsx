@@ -97,7 +97,20 @@ const Avatar: FC<AvatarProps> = ({ name, size = 24, showRing = false, ringProgre
 				}}
 			>
 				<circle cx={cx} cy={cy} r={r} stroke="var(--vscode-widget-border)" strokeWidth="3" fill="none" />
-				<circle cx={cx} cy={cy} r={r} stroke={ringColor} strokeWidth="3" fill="none" strokeDasharray={circumference} strokeDashoffset={animatedOffset} strokeLinecap="round" style={{ transition: 'stroke-dashoffset 0.6s ease-out, stroke 0.3s ease' }} />
+				<circle
+					cx={cx}
+					cy={cy}
+					r={r}
+					stroke={ringColor}
+					strokeWidth="3"
+					fill="none"
+					strokeDasharray={circumference}
+					strokeDashoffset={animatedOffset}
+					strokeLinecap="round"
+					style={{
+						transition: 'stroke-dashoffset 0.6s ease-out, stroke 0.3s ease'
+					}}
+				/>
 			</svg>
 			<div
 				style={{

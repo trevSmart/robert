@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { RallyMessageHandler } from './RallyMessageHandler';
+import { JiraMessageHandler } from './JiraMessageHandler';
 import { SearchMessageHandler } from './SearchMessageHandler';
 import { CollaborationMessageHandler } from './CollaborationMessageHandler';
 import { CalendarMessageHandler } from './CalendarMessageHandler';
@@ -25,7 +25,7 @@ const LEGACY_NAVIGATION_STATE_KEY = 'robert.navigationState';
 export class WebviewMessageDispatcher {
 	private static sessionNavigationState: NavigationState | undefined;
 
-	private rallyHandler: RallyMessageHandler;
+	private jiraHandler: JiraMessageHandler;
 	private searchHandler: SearchMessageHandler;
 	private collaborationHandler: CollaborationMessageHandler;
 	private calendarHandler: CalendarMessageHandler;
@@ -37,7 +37,7 @@ export class WebviewMessageDispatcher {
 		private collaborationClient: CollaborationClient,
 		private context: vscode.ExtensionContext
 	) {
-		this.rallyHandler = new RallyMessageHandler(errorHandler);
+		this.jiraHandler = new JiraMessageHandler(errorHandler);
 		this.searchHandler = new SearchMessageHandler(errorHandler);
 		this.collaborationHandler = new CollaborationMessageHandler(errorHandler, collaborationClient);
 		this.calendarHandler = new CalendarMessageHandler(errorHandler, collaborationClient, context);
@@ -62,7 +62,7 @@ export class WebviewMessageDispatcher {
 	public async dispatch(command: string, webview: vscode.Webview, message: any): Promise<boolean> {
 		try {
 			// Try each handler in sequence
-			if (await this.rallyHandler.handle(command, webview, message)) {
+			if (await this.jiraHandler.handle(command, webview, message)) {
 				return true;
 			}
 			if (await this.searchHandler.handle(command, webview, message)) {

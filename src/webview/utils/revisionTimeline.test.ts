@@ -16,7 +16,11 @@ describe('buildRevisionTimeline', () => {
 	it('extracts a schedule state transition', () => {
 		const result = buildRevisionTimeline([rev(1, 'SCHEDULE STATE changed from [Defined] to [In-Progress]')]);
 		expect(result.stateEvents).toHaveLength(1);
-		expect(result.stateEvents[0]).toMatchObject({ from: 'Defined', to: 'In-Progress', revisionNumber: 1 });
+		expect(result.stateEvents[0]).toMatchObject({
+			from: 'Defined',
+			to: 'In-Progress',
+			revisionNumber: 1
+		});
 	});
 
 	it('orders events ascending by revision number even if input is newest-first', () => {
@@ -37,7 +41,10 @@ describe('buildRevisionTimeline', () => {
 
 	it('captures blocked reason when present', () => {
 		const result = buildRevisionTimeline([rev(1, 'BLOCKED changed from [false] to [true], BLOCKED REASON changed to [waiting for API]')]);
-		expect(result.blockedEvents[0]).toMatchObject({ blocked: true, reason: 'waiting for API' });
+		expect(result.blockedEvents[0]).toMatchObject({
+			blocked: true,
+			reason: 'waiting for API'
+		});
 	});
 
 	it('parses state and blocked change in the same revision', () => {
@@ -69,14 +76,22 @@ describe('buildTimelineTracks', () => {
 	const now = t0 + 10 * HOUR;
 
 	it('produces a single state segment spanning the whole span when there are no transitions', () => {
-		const tracks = buildTimelineTracks([], { creationDate: '2026-01-01T00:00:00.000Z', now, currentState: 'Defined' });
+		const tracks = buildTimelineTracks([], {
+			creationDate: '2026-01-01T00:00:00.000Z',
+			now,
+			currentState: 'Defined'
+		});
 		expect(tracks.stateSegments).toHaveLength(1);
 		expect(tracks.stateSegments[0]).toMatchObject({ label: 'Defined' });
 		expect(tracks.stateSegments[0].fraction).toBeCloseTo(1, 5);
 	});
 
 	it('splits state segments proportionally to elapsed time', () => {
-		const tracks = buildTimelineTracks([rev(1, 'SCHEDULE STATE changed from [Defined] to [In-Progress]', '2026-01-01T02:00:00.000Z')], { creationDate: '2026-01-01T00:00:00.000Z', now, currentState: 'In-Progress' });
+		const tracks = buildTimelineTracks([rev(1, 'SCHEDULE STATE changed from [Defined] to [In-Progress]', '2026-01-01T02:00:00.000Z')], {
+			creationDate: '2026-01-01T00:00:00.000Z',
+			now,
+			currentState: 'In-Progress'
+		});
 		expect(tracks.stateSegments.map(s => s.label)).toEqual(['Defined', 'In-Progress']);
 		// Defined: 2h of 10h = 0.2, In-Progress: 8h of 10h = 0.8
 		expect(tracks.stateSegments[0].fraction).toBeCloseTo(0.2, 5);
@@ -112,7 +127,11 @@ describe('buildTimelineTracks', () => {
 	});
 
 	it('falls back to a single unblocked segment when there are no blocked events', () => {
-		const tracks = buildTimelineTracks([], { creationDate: '2026-01-01T00:00:00.000Z', now, currentBlocked: false });
+		const tracks = buildTimelineTracks([], {
+			creationDate: '2026-01-01T00:00:00.000Z',
+			now,
+			currentBlocked: false
+		});
 		expect(tracks.blockedSegments).toHaveLength(1);
 		expect(tracks.blockedSegments[0].blocked).toBe(false);
 	});
@@ -153,7 +172,10 @@ describe('buildTimelineTracks', () => {
 	});
 
 	it('returns no sprint markers when no iterations are given', () => {
-		const tracks = buildTimelineTracks([], { creationDate: '2026-01-01T00:00:00.000Z', now });
+		const tracks = buildTimelineTracks([], {
+			creationDate: '2026-01-01T00:00:00.000Z',
+			now
+		});
 		expect(tracks.sprintMarkers).toEqual([]);
 	});
 

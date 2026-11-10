@@ -1,16 +1,26 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryTests, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress, getUsers, getMemberHoursHistory } from '../../libs/rally/rallyServices';
+import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress, getUsers, getMemberHoursHistory, getUserStoryTests, getProviderLabel } from '../../libs/provider';
 import { HolidayService } from '../../libs/holidayService';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
 import { ttlFor } from '../../libs/cache/ttlConfig';
 
+/** True when a service error comes from missing/invalid provider configuration. */
+function isConfigurationError(message: string): boolean {
+	return /(Jira|Rally) configuration error/.test(message);
+}
+
+/** Configuration hint shown in the webview for the active provider. */
+function configurationHelpMessage(): string {
+	return getProviderLabel() === 'Rally' ? 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.' : 'Please configure Jira settings first. Go to Settings and configure your Jira email, API token, base URL and project key.';
+}
+
 /**
- * Handles all Rally API-related webview messages
- * Manages loading and processing data from Rally (projects, iterations, user stories, tasks, defects, etc.)
+ * Handles all Jira API-related webview messages
+ * Manages loading and processing data from Jira (projects, iterations, user stories, tasks, defects, etc.)
  */
-export class RallyMessageHandler {
+export class JiraMessageHandler {
 	constructor(private errorHandler: ErrorHandler) {}
 
 	async handle(command: string, webview: vscode.Webview, message: any): Promise<boolean> {
@@ -54,8 +64,8 @@ export class RallyMessageHandler {
 			case 'getMemberHoursHistory':
 				await this.handleGetMemberHoursHistory(webview, message);
 				return true;
-			case 'getRallyCurrentUser':
-				await this.handleGetRallyCurrentUser(webview);
+			case 'getJiraCurrentUser':
+				await this.handleGetJiraCurrentUser(webview);
 				return true;
 			default:
 				return false;
@@ -64,7 +74,7 @@ export class RallyMessageHandler {
 
 	private async handleLoadProjects(webview: vscode.Webview): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading projects from Rally API', 'RallyMessageHandler');
+			this.errorHandler.logInfo('Loading projects from data provider', 'JiraMessageHandler');
 			const projectsResult = await getProjects();
 
 			if (projectsResult?.projects) {
@@ -72,22 +82,22 @@ export class RallyMessageHandler {
 					command: 'projectsLoaded',
 					projects: projectsResult.projects
 				});
-				this.errorHandler.logInfo(`Projects loaded successfully: ${projectsResult.count} projects`, 'RallyMessageHandler');
+				this.errorHandler.logInfo(`Projects loaded successfully: ${projectsResult.count} projects`, 'JiraMessageHandler');
 			} else {
 				webview.postMessage({
 					command: 'projectsError',
 					error: 'No projects found'
 				});
-				this.errorHandler.logInfo('No projects found', 'RallyMessageHandler');
+				this.errorHandler.logInfo('No projects found', 'JiraMessageHandler');
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadProjects');
 
-			if (errorMessage.includes('Rally configuration error')) {
+			if (isConfigurationError(errorMessage)) {
 				webview.postMessage({
 					command: 'projectsError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+					error: configurationHelpMessage(),
 					needsConfiguration: true
 				});
 			} else {
@@ -101,8 +111,8 @@ export class RallyMessageHandler {
 
 	private async handleLoadIterations(webview: vscode.Webview): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading iterations from Rally API', 'RallyMessageHandler');
-			this.errorHandler.logDebug('Webview received loadIterations command', 'RallyMessageHandler');
+			this.errorHandler.logInfo('Loading iterations from data provider', 'JiraMessageHandler');
+			this.errorHandler.logDebug('Webview received loadIterations command', 'JiraMessageHandler');
 
 			const holidayService = HolidayService.getInstance();
 			const currentYear = new Date().getFullYear();
@@ -116,28 +126,29 @@ export class RallyMessageHandler {
 					currentUser: userResult?.user || null,
 					holidays: holidays || [],
 					collaborationEnabled: collaborationEnabled || false,
+					provider: SettingsManager.getInstance().getSetting('provider'),
 					devMode: isTestTabEnabled(),
 					debugMode: SettingsManager.getInstance().getSetting('debugMode')
 				});
-				this.errorHandler.logInfo(`Iterations loaded successfully: ${iterationsResult.count} iterations`, 'RallyMessageHandler');
+				this.errorHandler.logInfo(`Iterations loaded successfully: ${iterationsResult.count} iterations`, 'JiraMessageHandler');
 				if (userResult?.user) {
-					this.errorHandler.logInfo(`Current user loaded: ${userResult.user.displayName || userResult.user.userName}`, 'RallyMessageHandler');
+					this.errorHandler.logInfo(`Current user loaded: ${userResult.user.displayName || userResult.user.userName}`, 'JiraMessageHandler');
 				}
 			} else {
 				webview.postMessage({
 					command: 'iterationsError',
 					error: 'No iterations found'
 				});
-				this.errorHandler.logInfo('No iterations found', 'RallyMessageHandler');
+				this.errorHandler.logInfo('No iterations found', 'JiraMessageHandler');
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadIterations');
 
-			if (errorMessage.includes('Rally configuration error')) {
+			if (isConfigurationError(errorMessage)) {
 				webview.postMessage({
 					command: 'iterationsError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+					error: configurationHelpMessage(),
 					needsConfiguration: true
 				});
 			} else {
@@ -149,17 +160,17 @@ export class RallyMessageHandler {
 		}
 	}
 
-	private async handleGetRallyCurrentUser(webview: vscode.Webview): Promise<void> {
+	private async handleGetJiraCurrentUser(webview: vscode.Webview): Promise<void> {
 		try {
 			const userResult = await getCurrentUser();
 			webview.postMessage({
-				command: 'rallyCurrentUser',
+				command: 'jiraCurrentUser',
 				user: userResult?.user || null
 			});
 		} catch (error) {
-			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getRallyCurrentUser');
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getJiraCurrentUser');
 			webview.postMessage({
-				command: 'rallyCurrentUser',
+				command: 'jiraCurrentUser',
 				user: null
 			});
 		}
@@ -169,7 +180,7 @@ export class RallyMessageHandler {
 		try {
 			const year = message.year || new Date().getFullYear();
 			const country = message.country || 'ES';
-			this.errorHandler.logInfo(`Loading holidays for year ${year} (${country})`, 'RallyMessageHandler');
+			this.errorHandler.logInfo(`Loading holidays for year ${year} (${country})`, 'JiraMessageHandler');
 
 			const holidayService = HolidayService.getInstance();
 			const holidays = await holidayService.getHolidays(year, country);
@@ -180,7 +191,7 @@ export class RallyMessageHandler {
 				year: year,
 				country: country
 			});
-			this.errorHandler.logDebug(`Holidays loaded for ${year}: ${(holidays || []).length} holidays`, 'RallyMessageHandler');
+			this.errorHandler.logDebug(`Holidays loaded for ${year}: ${(holidays || []).length} holidays`, 'JiraMessageHandler');
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadHolidaysForYear');
 			webview.postMessage({
@@ -193,10 +204,19 @@ export class RallyMessageHandler {
 
 	private async handleLoadUserStories(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading user stories from Rally API', 'RallyMessageHandler');
-			this.errorHandler.logDebug(`Webview received loadUserStories command ${message.iteration ? `for iteration: ${message.iteration}` : 'for all'}`, 'RallyMessageHandler');
+			this.errorHandler.logInfo('Loading user stories from data provider', 'JiraMessageHandler');
+			this.errorHandler.logDebug(`Webview received loadUserStories command ${message.iteration ? `for iteration: ${message.iteration}` : 'for all'}`, 'JiraMessageHandler');
 
-			const query = message.iteration ? { Iteration: message.iteration } : {};
+			// Filtre del llistat "All User Stories" (projecte i/o sprint). Es retorna dins
+			// `portfolioFilter` perquè el webview el desi a part i no trepitgi les mètriques.
+			const portfolioFilter = message.portfolioFilter as { project?: string; sprint?: string } | undefined;
+			const query: Record<string, string> = message.iteration ? { Iteration: message.iteration } : {};
+			if (portfolioFilter?.project) {
+				query.Project = portfolioFilter.project;
+			}
+			if (portfolioFilter?.sprint) {
+				query.Iteration = portfolioFilter.sprint;
+			}
 			const offset = message.offset || 0;
 			const userStoriesResult = await getUserStories(query, offset);
 
@@ -207,24 +227,25 @@ export class RallyMessageHandler {
 					hasMore: userStoriesResult.hasMore,
 					offset: userStoriesResult.offset,
 					totalCount: userStoriesResult.totalCount,
-					iteration: message.iteration || null
+					iteration: message.iteration || null,
+					portfolioFilter: portfolioFilter ?? null
 				});
-				this.errorHandler.logInfo(`User stories loaded successfully: ${userStoriesResult.count} user stories (offset: ${offset}, hasMore: ${userStoriesResult.hasMore})`, 'RallyMessageHandler');
+				this.errorHandler.logInfo(`User stories loaded successfully: ${userStoriesResult.count} user stories (offset: ${offset}, hasMore: ${userStoriesResult.hasMore})`, 'JiraMessageHandler');
 			} else {
 				webview.postMessage({
 					command: 'userStoriesError',
 					error: 'No user stories found'
 				});
-				this.errorHandler.logInfo('No user stories found', 'RallyMessageHandler');
+				this.errorHandler.logInfo('No user stories found', 'JiraMessageHandler');
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStories');
 
-			if (errorMessage.includes('Rally configuration error')) {
+			if (isConfigurationError(errorMessage)) {
 				webview.postMessage({
 					command: 'userStoriesError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+					error: configurationHelpMessage(),
 					needsConfiguration: true
 				});
 			} else {
@@ -238,10 +259,12 @@ export class RallyMessageHandler {
 
 	private async handleLoadVelocityData(webview: vscode.Webview): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading velocity data (hours per sprint) from Rally API', 'RallyMessageHandler');
+			this.errorHandler.logInfo('Loading velocity data (hours per sprint) from data provider', 'JiraMessageHandler');
 			// Velocity vol frescor de 24h; força un refetch d'iterations si les cachejades superen aquest límit,
 			// encara que la vista normal d'iterations (48h) encara les serviria de cache.
-			const iterationsResult = await getIterations({}, null, { maxAge: ttlFor('velocity') });
+			const iterationsResult = await getIterations({}, null, {
+				maxAge: ttlFor('velocity')
+			});
 			const iterations = iterationsResult?.iterations ?? [];
 			const today = new Date();
 			today.setHours(23, 59, 59, 999);
@@ -256,7 +279,11 @@ export class RallyMessageHandler {
 				.slice(0, numberOfSprints)
 				.reverse();
 
-			const velocityData: { sprintName: string; points: number; completedStories: number }[] = sortedIterations.map((iteration: { name: string; taskEstimateTotal?: number | null }) => ({
+			const velocityData: {
+				sprintName: string;
+				points: number;
+				completedStories: number;
+			}[] = sortedIterations.map((iteration: { name: string; taskEstimateTotal?: number | null }) => ({
 				sprintName: iteration.name,
 				points: Math.round((iteration.taskEstimateTotal ?? 0) * 10) / 10,
 				completedStories: 0
@@ -266,7 +293,7 @@ export class RallyMessageHandler {
 				command: 'velocityDataLoaded',
 				velocityData
 			});
-			this.errorHandler.logInfo(`Velocity data loaded: ${velocityData.length} sprints`, 'RallyMessageHandler');
+			this.errorHandler.logInfo(`Velocity data loaded: ${velocityData.length} sprints`, 'JiraMessageHandler');
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadVelocityData');
 			webview.postMessage({
@@ -278,8 +305,8 @@ export class RallyMessageHandler {
 
 	private async handleLoadTasks(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading tasks from Rally API', 'RallyMessageHandler');
-			this.errorHandler.logDebug(`Webview received loadTasks command for user story: ${message.userStoryId}`, 'RallyMessageHandler');
+			this.errorHandler.logInfo('Loading tasks from data provider', 'JiraMessageHandler');
+			this.errorHandler.logDebug(`Webview received loadTasks command for user story: ${message.userStoryId}`, 'JiraMessageHandler');
 
 			const tasksResult = await getTasks(message.userStoryId);
 
@@ -289,23 +316,23 @@ export class RallyMessageHandler {
 					tasks: tasksResult.tasks,
 					userStoryId: message.userStoryId
 				});
-				this.errorHandler.logInfo(`Tasks loaded successfully: ${tasksResult.count} tasks for user story ${message.userStoryId}`, 'RallyMessageHandler');
+				this.errorHandler.logInfo(`Tasks loaded successfully: ${tasksResult.count} tasks for user story ${message.userStoryId}`, 'JiraMessageHandler');
 			} else {
 				webview.postMessage({
 					command: 'tasksError',
 					error: 'No tasks found',
 					userStoryId: message.userStoryId
 				});
-				this.errorHandler.logInfo('No tasks found', 'RallyMessageHandler');
+				this.errorHandler.logInfo('No tasks found', 'JiraMessageHandler');
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadTasks');
 
-			if (errorMessage.includes('Rally configuration error')) {
+			if (isConfigurationError(errorMessage)) {
 				webview.postMessage({
 					command: 'tasksError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+					error: configurationHelpMessage(),
 					needsConfiguration: true,
 					userStoryId: message.userStoryId
 				});
@@ -321,8 +348,8 @@ export class RallyMessageHandler {
 
 	private async handleLoadDefects(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading defects from Rally API', 'RallyMessageHandler');
-			this.errorHandler.logDebug(`Webview received loadDefects command, offset: ${message.offset || 0}`, 'RallyMessageHandler');
+			this.errorHandler.logInfo('Loading defects from data provider', 'JiraMessageHandler');
+			this.errorHandler.logDebug(`Webview received loadDefects command, offset: ${message.offset || 0}`, 'JiraMessageHandler');
 
 			const offset = message.offset || 0;
 			const defectsResult = await getDefects({}, offset);
@@ -335,22 +362,22 @@ export class RallyMessageHandler {
 					offset: defectsResult.offset,
 					totalCount: defectsResult.totalCount
 				});
-				this.errorHandler.logInfo(`Defects loaded successfully: ${defectsResult.count} defects (offset: ${offset}, hasMore: ${defectsResult.hasMore})`, 'RallyMessageHandler');
+				this.errorHandler.logInfo(`Defects loaded successfully: ${defectsResult.count} defects (offset: ${offset}, hasMore: ${defectsResult.hasMore})`, 'JiraMessageHandler');
 			} else {
 				webview.postMessage({
 					command: 'defectsError',
 					error: 'No defects found'
 				});
-				this.errorHandler.logInfo('No defects found', 'RallyMessageHandler');
+				this.errorHandler.logInfo('No defects found', 'JiraMessageHandler');
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadDefects');
 
-			if (errorMessage.includes('Rally configuration error')) {
+			if (isConfigurationError(errorMessage)) {
 				webview.postMessage({
 					command: 'defectsError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+					error: configurationHelpMessage(),
 					needsConfiguration: true
 				});
 			} else {
@@ -364,8 +391,8 @@ export class RallyMessageHandler {
 
 	private async handleLoadUserStoryDefects(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading defects for user story from Rally API', 'RallyMessageHandler');
-			this.errorHandler.logDebug(`Webview received loadUserStoryDefects command for user story: ${message.userStoryId}`, 'RallyMessageHandler');
+			this.errorHandler.logInfo('Loading defects for user story from data provider', 'JiraMessageHandler');
+			this.errorHandler.logDebug(`Webview received loadUserStoryDefects command for user story: ${message.userStoryId}`, 'JiraMessageHandler');
 
 			const defectsResult = await getUserStoryDefects(message.userStoryId);
 
@@ -375,23 +402,23 @@ export class RallyMessageHandler {
 					defects: defectsResult.defects,
 					userStoryId: message.userStoryId
 				});
-				this.errorHandler.logInfo(`Defects loaded successfully for user story ${message.userStoryId}: ${defectsResult.count} defects`, 'RallyMessageHandler');
+				this.errorHandler.logInfo(`Defects loaded successfully for user story ${message.userStoryId}: ${defectsResult.count} defects`, 'JiraMessageHandler');
 			} else {
 				webview.postMessage({
 					command: 'userStoryDefectsLoaded',
 					defects: [],
 					userStoryId: message.userStoryId
 				});
-				this.errorHandler.logInfo('No defects found for this user story', 'RallyMessageHandler');
+				this.errorHandler.logInfo('No defects found for this user story', 'JiraMessageHandler');
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStoryDefects');
 
-			if (errorMessage.includes('Rally configuration error')) {
+			if (isConfigurationError(errorMessage)) {
 				webview.postMessage({
 					command: 'userStoryDefectsError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+					error: configurationHelpMessage(),
 					needsConfiguration: true,
 					userStoryId: message.userStoryId
 				});
@@ -407,51 +434,31 @@ export class RallyMessageHandler {
 
 	private async handleLoadUserStoryTests(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading test cases for user story from Rally API', 'RallyMessageHandler');
-			this.errorHandler.logDebug(`Webview received loadUserStoryTests command for user story: ${message.userStoryId}`, 'RallyMessageHandler');
-
+			this.errorHandler.logInfo(`Loading test cases for user story ${message.userStoryId} (${getProviderLabel()})`, 'JiraMessageHandler');
 			const testCasesResult = await getUserStoryTests(message.userStoryId);
-
-			if (testCasesResult?.testCases && testCasesResult.testCases.length > 0) {
-				webview.postMessage({
-					command: 'userStoryTestsLoaded',
-					testCases: testCasesResult.testCases,
-					userStoryId: message.userStoryId
-				});
-				this.errorHandler.logInfo(`Test cases loaded successfully for user story ${message.userStoryId}: ${testCasesResult.count} test cases`, 'RallyMessageHandler');
-			} else {
-				webview.postMessage({
-					command: 'userStoryTestsLoaded',
-					testCases: [],
-					userStoryId: message.userStoryId
-				});
-				this.errorHandler.logInfo('No test cases found for this user story', 'RallyMessageHandler');
-			}
+			const testCases = testCasesResult?.testCases ?? [];
+			webview.postMessage({
+				command: 'userStoryTestsLoaded',
+				testCases,
+				userStoryId: message.userStoryId
+			});
+			this.errorHandler.logInfo(`Test cases loaded for user story ${message.userStoryId}: ${testCases.length}`, 'JiraMessageHandler');
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStoryTests');
-
-			if (errorMessage.includes('Rally configuration error')) {
-				webview.postMessage({
-					command: 'userStoryTestsError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
-					needsConfiguration: true,
-					userStoryId: message.userStoryId
-				});
-			} else {
-				webview.postMessage({
-					command: 'userStoryTestsError',
-					error: 'Failed to load test cases',
-					userStoryId: message.userStoryId
-				});
-			}
+			webview.postMessage({
+				command: 'userStoryTestsError',
+				error: isConfigurationError(errorMessage) ? configurationHelpMessage() : 'Failed to load test cases',
+				needsConfiguration: isConfigurationError(errorMessage),
+				userStoryId: message.userStoryId
+			});
 		}
 	}
 
 	private async handleLoadUserStoryDiscussions(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			this.errorHandler.logInfo('Loading discussions for user story from Rally API', 'RallyMessageHandler');
-			this.errorHandler.logDebug(`Webview received loadUserStoryDiscussions command for user story: ${message.userStoryId}`, 'RallyMessageHandler');
+			this.errorHandler.logInfo('Loading discussions for user story from data provider', 'JiraMessageHandler');
+			this.errorHandler.logDebug(`Webview received loadUserStoryDiscussions command for user story: ${message.userStoryId}`, 'JiraMessageHandler');
 
 			const discussionsResult = await getUserStoryDiscussions(message.userStoryId);
 
@@ -461,23 +468,23 @@ export class RallyMessageHandler {
 					discussions: discussionsResult.discussions,
 					userStoryId: message.userStoryId
 				});
-				this.errorHandler.logInfo(`Discussions loaded successfully for user story ${message.userStoryId}: ${discussionsResult.count} discussions`, 'RallyMessageHandler');
+				this.errorHandler.logInfo(`Discussions loaded successfully for user story ${message.userStoryId}: ${discussionsResult.count} discussions`, 'JiraMessageHandler');
 			} else {
 				webview.postMessage({
 					command: 'userStoryDiscussionsLoaded',
 					discussions: [],
 					userStoryId: message.userStoryId
 				});
-				this.errorHandler.logInfo('No discussions found for this user story', 'RallyMessageHandler');
+				this.errorHandler.logInfo('No discussions found for this user story', 'JiraMessageHandler');
 			}
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadUserStoryDiscussions');
 
-			if (errorMessage.includes('Rally configuration error')) {
+			if (isConfigurationError(errorMessage)) {
 				webview.postMessage({
 					command: 'userStoryDiscussionsError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+					error: configurationHelpMessage(),
 					needsConfiguration: true,
 					userStoryId: message.userStoryId
 				});
@@ -497,7 +504,12 @@ export class RallyMessageHandler {
 			// Targeted query by display name (getUsers uses a 'contains' match for DisplayName),
 			// so this avoids the pagination limits of fetching the full user list.
 			const usersResult = await getUsers({ DisplayName: name }, 10);
-			const users = (usersResult.users as Array<{ displayName?: string; emailAddress?: string; userName?: string }>) || [];
+			const users =
+				(usersResult.users as Array<{
+					displayName?: string;
+					emailAddress?: string;
+					userName?: string;
+				}>) || [];
 
 			// Prefer an exact display-name match; fall back to the first result.
 			const normalized = (name || '').trim().replace(/\s+/g, ' ').toLowerCase();
@@ -545,13 +557,19 @@ export class RallyMessageHandler {
 
 		// Phase 1 (fast): active members + progress for the selected iteration.
 		try {
-			this.errorHandler.logDebug('Loading team members — phase 1 (active members)', 'RallyMessageHandler');
+			this.errorHandler.logDebug('Loading team members — phase 1 (active members)', 'JiraMessageHandler');
 
 			const { progressMap, members: activeMembers } = await getAllTeamMembersProgress(undefined, selectedIterationId);
 
 			const activeWithProgress = activeMembers.map(name => ({
 				name,
-				progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'not-found', userStoriesCount: 0 }
+				progress: progressMap.get(name) || {
+					completedHours: 0,
+					totalHours: 0,
+					percentage: 0,
+					source: 'not-found',
+					userStoriesCount: 0
+				}
 			}));
 
 			webview.postMessage({
@@ -559,14 +577,20 @@ export class RallyMessageHandler {
 				teamMembers: activeWithProgress,
 				iterationId: iterationKey
 			});
-			this.errorHandler.logInfo(`Team members phase 1 loaded: ${activeWithProgress.length} active members`, 'RallyMessageHandler');
+			this.errorHandler.logInfo(`Team members phase 1 loaded: ${activeWithProgress.length} active members`, 'JiraMessageHandler');
 
 			// Phase 2 (deferred): historical roster from the last 6 sprints.
 			try {
 				const recent = await getRecentTeamMembers(6);
 				const otherWithProgress = (recent?.teamMembers || []).map(name => ({
 					name,
-					progress: progressMap.get(name) || { completedHours: 0, totalHours: 0, percentage: 0, source: 'historical', userStoriesCount: 0 }
+					progress: progressMap.get(name) || {
+						completedHours: 0,
+						totalHours: 0,
+						percentage: 0,
+						source: 'historical',
+						userStoriesCount: 0
+					}
 				}));
 
 				webview.postMessage({
@@ -574,11 +598,11 @@ export class RallyMessageHandler {
 					teamMembers: otherWithProgress,
 					iterationId: iterationKey
 				});
-				this.errorHandler.logInfo(`Team members phase 2 loaded: ${otherWithProgress.length} historical members`, 'RallyMessageHandler');
+				this.errorHandler.logInfo(`Team members phase 2 loaded: ${otherWithProgress.length} historical members`, 'JiraMessageHandler');
 			} catch (phase2Error) {
 				// The view is already painted; just clear the section spinner.
 				const err = phase2Error instanceof Error ? phase2Error : new Error(String(phase2Error));
-				this.errorHandler.logWarning(`Team members phase 2 failed: ${err.message}`, 'RallyMessageHandler');
+				this.errorHandler.logWarning(`Team members phase 2 failed: ${err.message}`, 'JiraMessageHandler');
 				webview.postMessage({
 					command: 'teamMembersOtherLoaded',
 					teamMembers: [],
@@ -589,10 +613,10 @@ export class RallyMessageHandler {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadTeamMembers');
 
-			if (errorMessage.includes('Rally configuration error')) {
+			if (isConfigurationError(errorMessage)) {
 				webview.postMessage({
 					command: 'teamMembersError',
-					error: 'Please configure Rally settings first. Go to Settings and configure Rally API key, instance URL, and project name.',
+					error: configurationHelpMessage(),
 					needsConfiguration: true
 				});
 			} else {

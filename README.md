@@ -1,6 +1,6 @@
 ## <img src="resources/icons/ibm-logo.webp" alt="IBM logo" width="50" style="position: relative; margin-right: 10px; top: 4px;"/> IBM Robert
 
-**IBM Robert** is a VS Code extension that brings Rally Agile project management into your editor. Track sprints, user stories, defects, and team workload without leaving VS Code — with dashboards, search, and analytics built for day-to-day delivery work.
+**IBM Robert** is a VS Code extension that brings Jira Cloud project management into your editor. Track sprints, user stories, defects, and team workload without leaving VS Code — with dashboards, search, and analytics built for day-to-day delivery work.
 
 ---
 
@@ -16,19 +16,19 @@ Open any sprint to see resource allocation per team member, user stories with st
 
 ### Portfolio — user stories and defects
 
-Browse work by sprint or across the full backlog. Open any user story to see its description, assignment, estimates, and related records — tasks, test cases, defects, discussions, and revisions — all in one place.
+Browse work by sprint or across the full backlog. Open any user story to see its description, assignment, estimates, and related records — tasks, defects, discussions, and revisions — all in one place.
 
 ![User story details](resources/screenshots/user-story-details.png)
 
 ### Search — find anything fast
 
-Search across user stories, tasks, and other Rally artifacts. Results are grouped by type, with keyword highlighting so you can jump straight to the item you need.
+Search across user stories, tasks, and other Jira issues. Results are grouped by type, with keyword highlighting so you can jump straight to the item you need.
 
 ![Search results](resources/screenshots/search.png)
 
 ### Metrics — project analytics
 
-The Metrics view provides real-time insights from Rally: velocity trends, hours completed, work in progress, blocked items, next-sprint readiness, and defect trends by severity over the last 12 sprints.
+The Metrics view provides real-time insights from Jira: velocity trends, hours completed, work in progress, blocked items, next-sprint readiness, and defect trends by severity over the last 12 sprints.
 
 ![Project analytics](resources/screenshots/analytics.png)
 
@@ -38,7 +38,7 @@ See each team member's progress for the current or past sprints — completed ho
 
 ### Library
 
-Access built-in tutorials and guides to get the most out of Robert and Rally workflows.
+Access built-in tutorials and guides to get the most out of Robert and Jira workflows.
 
 ---
 
@@ -47,14 +47,14 @@ Access built-in tutorials and guides to get the most out of Robert and Rally wor
 ### Requirements
 
 - Visual Studio Code 1.105.1 or later
-- A Rally account with API access
-- Your Rally project name
+- A Jira Cloud account with an API token
+- Your Jira project key (e.g. `DSS`)
 
 ### Install
 
 1. Install **IBM Robert** from the VS Code Extensions view, or install a `.vsix` package provided by your team.
 2. Open the **IBM Robert** panel from the activity bar (left sidebar).
-3. On first launch, configure your Rally connection (see below).
+3. On first launch, configure your Jira connection (see below).
 
 ### Open Robert
 
@@ -67,14 +67,15 @@ You can also open Robert in a full editor tab via the **Open in Editor** button 
 
 ## Configuration
 
-Connect Robert to your Rally instance once; settings are saved across sessions.
+Connect Robert to your Jira Cloud site once; settings are saved across sessions.
 
 1. Open VS Code Settings (`Cmd+,` / `Ctrl+,`).
 2. Search for **Robert**.
 3. Set:
-   - **Rally Instance URL** — e.g. `https://eu1.rallydev.com`
-   - **Rally API Key** — your personal Rally API key
-   - **Rally Project Name** — the project you work on
+   - **Jira Base URL** — e.g. `https://your-site.atlassian.net`
+   - **Jira Email** — the email of your Atlassian account
+   - **Jira API Token** — a token created at id.atlassian.com
+   - **Jira Project Key** — the project you work on (e.g. `DSS`)
 
 | Setting | Description |
 |---------|-------------|
@@ -115,7 +116,7 @@ Use the search icon in the top bar to find work items across the project.
 | Issue | What to try |
 |-------|-------------|
 | Blank or empty view | Run **IBM Robert: Reload**, or restart VS Code |
-| No data / connection errors | Check Rally URL, API key, and project name in Settings |
+| No data / connection errors | Check Jira base URL, email, API token, and project key in Settings |
 | Stale information | Enable auto refresh, or use the reload button |
 
 Enable **Debug mode** in Settings for more detail in the Robert output channel.

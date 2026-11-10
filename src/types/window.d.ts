@@ -16,9 +16,11 @@ declare global {
 		timestamp?: string;
 		extensionUri?: string;
 		rebusLogoUri?: string;
+		jiraLogoUri?: string;
+		rallyLogoUri?: string;
 		interFontUri?: string;
 		testTabEnabled?: boolean;
-		// Rally data pre-fetched by the extension (e.g. while the intro video plays)
+		// Jira data pre-fetched by the extension (e.g. while the intro video plays)
 		// and injected into the initial HTML so the UI can render without showing a
 		// loading spinner. Mirrors the `iterationsLoaded` message payload.
 		__robertPreloadedData?: {
@@ -28,6 +30,7 @@ declare global {
 			collaborationEnabled: boolean;
 			devMode: boolean;
 			debugMode: boolean;
+			provider?: 'jira' | 'rally';
 		};
 	}
 

@@ -69,8 +69,8 @@ vi.mock('vscode', () => ({
 	}),
 }));
 
-// Mock rally services to avoid actual Rally API calls
-vi.mock('../src/libs/rally/rallyServices', () => ({
+// Mock the provider facade to avoid actual Jira/Rally API calls
+vi.mock('../src/libs/provider', () => ({
 	getProjects: vi.fn(async () => ({ projects: [] })),
 	getUsers: vi.fn(async () => ({ users: [] })),
 	getIterations: vi.fn(async () => ({ iterations: [] })),
@@ -79,16 +79,27 @@ vi.mock('../src/libs/rally/rallyServices', () => ({
 	getDefects: vi.fn(async () => ({ defects: [] })),
 	getCurrentUser: vi.fn(async () => ({ user: null })),
 	getUserStoryDefects: vi.fn(async () => ({ defects: [] })),
-	getUserStoryTests: vi.fn(async () => ({ tests: [] })),
 	getUserStoryDiscussions: vi.fn(async () => ({ discussions: [] })),
+	getUserStoryTests: vi.fn(async () => ({ testCases: [] })),
 	getRecentTeamMembers: vi.fn(async () => ({ members: [] })),
 	getAllTeamMembersProgress: vi.fn(async () => ({ progress: [] })),
+	getUserSprintProgress: vi.fn(async () => ({})),
+	getMemberHoursHistory: vi.fn(async () => ({ history: [] })),
 	globalSearch: vi.fn(async () => ({ results: [] })),
 	getUserStoryByObjectId: vi.fn(async () => null),
 	getDefectByObjectId: vi.fn(async () => null),
 	getTaskWithParent: vi.fn(async () => null),
 	getTestCaseWithParent: vi.fn(async () => null),
-	clearAllRallyCaches: vi.fn()
+	getUserStoryRevisions: vi.fn(async () => ({ revisions: [] })),
+	getUserStoryRevisionsCount: vi.fn(async () => ({ count: 0 })),
+	fetchImageAsBase64: vi.fn(async () => ({ error: 'mock' })),
+	getItemUrl: vi.fn(async () => null),
+	validateConfiguration: vi.fn(async () => ({ isValid: true, errors: [] })),
+	setProviderBroadcaster: vi.fn(),
+	clearAllProviderCaches: vi.fn(),
+	getActiveProvider: vi.fn(() => 'jira'),
+	getProviderLabel: vi.fn(() => 'Jira'),
+	isRally: vi.fn(() => false)
 }));
 
 describe('Extension', () => {
@@ -96,17 +107,17 @@ describe('Extension', () => {
 		vi.clearAllMocks();
 	});
 
-	describe('rallyData', () => {
-		it('should export rallyData object', async () => {
-			const { rallyData } = await import('../src/extension.js');
+	describe('jiraData', () => {
+		it('should export jiraData object', async () => {
+			const { jiraData } = await import('../src/extension.js');
 			
-			expect(rallyData).toBeDefined();
-			expect(rallyData.projects).toEqual([]);
-			expect(rallyData.users).toEqual([]);
-			expect(rallyData.iterations).toEqual([]);
-			expect(rallyData.userStories).toEqual([]);
-			expect(rallyData.tasks).toEqual([]);
-			expect(rallyData.defects).toEqual([]);
+			expect(jiraData).toBeDefined();
+			expect(jiraData.projects).toEqual([]);
+			expect(jiraData.users).toEqual([]);
+			expect(jiraData.iterations).toEqual([]);
+			expect(jiraData.userStories).toEqual([]);
+			expect(jiraData.tasks).toEqual([]);
+			expect(jiraData.defects).toEqual([]);
 		});
 	});
 

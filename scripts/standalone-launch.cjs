@@ -6,7 +6,7 @@
  * bundle's Info.plist, so running the stock `node_modules/electron` binary
  * shows "Electron" with Electron's icon. To look like the real app, this
  * script runs Electron from a cached copy of the bundle renamed to
- * "IBM Robert" with Robert's icon (rebuilt when Electron or the icon change).
+ * "Robert" with Robert's icon (rebuilt when Electron or the icon change).
  *
  * It also clears ELECTRON_RUN_AS_NODE, which terminals inside VS Code export
  * and which would otherwise make Electron behave as plain Node.
@@ -20,7 +20,7 @@ const ROOT = path.resolve(__dirname, '..');
 const ENTRY = path.join(ROOT, 'out', 'src', 'standalone', 'main.js');
 // Same icon as the packaged macOS app (see electron-builder.yml).
 const ICON_PNG = path.join(ROOT, 'resources', 'icons', 'robert-logo-macos.png');
-const APP_NAME = 'IBM Robert';
+const APP_NAME = 'Robert';
 const BUNDLE_ID = 'com.ibm.robert.dev';
 const CACHE_DIR = path.join(ROOT, 'node_modules', '.cache', 'robert-standalone');
 

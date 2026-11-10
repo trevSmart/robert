@@ -1,7 +1,9 @@
 # Packaging of the standalone (Electron) version of IBM Robert.
 # Build with: npm run standalone:package  (outputs to dist/standalone/)
 appId: com.ibm.robert
-productName: IBM Robert
+# Name of the .app bundle, shown in the Dock and the app menu. The profile directory and
+# Keychain item keep the internal name "IBM Robert" (see APP_INTERNAL_NAME in src/standalone/main.ts).
+productName: Robert
 copyright: For IBM internal use only.
 
 directories:

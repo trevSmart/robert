@@ -7,12 +7,19 @@ function isDebugModeSettingEnabled(): boolean {
 }
 
 let extensionContext: vscode.ExtensionContext | undefined;
+// Set by hosts that know whether they run from a packaged build (the standalone
+// Electron app), overriding the VS Code extensions-folder path heuristic.
+let packagedOverride: boolean | undefined;
 
-export function initDevMode(context: vscode.ExtensionContext): void {
+export function initDevMode(context: vscode.ExtensionContext, options?: { isPackaged?: boolean }): void {
 	extensionContext = context;
+	packagedOverride = options?.isPackaged;
 }
 
 function isPackagedExtensionPath(extensionPath: string): boolean {
+	if (packagedOverride !== undefined) {
+		return packagedOverride;
+	}
 	const normalized = extensionPath.split(path.sep).join(path.sep);
 	return normalized.includes(`${path.sep}.vscode${path.sep}extensions${path.sep}`) || normalized.includes(`${path.sep}.cursor${path.sep}extensions${path.sep}`);
 }

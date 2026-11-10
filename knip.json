@@ -7,7 +7,9 @@
     "src/webview/logo.html",
     "test/runTest.ts",
     "test/suite/index.ts",
-    ".vscode-test.js"
+    ".vscode-test.js",
+    "src/standalone/main.ts",
+    "src/standalone/preload.ts"
   ],
   "project": [
     "src/**/*.{ts,tsx}",

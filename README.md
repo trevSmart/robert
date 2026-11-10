@@ -1,6 +1,8 @@
 ## <img src="resources/icons/ibm-logo.webp" alt="IBM logo" width="50" style="position: relative; margin-right: 10px; top: 4px;"/> IBM Robert
 
-**IBM Robert** is a VS Code extension that brings Jira Cloud project management into your editor. Track sprints, user stories, defects, and team workload without leaving VS Code — with dashboards, search, and analytics built for day-to-day delivery work.
+**IBM Robert** brings Jira Cloud and Rally project management into your editor. Track sprints, user stories, defects, and team workload without leaving VS Code — with dashboards, search, and analytics built for day-to-day delivery work.
+
+Robert comes in two flavours with the same features: a **VS Code extension** and a **standalone desktop app** for people who don't use VS Code (see [Standalone desktop app](#standalone-desktop-app)).
 
 ---
 
@@ -65,6 +67,27 @@ You can also open Robert in a full editor tab via the **Open in Editor** button 
 
 ---
 
+## Standalone desktop app
+
+Robert is also available as a standalone desktop app (macOS, Windows, Linux) built from the same codebase as the extension. It offers the same views — Home, Portfolio, Team, Metrics, Search — in its own window.
+
+- **Settings**: open **Settings…** from the app menu (`Cmd+,` / `Ctrl+,`). They are the same `robert.*` settings as in the extension. Settings you leave unset follow the `ROBERT_*` environment variables, then the defaults; **Reset** next to a setting goes back to that behaviour. API tokens are stored encrypted with your operating system's keychain (on Linux without a keyring, provide them through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY` instead).
+- **Reload data**: **View → Reload Data** (`Cmd+R` / `Ctrl+R`).
+- **Back / forward**: `Cmd+[` / `Cmd+]` on macOS, `Alt+←` / `Alt+→` on Windows and Linux, plus mouse side buttons and trackpad swipes.
+- **Logs**: **View → Show Logs**.
+
+To run it from source or build installers:
+
+```bash
+npm install
+npm run standalone:start     # build and launch
+npm run standalone:package   # installers for your OS in dist/standalone/
+```
+
+See [docs/STANDALONE.md](docs/STANDALONE.md) for details.
+
+---
+
 ## Configuration
 
 Connect Robert to your Jira Cloud site once; settings are saved across sessions.
@@ -118,6 +141,8 @@ Use the search icon in the top bar to find work items across the project.
 | Blank or empty view | Run **IBM Robert: Reload**, or restart VS Code |
 | No data / connection errors | Check Jira base URL, email, API token, and project key in Settings |
 | Stale information | Enable auto refresh, or use the reload button |
+| Standalone app shows as "Electron" in the Dock | Launch it with `npm run standalone:start` / `standalone:dev` (not `electron` directly), or use a packaged build |
+| Standalone app: no data | Open **Settings…** in the app menu and check the provider credentials; see **View → Show Logs** |
 
 Enable **Debug mode** in Settings for more detail in the Robert output channel.
 

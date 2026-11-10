@@ -81,6 +81,33 @@ const robertPopoverState = {
 };
 
 /**
+ * Clears provider caches, in-memory provider data and session navigation state.
+ * Shared by the VS Code extension and the standalone app reload flows.
+ */
+export function resetProviderData(outputManager: OutputChannelManager): void {
+	// Step 1: Clear caches of both providers
+	outputManager.appendLine(`[Robert] 🗑️  Clearing caches (active provider: ${getProviderLabel()})...`);
+	clearAllProviderCaches();
+
+	// Step 2: Clear in-memory data of both providers
+	outputManager.appendLine('[Robert] 🗑️  Clearing provider data...');
+	for (const data of [jiraData, rallyData] as Array<JiraData | RallyData>) {
+		data.projects = [];
+		data.users = [];
+		data.iterations = [];
+		data.userStories = [];
+		data.tasks = [];
+		data.defects = [];
+		data.currentUser = undefined;
+	}
+	rallyData.testCases = [];
+	clearJiraDataMeta();
+	clearRallyDataMeta();
+
+	WebviewMessageDispatcher.clearSessionNavigationState();
+}
+
+/**
  * Reload the extension without reloading the IDE
  * Clears cache, resets data, and refreshes the webview
  */
@@ -88,26 +115,7 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 	try {
 		outputManager.appendLine('[Robert] 🔄 Starting extension reload');
 
-		// Step 1: Clear caches of both providers
-		outputManager.appendLine(`[Robert] 🗑️  Clearing caches (active provider: ${getProviderLabel()})...`);
-		clearAllProviderCaches();
-
-		// Step 2: Clear in-memory data of both providers
-		outputManager.appendLine('[Robert] 🗑️  Clearing provider data...');
-		for (const data of [jiraData, rallyData] as Array<JiraData | RallyData>) {
-			data.projects = [];
-			data.users = [];
-			data.iterations = [];
-			data.userStories = [];
-			data.tasks = [];
-			data.defects = [];
-			data.currentUser = undefined;
-		}
-		rallyData.testCases = [];
-		clearJiraDataMeta();
-		clearRallyDataMeta();
-
-		WebviewMessageDispatcher.clearSessionNavigationState();
+		resetProviderData(outputManager);
 
 		// Step 3: Refresh webview provider (no need to re-register, just refresh data)
 		if (globalWebviewProvider) {

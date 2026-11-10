@@ -141,6 +141,65 @@ describe('SettingsManager', () => {
 		});
 	});
 
+	describe('precedence: settings > environment > defaults', () => {
+		/** Mimics VS Code: get() returns the manifest default for unset keys; inspect() tells them apart. */
+		function mockVsCodeConfig(userValues: Record<string, unknown>): void {
+			const manifestDefaults: Record<string, unknown> = { provider: 'jira', jiraBaseUrl: 'https://jiracloudab.atlassian.net', debugMode: false };
+			vi.mocked(vscode.workspace.getConfiguration).mockReturnValue({
+				get: (key: string, defaultValue?: unknown) => userValues[key] ?? manifestDefaults[key] ?? defaultValue,
+				inspect: (key: string) => ({ key: `robert.${key}`, defaultValue: manifestDefaults[key], globalValue: userValues[key] }),
+				update: vi.fn()
+			} as unknown as ReturnType<typeof vscode.workspace.getConfiguration>);
+		}
+
+		const ENV_KEYS = ['ROBERT_PROVIDER', 'ROBERT_JIRA_BASE_URL', 'ROBERT_DEBUG_MODE'];
+		let savedEnv: Record<string, string | undefined>;
+		beforeEach(() => {
+			savedEnv = Object.fromEntries(ENV_KEYS.map(key => [key, process.env[key]]));
+		});
+		afterEach(() => {
+			for (const key of ENV_KEYS) {
+				if (savedEnv[key] === undefined) delete process.env[key];
+				else process.env[key] = savedEnv[key];
+			}
+		});
+
+		it('uses ROBERT_* environment variables when the setting is unset, even if the manifest has a default', () => {
+			process.env.ROBERT_PROVIDER = 'rally';
+			process.env.ROBERT_JIRA_BASE_URL = 'https://env.atlassian.net';
+			process.env.ROBERT_DEBUG_MODE = 'true';
+			mockVsCodeConfig({});
+
+			expect(settingsManager.getSetting('provider')).toBe('rally');
+			expect(settingsManager.getSettings().jiraBaseUrl).toBe('https://env.atlassian.net');
+			expect(settingsManager.getSetting('debugMode')).toBe(true);
+		});
+
+		it('lets an explicit setting win over the environment', () => {
+			process.env.ROBERT_PROVIDER = 'rally';
+			process.env.ROBERT_DEBUG_MODE = 'true';
+			mockVsCodeConfig({ provider: 'jira', debugMode: false });
+
+			expect(settingsManager.getSettings().provider).toBe('jira');
+			expect(settingsManager.getSetting('debugMode')).toBe(false);
+		});
+
+		it('keeps an explicit false instead of replacing it with a true default', () => {
+			mockVsCodeConfig({ autoRefresh: false, showWelcomeAnimation: false });
+
+			expect(settingsManager.getSetting('autoRefresh')).toBe(false);
+			expect(settingsManager.getSetting('showWelcomeAnimation')).toBe(false);
+		});
+
+		it('falls back to defaults when neither a setting nor an environment variable is set', () => {
+			for (const key of ENV_KEYS) delete process.env[key];
+			mockVsCodeConfig({});
+
+			expect(settingsManager.getSettings().provider).toBe('jira');
+			expect(settingsManager.getSettings().jiraBaseUrl).toBe('https://jiracloudab.atlassian.net');
+		});
+	});
+
 	describe('package contribution', () => {
 		it('contributes eu1 as the Rally instance default', () => {
 			const pkg = JSON.parse(readFileSync(resolve(process.cwd(), 'package.json'), 'utf8')) as {

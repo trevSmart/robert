@@ -571,7 +571,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	//    between consecutive indices (warm/cool alternation, light/dark variation)
 	//
 	// 2. Overlap Detection: When assigning colors, check which sprints overlap
-	//    tempojira and avoid reusing their color indices
+	//    temporally and avoid reusing their color indices
 	//
 	// 3. Adaptive Stride: If a color index conflicts with an overlapping sprint,
 	//    skip ahead by stride of 4 to find a maximally different color
@@ -619,7 +619,7 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 		return iterStartDate <= gridEnd && iterEndDate >= gridStart;
 	};
 
-	// Helper function to check if two iterations overlap tempojira
+	// Helper function to check if two iterations overlap temporally
 	const doIterationsOverlap = (iter1: Iteration, iter2: Iteration): boolean => {
 		const start1 = iter1.startDate ? new Date(iter1.startDate) : null;
 		const end1 = iter1.endDate ? new Date(iter1.endDate) : null;

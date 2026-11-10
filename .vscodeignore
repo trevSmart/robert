@@ -35,3 +35,7 @@ REFACTORING_SUMMARY.md
 .vscode-test.js
 coverage/**
 **/*.log
+
+# Standalone (Electron) app — not part of the VS Code extension package
+out/src/standalone/**
+electron-builder.yml

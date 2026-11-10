@@ -238,7 +238,11 @@
 		"install:cursor": "node scripts/installCursor.cjs",
 		"install:vscode-insiders": "node scripts/installVSCodeInsiders.cjs",
 		"publish": "vsce publish",
-		"publish:pre-release": "vsce publish --pre-release"
+		"publish:pre-release": "vsce publish --pre-release",
+		"standalone:build": "tsc -p ./ && npm run build:webview",
+		"standalone:start": "npm run standalone:build && node scripts/standalone-launch.cjs",
+		"standalone:dev": "node scripts/standalone-launch.cjs",
+		"standalone:package": "npm run standalone:build && electron-builder --config electron-builder.yml"
 	},
 	"devDependencies": {
 		"@types/mocha": "^10.0.10",
@@ -253,6 +257,8 @@
 		"@vscode/test-cli": "^0.0.15",
 		"@vscode/test-electron": "^3.1.0",
 		"@vscode/vsce": "^4.1.0",
+		"electron": "44.9.3",
+		"electron-builder": "26.18.0",
 		"eslint": "^10.14.0",
 		"eslint-plugin-react-hooks": "^7.1.1",
 		"glob": "^14.0.4",

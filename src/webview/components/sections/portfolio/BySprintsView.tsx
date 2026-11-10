@@ -8,14 +8,14 @@ import TestCasesTable from '../../common/TestCasesTable';
 import DefectsTable from '../../common/DefectsTable';
 import DiscussionsTable from '../../common/DiscussionsTable';
 import ScreenHeader from '../../common/ScreenHeader';
-import OpenInRallyButton from '../../common/OpenInRallyButton';
+import OpenInJiraButton from '../../common/OpenInJiraButton';
 import FavoriteButton from '../../common/FavoriteButton';
 import TitleActions from '../../common/TitleActions';
 import SprintDetailsForm from '../../common/SprintDetailsForm';
 import AssigneeHoursChart from '../../common/AssigneeHoursChart';
 import '../../common/CollapsibleCard';
-import { type RallyTask } from '../../../../../types/rally';
-import type { Defect } from '../../../../../types/rally';
+import { type JiraTask } from '../../../../../types/jira';
+import type { Defect } from '../../../../../types/jira';
 import type { PortfolioViewProps } from './types';
 
 const BySprintsView: FC<PortfolioViewProps> = ({
@@ -64,7 +64,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 	const additionalTabContent = selectedUserStory
 		? {
-				tasks: <TasksTable tasks={tasks as RallyTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} embedded />,
+				tasks: <TasksTable tasks={tasks as JiraTask[]} loading={tasksLoading} error={tasksError} onLoadTasks={() => selectedUserStory && onLoadTasks(selectedUserStory.objectId)} embedded />,
 				tests: <TestCasesTable testCases={userStoryTestCases} loading={userStoryTestCasesLoading} error={userStoryTestCasesError} embedded />,
 				defects: (
 					<DefectsTable
@@ -113,7 +113,16 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 	const filteredIterations = getFilteredIterations();
 
 	const rightContent = (
-		<label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', cursor: 'pointer', fontWeight: '300' }}>
+		<label
+			style={{
+				display: 'flex',
+				alignItems: 'center',
+				gap: '8px',
+				fontSize: '12px',
+				cursor: 'pointer',
+				fontWeight: '300'
+			}}
+		>
 			<input type="checkbox" checked={showAllFutureSprints} onChange={e => setShowAllFutureSprints(e.target.checked)} style={{ cursor: 'pointer' }} />
 			<span>Show all future sprints</span>
 		</label>
@@ -137,8 +146,15 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						onBack={onBackToIterations}
 						titleActions={
 							<TitleActions>
-								<FavoriteButton item={{ objectId: selectedIteration.objectId, formattedId: selectedIteration.name, name: selectedIteration.name, type: 'sprint' }} />
-								<OpenInRallyButton objectId={selectedIteration.objectId} artifactType="iteration" />
+								<FavoriteButton
+									item={{
+										objectId: selectedIteration.objectId,
+										formattedId: selectedIteration.name,
+										name: selectedIteration.name,
+										type: 'sprint'
+									}}
+								/>
+								<OpenInJiraButton objectId={selectedIteration.objectId} artifactType="iteration" />
 							</TitleActions>
 						}
 					/>
@@ -146,7 +162,13 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 						<SprintDetailsForm iteration={selectedIteration} />
 					</collapsible-card>
 					{sprintUserStories.length === 0 ? (
-						<div style={{ padding: '20px', textAlign: 'center', color: 'var(--vscode-descriptionForeground)' }}>
+						<div
+							style={{
+								padding: '20px',
+								textAlign: 'center',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
 							<p>This sprint has no user stories</p>
 						</div>
 					) : (
@@ -173,12 +195,21 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 					<ScreenHeader
 						entityType="userstory"
 						title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`}
+						projectKey={selectedUserStory.project}
 						showBackButton={true}
 						onBack={onBackToUserStories}
 						titleActions={
 							<TitleActions>
-								<FavoriteButton item={{ objectId: selectedUserStory.objectId, formattedId: selectedUserStory.formattedId, name: selectedUserStory.name, type: 'userstory' }} />
-								<OpenInRallyButton objectId={selectedUserStory.objectId} />
+								<FavoriteButton
+									item={{
+										objectId: selectedUserStory.objectId,
+										formattedId: selectedUserStory.formattedId,
+										name: selectedUserStory.name,
+										type: 'userstory',
+										project: selectedUserStory.project
+									}}
+								/>
+								<OpenInJiraButton objectId={selectedUserStory.objectId} />
 							</TitleActions>
 						}
 					/>

@@ -79,7 +79,13 @@ class CollapsibleCard extends HTMLElement {
 	private toggleCollapsed() {
 		this.collapsed = !this.collapsed;
 		this.updateCollapsedState(true);
-		this.dispatchEvent(new CustomEvent('toggle', { detail: { collapsed: this.collapsed }, bubbles: true, composed: true }));
+		this.dispatchEvent(
+			new CustomEvent('toggle', {
+				detail: { collapsed: this.collapsed },
+				bubbles: true,
+				composed: true
+			})
+		);
 	}
 
 	private updateCollapsedState(animate: boolean = false) {

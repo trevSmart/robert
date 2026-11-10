@@ -79,7 +79,15 @@ export function aggregateHoursByAssignee(userStories: Array<{ assignee: string; 
 		.sort((a, b) => b.value - a.value);
 }
 
-export function aggregateUserStoriesByAssignee(userStories: Array<{ objectId: string; formattedId: string; name: string; assignee: string; taskEstimateTotal: number }>): AssigneeUserStories[] {
+export function aggregateUserStoriesByAssignee(
+	userStories: Array<{
+		objectId: string;
+		formattedId: string;
+		name: string;
+		assignee: string;
+		taskEstimateTotal: number;
+	}>
+): AssigneeUserStories[] {
 	const aggregated = new Map<string, Array<{ id: string; formattedId: string; name: string; hours: number }>>();
 
 	userStories.forEach(story => {

@@ -59,8 +59,8 @@ export class CalendarMessageHandler {
 		if (/Collaboration server URL not configured/i.test(raw)) {
 			return 'Collaboration server URL is not set. Configure it in extension settings.';
 		}
-		if (/Rally User ID is required/i.test(raw)) {
-			return 'Rally user is required for collaboration. Ensure you are signed in to Rally.';
+		if (/Jira User ID is required/i.test(raw)) {
+			return 'Jira user is required for collaboration. Ensure you are signed in to Jira.';
 		}
 		return raw || 'Something went wrong with the collaboration service.';
 	}
@@ -99,14 +99,17 @@ export class CalendarMessageHandler {
 			webview.postMessage({ command: 'publicCalendarEventsLoaded', events });
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadPublicCalendarEvents');
-			webview.postMessage({ command: 'publicCalendarEventsLoaded', events: [] });
+			webview.postMessage({
+				command: 'publicCalendarEventsLoaded',
+				events: []
+			});
 		}
 	}
 
 	private async handleSavePublicCalendarEvent(webview: vscode.Webview, message: any): Promise<void> {
 		try {
 			const incoming = (message.data?.event ?? message.event) as CustomCalendarEvent;
-			const saved = incoming.creatorRallyUserId
+			const saved = incoming.creatorJiraUserId
 				? await this.collaborationClient.updateCalendarEvent(incoming.id, {
 						date: incoming.date,
 						time: incoming.time,
@@ -117,7 +120,10 @@ export class CalendarMessageHandler {
 				: await this.collaborationClient.createCalendarEvent(incoming);
 
 			if (saved) {
-				webview.postMessage({ command: 'publicCalendarEventSaved', event: { ...saved, isPublic: true } });
+				webview.postMessage({
+					command: 'publicCalendarEventSaved',
+					event: { ...saved, isPublic: true }
+				});
 			}
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'savePublicCalendarEvent');

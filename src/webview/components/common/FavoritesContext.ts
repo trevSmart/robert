@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { RecentlyViewedItemType } from '../../../types/rally';
+import type { RecentlyViewedItemType } from '../../../types/jira';
 
 /**
  * Set of favorite item keys (`type:objectId`), provided by MainWebview so any detail-view

@@ -3,7 +3,7 @@ import type * as echarts from 'echarts';
 import { aggregateUserStoriesByAssignee, getMemberColor, darkenHex, isLightVscodeTheme } from '../../utils/chartUtils';
 import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { themeColors } from '../../utils/themeColors';
-import { type UserStory } from '../../../types/rally';
+import { type UserStory } from '../../../types/jira';
 
 interface AssigneeHoursChartProps {
 	userStories: UserStory[];
@@ -106,7 +106,10 @@ const AssigneeHoursChart: FC<AssigneeHoursChartProps> = ({ userStories }) => {
 		const storyDetailsMap = new Map<string, { formattedId: string; name: string }>();
 		assigneeData.forEach(assignee => {
 			assignee.userStories.forEach(story => {
-				storyDetailsMap.set(story.id, { formattedId: story.formattedId, name: story.name });
+				storyDetailsMap.set(story.id, {
+					formattedId: story.formattedId,
+					name: story.name
+				});
 			});
 		});
 

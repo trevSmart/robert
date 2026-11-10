@@ -28,15 +28,15 @@ export async function getCalendarEventById(id: string): Promise<CalendarEvent | 
 
 export async function createCalendarEvent(
 	userId: string,
-	rallyUserId: string,
+	jiraUserId: string,
 	displayName: string,
 	input: CreateCalendarEventInput
 ): Promise<CalendarEvent> {
 	const result = await query(
-		`INSERT INTO calendar_events (creator_id, creator_rally_user_id, creator_display_name, date, time, title, description, color)
+		`INSERT INTO calendar_events (creator_id, creator_jira_user_id, creator_display_name, date, time, title, description, color)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		 RETURNING *`,
-		[userId, rallyUserId, displayName, input.date, input.time || null, input.title, input.description || null, input.color]
+		[userId, jiraUserId, displayName, input.date, input.time || null, input.title, input.description || null, input.color]
 	);
 
 	return mapRowToCalendarEvent(result.rows[0]);
@@ -114,7 +114,7 @@ function mapRowToCalendarEvent(row: any): CalendarEvent {
 	return {
 		id: row.id,
 		creatorId: row.creator_id,
-		creatorRallyUserId: row.creator_rally_user_id,
+		creatorJiraUserId: row.creator_jira_user_id,
 		creatorDisplayName: row.creator_display_name,
 		date: row.date,
 		time: row.time || undefined,

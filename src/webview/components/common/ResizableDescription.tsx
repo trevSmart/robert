@@ -77,7 +77,15 @@ const ResizableDescription: FC<ResizableDescriptionProps> = ({ description, init
 	}, []);
 
 	return (
-		<div style={{ display: 'flex', flexDirection: 'column', border: '1px solid var(--vscode-input-border)', borderRadius: '3px', overflow: 'hidden' }}>
+		<div
+			style={{
+				display: 'flex',
+				flexDirection: 'column',
+				border: '1px solid var(--vscode-input-border)',
+				borderRadius: '3px',
+				overflow: 'hidden'
+			}}
+		>
 			<DescriptionBody
 				tabIndex={0}
 				// Lenis (smooth scroll) captura els wheel del wrapper; això li diu que ignore aquest scroller.

@@ -1,19 +1,21 @@
 import { FC, useCallback, useMemo } from 'react';
 import { getVsCodeApi } from '../../utils/vscodeApi';
+import { useProvider } from '../../utils/providerState';
 
-interface OpenInRallyButtonProps {
+interface OpenInJiraButtonProps {
 	objectId: string;
 	artifactType?: string;
 }
 
-const OpenInRallyButton: FC<OpenInRallyButtonProps> = ({ objectId, artifactType = 'userstory' }) => {
+const OpenInJiraButton: FC<OpenInJiraButtonProps> = ({ objectId, artifactType = 'userstory' }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
+	const { label } = useProvider();
 
 	const handleClick = useCallback(() => {
 		if (!vscode) return;
 
 		vscode.postMessage({
-			command: 'openInRally',
+			command: 'openInJira',
 			objectId,
 			artifactType
 		});
@@ -23,8 +25,8 @@ const OpenInRallyButton: FC<OpenInRallyButtonProps> = ({ objectId, artifactType 
 		<button
 			type="button"
 			onClick={handleClick}
-			title="Open in Rally"
-			aria-label="Open in Rally"
+			title={`Open in ${label}`}
+			aria-label={`Open in ${label}`}
 			style={{
 				display: 'inline-flex',
 				verticalAlign: 'middle',
@@ -47,9 +49,20 @@ const OpenInRallyButton: FC<OpenInRallyButtonProps> = ({ objectId, artifactType 
 				e.currentTarget.style.opacity = '0.7';
 			}}
 		>
-			<span className="codicon codicon-globe" style={{ fontSize: '16px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px' }} />
+			<span
+				className="codicon codicon-globe"
+				style={{
+					fontSize: '16px',
+					lineHeight: 1,
+					display: 'inline-flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					width: '20px',
+					height: '20px'
+				}}
+			/>
 		</button>
 	);
 };
 
-export default OpenInRallyButton;
+export default OpenInJiraButton;

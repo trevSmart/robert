@@ -8,9 +8,9 @@ vi.mock('vscode', () => ({
 				const defaults: Record<string, unknown> = {
 					autoRefresh: true,
 					debugMode: false,
-					rallyInstance: 'https://rally1.rallydev.com',
-					rallyApiKey: '',
-					rallyProjectName: '',
+					jiraBaseUrl: 'https://example.atlassian.net',
+					jiraApiToken: '',
+					jiraProjectKey: '',
 					'collaboration.serverUrl': 'https://robert-8vdt.onrender.com',
 					'collaboration.enabled': false,
 					'collaboration.autoConnect': true,
@@ -31,7 +31,11 @@ vi.mock('vscode', () => ({
 		createOutputChannel: vi.fn(() => ({
 			appendLine: vi.fn(),
 			show: vi.fn(),
-			dispose: vi.fn()
+			dispose: vi.fn(),
+			debug: vi.fn(),
+			info: vi.fn(),
+			warn: vi.fn(),
+			error: vi.fn()
 		}))
 	}
 }));
@@ -62,9 +66,9 @@ describe('SettingsManager', () => {
 			expect(settings).toBeDefined();
 			expect(settings.autoRefresh).toBeDefined();
 			expect(settings.debugMode).toBeDefined();
-			expect(settings.rallyInstance).toBeDefined();
-			expect(settings.rallyApiKey).toBeDefined();
-			expect(settings.rallyProjectName).toBeDefined();
+			expect(settings.jiraBaseUrl).toBeDefined();
+			expect(settings.jiraApiToken).toBeDefined();
+			expect(settings.jiraProjectKey).toBeDefined();
 		});
 
 		it('should return valid setting types', () => {
@@ -72,9 +76,9 @@ describe('SettingsManager', () => {
 			
 			expect(typeof settings.autoRefresh).toBe('boolean');
 			expect(typeof settings.debugMode).toBe('boolean');
-			expect(typeof settings.rallyInstance).toBe('string');
-			expect(typeof settings.rallyApiKey).toBe('string');
-			expect(typeof settings.rallyProjectName).toBe('string');
+			expect(typeof settings.jiraBaseUrl).toBe('string');
+			expect(typeof settings.jiraApiToken).toBe('string');
+			expect(typeof settings.jiraProjectKey).toBe('string');
 		});
 	});
 
@@ -91,38 +95,37 @@ describe('SettingsManager', () => {
 	describe('validateSettings', () => {
 		it('should validate correct settings', () => {
 			const result = settingsManager.validateSettings({
-				rallyInstance: 'https://rally1.rallydev.com'
+				jiraBaseUrl: 'https://example.atlassian.net'
 			});
 			
 			expect(result.isValid).toBe(true);
 			expect(result.errors).toHaveLength(0);
 		});
 
-		it('should reject non-HTTPS Rally instance', () => {
+		it('should reject non-HTTPS Jira base URL', () => {
 			const result = settingsManager.validateSettings({
-				rallyInstance: 'http://rally.example.com'
+				jiraBaseUrl: 'http://example.atlassian.net'
 			});
 			
 			expect(result.isValid).toBe(false);
-			expect(result.errors).toContain('Rally instance must be a valid HTTPS URL');
+			expect(result.errors).toContain('Jira base URL must be a valid HTTPS URL');
 		});
 
-		it('should reject empty Rally API key', () => {
+		it('should reject empty Jira API token', () => {
 			const result = settingsManager.validateSettings({
-				rallyApiKey: '   '
+				jiraApiToken: '   '
 			});
 			
 			expect(result.isValid).toBe(false);
-			expect(result.errors).toContain('Rally API key cannot be empty');
+			expect(result.errors).toContain('Jira API token cannot be empty');
 		});
 
-		it('should reject empty Rally project name', () => {
+		it('should accept empty Jira project key (all projects)', () => {
 			const result = settingsManager.validateSettings({
-				rallyProjectName: ''
+				jiraProjectKey: ''
 			});
 			
-			expect(result.isValid).toBe(false);
-			expect(result.errors).toContain('Rally project name cannot be empty');
+			expect(result.errors).not.toContain('Jira project key cannot be empty');
 		});
 
 		it('should reject invalid collaboration server URL', () => {
@@ -136,7 +139,7 @@ describe('SettingsManager', () => {
 
 		it('should accept multiple valid settings', () => {
 			const result = settingsManager.validateSettings({
-				rallyInstance: 'https://rally1.rallydev.com',
+				jiraBaseUrl: 'https://example.atlassian.net',
 				collaborationServerUrl: 'https://robert-8vdt.onrender.com'
 			});
 			

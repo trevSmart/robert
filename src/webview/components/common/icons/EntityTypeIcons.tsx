@@ -1,4 +1,4 @@
-// Small outline icons for Rally entity types, shared across global search results and the
+// Small outline icons for Jira entity types, shared across global search results and the
 // Recently Viewed list so both surfaces use the exact same iconography.
 
 export interface EntityTypeIconProps {

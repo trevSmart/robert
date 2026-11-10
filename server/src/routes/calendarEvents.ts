@@ -57,10 +57,10 @@ router.post('/', async (req: AuthenticatedRequest, res: Response, next: NextFunc
 		}
 
 		// Get or create user
-		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
+		const user = await getOrCreateUser(req.user!.jiraUserId, req.user!.displayName);
 
 		// Create event
-		const event = await createCalendarEvent(user.id, req.user!.rallyUserId, req.user!.displayName, {
+		const event = await createCalendarEvent(user.id, req.user!.jiraUserId, req.user!.displayName, {
 			date,
 			time: time || undefined,
 			title: title.trim(),
@@ -98,7 +98,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response, next: NextFu
 		}
 
 		// Resolve DB user id
-		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
+		const user = await getOrCreateUser(req.user!.jiraUserId, req.user!.displayName);
 
 		if (existingEvent.creatorId !== user.id) {
 			return next(createError('Forbidden: You can only edit your own events', 403));
@@ -142,7 +142,7 @@ router.delete('/:id', async (req: AuthenticatedRequest, res: Response, next: Nex
 		}
 
 		// Resolve DB user id
-		const user = await getOrCreateUser(req.user!.rallyUserId, req.user!.displayName);
+		const user = await getOrCreateUser(req.user!.jiraUserId, req.user!.displayName);
 
 		if (existingEvent.creatorId !== user.id) {
 			return next(createError('Forbidden: You can only delete your own events', 403));

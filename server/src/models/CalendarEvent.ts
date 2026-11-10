@@ -1,7 +1,7 @@
 export interface CalendarEvent {
 	id: string;
 	creatorId: string; // UUID -> users.id
-	creatorRallyUserId: string;
+	creatorJiraUserId: string;
 	creatorDisplayName: string;
 	date: string; // YYYY-MM-DD
 	time?: string; // HH:MM

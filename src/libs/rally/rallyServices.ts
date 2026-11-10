@@ -670,7 +670,11 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 			assignee: userStory.c_Assignee ? (userStory.c_Assignee._refObjectName ?? userStory.c_Assignee.refObjectName) : userStory.c_assignee ? (userStory.c_assignee._refObjectName ?? userStory.c_assignee.refObjectName) : 'Unassigned',
 			project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
 			iteration: userStory.Iteration
-				? { objectId: userStory.Iteration.ObjectID ?? userStory.Iteration.objectId, _ref: userStory.Iteration._ref, _refObjectName: userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName }
+				? {
+						objectId: userStory.Iteration.ObjectID ?? userStory.Iteration.objectId,
+						_ref: userStory.Iteration._ref,
+						_refObjectName: userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName
+					}
 				: userStory.iteration
 					? typeof userStory.iteration === 'object'
 						? userStory.iteration
@@ -984,7 +988,10 @@ async function fetchUserStoriesPage(query: RallyQueryParams, offset: number, loa
 		return { userStories: [], rawCount: 0 };
 	}
 
-	const userStories = await formatUserStoriesAsync({ ...resultData, Results: results });
+	const userStories = await formatUserStoriesAsync({
+		...resultData,
+		Results: results
+	});
 	if (!rallyData.userStories) {
 		rallyData.userStories = [];
 	}
@@ -1486,8 +1493,10 @@ export async function getUserStoryTests(userStoryId: string) {
 		if (testCaseQueries.length === 1) {
 			testCaseQueryOptions.query = testCaseQueries[0];
 		} else if (testCaseQueries.length > 1) {
-			// @ts-expect-error - Rally query builder has or method
-			testCaseQueryOptions.query = testCaseQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
+			testCaseQueryOptions.query = testCaseQueries.reduce(
+				// @ts-expect-error - Rally query builder has or method
+				(a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b)
+			);
 		}
 
 		const testCaseResult = await callRally(rallyApi, testCaseQueryOptions, 'Loading test cases...');
@@ -1645,8 +1654,10 @@ export async function getUserStoryDefects(userStoryId: string) {
 		if (defectQueries.length === 1) {
 			defectQueryOptions.query = defectQueries[0];
 		} else if (defectQueries.length > 1) {
-			// @ts-expect-error - Rally query builder has or method
-			defectQueryOptions.query = defectQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
+			defectQueryOptions.query = defectQueries.reduce(
+				// @ts-expect-error - Rally query builder has or method
+				(a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b)
+			);
 		}
 
 		const defectResult = await callRally(rallyApi, defectQueryOptions, 'Loading defects...');
@@ -1836,8 +1847,10 @@ export async function getUserStoryDiscussions(userStoryId: string) {
 		if (discussionQueries.length === 1) {
 			discussionQueryOptions.query = discussionQueries[0];
 		} else if (discussionQueries.length > 1) {
-			// @ts-expect-error - Rally query builder has or method
-			discussionQueryOptions.query = discussionQueries.reduce((a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b));
+			discussionQueryOptions.query = discussionQueries.reduce(
+				// @ts-expect-error - Rally query builder has or method
+				(a: RallyQueryBuilder, b: RallyQueryBuilder) => a.or(b)
+			);
 		}
 
 		const discussionResult = await callRally(rallyApi, discussionQueryOptions, 'Loading discussions...');
@@ -1934,7 +1947,9 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 			recentIterations.map(async iteration => {
 				const iterationRef = `/iteration/${iteration.objectId}`;
 				errorHandler.logDebug(`Querying user stories with iteration ref: ${iterationRef}`, 'rallyServices.getRecentTeamMembers');
-				const userStoriesResult = await getUserStories({ Iteration: iterationRef });
+				const userStoriesResult = await getUserStories({
+					Iteration: iterationRef
+				});
 				return userStoriesResult.userStories || [];
 			})
 		);
@@ -2223,8 +2238,32 @@ async function getBatchTasks(userStoryIds: string[]): Promise<
  * @param iterationId Optional iteration ID (uses current if not provided)
  * @returns Map of member name to progress data
  */
-export async function getAllTeamMembersProgress(teamMembers?: string[], iterationId?: string): Promise<{ progressMap: Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>; members: string[] }> {
-	const progressMap = new Map<string, { completedHours: number; totalHours: number; percentage: number; source: string; userStoriesCount: number }>();
+export async function getAllTeamMembersProgress(
+	teamMembers?: string[],
+	iterationId?: string
+): Promise<{
+	progressMap: Map<
+		string,
+		{
+			completedHours: number;
+			totalHours: number;
+			percentage: number;
+			source: string;
+			userStoriesCount: number;
+		}
+	>;
+	members: string[];
+}> {
+	const progressMap = new Map<
+		string,
+		{
+			completedHours: number;
+			totalHours: number;
+			percentage: number;
+			source: string;
+			userStoriesCount: number;
+		}
+	>();
 
 	try {
 		errorHandler.logDebug(`Getting progress for ${teamMembers?.length ?? 0} team members in sprint`, 'rallyServices.getAllTeamMembersProgress');
@@ -2237,7 +2276,13 @@ export async function getAllTeamMembersProgress(teamMembers?: string[], iteratio
 			errorHandler.logDebug('No iterations found', 'rallyServices.getAllTeamMembersProgress');
 			// Return empty progress for all members
 			for (const member of teamMembers ?? []) {
-				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iterations', userStoriesCount: 0 });
+				progressMap.set(member, {
+					completedHours: 0,
+					totalHours: 0,
+					percentage: 0,
+					source: 'no-iterations',
+					userStoriesCount: 0
+				});
 			}
 			return { progressMap, members: teamMembers ?? [] };
 		}
@@ -2299,7 +2344,13 @@ export async function getAllTeamMembersProgress(teamMembers?: string[], iteratio
 			errorHandler.logDebug('No target iteration found', 'rallyServices.getAllTeamMembersProgress');
 			// Return empty progress for all members
 			for (const member of teamMembers ?? []) {
-				progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-iteration', userStoriesCount: 0 });
+				progressMap.set(member, {
+					completedHours: 0,
+					totalHours: 0,
+					percentage: 0,
+					source: 'no-iteration',
+					userStoriesCount: 0
+				});
 			}
 			return { progressMap, members: teamMembers ?? [] };
 		}
@@ -2367,7 +2418,13 @@ export async function getAllTeamMembersProgress(teamMembers?: string[], iteratio
 			const userStories = storiesByUser.get(normalizedMemberName) || [];
 
 			if (userStories.length === 0) {
-				progressMap.set(memberName, { completedHours: 0, totalHours: 0, percentage: 0, source: 'no-stories', userStoriesCount: 0 });
+				progressMap.set(memberName, {
+					completedHours: 0,
+					totalHours: 0,
+					percentage: 0,
+					source: 'no-stories',
+					userStoriesCount: 0
+				});
 				continue;
 			}
 
@@ -2412,7 +2469,13 @@ export async function getAllTeamMembersProgress(teamMembers?: string[], iteratio
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.getAllTeamMembersProgress');
 		// Return empty progress for all members on error
 		for (const member of teamMembers ?? []) {
-			progressMap.set(member, { completedHours: 0, totalHours: 0, percentage: 0, source: 'error', userStoriesCount: 0 });
+			progressMap.set(member, {
+				completedHours: 0,
+				totalHours: 0,
+				percentage: 0,
+				source: 'error',
+				userStoriesCount: 0
+			});
 		}
 		return { progressMap, members: teamMembers ?? [] };
 	}
@@ -2427,7 +2490,18 @@ export async function getAllTeamMembersProgress(teamMembers?: string[], iteratio
  * @param numberOfSprints - How many recent sprints to include (default 6)
  * @returns Array of { iterationName, totalHours, completedHours, userStoriesCount } in chronological order
  */
-export async function getMemberHoursHistory(memberName: string, numberOfSprints: number = 6): Promise<{ history: Array<{ iterationName: string; totalHours: number; completedHours: number; sprintTotalHours: number; userStoriesCount: number }> }> {
+export async function getMemberHoursHistory(
+	memberName: string,
+	numberOfSprints: number = 6
+): Promise<{
+	history: Array<{
+		iterationName: string;
+		totalHours: number;
+		completedHours: number;
+		sprintTotalHours: number;
+		userStoriesCount: number;
+	}>;
+}> {
 	try {
 		errorHandler.logDebug(`Getting hours history for member "${memberName}" over last ${numberOfSprints} sprints`, 'rallyServices.getMemberHoursHistory');
 
@@ -2460,7 +2534,9 @@ export async function getMemberHoursHistory(memberName: string, numberOfSprints:
 		const history = await Promise.all(
 			recentIterations.map(async iteration => {
 				const iterationRef = `/iteration/${iteration.objectId}`;
-				const userStoriesResult = await getUserStories({ Iteration: iterationRef });
+				const userStoriesResult = await getUserStories({
+					Iteration: iterationRef
+				});
 				const allStories = userStoriesResult.userStories || [];
 				const memberStories = allStories.filter(story => story.assignee && story.assignee !== 'Unassigned' && normalizeName(story.assignee) === normalizedMember);
 
@@ -2544,7 +2620,14 @@ function buildGlobalSearchQuery(term: string, projectRef: string): RallyQueryBui
  * @param options - Optional limit per entity type (default 15)
  * @returns Combined results with entityType, formattedId, name, objectId
  */
-export async function globalSearch(term: string, options?: { limitPerType?: number; searchType?: string; offset?: number }): Promise<{ results: GlobalSearchResultItem[]; hasMore: boolean; source: string }> {
+export async function globalSearch(
+	term: string,
+	options?: { limitPerType?: number; searchType?: string; offset?: number }
+): Promise<{
+	results: GlobalSearchResultItem[];
+	hasMore: boolean;
+	source: string;
+}> {
 	const trimmed = (term || '').trim();
 	if (!trimmed) {
 		errorHandler.logDebug('Global search called with empty term', 'rallyServices.globalSearch');
@@ -2713,7 +2796,10 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 	const resultData = result as RallyApiResult;
 	const results = resultData.Results || resultData.QueryResult?.Results || [];
 	if (!results.length) return { userStory: null };
-	const formatted = await formatUserStoriesAsync({ ...resultData, Results: results });
+	const formatted = await formatUserStoriesAsync({
+		...resultData,
+		Results: results
+	});
 	return { userStory: formatted[0] ?? null };
 }
 
@@ -2766,7 +2852,10 @@ export async function getTaskWithParent(objectId: string): Promise<{ task: any; 
 	const raw = results[0] as any;
 	const userStoryObjectId = raw.WorkProduct?.ObjectID ?? raw.WorkProduct?.objectId ?? null;
 	const formatted = await formatTasksAsync(results);
-	return { task: formatted[0] ?? null, userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null };
+	return {
+		task: formatted[0] ?? null,
+		userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null
+	};
 }
 
 /**
@@ -2793,7 +2882,10 @@ export async function getTestCaseWithParent(objectId: string): Promise<{ testCas
 	const raw = results[0] as any;
 	const userStoryObjectId = raw.WorkProduct?.ObjectID ?? raw.WorkProduct?.objectId ?? null;
 	const formatted = await formatTestCasesAsync(results);
-	return { testCase: formatted[0] ?? null, userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null };
+	return {
+		testCase: formatted[0] ?? null,
+		userStoryObjectId: userStoryObjectId ? String(userStoryObjectId) : null
+	};
 }
 
 /**

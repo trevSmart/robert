@@ -1,5 +1,5 @@
 /**
- * ttlConfig - Autoritat única de TTL (Time To Live) per entitat de Rally.
+ * ttlConfig - Autoritat única de TTL (Time To Live) per entitat de Jira.
  *
  * Cada entitat té un temps de validesa propi. La revalidació és LAZY: les dades
  * només es tornen a demanar quan s'hi interactua i s'han tornat més velles que el

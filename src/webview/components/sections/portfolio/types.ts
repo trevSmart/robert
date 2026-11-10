@@ -1,4 +1,4 @@
-import type { UserStory, RallyTask, RallyDefect, Discussion, TestCase } from '../../../../types/rally';
+import type { UserStory, JiraTask, JiraDefect, Discussion, TestCase } from '../../../../types/jira';
 
 export type PortfolioViewType = 'bySprints' | 'allUserStories' | 'allDefects';
 
@@ -11,7 +11,13 @@ export interface PortfolioIteration {
 	endDate: string;
 	state: string;
 	project: string | null;
+	projects?: string[];
 	_ref: string;
+}
+
+export interface UserStoryFilters {
+	project: string;
+	sprint: string;
 }
 
 export interface PortfolioViewProps {
@@ -32,10 +38,10 @@ export interface PortfolioViewProps {
 	portfolioUserStoriesLoadingMore?: boolean;
 	sprintUserStories: UserStory[];
 	sprintUserStoriesLoading: boolean;
-	tasks: RallyTask[];
+	tasks: JiraTask[];
 	tasksLoading: boolean;
 	tasksError: string | null;
-	userStoryDefects: RallyDefect[];
+	userStoryDefects: JiraDefect[];
 	userStoryDefectsLoading: boolean;
 	userStoryDefectsError: string | null;
 	userStoryDiscussions: Discussion[];
@@ -44,13 +50,13 @@ export interface PortfolioViewProps {
 	userStoryTestCases: TestCase[];
 	userStoryTestCasesLoading: boolean;
 	userStoryTestCasesError: string | null;
-	defects: RallyDefect[];
+	defects: JiraDefect[];
 	defectsLoading: boolean;
 	defectsError: string | null;
 	defectsHasMore?: boolean;
 	defectsLoadingMore?: boolean;
 	onLoadMoreDefects?: () => void;
-	selectedDefect: RallyDefect | null;
+	selectedDefect: JiraDefect | null;
 	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions';
 	currentScreen: ScreenType;
 	onLoadIterations: () => void;
@@ -61,10 +67,14 @@ export interface PortfolioViewProps {
 	onLoadTasks: (userStoryId: string) => void;
 	onLoadUserStoryDefects: (userStoryId: string) => void;
 	onLoadDefects: () => void;
-	onDefectSelected: (defect: RallyDefect) => void;
+	onDefectSelected: (defect: JiraDefect) => void;
 	onBackToIterations: () => void;
 	onBackToUserStories: () => void;
 	onBackToDefects: () => void;
 	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
 	collaborationEnabled?: boolean;
+	/** Filtres del llistat All User Stories. Sense `onUserStoryFiltersChange` no es mostren. */
+	userStoryFilters?: UserStoryFilters;
+	userStoryFilterProjects?: string[];
+	onUserStoryFiltersChange?: (filters: UserStoryFilters) => void;
 }

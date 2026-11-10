@@ -19,14 +19,27 @@ const { rallyData, queryBuilder } = vi.hoisted(() => {
 });
 
 // Mock vscode i extension per evitar efectes secundaris en importar rallyServices
-vi.mock('vscode', () => ({ default: {}, workspace: {}, window: {}, commands: {}, Uri: {} }));
-vi.mock('../../extension.js', () => ({ rallyData, rallyDataMeta: {}, stampRallyData: vi.fn() }));
+vi.mock('vscode', () => ({
+	default: {},
+	workspace: {},
+	window: {},
+	commands: {},
+	Uri: {}
+}));
+vi.mock('../../extension.js', () => ({
+	rallyData,
+	rallyDataMeta: {},
+	stampRallyData: vi.fn()
+}));
 vi.mock('./utils', () => ({
 	getRallyApi: vi.fn(() => ({})),
 	queryUtils: {
 		where: vi.fn(() => queryBuilder)
 	},
-	validateRallyConfiguration: vi.fn(async () => ({ isValid: true, errors: [] })),
+	validateRallyConfiguration: vi.fn(async () => ({
+		isValid: true,
+		errors: []
+	})),
 	getProjectId: vi.fn(async () => '74278607305'),
 	clearUtilsCaches: vi.fn()
 }));
@@ -48,13 +61,42 @@ vi.mock('../../ErrorHandler', () => ({
 	handleErrors: vi.fn(() => (_target: any, _key: string, descriptor: PropertyDescriptor) => descriptor),
 	handleErrorsSync: vi.fn(() => (_target: any, _key: string, descriptor: PropertyDescriptor) => descriptor)
 }));
-vi.mock('../../SettingsManager', () => ({ SettingsManager: { getInstance: vi.fn(() => ({ getSettings: vi.fn(() => ({})) })) } }));
+vi.mock('../../SettingsManager', () => ({
+	SettingsManager: {
+		getInstance: vi.fn(() => ({ getSettings: vi.fn(() => ({})) }))
+	}
+}));
 vi.mock('./CacheService', () => ({
-	getUserStoriesCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
-	getProjectsCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
-	getIterationsCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
-	getTeamMembersCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
-	getUsersCacheManager: vi.fn(() => ({ get: vi.fn(), set: vi.fn(), has: vi.fn(), getWithMeta: vi.fn(() => null) })),
+	getUserStoriesCacheManager: vi.fn(() => ({
+		get: vi.fn(),
+		set: vi.fn(),
+		has: vi.fn(),
+		getWithMeta: vi.fn(() => null)
+	})),
+	getProjectsCacheManager: vi.fn(() => ({
+		get: vi.fn(),
+		set: vi.fn(),
+		has: vi.fn(),
+		getWithMeta: vi.fn(() => null)
+	})),
+	getIterationsCacheManager: vi.fn(() => ({
+		get: vi.fn(),
+		set: vi.fn(),
+		has: vi.fn(),
+		getWithMeta: vi.fn(() => null)
+	})),
+	getTeamMembersCacheManager: vi.fn(() => ({
+		get: vi.fn(),
+		set: vi.fn(),
+		has: vi.fn(),
+		getWithMeta: vi.fn(() => null)
+	})),
+	getUsersCacheManager: vi.fn(() => ({
+		get: vi.fn(),
+		set: vi.fn(),
+		has: vi.fn(),
+		getWithMeta: vi.fn(() => null)
+	})),
 	clearAllCaches: vi.fn()
 }));
 
@@ -109,8 +151,22 @@ describe('extractIterationId', () => {
 
 describe('checkCacheForFilteredResults (Iteration matching)', () => {
 	const stories = [
-		{ objectId: 'a', iteration: { objectId: '12345', _ref: '/iteration/12345', _refObjectName: 'Sprint 1' } },
-		{ objectId: 'b', iteration: { objectId: '99999', _ref: '/iteration/99999', _refObjectName: 'Sprint 2' } }
+		{
+			objectId: 'a',
+			iteration: {
+				objectId: '12345',
+				_ref: '/iteration/12345',
+				_refObjectName: 'Sprint 1'
+			}
+		},
+		{
+			objectId: 'b',
+			iteration: {
+				objectId: '99999',
+				_ref: '/iteration/99999',
+				_refObjectName: 'Sprint 2'
+			}
+		}
 	] as any[];
 
 	it('encerta per ref curt comparant objectId', () => {
@@ -120,7 +176,12 @@ describe('checkCacheForFilteredResults (Iteration matching)', () => {
 	});
 
 	it('encerta per ref complet de Rally', () => {
-		const r = checkCacheForFilteredResults({ Iteration: 'https://rally1.rallydev.com/slm/webservice/v2.0/iteration/99999' } as any, stories);
+		const r = checkCacheForFilteredResults(
+			{
+				Iteration: 'https://rally1.rallydev.com/slm/webservice/v2.0/iteration/99999'
+			} as any,
+			stories
+		);
 		expect(r?.results.map((s: any) => s.objectId)).toEqual(['b']);
 	});
 
@@ -145,7 +206,11 @@ describe('getUserStories (Iteration filter completeness)', () => {
 			name: 'Gestión de comentarios apps en TrustPilot',
 			assignee: 'Rubén Moreno Leiva',
 			taskEstimateTotal: 0,
-			iteration: { objectId: '83178439645', _ref: '/iteration/83178439645', _refObjectName: 'Sprint 92' }
+			iteration: {
+				objectId: '83178439645',
+				_ref: '/iteration/83178439645',
+				_refObjectName: 'Sprint 92'
+			}
 		});
 
 		vi.mocked(callRally).mockResolvedValueOnce({
@@ -169,7 +234,9 @@ describe('getUserStories (Iteration filter completeness)', () => {
 			]
 		});
 
-		const result = await getUserStories({ Iteration: '/iteration/83178439645' });
+		const result = await getUserStories({
+			Iteration: '/iteration/83178439645'
+		});
 
 		expect(callRally).toHaveBeenCalled();
 		expect(result.source).toBe('api');
@@ -200,7 +267,9 @@ describe('getUserStories (Iteration filter completeness)', () => {
 
 		vi.mocked(callRally).mockResolvedValueOnce({ Results: page1 }).mockResolvedValueOnce({ Results: page2 });
 
-		const result = await getUserStories({ Iteration: '/iteration/83178439645' });
+		const result = await getUserStories({
+			Iteration: '/iteration/83178439645'
+		});
 
 		expect(callRally).toHaveBeenCalledTimes(2);
 		expect(result.userStories).toHaveLength(101);

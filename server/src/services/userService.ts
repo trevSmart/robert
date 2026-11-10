@@ -1,10 +1,10 @@
 import { query } from '../config/database';
 import { User, CreateUserInput, UpdateUserInput } from '../models/User';
 
-export async function findUserByRallyId(rallyUserId: string): Promise<User | null> {
+export async function findUserByJiraId(jiraUserId: string): Promise<User | null> {
 	const result = await query(
-		'SELECT * FROM users WHERE rally_user_id = $1',
-		[rallyUserId]
+		'SELECT * FROM users WHERE jira_user_id = $1',
+		[jiraUserId]
 	);
 
 	if (result.rows.length === 0) {
@@ -29,10 +29,10 @@ export async function findUserById(id: string): Promise<User | null> {
 
 export async function createUser(input: CreateUserInput): Promise<User> {
 	const result = await query(
-		`INSERT INTO users (rally_user_id, display_name, email)
+		`INSERT INTO users (jira_user_id, display_name, email)
 		 VALUES ($1, $2, $3)
 		 RETURNING *`,
-		[input.rallyUserId, input.displayName, input.email || null]
+		[input.jiraUserId, input.displayName, input.email || null]
 	);
 
 	return mapRowToUser(result.rows[0]);
@@ -72,12 +72,12 @@ export async function updateUser(id: string, input: UpdateUserInput): Promise<Us
 	return mapRowToUser(result.rows[0]);
 }
 
-export async function getOrCreateUser(rallyUserId: string, displayName: string, email?: string): Promise<User> {
-	let user = await findUserByRallyId(rallyUserId);
+export async function getOrCreateUser(jiraUserId: string, displayName: string, email?: string): Promise<User> {
+	let user = await findUserByJiraId(jiraUserId);
 
 	if (!user) {
 		user = await createUser({
-			rallyUserId,
+			jiraUserId,
 			displayName,
 			email
 		});
@@ -94,7 +94,7 @@ export async function getOrCreateUser(rallyUserId: string, displayName: string, 
 function mapRowToUser(row: any): User {
 	return {
 		id: row.id,
-		rallyUserId: row.rally_user_id,
+		jiraUserId: row.jira_user_id,
 		displayName: row.display_name,
 		email: row.email,
 		createdAt: row.created_at,

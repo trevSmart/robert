@@ -34,20 +34,53 @@
 					"default": false,
 					"description": "Enable debug mode"
 				},
+				"robert.provider": {
+					"type": "string",
+					"enum": [
+						"jira",
+						"rally"
+					],
+					"enumDescriptions": [
+						"Use Jira Cloud (robert.jira* settings)",
+						"Use Rally (robert.rally* settings)"
+					],
+					"default": "jira",
+					"description": "Work-tracking backend used by Robert. Changing it reloads all data."
+				},
 				"robert.rallyInstance": {
 					"type": "string",
 					"default": "https://rally1.rallydev.com",
-					"description": "Rally instance URL (e.g., https://rally1.rallydev.com)"
+					"description": "Rally instance URL (e.g., https://rally1.rallydev.com). Used when robert.provider is \"rally\"."
 				},
 				"robert.rallyApiKey": {
 					"type": "string",
 					"default": "",
-					"description": "Rally API key for authentication"
+					"description": "Rally API key for authentication. Used when robert.provider is \"rally\"."
 				},
 				"robert.rallyProjectName": {
 					"type": "string",
 					"default": "",
-					"description": "Rally project name to connect to"
+					"description": "Rally project name to connect to. Used when robert.provider is \"rally\"."
+				},
+				"robert.jiraBaseUrl": {
+					"type": "string",
+					"default": "https://jiracloudab.atlassian.net",
+					"description": "Jira Cloud base URL (e.g., https://your-site.atlassian.net). Used when robert.provider is \"jira\"."
+				},
+				"robert.jiraEmail": {
+					"type": "string",
+					"default": "",
+					"description": "Email of the Jira account used for authentication"
+				},
+				"robert.jiraApiToken": {
+					"type": "string",
+					"default": "",
+					"description": "Jira API token for authentication"
+				},
+				"robert.jiraProjectKey": {
+					"type": "string",
+					"default": "",
+					"description": "Jira project key to connect to (e.g., DSS). Leave empty to query all projects"
 				},
 				"robert.collaboration.serverUrl": {
 					"type": "string",
@@ -187,6 +220,8 @@
 		"compile:fast": "tsc -p ./ && npm run build:webview",
 		"watch": "tsc -p ./ -w",
 		"build:webview": "vite build",
+		"web:build": "vite build && vite build --config web/vite.config.ts",
+		"web": "npm run web:build && node out/web/server.mjs",
 		"lint": "eslint src/**/*.{ts,tsx} --ext .ts,.tsx",
 		"lint:fix": "node scripts/lint-fix.cjs",
 		"knip": "knip",
@@ -212,7 +247,7 @@
 		"@types/node": "^26.6.6",
 		"@types/react": "^19.3.0",
 		"@types/react-dom": "^19.3.0",
-		"@types/vscode": "1.144.0",
+		"@types/vscode": "1.105.0",
 		"@typescript-eslint/eslint-plugin": "^8.72.1",
 		"@typescript-eslint/parser": "^8.72.0",
 		"@vitejs/plugin-react": "^6.1.2",

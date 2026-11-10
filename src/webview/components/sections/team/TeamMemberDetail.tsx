@@ -51,7 +51,17 @@ const DonutChart: FC<DonutChartProps> = ({ percentage, size = 160 }) => {
 				}}
 			>
 				<span style={{ fontSize: '26px', fontWeight: '600', color, lineHeight: 1 }}>{clampedPct}%</span>
-				<span style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>done</span>
+				<span
+					style={{
+						fontSize: '10px',
+						color: 'var(--vscode-descriptionForeground)',
+						marginTop: '4px',
+						textTransform: 'uppercase',
+						letterSpacing: '0.5px'
+					}}
+				>
+					done
+				</span>
 			</div>
 		</div>
 	);
@@ -73,7 +83,11 @@ const HoursBarChart: FC<HoursBarChartProps> = ({ completedHours, totalHours }) =
 
 	const rows: Array<{ label: string; hours: number; fill: string }> = [
 		{ label: 'Completed', hours: completedHours, fill: color },
-		{ label: 'Remaining', hours: remaining, fill: 'var(--vscode-panel-border)' }
+		{
+			label: 'Remaining',
+			hours: remaining,
+			fill: 'var(--vscode-panel-border)'
+		}
 	];
 
 	return (
@@ -86,15 +100,53 @@ const HoursBarChart: FC<HoursBarChartProps> = ({ completedHours, totalHours }) =
 					padding: '16px 20px'
 				}}
 			>
-				<div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--vscode-foreground)', marginBottom: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Hours breakdown</div>
+				<div
+					style={{
+						fontSize: '12px',
+						fontWeight: '500',
+						color: 'var(--vscode-foreground)',
+						marginBottom: '14px',
+						textTransform: 'uppercase',
+						letterSpacing: '0.5px'
+					}}
+				>
+					Hours breakdown
+				</div>
 
 				{rows.map(row => (
-					<div key={row.label} style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '10px' }}>
+					<div
+						key={row.label}
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							gap: '10px',
+							marginBottom: '10px'
+						}}
+					>
 						{/* Label */}
-						<span style={{ width: `${labelW}px`, flexShrink: 0, fontSize: '11px', color: 'var(--vscode-descriptionForeground)', textAlign: 'right' }}>{row.label}</span>
+						<span
+							style={{
+								width: `${labelW}px`,
+								flexShrink: 0,
+								fontSize: '11px',
+								color: 'var(--vscode-descriptionForeground)',
+								textAlign: 'right'
+							}}
+						>
+							{row.label}
+						</span>
 
 						{/* Bar */}
-						<div style={{ flex: 1, height: `${barH}px`, backgroundColor: 'var(--vscode-panel-border)', borderRadius: '5px', overflow: 'hidden', maxWidth: `${chartW}px` }}>
+						<div
+							style={{
+								flex: 1,
+								height: `${barH}px`,
+								backgroundColor: 'var(--vscode-panel-border)',
+								borderRadius: '5px',
+								overflow: 'hidden',
+								maxWidth: `${chartW}px`
+							}}
+						>
 							<div
 								style={{
 									height: '100%',
@@ -107,13 +159,36 @@ const HoursBarChart: FC<HoursBarChartProps> = ({ completedHours, totalHours }) =
 						</div>
 
 						{/* Value */}
-						<span style={{ width: '36px', flexShrink: 0, fontSize: '11px', fontWeight: '500', color: 'var(--vscode-foreground)' }}>{row.hours}h</span>
+						<span
+							style={{
+								width: '36px',
+								flexShrink: 0,
+								fontSize: '11px',
+								fontWeight: '500',
+								color: 'var(--vscode-foreground)'
+							}}
+						>
+							{row.hours}h
+						</span>
 					</div>
 				))}
 
 				{/* Total */}
-				<div style={{ borderTop: '1px solid var(--vscode-panel-border)', marginTop: '6px', paddingTop: '8px', display: 'flex', justifyContent: 'flex-end' }}>
-					<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)' }}>
+				<div
+					style={{
+						borderTop: '1px solid var(--vscode-panel-border)',
+						marginTop: '6px',
+						paddingTop: '8px',
+						display: 'flex',
+						justifyContent: 'flex-end'
+					}}
+				>
+					<span
+						style={{
+							fontSize: '11px',
+							color: 'var(--vscode-descriptionForeground)'
+						}}
+					>
 						Total: <strong style={{ color: 'var(--vscode-foreground)' }}>{totalHours}h</strong>
 					</span>
 				</div>
@@ -158,9 +233,28 @@ const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
 					padding: '16px 20px'
 				}}
 			>
-				<div style={{ fontSize: '12px', fontWeight: '500', color: 'var(--vscode-foreground)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your hours vs sprint total · last {history.length} sprints</div>
+				<div
+					style={{
+						fontSize: '12px',
+						fontWeight: '500',
+						color: 'var(--vscode-foreground)',
+						marginBottom: '16px',
+						textTransform: 'uppercase',
+						letterSpacing: '0.5px'
+					}}
+				>
+					Your hours vs sprint total · last {history.length} sprints
+				</div>
 
-				<div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-around', gap: '8px', height: `${chartH}px` }}>
+				<div
+					style={{
+						display: 'flex',
+						alignItems: 'flex-end',
+						justifyContent: 'space-around',
+						gap: '8px',
+						height: `${chartH}px`
+					}}
+				>
 					{history.map(point => {
 						const barHeight = Math.round((point.sprintTotalHours / maxHours) * (chartH - 24));
 						// Height of the member's coloured slice within the grey sprint bar.
@@ -168,11 +262,28 @@ const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
 						return (
 							<div
 								key={point.iterationName}
-								style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-end', height: '100%', minWidth: 0 }}
+								style={{
+									flex: 1,
+									display: 'flex',
+									flexDirection: 'column',
+									alignItems: 'center',
+									justifyContent: 'flex-end',
+									height: '100%',
+									minWidth: 0
+								}}
 								title={`${point.iterationName}: ${point.totalHours}h of ${point.sprintTotalHours}h sprint total (${point.completedHours}h done)`}
 							>
 								{/* Sprint total hours above the bar */}
-								<span style={{ fontSize: '10px', fontWeight: '500', color: 'var(--vscode-foreground)', marginBottom: '4px' }}>{point.sprintTotalHours}h</span>
+								<span
+									style={{
+										fontSize: '10px',
+										fontWeight: '500',
+										color: 'var(--vscode-foreground)',
+										marginBottom: '4px'
+									}}
+								>
+									{point.sprintTotalHours}h
+								</span>
 								<div
 									style={{
 										width: '70%',
@@ -200,16 +311,46 @@ const HoursHistoryChart: FC<HoursHistoryChartProps> = ({ history }) => {
 									)}
 								</div>
 								{/* Member hours below the bar */}
-								<span style={{ fontSize: '10px', fontWeight: '600', color: barColor, marginTop: '4px' }}>{point.totalHours}h</span>
+								<span
+									style={{
+										fontSize: '10px',
+										fontWeight: '600',
+										color: barColor,
+										marginTop: '4px'
+									}}
+								>
+									{point.totalHours}h
+								</span>
 							</div>
 						);
 					})}
 				</div>
 
 				{/* X-axis labels */}
-				<div style={{ display: 'flex', justifyContent: 'space-around', gap: '8px', marginTop: '8px', borderTop: '1px solid var(--vscode-panel-border)', paddingTop: '8px' }}>
+				<div
+					style={{
+						display: 'flex',
+						justifyContent: 'space-around',
+						gap: '8px',
+						marginTop: '8px',
+						borderTop: '1px solid var(--vscode-panel-border)',
+						paddingTop: '8px'
+					}}
+				>
 					{history.map(point => (
-						<span key={point.iterationName} style={{ flex: 1, textAlign: 'center', fontSize: '10px', color: 'var(--vscode-descriptionForeground)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={point.iterationName}>
+						<span
+							key={point.iterationName}
+							style={{
+								flex: 1,
+								textAlign: 'center',
+								fontSize: '10px',
+								color: 'var(--vscode-descriptionForeground)',
+								overflow: 'hidden',
+								textOverflow: 'ellipsis',
+								whiteSpace: 'nowrap'
+							}}
+							title={point.iterationName}
+						>
 							{sprintLabel(point.iterationName)}
 						</span>
 					))}
@@ -311,11 +452,36 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 		<div style={{ padding: '0 20px' }}>
 			<ScreenHeader title={member.name} showBackButton={true} onBack={onBack} />
 
-			<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '24px', paddingTop: '24px', paddingBottom: '32px' }}>
+			<div
+				style={{
+					display: 'flex',
+					flexDirection: 'column',
+					alignItems: 'center',
+					gap: '24px',
+					paddingTop: '24px',
+					paddingBottom: '32px'
+				}}
+			>
 				{/* Avatar + nom */}
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						gap: '8px'
+					}}
+				>
 					<Avatar name={member.name} size={64} />
-					<h2 style={{ margin: '4px 0 0 0', color: 'var(--vscode-foreground)', fontSize: '20px', fontWeight: '500' }}>{member.name}</h2>
+					<h2
+						style={{
+							margin: '4px 0 0 0',
+							color: 'var(--vscode-foreground)',
+							fontSize: '20px',
+							fontWeight: '500'
+						}}
+					>
+						{member.name}
+					</h2>
 				</div>
 
 				{/* Identity card — always shown */}
@@ -333,24 +499,90 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 					}}
 				>
 					{/* Username */}
-					<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-						<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Username</span>
+					<div
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'space-between',
+							gap: '12px'
+						}}
+					>
+						<span
+							style={{
+								fontSize: '11px',
+								color: 'var(--vscode-descriptionForeground)',
+								textTransform: 'uppercase',
+								letterSpacing: '0.5px'
+							}}
+						>
+							Username
+						</span>
 						{infoLoading && !userName ? (
-							<span style={{ fontSize: '13px', color: 'var(--vscode-descriptionForeground)' }}>Loading…</span>
+							<span
+								style={{
+									fontSize: '13px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Loading…
+							</span>
 						) : (
-							<span style={{ fontSize: '13px', color: 'var(--vscode-foreground)', fontFamily: 'var(--vscode-editor-font-family, monospace)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{userName || '—'}</span>
+							<span
+								style={{
+									fontSize: '13px',
+									color: 'var(--vscode-foreground)',
+									fontFamily: 'var(--vscode-editor-font-family, monospace)',
+									overflow: 'hidden',
+									textOverflow: 'ellipsis',
+									whiteSpace: 'nowrap'
+								}}
+							>
+								{userName || '—'}
+							</span>
 						)}
 					</div>
 
 					{/* Email */}
-					<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', borderTop: '1px solid var(--vscode-panel-border)', paddingTop: '12px' }}>
-						<span style={{ fontSize: '11px', color: 'var(--vscode-descriptionForeground)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Email</span>
+					<div
+						style={{
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'space-between',
+							gap: '12px',
+							borderTop: '1px solid var(--vscode-panel-border)',
+							paddingTop: '12px'
+						}}
+					>
+						<span
+							style={{
+								fontSize: '11px',
+								color: 'var(--vscode-descriptionForeground)',
+								textTransform: 'uppercase',
+								letterSpacing: '0.5px'
+							}}
+						>
+							Email
+						</span>
 						{infoLoading && !emailAddress ? (
-							<span style={{ fontSize: '13px', color: 'var(--vscode-descriptionForeground)' }}>Loading…</span>
+							<span
+								style={{
+									fontSize: '13px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Loading…
+							</span>
 						) : emailAddress ? (
 							<a
 								href={`mailto:${emailAddress}`}
-								style={{ fontSize: '13px', color: 'var(--vscode-textLink-foreground)', textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+								style={{
+									fontSize: '13px',
+									color: 'var(--vscode-textLink-foreground)',
+									textDecoration: 'none',
+									overflow: 'hidden',
+									textOverflow: 'ellipsis',
+									whiteSpace: 'nowrap'
+								}}
 								onMouseEnter={e => {
 									(e.currentTarget as HTMLAnchorElement).style.textDecoration = 'underline';
 								}}
@@ -368,7 +600,18 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 
 				{/* Assigned-hours evolution over the last 6 sprints */}
 				{historyLoading ? (
-					<div style={{ width: '100%', maxWidth: '480px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '20px 0', color: 'var(--vscode-descriptionForeground)' }}>
+					<div
+						style={{
+							width: '100%',
+							maxWidth: '480px',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							gap: '8px',
+							padding: '20px 0',
+							color: 'var(--vscode-descriptionForeground)'
+						}}
+					>
 						<div
 							style={{
 								border: '2px solid var(--vscode-panel-border)',
@@ -389,7 +632,12 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 					<>
 						{/* Sprint activity label */}
 						{userStoriesCount > 0 && (
-							<span style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)' }}>
+							<span
+								style={{
+									fontSize: '12px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
 								{userStoriesCount} user {userStoriesCount === 1 ? 'story' : 'stories'} this sprint
 							</span>
 						)}
@@ -399,17 +647,90 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 
 						{/* Stats pills */}
 						<div style={{ display: 'flex', gap: '10px' }}>
-							<div style={{ backgroundColor: 'var(--vscode-editor-background)', border: '1px solid var(--vscode-panel-border)', borderRadius: '8px', padding: '12px 20px', textAlign: 'center', minWidth: '90px' }}>
+							<div
+								style={{
+									backgroundColor: 'var(--vscode-editor-background)',
+									border: '1px solid var(--vscode-panel-border)',
+									borderRadius: '8px',
+									padding: '12px 20px',
+									textAlign: 'center',
+									minWidth: '90px'
+								}}
+							>
 								<div style={{ fontSize: '20px', fontWeight: '600', color }}>{pct}%</div>
-								<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Completed</div>
+								<div
+									style={{
+										fontSize: '10px',
+										color: 'var(--vscode-descriptionForeground)',
+										marginTop: '4px',
+										textTransform: 'uppercase',
+										letterSpacing: '0.5px'
+									}}
+								>
+									Completed
+								</div>
 							</div>
-							<div style={{ backgroundColor: 'var(--vscode-editor-background)', border: '1px solid var(--vscode-panel-border)', borderRadius: '8px', padding: '12px 20px', textAlign: 'center', minWidth: '90px' }}>
-								<div style={{ fontSize: '20px', fontWeight: '600', color: 'var(--vscode-foreground)' }}>{member.progress.completedHours}h</div>
-								<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Done</div>
+							<div
+								style={{
+									backgroundColor: 'var(--vscode-editor-background)',
+									border: '1px solid var(--vscode-panel-border)',
+									borderRadius: '8px',
+									padding: '12px 20px',
+									textAlign: 'center',
+									minWidth: '90px'
+								}}
+							>
+								<div
+									style={{
+										fontSize: '20px',
+										fontWeight: '600',
+										color: 'var(--vscode-foreground)'
+									}}
+								>
+									{member.progress.completedHours}h
+								</div>
+								<div
+									style={{
+										fontSize: '10px',
+										color: 'var(--vscode-descriptionForeground)',
+										marginTop: '4px',
+										textTransform: 'uppercase',
+										letterSpacing: '0.5px'
+									}}
+								>
+									Done
+								</div>
 							</div>
-							<div style={{ backgroundColor: 'var(--vscode-editor-background)', border: '1px solid var(--vscode-panel-border)', borderRadius: '8px', padding: '12px 20px', textAlign: 'center', minWidth: '90px' }}>
-								<div style={{ fontSize: '20px', fontWeight: '600', color: 'var(--vscode-foreground)' }}>{member.progress.totalHours}h</div>
-								<div style={{ fontSize: '10px', color: 'var(--vscode-descriptionForeground)', marginTop: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total</div>
+							<div
+								style={{
+									backgroundColor: 'var(--vscode-editor-background)',
+									border: '1px solid var(--vscode-panel-border)',
+									borderRadius: '8px',
+									padding: '12px 20px',
+									textAlign: 'center',
+									minWidth: '90px'
+								}}
+							>
+								<div
+									style={{
+										fontSize: '20px',
+										fontWeight: '600',
+										color: 'var(--vscode-foreground)'
+									}}
+								>
+									{member.progress.totalHours}h
+								</div>
+								<div
+									style={{
+										fontSize: '10px',
+										color: 'var(--vscode-descriptionForeground)',
+										marginTop: '4px',
+										textTransform: 'uppercase',
+										letterSpacing: '0.5px'
+									}}
+								>
+									Total
+								</div>
 							</div>
 						</div>
 
@@ -417,7 +738,15 @@ const TeamMemberDetail: FC<TeamMemberDetailProps> = ({ member, onBack }) => {
 						{member.progress.totalHours > 0 && <HoursBarChart completedHours={member.progress.completedHours} totalHours={member.progress.totalHours} />}
 					</>
 				) : (
-					<p style={{ color: 'var(--vscode-descriptionForeground)', fontSize: '14px', margin: 0 }}>No activity recorded for this sprint.</p>
+					<p
+						style={{
+							color: 'var(--vscode-descriptionForeground)',
+							fontSize: '14px',
+							margin: 0
+						}}
+					>
+						No activity recorded for this sprint.
+					</p>
 				)}
 			</div>
 		</div>

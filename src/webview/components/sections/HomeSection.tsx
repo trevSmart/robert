@@ -1,7 +1,7 @@
 import { type ComponentProps, type FC } from 'react';
 import Calendar from '../common/Calendar';
-import RallyItemList, { CodiconSpan } from '../common/RallyItemList';
-import type { RecentlyViewedItem, FavoriteItem } from '../../../types/rally';
+import JiraItemList, { CodiconSpan } from '../common/JiraItemList';
+import type { RecentlyViewedItem, FavoriteItem } from '../../../types/jira';
 
 export type HomeSectionProps = ComponentProps<typeof Calendar> & {
 	recentlyViewedItems: RecentlyViewedItem[];
@@ -17,12 +17,32 @@ const HomeSection: FC<HomeSectionProps> = ({ recentlyViewedItems, onRecentlyView
 		<Calendar {...calendarProps} />
 		{favoriteItems.length > 0 && (
 			<div style={{ padding: '0 20px', marginTop: '24px' }}>
-				<RallyItemList title="Favorites" titleIcon={<CodiconSpan name="star-full" />} items={favoriteItems} onItemClick={onFavoriteItemClick} rowAction={{ codiconName: 'star-full', title: 'Remove from favorites', onClick: onFavoriteItemRemove }} />
+				<JiraItemList
+					title="Favorites"
+					titleIcon={<CodiconSpan name="star-full" />}
+					items={favoriteItems}
+					onItemClick={onFavoriteItemClick}
+					rowAction={{
+						codiconName: 'star-full',
+						title: 'Remove from favorites',
+						onClick: onFavoriteItemRemove
+					}}
+				/>
 			</div>
 		)}
 		{recentlyViewedItems.length > 0 && (
 			<div style={{ padding: '0 20px', marginTop: '24px' }}>
-				<RallyItemList title="Recently Viewed" titleIcon={<CodiconSpan name="history" />} items={recentlyViewedItems} onItemClick={onRecentlyViewedItemClick} rowAction={{ codiconName: 'close', title: 'Remove from history', onClick: onRecentlyViewedItemDelete }} />
+				<JiraItemList
+					title="Recently Viewed"
+					titleIcon={<CodiconSpan name="history" />}
+					items={recentlyViewedItems}
+					onItemClick={onRecentlyViewedItemClick}
+					rowAction={{
+						codiconName: 'close',
+						title: 'Remove from history',
+						onClick: onRecentlyViewedItemDelete
+					}}
+				/>
 			</div>
 		)}
 	</>

@@ -3,14 +3,14 @@ import { createError } from './errorHandler';
 
 export interface AuthenticatedRequest extends Request {
 	user?: {
-		rallyUserId: string;
+		jiraUserId: string;
 		userId: string;
 		displayName: string;
 	};
 }
 
 /**
- * Simple authentication middleware using Rally User ID from headers
+ * Simple authentication middleware using Jira account ID from headers
  * In production, this should be replaced with proper JWT or OAuth
  */
 export function authenticate(
@@ -18,16 +18,16 @@ export function authenticate(
 	res: Response,
 	next: NextFunction
 ): void {
-	const rallyUserId = req.headers['x-rally-user-id'] as string;
+	const jiraUserId = req.headers['x-jira-user-id'] as string;
 	const displayName = req.headers['x-display-name'] as string;
 
-	if (!rallyUserId) {
-		throw createError('Missing Rally User ID in headers', 401);
+	if (!jiraUserId) {
+		throw createError('Missing Jira account ID in headers', 401);
 	}
 
 	// Attach user info to request
 	req.user = {
-		rallyUserId,
+		jiraUserId,
 		userId: '', // Will be resolved from database
 		displayName: displayName || 'Unknown User'
 	};

@@ -1,6 +1,6 @@
 # Robert Collaboration Server
 
-Backend server for the Robert VS Code extension collaboration features. This server provides REST API endpoints and WebSocket support for real-time messaging and notifications related to Rally user stories.
+Backend server for the Robert VS Code extension collaboration features. This server provides REST API endpoints and WebSocket support for real-time messaging and notifications related to Jira issues.
 
 ## Deployed Server
 
@@ -16,7 +16,7 @@ The VS Code extension is pre-configured to use this server by default.
 - REST API for messages, notifications, and user management
 - WebSocket support for real-time notifications
 - PostgreSQL database for data persistence
-- User authentication via Rally User ID
+- User authentication via Jira account ID
 - Message threads with replies
 - Notification system
 
@@ -109,7 +109,7 @@ The server will automatically create database tables on first startup.
 
 ### Client → Server
 
-- `authenticate` - Authenticate with Rally User ID
+- `authenticate` - Authenticate with Jira account ID
 - `subscribe:notifications` - Subscribe to notifications
 - `subscribe:userStory` - Subscribe to messages for a user story
 - `unsubscribe:userStory` - Unsubscribe from user story messages
@@ -124,10 +124,10 @@ The server will automatically create database tables on first startup.
 
 ## Authentication
 
-The server uses Rally User ID for authentication. Include the following headers in API requests:
+The server uses Jira account ID for authentication. Include the following headers in API requests:
 
 ```
-X-Rally-User-Id: <rally_user_id>
+X-Jira-User-Id: <jira_user_id>
 X-Display-Name: <display_name>
 ```
 
@@ -136,7 +136,7 @@ For WebSocket connections, send an `authenticate` message after connecting:
 ```json
 {
   "type": "authenticate",
-  "rallyUserId": "<rally_user_id>",
+	"jiraUserId": "<jira_user_id>",
   "displayName": "<display_name>"
 }
 ```

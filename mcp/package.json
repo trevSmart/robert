@@ -1,0 +1,19 @@
+{
+	"name": "robert-jira-mcp",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "Read-only MCP server exposing Robert's Jira queries to OpenCode",
+	"main": "server.mjs",
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"start": "node server.mjs",
+		"check": "node --check server.mjs && node --check jira.mjs"
+	},
+	"dependencies": {
+		"@modelcontextprotocol/sdk": "^1.32.2",
+		"zod": "^4.6.7"
+	}
+}

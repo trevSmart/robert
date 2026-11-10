@@ -6,7 +6,7 @@ This guide explains how to set up the Robert extension for testing with automate
 
 When an AI agent needs to test the Robert extension, it needs to:
 
-1. **Connect to Rally API** - Without modifying VS Code settings files
+1. **Connect to Jira API** - Without modifying VS Code settings files
 2. **Avoid manual configuration** - Settings should come from environment variables
 3. **Work in isolated environments** - Virtual machines or Docker containers
 
@@ -20,10 +20,10 @@ The easiest way is to use the provided setup script:
 
 ```bash
 #!/bin/bash
-# Set your Rally credentials
-export RALLY_API_KEY="your-api-key-here"
-export RALLY_INSTANCE="https://your-rally-instance.com"
-export RALLY_PROJECT_NAME="YourProjectName"
+# Set your Jira credentials
+export JIRA_API_KEY="your-api-token"
+export JIRA_INSTANCE="https://your-jira-instance.com"
+export JIRA_PROJECT_NAME="YourProjectName"
 
 # Source the setup script
 source test/example-ai-agent-setup.sh
@@ -37,9 +37,10 @@ npm test
 If you prefer to set variables directly:
 
 ```bash
-export ROBERT_RALLY_API_KEY="your-api-key"
-export ROBERT_RALLY_INSTANCE="https://rally1.rallydev.com"
-export ROBERT_RALLY_PROJECT_NAME="TestProject"
+export ROBERT_JIRA_EMAIL="you@example.com"
+export ROBERT_JIRA_API_TOKEN="your-api-token"
+export ROBERT_JIRA_BASE_URL="https://your-site.atlassian.net"
+export ROBERT_JIRA_PROJECT_KEY="DSS"
 export ROBERT_DEBUG_MODE="true"
 
 # Launch VS Code or run tests
@@ -52,9 +53,10 @@ Create a `.env.test` file (add to `.gitignore`):
 
 ```bash
 # .env.test
-ROBERT_RALLY_API_KEY=your-test-api-key
-ROBERT_RALLY_INSTANCE=https://test-rally.com
-ROBERT_RALLY_PROJECT_NAME=TestProject
+ROBERT_JIRA_EMAIL=you@example.com
+ROBERT_JIRA_API_TOKEN=your-api-token
+ROBERT_JIRA_BASE_URL=https://your-site.atlassian.net
+ROBERT_JIRA_PROJECT_KEY=DSS
 ROBERT_DEBUG_MODE=true
 ```
 
@@ -83,7 +85,7 @@ The Robert extension resolves configuration in this order:
                     ↓
 ┌─────────────────────────────────────┐
 │ 2. Environment Variables            │
-│    (ROBERT_RALLY_API_KEY, etc.)     │
+│    (ROBERT_JIRA_API_TOKEN, etc.)   │
 └─────────────────────────────────────┘
                     ↓
         (if not set or empty)
@@ -100,7 +102,7 @@ For AI agents:
 - If you set environment variables, they'll be used
 - If not set, defaults are used (which would fail connection)
 
-## Testing Rally Connection
+## Testing Jira Connection
 
 To verify that your environment is correctly configured:
 
@@ -116,7 +118,7 @@ code .
 The output channel will show messages like:
 ```
 [Robert] ℹ️ INFO in SettingsManager:
-Setting 'rallyApiKey' loaded from environment variable 'ROBERT_RALLY_API_KEY'
+Setting 'jiraApiToken' loaded from environment variable 'ROBERT_JIRA_API_TOKEN'
 ```
 
 ## Complete Example: GitHub Actions Workflow
@@ -140,24 +142,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run tests with Rally configuration
+      - name: Run tests with Jira configuration
         env:
-          ROBERT_RALLY_API_KEY: ${{ secrets.RALLY_API_KEY }}
-          ROBERT_RALLY_INSTANCE: https://rally1.rallydev.com
-          ROBERT_RALLY_PROJECT_NAME: ${{ secrets.RALLY_PROJECT }}
+          ROBERT_JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+          ROBERT_JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          ROBERT_JIRA_BASE_URL: https://your-site.atlassian.net
+          ROBERT_JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT }}
           ROBERT_DEBUG_MODE: "true"
         run: npm test
 ```
 
 ## Supported Environment Variables for AI Agents
 
-### Essential for Rally Connection
+### Essential for Jira Connection
 
 | Variable | Required | Example |
 |----------|----------|---------|
-| `ROBERT_RALLY_API_KEY` | Yes | `your-api-key` |
-| `ROBERT_RALLY_INSTANCE` | No | `https://rally1.rallydev.com` |
-| `ROBERT_RALLY_PROJECT_NAME` | Yes | `MyProject` |
+| `ROBERT_JIRA_EMAIL` | Yes | `you@example.com` |
+| `ROBERT_JIRA_API_TOKEN` | Yes | `your-api-token` |
+| `ROBERT_JIRA_BASE_URL` | No | `https://your-site.atlassian.net` |
+| `ROBERT_JIRA_PROJECT_KEY` | Yes | `DSS` |
 
 ### Optional for Agent Testing
 
@@ -177,11 +181,13 @@ Never hardcode API keys. Use your CI/CD platform's secret management:
 ```yaml
 # ✅ Good - using secrets
 env:
-  ROBERT_RALLY_API_KEY: ${{ secrets.RALLY_API_KEY }}
+  ROBERT_JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+  ROBERT_JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
 
 # ❌ Bad - hardcoded key
 env:
-  ROBERT_RALLY_API_KEY: "abc123xyz..."
+  ROBERT_JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+  ROBERT_JIRA_API_TOKEN: "abc123xyz..."
 ```
 
 ### 2. Enable Debug Mode
@@ -211,8 +217,9 @@ Check that all required variables are set before running tests:
 set -e
 
 required_vars=(
-    ROBERT_RALLY_API_KEY
-    ROBERT_RALLY_PROJECT_NAME
+    ROBERT_JIRA_EMAIL
+    ROBERT_JIRA_API_TOKEN
+    ROBERT_JIRA_PROJECT_KEY
 )
 
 for var in "${required_vars[@]}"; do
@@ -231,9 +238,9 @@ Log settings without exposing secrets:
 
 ```bash
 echo "Configuration:"
-echo "  Rally Instance: ${ROBERT_RALLY_INSTANCE:-default}"
-echo "  Project: ${ROBERT_RALLY_PROJECT_NAME:-not set}"
-echo "  API Key: ${ROBERT_RALLY_API_KEY:+***$(echo ${ROBERT_RALLY_API_KEY} | tail -c 4)}"
+echo "  Jira Instance: ${ROBERT_JIRA_BASE_URL:-default}"
+echo "  Project: ${ROBERT_JIRA_PROJECT_KEY:-not set}"
+echo "  API Token: ${ROBERT_JIRA_API_TOKEN:+***$(echo ${ROBERT_JIRA_API_TOKEN} | tail -c 4)}"
 echo "  Debug Mode: ${ROBERT_DEBUG_MODE:-false}"
 ```
 
@@ -249,9 +256,9 @@ echo "  Debug Mode: ${ROBERT_DEBUG_MODE:-false}"
 ### Connection fails
 
 1. **Verify API key** - Check if it's still valid
-2. **Test URL** - Ensure Rally instance URL is accessible
+2. **Test URL** - Ensure Jira instance URL is accessible
 3. **Project name** - Ensure project exists and is spelled correctly
-4. **Network** - Verify agent can reach the Rally server
+4. **Network** - Verify agent can reach the Jira server
 
 ### Boolean values not working
 
@@ -263,4 +270,4 @@ Use these values for boolean settings:
 
 - [Environment Variables Reference](../ENVIRONMENT_VARIABLES.md)
 - [SettingsManager Implementation](../src/SettingsManager.ts)
-- [Rally API Documentation](https://rally1.rallydev.com/slm/doc/webservice)
+- [Jira API Documentation](https://developer.atlassian.com/cloud/jira/platform/rest/v3/intro/)

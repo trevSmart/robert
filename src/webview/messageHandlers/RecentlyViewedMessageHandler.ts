@@ -1,12 +1,12 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import type { RecentlyViewedItem } from '../../types/rally';
+import type { RecentlyViewedItem } from '../../types/jira';
 
 const STORAGE_KEY = 'robert.recentlyViewedItems';
 const MAX_ITEMS = 10;
 
 /**
- * Persists the list of Rally items (user stories, defects, sprints) the user has recently
+ * Persists the list of Jira items (user stories, defects, sprints) the user has recently
  * opened in a detail view, so Home can show a jump-back-in list across sessions. This is a
  * pure history: pinning is a separate concern handled by FavoritesMessageHandler.
  */
@@ -44,11 +44,17 @@ export class RecentlyViewedMessageHandler {
 	private async persist(webview: vscode.Webview, items: RecentlyViewedItem[]): Promise<void> {
 		const normalized = this.normalize(items);
 		await this.context.globalState.update(STORAGE_KEY, normalized);
-		webview.postMessage({ command: 'recentlyViewedItemsLoaded', items: normalized });
+		webview.postMessage({
+			command: 'recentlyViewedItemsLoaded',
+			items: normalized
+		});
 	}
 
 	private async handleGetRecentlyViewedItems(webview: vscode.Webview): Promise<void> {
-		webview.postMessage({ command: 'recentlyViewedItemsLoaded', items: this.normalize(this.getStoredItems()) });
+		webview.postMessage({
+			command: 'recentlyViewedItemsLoaded',
+			items: this.normalize(this.getStoredItems())
+		});
 	}
 
 	private async handleRecordRecentlyViewedItem(webview: vscode.Webview, message: any): Promise<void> {

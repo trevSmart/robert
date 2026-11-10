@@ -7,7 +7,7 @@ export interface MessageAttendee {
 	messageId: string;
 	userId: string;
 	displayName: string;
-	rallyUserId: string;
+	jiraUserId: string;
 	createdAt: string;
 }
 
@@ -21,7 +21,7 @@ export interface Message {
 	updatedAt: string;
 	user?: {
 		displayName: string;
-		rallyUserId: string;
+		jiraUserId: string;
 	};
 	replies?: MessageReply[];
 	attendees?: MessageAttendee[];
@@ -35,7 +35,7 @@ export interface MessageReply {
 	createdAt: string;
 	user?: {
 		displayName: string;
-		rallyUserId: string;
+		jiraUserId: string;
 	};
 }
 
@@ -76,7 +76,7 @@ export class CollaborationClient {
 	private _errorHandler: ErrorHandler;
 	private _settingsManager: SettingsManager;
 	private _serverUrl: string | null = null;
-	private _rallyUserId: string | null = null;
+	private _jiraUserId: string | null = null;
 	private _displayName: string | null = null;
 
 	private constructor() {
@@ -95,8 +95,8 @@ export class CollaborationClient {
 		this._serverUrl = url;
 	}
 
-	public setUserInfo(rallyUserId: string, _displayName: string): void {
-		this._rallyUserId = rallyUserId;
+	public setUserInfo(jiraUserId: string, _displayName: string): void {
+		this._jiraUserId = jiraUserId;
 		this._displayName = _displayName;
 	}
 
@@ -115,15 +115,15 @@ export class CollaborationClient {
 		const serverUrl = this.getServerUrl();
 		const url = `${serverUrl}${endpoint}`;
 
-		// Check if Rally User ID is set before making any requests
+		// Check if Jira User ID is set before making any requests
 		// The collaboration server requires this header for all API calls
-		if (!this._rallyUserId) {
-			throw new Error('Rally User ID is required for collaboration server requests');
+		if (!this._jiraUserId) {
+			throw new Error('Jira User ID is required for collaboration server requests');
 		}
 
 		const headers: Record<string, string> = {
 			'Content-Type': 'application/json',
-			'X-Rally-User-Id': this._rallyUserId,
+			'X-Jira-User-Id': this._jiraUserId,
 			...((options.headers as Record<string, string>) || {})
 		};
 
@@ -254,7 +254,10 @@ export class CollaborationClient {
 	// Notifications API
 	public async getNotifications(unreadOnly: boolean = false): Promise<{ notifications: Notification[]; unreadCount: number }> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
-			return this.makeRequest<{ notifications: Notification[]; unreadCount: number }>(`/api/notifications${unreadOnly ? '?unreadOnly=true' : ''}`);
+			return this.makeRequest<{
+				notifications: Notification[];
+				unreadCount: number;
+			}>(`/api/notifications${unreadOnly ? '?unreadOnly=true' : ''}`);
 		}, 'CollaborationClient.getNotifications');
 		return result ?? { notifications: [], unreadCount: 0 };
 	}
@@ -286,9 +289,21 @@ export class CollaborationClient {
 	}
 
 	// Users API
-	public async getCurrentUser(): Promise<{ id: string; rallyUserId: string; displayName: string; email?: string } | null> {
+	public async getCurrentUser(): Promise<{
+		id: string;
+		jiraUserId: string;
+		displayName: string;
+		email?: string;
+	} | null> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ user: { id: string; rallyUserId: string; displayName: string; email?: string } }>('/api/users/me');
+			const response = await this.makeRequest<{
+				user: {
+					id: string;
+					jiraUserId: string;
+					displayName: string;
+					email?: string;
+				};
+			}>('/api/users/me');
 			return response.user;
 		}, 'CollaborationClient.getCurrentUser');
 		return result ?? null;
@@ -311,13 +326,15 @@ export class CollaborationClient {
 	// Calendar Events API
 	public async getCalendarEvents(): Promise<CustomCalendarEvent[]> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ events: CustomCalendarEvent[] }>('/api/calendar-events');
+			const response = await this.makeRequest<{
+				events: CustomCalendarEvent[];
+			}>('/api/calendar-events');
 			return response.events;
 		}, 'CollaborationClient.getCalendarEvents');
 		return result ?? [];
 	}
 
-	public async createCalendarEvent(event: Omit<CustomCalendarEvent, 'id' | 'creatorRallyUserId' | 'creatorDisplayName'>): Promise<CustomCalendarEvent | null> {
+	public async createCalendarEvent(event: Omit<CustomCalendarEvent, 'id' | 'creatorJiraUserId' | 'creatorDisplayName'>): Promise<CustomCalendarEvent | null> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ event: CustomCalendarEvent }>('/api/calendar-events', {
 				method: 'POST',
@@ -328,7 +345,7 @@ export class CollaborationClient {
 		return result ?? null;
 	}
 
-	public async updateCalendarEvent(id: string, event: Partial<Omit<CustomCalendarEvent, 'id' | 'creatorRallyUserId' | 'creatorDisplayName'>>): Promise<CustomCalendarEvent | null> {
+	public async updateCalendarEvent(id: string, event: Partial<Omit<CustomCalendarEvent, 'id' | 'creatorJiraUserId' | 'creatorDisplayName'>>): Promise<CustomCalendarEvent | null> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
 			const response = await this.makeRequest<{ event: CustomCalendarEvent }>(`/api/calendar-events/${id}`, {
 				method: 'PUT',

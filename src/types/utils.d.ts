@@ -1,4 +1,4 @@
-// Shared types for utility modules (not Rally-specific)
+// Shared types for utility modules (not Jira-specific)
 
 /**
  * Holiday interface for public holidays
@@ -41,6 +41,6 @@ export interface CustomCalendarEvent {
 	color: string; // Hex color code
 	// Public/collaborative fields
 	isPublic?: boolean; // false by default (local only)
-	creatorRallyUserId?: string; // For public events only
+	creatorJiraUserId?: string; // For public events only
 	creatorDisplayName?: string; // For public events only
 }

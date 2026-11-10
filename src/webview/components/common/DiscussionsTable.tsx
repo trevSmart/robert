@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import DOMPurify from 'dompurify';
-import { Discussion } from '../../../types/rally';
+import { Discussion } from '../../../types/jira';
 import Avatar from './Avatar';
-import { processRallyHtmlImages } from '../../utils/rallyImageProxy';
+import { processJiraHtmlImages } from '../../utils/jiraImageProxy';
 
 const ChatContainer = styled.div<{ embedded?: boolean }>`
 	display: flex;
@@ -114,12 +114,14 @@ interface DiscussionsTableProps {
 }
 
 const DiscussionMessage: React.FC<{ rawHtml: string }> = ({ rawHtml }) => {
-	const sanitized = DOMPurify.sanitize(rawHtml || '', { FORBID_ATTR: ['style'] });
+	const sanitized = DOMPurify.sanitize(rawHtml || '', {
+		FORBID_ATTR: ['style']
+	});
 	const [html, setHtml] = useState(sanitized);
 
 	useEffect(() => {
 		let cancelled = false;
-		processRallyHtmlImages(sanitized).then(processed => {
+		processJiraHtmlImages(sanitized).then(processed => {
 			if (!cancelled) setHtml(processed);
 		});
 		return () => {
@@ -157,7 +159,10 @@ const DiscussionsTable: React.FC<DiscussionsTableProps> = ({ discussions, loadin
 			const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
 			// Format time
-			const timeStr = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+			const timeStr = date.toLocaleTimeString([], {
+				hour: '2-digit',
+				minute: '2-digit'
+			});
 
 			// Show relative date for recent messages
 			if (diffDays === 0) {

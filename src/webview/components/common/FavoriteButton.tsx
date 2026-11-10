@@ -1,10 +1,10 @@
 import { FC, useCallback, useContext, useMemo } from 'react';
 import { getVsCodeApi } from '../../utils/vscodeApi';
 import { FavoritesContext, favoriteKey } from './FavoritesContext';
-import type { RallyItemRef } from '../../../types/rally';
+import type { JiraItemRef } from '../../../types/jira';
 
 interface FavoriteButtonProps {
-	item: RallyItemRef;
+	item: JiraItemRef;
 }
 
 const FavoriteButton: FC<FavoriteButtonProps> = ({ item }) => {
@@ -45,7 +45,19 @@ const FavoriteButton: FC<FavoriteButtonProps> = ({ item }) => {
 				e.currentTarget.style.opacity = '0.7';
 			}}
 		>
-			<span className={`codicon codicon-${isFavorite ? 'star-full' : 'star'}`} style={{ fontSize: '18px', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '20px', height: '20px', transform: 'translateY(-1px)' }} />
+			<span
+				className={`codicon codicon-${isFavorite ? 'star-full' : 'star'}`}
+				style={{
+					fontSize: '18px',
+					lineHeight: 1,
+					display: 'inline-flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					width: '20px',
+					height: '20px',
+					transform: 'translateY(-1px)'
+				}}
+			/>
 		</button>
 	);
 };

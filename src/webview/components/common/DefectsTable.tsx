@@ -118,7 +118,10 @@ const INITIAL_WIDTHS: Record<ColumnKey, number> = {
 const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, error, onLoadDefects: _onLoadDefects, onDefectSelected, selectedDefect, hasMore = false, onLoadMore, loadingMore = false, embedded = false }) => {
 	logDebug(`onDefectSelected: ${JSON.stringify(onDefectSelected)}, defects.length: ${defects.length}`, 'DefectsTable');
 
-	const { sortedItems, sortConfig, requestSort } = useTableSort(defects, { key: 'formattedId', direction: 'desc' });
+	const { sortedItems, sortConfig, requestSort } = useTableSort(defects, {
+		key: 'formattedId',
+		direction: 'desc'
+	});
 	const { columnWidths, startResize } = useColumnResize(INITIAL_WIDTHS);
 	const totalColumnWidth = Object.values(columnWidths).reduce((sum, width) => sum + width, 0);
 	const getColumnPercent = (key: ColumnKey) => (totalColumnWidth > 0 ? (columnWidths[key] / totalColumnWidth) * 100 : 0);
@@ -227,7 +230,16 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 	return (
 		<>
 			{loading && (
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						minHeight: '200px',
+						gap: '10px'
+					}}
+				>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -267,7 +279,14 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 			)}
 
 			{sortedItems.length > 0 && !loading && !error && (
-				<table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
+				<table
+					style={{
+						width: '100%',
+						tableLayout: 'fixed',
+						borderCollapse: 'collapse',
+						border: `1px solid ${themeColors.panelBorder}`
+					}}
+				>
 					<colgroup>
 						<col style={{ width: `${getColumnPercent('formattedId')}%` }} />
 						<col style={{ width: `${getColumnPercent('name')}%` }} />
@@ -277,7 +296,12 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 						<col style={{ width: `${getColumnPercent('priority')}%` }} />
 					</colgroup>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
+						<tr
+							style={{
+								backgroundColor: themeColors.titleBarActiveBackground,
+								color: themeColors.titleBarActiveForeground
+							}}
+						>
 							<SortableHeader label="ID" sortKey="formattedId" colKey="formattedId" />
 							<SortableHeader label="Name" sortKey="name" colKey="name" />
 							<SortableHeader label="Sprint" sortKey="iteration" colKey="iteration" />
@@ -314,9 +338,41 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 									}
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: '300', color: themeColors.foreground, textDecoration: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.formattedId}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{defect.iteration || 'N/A'}</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										color: themeColors.foreground,
+										textDecoration: 'none',
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+										whiteSpace: 'nowrap'
+									}}
+								>
+									{defect.formattedId}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+										whiteSpace: 'nowrap'
+									}}
+								>
+									{defect.name}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+										whiteSpace: 'nowrap'
+									}}
+								>
+									{defect.iteration || 'N/A'}
+								</td>
 								<td
 									style={{
 										padding: '10px 12px',
@@ -360,7 +416,13 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 			)}
 
 			{!loading && !error && sortedItems.length > 0 && hasMore && (
-				<div style={{ textAlign: 'center', padding: '15px', borderTop: `1px solid ${themeColors.panelBorder}` }}>
+				<div
+					style={{
+						textAlign: 'center',
+						padding: '15px',
+						borderTop: `1px solid ${themeColors.panelBorder}`
+					}}
+				>
 					<button
 						onClick={onLoadMore}
 						disabled={loadingMore}

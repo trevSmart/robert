@@ -7,7 +7,7 @@ interface MessageAttendee {
 	messageId: string;
 	userId: string;
 	displayName: string;
-	rallyUserId: string;
+	jiraUserId: string;
 	createdAt: string;
 }
 
@@ -22,7 +22,7 @@ interface Message {
 	isRead?: boolean;
 	user?: {
 		displayName: string;
-		rallyUserId: string;
+		jiraUserId: string;
 	};
 	replies?: MessageReply[];
 	attendees?: MessageAttendee[];
@@ -36,7 +36,7 @@ interface MessageReply {
 	createdAt: string;
 	user?: {
 		displayName: string;
-		rallyUserId: string;
+		jiraUserId: string;
 	};
 }
 
@@ -91,7 +91,7 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 		sendMessage({
 			command: 'loadCollaborationMessages'
 		});
-		sendMessage({ command: 'getRallyCurrentUser' });
+		sendMessage({ command: 'getJiraCurrentUser' });
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, []);
 
@@ -128,17 +128,35 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 
 				case 'collaborationMessageAttended':
 					// Update the specific message with new attendee
-					setMessages(prev => prev.map(msg => (msg.id === message.messageId ? { ...msg, attendees: [...(msg.attendees || []), message.attendee] } : msg)));
+					setMessages(prev =>
+						prev.map(msg =>
+							msg.id === message.messageId
+								? {
+										...msg,
+										attendees: [...(msg.attendees || []), message.attendee]
+									}
+								: msg
+						)
+					);
 					break;
 
 				case 'collaborationMessageUnattended':
 					// Remove attendee from the message
-					setMessages(prev => prev.map(msg => (msg.id === message.messageId ? { ...msg, attendees: (msg.attendees || []).filter(a => a.userId !== currentUserId) } : msg)));
+					setMessages(prev =>
+						prev.map(msg =>
+							msg.id === message.messageId
+								? {
+										...msg,
+										attendees: (msg.attendees || []).filter(a => a.userId !== currentUserId)
+									}
+								: msg
+						)
+					);
 					break;
 
-				case 'rallyCurrentUser':
-					if (message.user && message.user.ObjectID) {
-						setCurrentUserId(message.user.ObjectID);
+				case 'jiraCurrentUser':
+					if (message.user && message.user.objectId) {
+						setCurrentUserId(message.user.objectId);
 					}
 					break;
 
@@ -485,7 +503,16 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 					marginBottom: '20px'
 				}}
 			>
-				<h2 style={{ margin: 0, fontSize: '18px', fontWeight: 500, color: themeColors.foreground }}>Collaboration Requests</h2>
+				<h2
+					style={{
+						margin: 0,
+						fontSize: '18px',
+						fontWeight: 500,
+						color: themeColors.foreground
+					}}
+				>
+					Collaboration Requests
+				</h2>
 				<div style={{ display: 'flex', gap: '8px' }}>
 					<button
 						onClick={() => setShowGeneralMessageForm(!showGeneralMessageForm)}
@@ -532,7 +559,16 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 						borderRadius: '6px'
 					}}
 				>
-					<h3 style={{ margin: '0 0 12px 0', fontSize: '14px', fontWeight: 500, color: themeColors.foreground }}>New General Message</h3>
+					<h3
+						style={{
+							margin: '0 0 12px 0',
+							fontSize: '14px',
+							fontWeight: 500,
+							color: themeColors.foreground
+						}}
+					>
+						New General Message
+					</h3>
 					<textarea
 						ref={textareaRef}
 						value={generalMessageContent}
@@ -552,7 +588,14 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 							resize: 'vertical'
 						}}
 					/>
-					<div style={{ marginTop: '12px', display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+					<div
+						style={{
+							marginTop: '12px',
+							display: 'flex',
+							justifyContent: 'flex-end',
+							gap: '8px'
+						}}
+					>
 						<button
 							onClick={() => {
 								setShowGeneralMessageForm(false);
@@ -591,7 +634,17 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 				</div>
 			)}
 
-			{messagesLoading && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: themeColors.descriptionForeground }}>Loading requests...</div>}
+			{messagesLoading && messages.length === 0 && (
+				<div
+					style={{
+						textAlign: 'center',
+						padding: '40px',
+						color: themeColors.descriptionForeground
+					}}
+				>
+					Loading requests...
+				</div>
+			)}
 
 			{messagesError && (
 				<div
@@ -609,7 +662,17 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 				</div>
 			)}
 
-			{!messagesLoading && !messagesError && messages.length === 0 && <div style={{ textAlign: 'center', padding: '40px', color: themeColors.descriptionForeground }}>No collaboration requests.</div>}
+			{!messagesLoading && !messagesError && messages.length === 0 && (
+				<div
+					style={{
+						textAlign: 'center',
+						padding: '40px',
+						color: themeColors.descriptionForeground
+					}}
+				>
+					No collaboration requests.
+				</div>
+			)}
 
 			{!messagesLoading && !messagesError && messages.length > 0 && (
 				<div style={{ overflow: 'auto' }}>
@@ -628,13 +691,83 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 									borderBottom: `2px solid ${themeColors.panelBorder}`
 								}}
 							>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '120px', color: themeColors.foreground }}>Date</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '100px', color: themeColors.foreground }}>User Story</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '200px', color: themeColors.foreground }}>Request</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '120px', color: themeColors.foreground }}>Requester</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '150px', color: themeColors.foreground }}>Assignee</th>
-								<th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: 500, minWidth: '100px', color: themeColors.foreground }}>Status</th>
-								<th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: 500, minWidth: '140px', color: themeColors.foreground }}>Actions</th>
+								<th
+									style={{
+										padding: '12px 8px',
+										textAlign: 'left',
+										fontWeight: 500,
+										minWidth: '120px',
+										color: themeColors.foreground
+									}}
+								>
+									Date
+								</th>
+								<th
+									style={{
+										padding: '12px 8px',
+										textAlign: 'left',
+										fontWeight: 500,
+										minWidth: '100px',
+										color: themeColors.foreground
+									}}
+								>
+									User Story
+								</th>
+								<th
+									style={{
+										padding: '12px 8px',
+										textAlign: 'left',
+										fontWeight: 500,
+										minWidth: '200px',
+										color: themeColors.foreground
+									}}
+								>
+									Request
+								</th>
+								<th
+									style={{
+										padding: '12px 8px',
+										textAlign: 'left',
+										fontWeight: 500,
+										minWidth: '120px',
+										color: themeColors.foreground
+									}}
+								>
+									Requester
+								</th>
+								<th
+									style={{
+										padding: '12px 8px',
+										textAlign: 'left',
+										fontWeight: 500,
+										minWidth: '150px',
+										color: themeColors.foreground
+									}}
+								>
+									Assignee
+								</th>
+								<th
+									style={{
+										padding: '12px 8px',
+										textAlign: 'left',
+										fontWeight: 500,
+										minWidth: '100px',
+										color: themeColors.foreground
+									}}
+								>
+									Status
+								</th>
+								<th
+									style={{
+										padding: '12px 8px',
+										textAlign: 'center',
+										fontWeight: 500,
+										minWidth: '140px',
+										color: themeColors.foreground
+									}}
+								>
+									Actions
+								</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -654,11 +787,32 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 											}}
 										>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ fontSize: '12px', color: themeColors.foreground }}>{new Date(message.createdAt).toLocaleDateString('en-US')}</div>
-												<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{new Date(message.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
+												<div
+													style={{
+														fontSize: '12px',
+														color: themeColors.foreground
+													}}
+												>
+													{new Date(message.createdAt).toLocaleDateString('en-US')}
+												</div>
+												<div
+													style={{
+														fontSize: '11px',
+														color: themeColors.descriptionForeground
+													}}
+												>
+													{new Date(message.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+												</div>
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ fontWeight: 400, color: themeColors.foreground }}>{message.userStoryId === 'GENERAL' ? '—' : message.userStoryId}</div>
+												<div
+													style={{
+														fontWeight: 400,
+														color: themeColors.foreground
+													}}
+												>
+													{message.userStoryId === 'GENERAL' ? '—' : message.userStoryId}
+												</div>
 												{message.userStoryId === 'GENERAL' && (
 													<span
 														style={{
@@ -677,7 +831,14 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 												)}
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+												<div
+													style={{
+														display: 'flex',
+														alignItems: 'center',
+														gap: '6px',
+														flexWrap: 'wrap'
+													}}
+												>
 													{isUnread && (
 														<span
 															style={{
@@ -707,7 +868,14 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 														</span>
 													)}
 												</div>
-												<div style={{ marginTop: '4px', color: themeColors.foreground }}>{getMessageSummary(message.content)}</div>
+												<div
+													style={{
+														marginTop: '4px',
+														color: themeColors.foreground
+													}}
+												>
+													{getMessageSummary(message.content)}
+												</div>
 												{message.replies && message.replies.length > 0 && (
 													<div
 														style={{
@@ -724,11 +892,24 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 												)}
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ fontSize: '12px', color: themeColors.foreground }}>{message.user?.displayName || 'Unknown'}</div>
+												<div
+													style={{
+														fontSize: '12px',
+														color: themeColors.foreground
+													}}
+												>
+													{message.user?.displayName || 'Unknown'}
+												</div>
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
 												{message.attendees && message.attendees.length > 0 ? (
-													<div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+													<div
+														style={{
+															display: 'flex',
+															flexDirection: 'column',
+															gap: '2px'
+														}}
+													>
 														{message.attendees.map(attendee => (
 															<div
 																key={attendee.id}
@@ -747,7 +928,15 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 														))}
 													</div>
 												) : (
-													<div style={{ fontSize: '11px', color: themeColors.descriptionForeground, fontStyle: 'italic' }}>Nobody</div>
+													<div
+														style={{
+															fontSize: '11px',
+															color: themeColors.descriptionForeground,
+															fontStyle: 'italic'
+														}}
+													>
+														Nobody
+													</div>
 												)}
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
@@ -777,7 +966,14 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 												</span>
 											</td>
 											<td style={{ padding: '12px 8px', verticalAlign: 'top' }}>
-												<div style={{ display: 'flex', gap: '4px', justifyContent: 'center', flexWrap: 'wrap' }}>
+												<div
+													style={{
+														display: 'flex',
+														gap: '4px',
+														justifyContent: 'center',
+														flexWrap: 'wrap'
+													}}
+												>
 													<button
 														onClick={() => (attending ? handleUnattend(message.id) : handleAttend(message.id))}
 														style={{
@@ -851,16 +1047,43 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 										</tr>
 										{isExpanded && (
 											<tr>
-												<td colSpan={7} style={{ padding: '0', backgroundColor: themeColors.background }}>
-													<div style={{ padding: '16px', borderLeft: `4px solid ${ACCENT_COLORS.blue}` }}>
+												<td
+													colSpan={7}
+													style={{
+														padding: '0',
+														backgroundColor: themeColors.background
+													}}
+												>
+													<div
+														style={{
+															padding: '16px',
+															borderLeft: `4px solid ${ACCENT_COLORS.blue}`
+														}}
+													>
 														<div style={{ marginBottom: '16px' }}>
 															<strong style={{ color: themeColors.foreground }}>Full message:</strong>
-															<div style={{ marginTop: '8px', whiteSpace: 'pre-wrap', fontSize: '12px', color: themeColors.foreground }}>{renderMessageContentSecure(message.content)}</div>
+															<div
+																style={{
+																	marginTop: '8px',
+																	whiteSpace: 'pre-wrap',
+																	fontSize: '12px',
+																	color: themeColors.foreground
+																}}
+															>
+																{renderMessageContentSecure(message.content)}
+															</div>
 														</div>
 														{message.replies && message.replies.length > 0 && (
 															<div>
 																<strong style={{ color: themeColors.foreground }}>Replies:</strong>
-																<div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+																<div
+																	style={{
+																		marginTop: '8px',
+																		display: 'flex',
+																		flexDirection: 'column',
+																		gap: '8px'
+																	}}
+																>
 																	{message.replies.map(reply => (
 																		<div
 																			key={reply.id}
@@ -872,10 +1095,24 @@ const CollaborationView: FC<CollaborationViewProps> = ({ selectedUserStoryId: _s
 																				fontSize: '12px'
 																			}}
 																		>
-																			<div style={{ fontWeight: 500, marginBottom: '4px', fontSize: '11px', color: themeColors.descriptionForeground }}>
+																			<div
+																				style={{
+																					fontWeight: 500,
+																					marginBottom: '4px',
+																					fontSize: '11px',
+																					color: themeColors.descriptionForeground
+																				}}
+																			>
 																				{reply.user?.displayName || 'Unknown'} • {new Date(reply.createdAt).toLocaleString('en-US')}
 																			</div>
-																			<div style={{ whiteSpace: 'pre-wrap', color: themeColors.foreground }}>{renderMessageContentSecure(reply.content)}</div>
+																			<div
+																				style={{
+																					whiteSpace: 'pre-wrap',
+																					color: themeColors.foreground
+																				}}
+																			>
+																				{renderMessageContentSecure(reply.content)}
+																			</div>
 																		</div>
 																	))}
 																</div>

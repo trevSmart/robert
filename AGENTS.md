@@ -4,14 +4,14 @@ Aquest document proporciona context complet del projecte Robert per agents IA, a
 
 ## 📋 Resum Executiu
 
-**Robert** és una extensió de VS Code desenvolupada per IBM que integra funcionalitats de Rally (eina de gestió de projectes Agile). L'extensió proporciona una interfície webview per visualitzar i gestionar projectes, usuaris i user stories de Rally dins de VS Code.
+**Robert** és una extensió de VS Code desenvolupada per IBM que integra funcionalitats de Jira Cloud (eina de gestió de projectes Agile). L'extensió proporciona una interfície webview per visualitzar i gestionar projectes, usuaris i issues de Jira dins de VS Code.
 
 ### Informació Clau del Projecte
 - **Nom**: Robert (IBM Robert)
 - **Versió**: 0.0.4
 - **Publisher**: ibm-robert
 - **Tipus**: VS Code Extension
-- **Tecnologies**: TypeScript, React, Vite, Rally API
+- **Tecnologies**: TypeScript, React, Vite, Jira Cloud REST API v3
 - **Repositori**: https://github.com/ibm/robert-vscode-extension.git
 
 ## 🏗️ Arquitectura del Projecte
@@ -25,7 +25,7 @@ Robert/
 │   ├── RobertWebviewProvider.ts  # Gestor de webviews
 │   ├── SettingsManager.ts        # Gestió de configuració
 │   ├── ErrorHandler.ts           # Gestió d'errors centralitzada
-│   ├── libs/rally/              # Integració amb Rally API
+│   ├── libs/jira/                # Integració amb Jira Cloud REST API
 │   ├── templates/               # Plantilles HTML per webviews
 │   ├── types/                   # Definicions de tipus TypeScript
 │   ├── utils/                   # Utilitats compartides
@@ -41,7 +41,7 @@ Robert/
 #### 1. **Extension Entry Point** (`src/extension.ts`)
 - Punt d'activació de l'extensió
 - Registra comandaments i webview providers
-- Gestiona l'estat global de Rally (`rallyData`)
+- Gestiona l'estat global de Jira (`jiraData`)
 - Implementa status bar amb tooltip interactiu
 - Detecta mode debug automàticament
 
@@ -58,7 +58,7 @@ Robert/
 - Singleton per gestionar configuració persistent
 - Integració amb VS Code Configuration API
 - Validació automàtica de settings
-- Suport per settings de Rally (API key, instance URL, project name)
+- Suport per settings de Jira (email, API token, base URL, project key)
 
 #### 4. **Error Handler** (`src/ErrorHandler.ts`)
 - Gestió centralitzada d'errors
@@ -66,12 +66,12 @@ Robert/
 - Decoradors per maneig automàtic d'errors
 - Captura d'errors globals (unhandled rejections, exceptions)
 
-#### 5. **Rally Integration** (`src/libs/rally/`)
-- **rallyServices.ts**: Funcions per consultar Rally API
+#### 5. **Jira Integration** (`src/libs/jira/`)
+- **jiraServices.ts**: Funcions per consultar Jira Cloud API
   - `getProjects()`: Obtenir projectes
   - `getUsers()`: Obtenir usuaris
   - `getUserStories()`: Obtenir user stories
-- **utils.ts**: Utilitats per configuració i queries de Rally
+- **utils.ts**: Utilitats per configuració i queries de Jira
 - Cache intel·ligent per optimitzar crides API
 
 ## 🔧 Configuració i Settings
@@ -80,7 +80,7 @@ Robert/
 
 | Setting | Tipus | Default | Descripció |
 |---------|-------|---------|------------|
-| `robert.apiEndpoint` | string | `https://rally.example.com` | Endpoint API |
+| `robert.apiEndpoint` | string | `https://your-site.atlassian.net` | Endpoint API |
 | `robert.refreshInterval` | number | `30` | Interval refresc (5-3600s) |
 | `robert.theme` | string | `auto` | Tema (`auto`, `light`, `dark`, `high-contrast`) |
 | `robert.autoRefresh` | boolean | `true` | Refresc automàtic |
@@ -89,9 +89,10 @@ Robert/
 | `robert.advancedFeatures` | boolean | `false` | Funcions avançades |
 | `robert.maxResults` | number | `100` | Màxim resultats (10-1000) |
 | `robert.timeout` | number | `5000` | Timeout peticions (1000-60000ms) |
-| `robert.rallyInstance` | string | `https://rally1.rallydev.com` | URL instància Rally |
-| `robert.rallyApiKey` | string | `""` | Clau API Rally |
-| `robert.rallyProjectName` | string | `""` | Nom projecte Rally |
+| `robert.jiraBaseUrl` | string | `https://jiracloudab.atlassian.net` | URL base de Jira Cloud |
+| `robert.jiraEmail` | string | `""` | Email del compte Atlassian |
+| `robert.jiraApiToken` | string | `""` | Token API de Jira |
+| `robert.jiraProjectKey` | string | `DSS` | Clau del projecte Jira |
 
 ### Persistència
 - Settings es guarden a configuració global VS Code
@@ -106,17 +107,18 @@ L'extensió resol la configuració en aquest ordre:
 2. **Variables d'Entorn** (prioritat mitjana) - Variables del sistema (per a agents IA i CI/CD)
 3. **Valors per Defecte** (prioritat baixa) - Defaults de l'extensió
 
-Això permet que les agències IA configuren la connexió a Rally sense modificar fitxers de configuració de VS Code.
+Això permet que les agències IA configuren la connexió a Jira sense modificar fitxers de configuració de VS Code.
 
 ### Variables d'Entorn Suportades
 
 Per a entorns de testing automatitzat i agentes IA:
 
 ```bash
-# Rally Configuration
-export ROBERT_RALLY_API_KEY="your-api-key"
-export ROBERT_RALLY_INSTANCE="https://rally1.rallydev.com"
-export ROBERT_RALLY_PROJECT_NAME="YourProject"
+# Jira Configuration
+export ROBERT_JIRA_EMAIL="you@example.com"
+export ROBERT_JIRA_API_TOKEN="your-api-token"
+export ROBERT_JIRA_BASE_URL="https://your-site.atlassian.net"
+export ROBERT_JIRA_PROJECT_KEY="DSS"
 
 # Extension Settings
 export ROBERT_DEBUG_MODE="true"
@@ -130,14 +132,14 @@ export ROBERT_COLLABORATION_ENABLED="false"
 
 ## 🎯 Funcionalitats Principals
 
-### 1. **Integració Rally**
-- Connexió amb Rally API utilitzant biblioteca `rally`
+### 1. **Integració Jira**
+- Connexió amb Jira Cloud REST API v3 (fetch natiu, Basic auth)
 - Consulta de projectes, usuaris i user stories
 - Cache intel·ligent per optimitzar rendiment
 - Validació de configuració abans de crides API
 
 ### 2. **Interfície Webview**
-- **Vista Principal**: Mostra informació de Rally amb logo IBM
+- **Vista Principal**: Mostra informació de Jira amb logo IBM
 - **Vista Configuració**: Gestió de settings amb validació
 - **Vista Logo**: Pantalla de logo IBM
 - Suport per múltiples contexts (activity bar, editor, panel)
@@ -158,7 +160,6 @@ export ROBERT_COLLABORATION_ENABLED="false"
 ### Core Dependencies
 - **@types/vscode**: Tipus per VS Code API
 - **typescript**: Compilador TypeScript
-- **rally**: Biblioteca per integració Rally API
 
 ### Frontend Dependencies
 - **react**: Framework UI
@@ -227,7 +228,7 @@ Any action performed by our extension must be logged to the "Robert" Output chan
 ## 🎨 Interfície d'Usuari
 
 ### Webviews React
-- **MainWebview.tsx**: Vista principal amb informació Rally
+- **MainWebview.tsx**: Vista principal amb informació Jira
 - **SettingsWebview.tsx**: Gestió de configuració
 - **LogoWebview.tsx**: Pantalla de logo IBM
 
@@ -244,12 +245,12 @@ Any action performed by our extension must be logged to the "Robert" Output chan
 ## 🔒 Seguretat i Configuració
 
 ### API Keys
-- Rally API key es guarda a configuració VS Code
+- El token API de Jira es guarda a configuració VS Code
 - No es loggeja ni es mostra en plain text
 - Validació abans d'utilitzar
 
-### Configuració Rally
-- URL instància Rally (HTTPS obligatori)
+### Configuració Jira
+- URL base de Jira Cloud (HTTPS obligatori)
 - Nom projecte per filtrar dades
 - Timeout configurable per peticions
 
@@ -282,6 +283,4 @@ Running the extension in a GUI (headless desktop is available on `DISPLAY=:1`): 
 `DISPLAY=:1 .vscode-test/vscode-linux-x64-<ver>/code --no-sandbox --disable-gpu --user-data-dir=/tmp/vscode-user --extensions-dir=/tmp/vscode-ext --extensionDevelopmentPath="$PWD" "$PWD/test-workspace"`
 The `dbus`/`gpu` errors it prints are harmless in this sandbox. Build the webview (`npm run build:webview`) before launching or the side panel renders blank.
 
-Rally integration: without credentials the extension still activates and renders its UI, but the Rally panels show config errors in the "Robert" output channel. To exercise live Rally data set env vars `ROBERT_RALLY_API_KEY`, `ROBERT_RALLY_INSTANCE`, `ROBERT_RALLY_PROJECT_NAME` (see `ENVIRONMENT_VARIABLES.md` / `test/AI_AGENT_TESTING.md`). These are wired as Cloud Agent secrets and are read automatically.
-
-Network egress caveat (important): the Cloud Agent sandbox enforces an outbound allowlist. `github.com` (git) is reachable, but external HTTPS to `*.rallydev.com` and the collaboration server `robert-8vdt.onrender.com` is blocked — TCP connects but the TLS handshake is reset (`curl: (35) SSL_ERROR_SYSCALL`, Chromium `net_error -100`). Therefore the "Robert" output channel showing Rally connection/config errors is expected in this sandbox even with valid credentials; it is a network restriction, NOT a bad API key or extension bug. To run Rally/collaboration features live, the agent's network access must allow those domains.
+Network egress caveat (important): the Cloud Agent sandbox enforces an outbound allowlist. `github.com` (git) is reachable, but external HTTPS to `*.atlassian.net` and the collaboration server `robert-8vdt.onrender.com` may be blocked. In that case the "Robert" output channel showing Jira connection errors is a network restriction, not a bad API token or extension bug.

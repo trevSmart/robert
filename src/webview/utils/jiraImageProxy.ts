@@ -7,7 +7,7 @@ const pendingRequests = new Map<string, { resolve: (dataUrl: string) => void; re
 if (typeof window !== 'undefined') {
 	window.addEventListener('message', (event: MessageEvent) => {
 		const msg = event.data;
-		if (msg?.type === 'rallyImageFetched' && msg.requestId && pendingRequests.has(msg.requestId)) {
+		if (msg?.type === 'jiraImageFetched' && msg.requestId && pendingRequests.has(msg.requestId)) {
 			const { resolve, reject } = pendingRequests.get(msg.requestId)!;
 			pendingRequests.delete(msg.requestId);
 			if (msg.dataUrl) {
@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
 	});
 }
 
-function fetchRallyImage(url: string): Promise<string> {
+function fetchJiraImage(url: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const vscode = getVsCodeApi();
 		if (!vscode) {
@@ -28,7 +28,7 @@ function fetchRallyImage(url: string): Promise<string> {
 		}
 		const requestId = `img-${++requestCounter}`;
 		pendingRequests.set(requestId, { resolve, reject });
-		vscode.postMessage({ command: 'fetchRallyImage', url, requestId });
+		vscode.postMessage({ command: 'fetchJiraImage', url, requestId });
 
 		// Timeout after 15 seconds
 		setTimeout(() => {
@@ -41,37 +41,37 @@ function fetchRallyImage(url: string): Promise<string> {
 }
 
 /**
- * Parses an HTML string, finds all <img> tags with Rally URLs,
+ * Parses an HTML string, finds all <img> tags with Jira URLs,
  * fetches them via the extension proxy, and returns the HTML with
  * src attributes replaced by base64 data URLs.
  *
- * Rally images require zsessionid auth headers — the webview can't
+ * Jira images require Basic auth (email + API token) — the webview can't
  * add those to plain <img src="..."> requests.
  */
-export async function processRallyHtmlImages(html: string, rallyBaseUrl?: string): Promise<string> {
+export async function processJiraHtmlImages(html: string, jiraBaseUrl?: string): Promise<string> {
 	if (!html) return html;
 
 	const imgSrcRegex = /<img([^>]*)\ssrc="([^"]+)"([^>]*)>/gi;
-	const rallyUrls: string[] = [];
+	const jiraUrls: string[] = [];
 
 	let match: RegExpExecArray | null;
 	while ((match = imgSrcRegex.exec(html)) !== null) {
 		const src = match[2];
-		if (isRallyUrl(src, rallyBaseUrl)) {
-			rallyUrls.push(src);
+		if (isJiraUrl(src, jiraBaseUrl)) {
+			jiraUrls.push(src);
 		}
 	}
 
-	if (rallyUrls.length === 0) return html;
+	if (jiraUrls.length === 0) return html;
 
 	// Fetch all images in parallel
-	const uniqueUrls = [...new Set(rallyUrls)];
+	const uniqueUrls = [...new Set(jiraUrls)];
 	const dataUrlMap = new Map<string, string>();
 
 	await Promise.allSettled(
 		uniqueUrls.map(async url => {
 			try {
-				const dataUrl = await fetchRallyImage(url);
+				const dataUrl = await fetchJiraImage(url);
 				dataUrlMap.set(url, dataUrl);
 			} catch {
 				// Leave broken image as-is
@@ -89,7 +89,7 @@ export async function processRallyHtmlImages(html: string, rallyBaseUrl?: string
 	});
 }
 
-function isRallyUrl(url: string, rallyBaseUrl?: string): boolean {
+function isJiraUrl(url: string, jiraBaseUrl?: string): boolean {
 	if (!url || url.startsWith('data:')) return false;
 
 	const isAllowedHost = (host: string, domain: string): boolean => host === domain || host.endsWith(`.${domain}`);
@@ -100,17 +100,22 @@ function isRallyUrl(url: string, rallyBaseUrl?: string): boolean {
 		const host = parsedUrl.hostname.toLowerCase();
 		const path = parsedUrl.pathname.toLowerCase();
 
-		if (rallyBaseUrl) {
+		if (jiraBaseUrl) {
 			try {
-				const baseHost = new URL(rallyBaseUrl).hostname.toLowerCase();
+				const baseHost = new URL(jiraBaseUrl).hostname.toLowerCase();
 				if (isAllowedHost(host, baseHost)) return true;
 			} catch {
-				// Ignore invalid rallyBaseUrl and continue with default host checks.
+				// Ignore invalid jiraBaseUrl and continue with default host checks.
 			}
 		}
 
-		// Rally URLs typically contain /slm/ path or belong to rallydev.com / rally.com domains.
-		return isAllowedHost(host, 'rallydev.com') || isAllowedHost(host, 'rally.com') || (host === 'placeholder.local' && path.includes('/slm/'));
+		// Rally hosts: the proxy in the extension host attaches the Rally API key.
+		if (isAllowedHost(host, 'rallydev.com') || isAllowedHost(host, 'rally.com')) {
+			return true;
+		}
+
+		// Relative URLs (resolved against the placeholder host) are only trusted under /rest/, /secure/ or Rally's /slm/ path.
+		return isAllowedHost(host, 'atlassian.net') || (host === 'placeholder.local' && (path.startsWith('/rest/') || path.startsWith('/secure/') || path.includes('/slm/')));
 	} catch {
 		return false;
 	}

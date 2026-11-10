@@ -5,7 +5,7 @@ export default defineConfig({
 		globals: true,
 		environment: 'node',
 		include: ['**/*.test.ts'],
-		exclude: ['node_modules', 'out', 'dist', '.vscode-test', 'test/suite/**'],
+		exclude: ['node_modules', '**/node_modules/**', 'mcp/**', 'out', 'dist', '.vscode-test', 'test/suite/**'],
 		coverage: {
 			provider: 'v8',
 			reporter: ['text', 'json', 'html'],

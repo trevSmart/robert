@@ -21,7 +21,7 @@ router.get('/', async (req: AuthenticatedRequest, res: Response) => {
 		
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.rallyUserId,
+			req.user!.jiraUserId,
 			req.user!.displayName
 		);
 
@@ -43,7 +43,7 @@ router.get('/count', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.rallyUserId,
+			req.user!.jiraUserId,
 			req.user!.displayName
 		);
 
@@ -61,7 +61,7 @@ router.put('/:id/read', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.rallyUserId,
+			req.user!.jiraUserId,
 			req.user!.displayName
 		);
 
@@ -82,7 +82,7 @@ router.put('/read-all', async (req: AuthenticatedRequest, res: Response) => {
 	try {
 		// Get or create user
 		const user = await getOrCreateUser(
-			req.user!.rallyUserId,
+			req.user!.jiraUserId,
 			req.user!.displayName
 		);
 

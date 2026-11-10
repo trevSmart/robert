@@ -24,10 +24,10 @@ export class WebviewContentManager {
 				this.errorHandler.logInfo(`Main webview content rendered for context: ${context} (Test tab: ${testTabEnabled ? 'enabled' : 'hidden'}, ${getTestTabEnabledReason()})`, 'WebviewContentManager.getHtmlForWebview');
 
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'robert-logo.png'));
-				const rallyLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'rally-logo.webp'));
+				const jiraLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'jira-logo.webp'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 
-				// Serialize preloaded Rally data for inline injection. Escape '<' to
+				// Serialize preloaded Jira data for inline injection. Escape '<' to
 				// avoid breaking out of the <script> tag; emit `undefined` when absent.
 				const preloadedJson =
 					preloadedData === undefined
@@ -43,7 +43,7 @@ export class WebviewContentManager {
 					__TIMESTAMP__: new Date().toISOString(),
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
 					__INTER_FONT_URI__: interFontUri.toString(),
-					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
+					__JIRA_LOGO_URI__: jiraLogoUri.toString(),
 					__TEST_TAB_ENABLED__: String(testTabEnabled),
 					__PRELOADED_DATA__: preloadedJson
 				});

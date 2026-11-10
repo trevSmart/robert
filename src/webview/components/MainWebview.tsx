@@ -1,7 +1,7 @@
 /// <reference path="./common/CollapsibleCard.d.ts" />
 import React, { FC } from 'react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import 'vscrui/dist/codicon.css';
+import '@vscode/codicons/dist/codicon.css';
 import UserStoriesTable, { IterationsTable } from './common/UserStoriesTable';
 import UserStoryForm from './common/UserStoryForm';
 import TasksTable from './common/TasksTable';
@@ -10,7 +10,7 @@ import DefectForm from './common/DefectForm';
 import DiscussionsTable from './common/DiscussionsTable';
 import TestCasesTable from './common/TestCasesTable';
 import ScreenHeader from './common/ScreenHeader';
-import OpenInRallyButton from './common/OpenInRallyButton';
+import OpenInJiraButton from './common/OpenInJiraButton';
 import NavigationBar from './common/NavigationBar';
 import SubTabsBar from './common/SubTabsBar';
 import { getPortfolioSubTabs } from './sections/portfolio/portfolioSubTabs';
@@ -21,6 +21,7 @@ import CollaborationSection from './sections/CollaborationSection';
 import HomeSection from './sections/HomeSection';
 import LibrarySection, { type Tutorial } from './sections/LibrarySection';
 import PortfolioSection, { type PortfolioViewType } from './sections/PortfolioSection';
+import type { UserStoryFilters } from './sections/portfolio/types';
 import MetricsSection from './sections/MetricsSection';
 import SearchSection from './sections/SearchSection';
 import TeamSection from './sections/TeamSection';
@@ -28,16 +29,17 @@ import TestSection from './sections/TestSection';
 import { useSmoothScroll } from '../hooks/useSmoothScroll';
 import { useNavigationHistory, type NavKey } from '../hooks/useNavigationHistory';
 import { logDebug } from '../utils/vscodeApi';
-import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem, type RecentlyViewedItem, type FavoriteItem, type RallyItemRef } from '../../types/rally';
+import { type UserStory, type Defect, type Discussion, type TestCase, type GlobalSearchResultItem, type RecentlyViewedItem, type FavoriteItem, type JiraItemRef } from '../../types/jira';
 import { FavoritesContext, favoriteKey } from './common/FavoritesContext';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
-import { RallyLoadingIndicator } from './common/RallyLoadingIndicator';
+import { JiraLoadingIndicator } from './common/JiraLoadingIndicator';
 
 import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
-import type { RallyTask, RallyDefect, RallyUser } from '../../types/rally';
+import { setWebviewProvider, useProvider } from '../utils/providerState';
+import type { JiraTask, JiraDefect, JiraUser } from '../../types/jira';
 
 type SectionType = 'search' | 'home' | 'portfolio' | 'team' | 'library' | 'metrics' | 'collaboration' | 'test';
 type ScreenType = 'iterations' | 'userStories' | 'userStoryDetail' | 'allUserStories' | 'defects' | 'defectDetail';
@@ -72,10 +74,10 @@ interface PortfolioViewProps {
 	// Sprint User Stories props
 	sprintUserStories: UserStory[];
 	sprintUserStoriesLoading: boolean;
-	tasks: RallyTask[];
+	tasks: JiraTask[];
 	tasksLoading: boolean;
 	tasksError: string | null;
-	userStoryDefects: RallyDefect[];
+	userStoryDefects: JiraDefect[];
 	userStoryDefectsLoading: boolean;
 	_userStoryDefectsError: string | null;
 	userStoryDiscussions: Discussion[];
@@ -84,13 +86,13 @@ interface PortfolioViewProps {
 	userStoryTestCases: TestCase[];
 	userStoryTestCasesLoading: boolean;
 	userStoryTestCasesError: string | null;
-	_defects: RallyDefect[];
+	_defects: JiraDefect[];
 	_defectsLoading: boolean;
 	_defectsError: string | null;
 	_defectsHasMore?: boolean;
 	_defectsLoadingMore?: boolean;
 	_onLoadMoreDefects?: () => void;
-	_selectedDefect: RallyDefect | null;
+	_selectedDefect: JiraDefect | null;
 	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions';
 	currentScreen: ScreenType;
 	onLoadIterations: () => void;
@@ -101,7 +103,7 @@ interface PortfolioViewProps {
 	onLoadTasks: (userStoryId: string) => void;
 	onLoadUserStoryDefects: (userStoryId: string) => void;
 	_onLoadDefects: () => void;
-	_onDefectSelected: (defect: RallyDefect) => void;
+	_onDefectSelected: (defect: JiraDefect) => void;
 	onBackToIterations: () => void;
 	onBackToUserStories: () => void;
 	_onBackToDefects: () => void;
@@ -200,7 +202,7 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader entityType="userstory" title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInRallyButton objectId={selectedUserStory.objectId} />} />
+					<ScreenHeader entityType="userstory" title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} projectKey={selectedUserStory.project} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInJiraButton objectId={selectedUserStory.objectId} />} />
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} iterations={iterations} />
 				</>
 			)}
@@ -282,7 +284,7 @@ const AllUserStoriesView: FC<PortfolioViewProps> = ({
 
 			{currentScreen === 'userStoryDetail' && selectedUserStory && (
 				<>
-					<ScreenHeader entityType="userstory" title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInRallyButton objectId={selectedUserStory.objectId} />} />
+					<ScreenHeader entityType="userstory" title={`${selectedUserStory.formattedId}: ${selectedUserStory.name}`} projectKey={selectedUserStory.project} showBackButton={true} onBack={onBackToUserStories} titleActions={<OpenInJiraButton objectId={selectedUserStory.objectId} />} />
 					<UserStoryForm userStory={selectedUserStory} selectedAdditionalTab={activeUserStoryTab} onAdditionalTabChange={onActiveUserStoryTabChange} additionalTabContent={additionalTabContent} iterations={iterations} />
 				</>
 			)}
@@ -469,7 +471,7 @@ interface MainWebviewProps {
 	context: string;
 	timestamp: string;
 	_rebusLogoUri: string;
-	rallyLogoUri: string;
+	jiraLogoUri: string;
 }
 
 interface Iteration {
@@ -482,7 +484,7 @@ interface Iteration {
 	_ref: string;
 }
 
-const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, rallyLogoUri }) => {
+const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, jiraLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
@@ -526,7 +528,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[context, vscode, webviewId]
 	);
 
-	// Rally data pre-fetched by the extension (e.g. while the intro video plays) and
+	// Jira data pre-fetched by the extension (e.g. while the intro video plays) and
 	// injected into the initial HTML. When present, the UI can render immediately
 	// without showing the "Loading sprints..." spinner.
 	const preloadedData = typeof window !== 'undefined' ? window.__robertPreloadedData : undefined;
@@ -545,7 +547,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [devMode, setDevMode] = useState<boolean>(initialTestTabEnabled);
 	const showTestTab = devMode || debugMode;
 	const [collaborationEnabled, setCollaborationEnabled] = useState<boolean>(false);
-	const [currentUser, setCurrentUser] = useState<RallyUser | null>(null);
+	const [currentUser, setCurrentUser] = useState<JiraUser | null>(null);
 	const [holidays, setHolidays] = useState<Holiday[]>([]);
 	const [customCalendarEvents, setCustomCalendarEvents] = useState<CustomCalendarEvent[]>([]);
 	const [publicCalendarEvents, setPublicCalendarEvents] = useState<CustomCalendarEvent[]>([]);
@@ -568,25 +570,38 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [portfolioUserStoriesLoading, setPortfolioUserStoriesLoading] = useState(false);
 	const [portfolioUserStoriesLoadingMore, setPortfolioUserStoriesLoadingMore] = useState(false);
 
+	// Filtros del listado All User Stories (se aplican en el servidor por la paginación)
+	const NO_USER_STORY_FILTERS: UserStoryFilters = { project: '', sprint: '' };
+	const [userStoryFilters, setUserStoryFilters] = useState<UserStoryFilters>(NO_USER_STORY_FILTERS);
+	const userStoryFiltersRef = useRef<UserStoryFilters>(NO_USER_STORY_FILTERS);
+	const [knownProjects, setKnownProjects] = useState<string[]>([]);
+	const rememberProjects = useCallback((keys: Array<string | null | undefined>) => {
+		setKnownProjects(prev => {
+			const next = new Set(prev);
+			for (const key of keys) if (key) next.add(key);
+			return next.size === prev.length ? prev : Array.from(next).sort((a, b) => a.localeCompare(b));
+		});
+	}, []);
+
 	// Sprint-filtered User Stories state
 	const [sprintUserStories, setSprintUserStories] = useState<UserStory[]>([]);
 	const [sprintUserStoriesLoading, setSprintUserStoriesLoading] = useState(false);
 	const [loadedSprintIterationId, setLoadedSprintIterationId] = useState<string | null>(null);
 
-	const [tasks, setTasks] = useState<RallyTask[]>([]);
+	const [tasks, setTasks] = useState<JiraTask[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
 	const [tasksError, setTasksError] = useState<string | null>(null);
 	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests' | 'defects' | 'discussions'>('tasks');
 
-	const [defects, setDefects] = useState<RallyDefect[]>([]);
+	const [defects, setDefects] = useState<JiraDefect[]>([]);
 	const [defectsLoading, setDefectsLoading] = useState(false);
 	const [defectsError, setDefectsError] = useState<string | null>(null);
-	const [selectedDefect, setSelectedDefect] = useState<RallyDefect | null>(null);
+	const [selectedDefect, setSelectedDefect] = useState<JiraDefect | null>(null);
 	const [defectsOffset, setDefectsOffset] = useState(0);
 	const [defectsHasMore, setDefectsHasMore] = useState(false);
 	const [defectsLoadingMore, setDefectsLoadingMore] = useState(false);
 
-	const [userStoryDefects, setUserStoryDefects] = useState<RallyDefect[]>([]);
+	const [userStoryDefects, setUserStoryDefects] = useState<JiraDefect[]>([]);
 	const [userStoryDefectsLoading, setUserStoryDefectsLoading] = useState(false);
 	const [userStoryDefectsError, setUserStoryDefectsError] = useState<string | null>(null);
 
@@ -647,8 +662,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	// When opening a user story from a task/testcase search result, which tab to select
 	const pendingSearchUserStoryTabRef = useRef<'tasks' | 'tests' | null>(null);
 
-	// Global Rally call state variable
-	const [rallyCallCount, setRallyCallCount] = useState(0);
+	// Global Jira call state variable
+	const [jiraCallCount, setJiraCallCount] = useState(0);
 	// Ref for search input to focus when search tab is selected
 	const searchInputRef = useRef<HTMLInputElement>(null);
 	const previousSectionBeforeSearchRef = useRef<SectionType>('home');
@@ -777,15 +792,24 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			detailOriginSectionRef.current = null;
 			if (item.entityType === 'userstory') {
 				pendingSearchUserStoryTabRef.current = null;
-				sendMessage({ command: 'loadUserStoryByObjectId', objectId: item.objectId });
+				sendMessage({
+					command: 'loadUserStoryByObjectId',
+					objectId: item.objectId
+				});
 			} else if (item.entityType === 'defect') {
-				sendMessage({ command: 'loadDefectByObjectId', objectId: item.objectId });
+				sendMessage({
+					command: 'loadDefectByObjectId',
+					objectId: item.objectId
+				});
 			} else if (item.entityType === 'task') {
 				pendingSearchUserStoryTabRef.current = 'tasks';
 				sendMessage({ command: 'loadTaskWithParent', objectId: item.objectId });
 			} else if (item.entityType === 'testcase') {
 				pendingSearchUserStoryTabRef.current = 'tests';
-				sendMessage({ command: 'loadTestCaseWithParent', objectId: item.objectId });
+				sendMessage({
+					command: 'loadTestCaseWithParent',
+					objectId: item.objectId
+				});
 			}
 		},
 		[sendMessage]
@@ -825,23 +849,37 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		[sendMessage]
 	);
 
-	const loadAllUserStories = useCallback(() => {
-		setPortfolioUserStoriesLoading(true);
-		setUserStoriesError(null);
-		setPortfolioUserStoriesOffset(0);
-		setPortfolioUserStories([]);
+	const loadAllUserStories = useCallback(
+		(filters?: UserStoryFilters) => {
+			const active = filters && (filters.project || filters.sprint) ? filters : undefined;
+			setPortfolioUserStoriesLoading(true);
+			setUserStoriesError(null);
+			setPortfolioUserStoriesOffset(0);
+			setPortfolioUserStories([]);
 
-		// Keep backward compatibility
-		setUserStoriesLoading(true);
-		setUserStoriesOffset(0);
-		setUserStories([]);
+			// Keep backward compatibility
+			setUserStoriesLoading(true);
+			setUserStoriesOffset(0);
+			setUserStories([]);
 
-		sendMessage({
-			command: 'loadUserStories',
-			offset: 0
-			// Sense filtre d'iteration = carrega totes les US del projecte
-		});
-	}, [sendMessage]);
+			sendMessage({
+				command: 'loadUserStories',
+				offset: 0,
+				// Sense filtre d'iteration = carrega totes les US del projecte
+				portfolioFilter: active
+			});
+		},
+		[sendMessage]
+	);
+
+	const handleUserStoryFiltersChange = useCallback(
+		(filters: UserStoryFilters) => {
+			userStoryFiltersRef.current = filters;
+			setUserStoryFilters(filters);
+			loadAllUserStories(filters);
+		},
+		[loadAllUserStories]
+	);
 
 	const loadAllDefects = useCallback(() => {
 		setDefectsLoading(true);
@@ -861,9 +899,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		setUserStoriesLoadingMore(true);
 
 		const nextOffset = portfolioUserStoriesOffset + 100;
+		const current = userStoryFiltersRef.current;
 		sendMessage({
 			command: 'loadUserStories',
-			offset: nextOffset
+			offset: nextOffset,
+			portfolioFilter: current.project || current.sprint ? current : undefined
 		});
 	}, [sendMessage, portfolioUserStoriesOffset]);
 
@@ -913,13 +953,19 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	);
 
 	const handleDefectSelected = useCallback(
-		(defect: RallyDefect) => {
+		(defect: JiraDefect) => {
 			detailOriginSectionRef.current = null;
 			setSelectedDefect(defect);
 			setCurrentScreen('defectDetail');
 			sendMessage({
 				command: 'recordRecentlyViewedItem',
-				item: { objectId: defect.objectId, formattedId: defect.formattedId, name: defect.name, type: 'defect' }
+				item: {
+					objectId: defect.objectId,
+					formattedId: defect.formattedId,
+					name: defect.name,
+					type: 'defect',
+					project: defect.project
+				}
 			});
 		},
 		[sendMessage]
@@ -985,7 +1031,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			setCurrentScreen('userStories');
 			sendMessage({
 				command: 'recordRecentlyViewedItem',
-				item: { objectId: iteration.objectId, formattedId: iteration.name, name: iteration.name, type: 'sprint' }
+				item: {
+					objectId: iteration.objectId,
+					formattedId: iteration.name,
+					name: iteration.name,
+					type: 'sprint'
+				}
 			});
 		},
 		[loadUserStories, loadedSprintIterationId, userStoriesError, sendMessage]
@@ -1012,14 +1063,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	// Shared navigation for both the Recently Viewed and Favorites lists — same record kinds.
 	const navigateToItem = useCallback(
-		(item: RallyItemRef) => {
+		(item: JiraItemRef) => {
 			detailOriginSectionRef.current = 'home';
 			switch (item.type) {
 				case 'userstory':
-					sendMessage({ command: 'loadUserStoryByObjectId', objectId: item.objectId });
+					sendMessage({
+						command: 'loadUserStoryByObjectId',
+						objectId: item.objectId
+					});
 					break;
 				case 'defect':
-					sendMessage({ command: 'loadDefectByObjectId', objectId: item.objectId });
+					sendMessage({
+						command: 'loadDefectByObjectId',
+						objectId: item.objectId
+					});
 					break;
 				case 'sprint': {
 					setActiveSection('portfolio');
@@ -1039,14 +1096,27 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	const handleRecentlyViewedItemDelete = useCallback(
 		(item: RecentlyViewedItem) => {
-			sendMessage({ command: 'deleteRecentlyViewedItem', objectId: item.objectId, type: item.type });
+			sendMessage({
+				command: 'deleteRecentlyViewedItem',
+				objectId: item.objectId,
+				type: item.type
+			});
 		},
 		[sendMessage]
 	);
 
 	const handleFavoriteItemRemove = useCallback(
 		(item: FavoriteItem) => {
-			sendMessage({ command: 'toggleFavoriteItem', item: { objectId: item.objectId, formattedId: item.formattedId, name: item.name, type: item.type } });
+			sendMessage({
+				command: 'toggleFavoriteItem',
+				item: {
+					objectId: item.objectId,
+					formattedId: item.formattedId,
+					name: item.name,
+					type: item.type,
+					project: item.project
+				}
+			});
 		},
 		[sendMessage]
 	);
@@ -1073,7 +1143,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			wrapperRef.current?.scrollTo({ top: 0 });
 			sendMessage({
 				command: 'recordRecentlyViewedItem',
-				item: { objectId: userStory.objectId, formattedId: userStory.formattedId, name: userStory.name, type: 'userstory' }
+				item: {
+					objectId: userStory.objectId,
+					formattedId: userStory.formattedId,
+					name: userStory.name,
+					type: 'userstory',
+					project: userStory.project
+				}
 			});
 		},
 		[loadTasks, wrapperRef, sendMessage]
@@ -1108,7 +1184,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			// força 'allUserStories', defectByObjectIdLoaded força 'allDefects').
 			if (key.activeSection === 'portfolio') {
 				const derivedView: PortfolioViewType = key.currentScreen === 'allUserStories' || key.currentScreen === 'userStoryDetail' ? 'allUserStories' : key.currentScreen === 'defects' || key.currentScreen === 'defectDetail' ? 'allDefects' : 'bySprints';
-				setActiveSubTabBySection(prev => ({ ...prev, portfolio: derivedView }));
+				setActiveSubTabBySection(prev => ({
+					...prev,
+					portfolio: derivedView
+				}));
 			}
 
 			// Iteració seleccionada: buscar-la a les iterations ja carregades.
@@ -1131,14 +1210,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 			// User story de detall: es demana al backend (restauració asíncrona).
 			if (key.selectedUserStoryId && key.currentScreen === 'userStoryDetail') {
-				sendMessage({ command: 'loadUserStoryByObjectId', objectId: key.selectedUserStoryId });
+				sendMessage({
+					command: 'loadUserStoryByObjectId',
+					objectId: key.selectedUserStoryId
+				});
 			} else {
 				setSelectedUserStory(null);
 			}
 
 			// Defecte de detall: es demana al backend (restauració asíncrona).
 			if (key.selectedDefectId && key.currentScreen === 'defectDetail') {
-				sendMessage({ command: 'loadDefectByObjectId', objectId: key.selectedDefectId });
+				sendMessage({
+					command: 'loadDefectByObjectId',
+					objectId: key.selectedDefectId
+				});
 			} else {
 				setSelectedDefect(null);
 			}
@@ -1377,7 +1462,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			logDebug(`Failed to initialize CollaborationClient: ${error}`, 'MainWebview');
 		}
 
-		// If the extension injected pre-fetched Rally data into the initial HTML
+		// If the extension injected pre-fetched Jira data into the initial HTML
 		// (e.g. warmed while the intro video played), feed it straight into the
 		// existing `iterationsLoaded` handler instead of round-tripping a
 		// loadIterations request. This avoids the loading spinner entirely.
@@ -1571,8 +1656,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					logDebug('Received refresh command from extension', 'MainWebview.handleMessage');
 					// Reset all state to initial values
 					resetAllState();
-					// Reset Rally call state
-					setRallyCallCount(0);
+					// Reset Jira call state
+					setJiraCallCount(0);
 					// Reload iterations to populate the initial view
 					setTimeout(() => {
 						loadIterations();
@@ -1585,11 +1670,14 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					setIterationsLoading(false);
 					if (message.iterations) {
 						setIterations(message.iterations);
+						rememberProjects(message.iterations.flatMap((it: { projects?: string[] }) => it.projects ?? []));
+						rememberProjects(message.iterations.map((it: Iteration) => (it as { project?: string | null }).project));
 						setIterationsError(null);
 						const debugModeEnabled = Boolean(message.debugMode);
 						setDebugMode(debugModeEnabled);
 						setDevMode(Boolean(message.devMode) || debugModeEnabled);
 						setCollaborationEnabled(message.collaborationEnabled || false);
+						setWebviewProvider(message.provider);
 						setCurrentUser(message.currentUser || null);
 						setHolidays(message.holidays || []);
 
@@ -1684,6 +1772,24 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						setStateDistributionLoading(false);
 					} else {
 						// Portfolio All User Stories context - update portfolio state
+						const responseFilter: UserStoryFilters | null = message.portfolioFilter
+							? {
+									project: message.portfolioFilter.project ?? '',
+									sprint: message.portfolioFilter.sprint ?? ''
+								}
+							: null;
+						const currentFilter = userStoryFiltersRef.current;
+						const hasActiveFilter = Boolean(currentFilter.project || currentFilter.sprint);
+						if (responseFilter && (responseFilter.project !== currentFilter.project || responseFilter.sprint !== currentFilter.sprint)) {
+							// Respuesta de un filtro anterior: se descarta.
+							break;
+						}
+						if (!responseFilter && hasActiveFilter) {
+							// Otra pantalla (Home, Metrics) recargó sin filtro: el listado ya no está filtrado.
+							userStoryFiltersRef.current = NO_USER_STORY_FILTERS;
+							setUserStoryFilters(NO_USER_STORY_FILTERS);
+						}
+						rememberProjects((message.userStories ?? []).map((s: UserStory) => s.project));
 						setPortfolioUserStoriesLoading(false);
 						setPortfolioUserStoriesLoadingMore(false);
 						if (message.userStories) {
@@ -1886,7 +1992,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						setSelectedUserStory(message.userStory);
 						setActiveSection('portfolio');
 						setCurrentScreen('userStoryDetail');
-						setActiveSubTabBySection(prev => ({ ...prev, portfolio: 'allUserStories' }));
+						setActiveSubTabBySection(prev => ({
+							...prev,
+							portfolio: 'allUserStories'
+						}));
 						loadTasks(message.userStory.objectId);
 						const tab = pendingSearchUserStoryTabRef.current;
 						if (tab) {
@@ -1896,7 +2005,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						loadAllUserStories();
 						sendMessage({
 							command: 'recordRecentlyViewedItem',
-							item: { objectId: message.userStory.objectId, formattedId: message.userStory.formattedId, name: message.userStory.name, type: 'userstory' }
+							item: {
+								objectId: message.userStory.objectId,
+								formattedId: message.userStory.formattedId,
+								name: message.userStory.name,
+								type: 'userstory',
+								project: message.userStory.project
+							}
 						});
 					}
 					break;
@@ -1904,13 +2019,22 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					if (message.defect) {
 						setSelectedDefect(message.defect);
 						setActiveSection('portfolio');
-						setActiveSubTabBySection(prev => ({ ...prev, portfolio: 'allDefects' }));
+						setActiveSubTabBySection(prev => ({
+							...prev,
+							portfolio: 'allDefects'
+						}));
 						setCurrentScreen('defectDetail');
 						loadIterations();
 						loadAllDefects();
 						sendMessage({
 							command: 'recordRecentlyViewedItem',
-							item: { objectId: message.defect.objectId, formattedId: message.defect.formattedId, name: message.defect.name, type: 'defect' }
+							item: {
+								objectId: message.defect.objectId,
+								formattedId: message.defect.formattedId,
+								name: message.defect.name,
+								type: 'defect',
+								project: message.defect.project
+							}
 						});
 					}
 					break;
@@ -1922,12 +2046,18 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					break;
 				case 'taskWithParentLoaded':
 					if (message.userStoryObjectId) {
-						sendMessage({ command: 'loadUserStoryByObjectId', objectId: message.userStoryObjectId });
+						sendMessage({
+							command: 'loadUserStoryByObjectId',
+							objectId: message.userStoryObjectId
+						});
 					}
 					break;
 				case 'testCaseWithParentLoaded':
 					if (message.userStoryObjectId) {
-						sendMessage({ command: 'loadUserStoryByObjectId', objectId: message.userStoryObjectId });
+						sendMessage({
+							command: 'loadUserStoryByObjectId',
+							objectId: message.userStoryObjectId
+						});
 					}
 					break;
 				case 'userStoryByObjectIdError':
@@ -1966,10 +2096,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						// Restore sub-tabs (broader than the NavKey, which only tracks portfolio)
 						// and the fields that are not part of the browser-like history key.
 						if (state.activeSubTabBySection) {
-							setActiveSubTabBySection(prev => ({ ...prev, ...state.activeSubTabBySection }));
+							setActiveSubTabBySection(prev => ({
+								...prev,
+								...state.activeSubTabBySection
+							}));
 						} else if (state.activeViewType) {
 							// Legacy state: map portfolio view type into subtab structure
-							setActiveSubTabBySection(prev => ({ ...prev, portfolio: state.activeViewType }));
+							setActiveSubTabBySection(prev => ({
+								...prev,
+								portfolio: state.activeViewType
+							}));
 						}
 						if (state.activeUserStoryTab) setActiveUserStoryTab(state.activeUserStoryTab);
 						if (state.globalSearchTerm) setGlobalSearchTerm(state.globalSearchTerm);
@@ -1995,11 +2131,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						navigateBack();
 					}
 					break;
-				case 'rallyCallStarted':
-					setRallyCallCount(prev => prev + 1);
+				case 'jiraCallStarted':
+					setJiraCallCount(prev => prev + 1);
 					break;
-				case 'rallyCallFinished':
-					setRallyCallCount(prev => Math.max(0, prev - 1));
+				case 'jiraCallFinished':
+					setJiraCallCount(prev => Math.max(0, prev - 1));
 					break;
 			}
 		};
@@ -2497,11 +2633,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 															onSaveCustomEvent={(event: CustomCalendarEvent) => {
 																const wasPublic = publicCalendarEvents.some(e => e.id === event.id);
 																if (event.isPublic) {
-																	sendMessage('savePublicCalendarEvent', { event });
+																	sendMessage('savePublicCalendarEvent', {
+																		event
+																	});
 																} else {
 																	if (wasPublic) {
 																		// Converting public → private: remove the server copy first
-																		sendMessage('deletePublicCalendarEvent', { eventId: event.id });
+																		sendMessage('deletePublicCalendarEvent', {
+																			eventId: event.id
+																		});
 																	}
 																	sendMessage('saveCustomEvent', { event });
 																}
@@ -2509,7 +2649,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 															onDeleteCustomEvent={(eventId: string) => {
 																const isPublicEvent = publicCalendarEvents.some(e => e.id === eventId);
 																if (isPublicEvent) {
-																	sendMessage('deletePublicCalendarEvent', { eventId });
+																	sendMessage('deletePublicCalendarEvent', {
+																		eventId
+																	});
 																} else {
 																	sendMessage('deleteCustomEvent', { eventId });
 																}
@@ -2636,6 +2778,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 													onBackToDefects={handleBackToDefects}
 													onActiveUserStoryTabChange={setActiveUserStoryTab}
 													collaborationEnabled={collaborationEnabled}
+													userStoryFilters={userStoryFilters}
+													userStoryFilterProjects={knownProjects}
+													onUserStoryFiltersChange={handleUserStoryFiltersChange}
 												/>
 											)}
 										</>
@@ -2646,7 +2791,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					</SmoothScrollWrapper>
 				</CenteredContainer>
 
-				<RallyLoadingIndicator rallyLogoUri={rallyLogoUri} visible={rallyCallCount > 0} />
+				<JiraLoadingIndicator jiraLogoUri={jiraLogoUri} visible={jiraCallCount > 0} />
 			</Container>
 		</FavoritesContext.Provider>
 	);

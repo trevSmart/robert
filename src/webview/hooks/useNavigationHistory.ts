@@ -95,5 +95,13 @@ export function useNavigationHistory() {
 		return entriesRef.current[indexRef.current];
 	}, [syncFlags]);
 
-	return { pushEntry, replaceEntry, peekBack, goBack, goForward, canGoBack, canGoForward };
+	return {
+		pushEntry,
+		replaceEntry,
+		peekBack,
+		goBack,
+		goForward,
+		canGoBack,
+		canGoForward
+	};
 }

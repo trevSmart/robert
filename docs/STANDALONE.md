@@ -15,7 +15,7 @@ Robert ships in two flavours built from **the same codebase**:
 
 Settings follow the same precedence in both versions: an explicitly configured value > `ROBERT_*` environment variable > `package.json` default. In the standalone Settings window, settings that are not set show the value they currently resolve to (and whether it comes from the environment); **Reset** removes an explicit value. Only the fields you edit are saved, so untouched settings keep following the environment. If the OS has no real secure storage (Linux without a keyring, where Electron would fall back to its `basic_text` backend), API tokens cannot be saved and must be provided through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY`.
 
-`<userData>` is `~/Library/Application Support/IBM Robert` on macOS, `%APPDATA%\IBM Robert` on Windows and `~/.config/IBM Robert` on Linux. Set `ROBERT_STANDALONE_USER_DATA` to use another profile directory. The `ROBERT_*` environment variables documented in [ENVIRONMENT_VARIABLES.md](../ENVIRONMENT_VARIABLES.md) keep working as fallbacks.
+The app is called **Robert** (`Robert.app`, shown as "Robert" in the Dock). Internally it keeps the name "IBM Robert", which names the profile directory and the macOS Keychain item that protects saved tokens, so existing settings carry over. `<userData>` is `~/Library/Application Support/IBM Robert` on macOS, `%APPDATA%\IBM Robert` on Windows and `~/.config/IBM Robert` on Linux. Set `ROBERT_STANDALONE_USER_DATA` to use another profile directory. The `ROBERT_*` environment variables documented in [ENVIRONMENT_VARIABLES.md](../ENVIRONMENT_VARIABLES.md) keep working as fallbacks.
 
 ## How it works
 
@@ -55,7 +55,7 @@ npm run standalone:package  # build installers for the current OS into dist/stan
 Both launch commands go through `scripts/standalone-launch.cjs`, which:
 
 - removes `ELECTRON_RUN_AS_NODE` from the environment (terminals inside VS Code export it, and it makes Electron behave like plain Node: `Cannot find module 'electron'`);
-- on macOS, runs Electron from a cached copy of the bundle renamed to **IBM Robert** with Robert's icon (`node_modules/.cache/robert-standalone/`, rebuilt when Electron or the icon change). The Dock name, the app menu title and the Dock icon come from the bundle's `Info.plist`, so the stock `node_modules/electron` binary would show "Electron" with Electron's icon. Packaged builds get the right name and icon from electron-builder.
+- on macOS, runs Electron from a cached copy of the bundle renamed to **Robert** with Robert's icon (`node_modules/.cache/robert-standalone/`, rebuilt when Electron or the icon change). The Dock name, the app menu title and the Dock icon come from the bundle's `Info.plist`, so the stock `node_modules/electron` binary would show "Electron" with Electron's icon. Packaged builds get the right name and icon from electron-builder.
 
 Running `electron out/src/standalone/main.js` directly still works, just with Electron's name and icon.
 

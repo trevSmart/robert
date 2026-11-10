@@ -116,7 +116,7 @@ export class ElectronWebview {
  */
 export class ElectronWebviewView {
 	public readonly viewType = 'robert.mainView';
-	public title = 'IBM Robert';
+	public title = 'Robert';
 	public description?: string;
 	private readonly disposeListeners = new Set<() => void>();
 

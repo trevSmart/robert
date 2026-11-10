@@ -472,6 +472,7 @@ interface MainWebviewProps {
 	timestamp: string;
 	_rebusLogoUri: string;
 	jiraLogoUri: string;
+	rallyLogoUri: string;
 }
 
 interface Iteration {
@@ -484,10 +485,11 @@ interface Iteration {
 	_ref: string;
 }
 
-const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, jiraLogoUri }) => {
+const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, jiraLogoUri, rallyLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
 	const { wrapperRef, contentRef } = useSmoothScroll(hasVsCodeApi);
+	const { isRally: isRallyProvider } = useProvider();
 
 	// Pila d'historial de navegació estil navegador (back/forward amb ratolí i teclat).
 	const { pushEntry, replaceEntry, peekBack, goBack, goForward } = useNavigationHistory();
@@ -2791,7 +2793,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					</SmoothScrollWrapper>
 				</CenteredContainer>
 
-				<JiraLoadingIndicator jiraLogoUri={jiraLogoUri} visible={jiraCallCount > 0} />
+				<JiraLoadingIndicator logoUri={isRallyProvider ? rallyLogoUri : jiraLogoUri} visible={jiraCallCount > 0} />
 			</Container>
 		</FavoritesContext.Provider>
 	);

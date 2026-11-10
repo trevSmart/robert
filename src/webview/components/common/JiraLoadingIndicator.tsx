@@ -39,12 +39,13 @@ const Logo = styled.img`
 `;
 
 interface Props {
-	jiraLogoUri: string;
+	/** Logo of the active provider (Jira or Rally). */
+	logoUri: string;
 	visible?: boolean;
 }
 
-export const JiraLoadingIndicator: React.FC<Props> = ({ jiraLogoUri, visible = false }) => (
+export const JiraLoadingIndicator: React.FC<Props> = ({ logoUri, visible = false }) => (
 	<Wrapper $visible={visible} $light={isLightTheme()}>
-		<Logo src={jiraLogoUri} alt="Loading..." />
+		<Logo src={logoUri} alt="Loading..." />
 	</Wrapper>
 );

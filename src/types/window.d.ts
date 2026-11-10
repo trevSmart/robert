@@ -16,6 +16,8 @@ declare global {
 		timestamp?: string;
 		extensionUri?: string;
 		rebusLogoUri?: string;
+		jiraLogoUri?: string;
+		rallyLogoUri?: string;
 		interFontUri?: string;
 		testTabEnabled?: boolean;
 		// Jira data pre-fetched by the extension (e.g. while the intro video plays)

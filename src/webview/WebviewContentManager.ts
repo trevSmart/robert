@@ -25,6 +25,7 @@ export class WebviewContentManager {
 
 				const rebusLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'robert-logo.png'));
 				const jiraLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'jira-logo.webp'));
+				const rallyLogoUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'icons', 'rally-logo.webp'));
 				const interFontUri = webview.asWebviewUri(vscode.Uri.joinPath(this.extensionUri, 'resources', 'fonts', 'Inter-Variable.woff2'));
 
 				// Serialize preloaded Jira data for inline injection. Escape '<' to
@@ -44,6 +45,7 @@ export class WebviewContentManager {
 					__REBUS_LOGO_URI__: rebusLogoUri.toString(),
 					__INTER_FONT_URI__: interFontUri.toString(),
 					__JIRA_LOGO_URI__: jiraLogoUri.toString(),
+					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
 					__TEST_TAB_ENABLED__: String(testTabEnabled),
 					__PRELOADED_DATA__: preloadedJson
 				});

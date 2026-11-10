@@ -20,3 +20,18 @@ eslint.config.js
 knip.json
 REFACTORING_SUMMARY.md
 **/*.test.js
+
+# Local secrets and tooling (never ship)
+.env
+.env.*
+.git/**
+.gitignore
+.gitattributes
+.github/**
+.cursor/**
+.claude/**
+.prettierrc
+.prettierignore
+.vscode-test.js
+coverage/**
+**/*.log

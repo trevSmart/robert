@@ -4,15 +4,19 @@ Aquest document proporciona context complet del projecte Robert per agents IA, a
 
 ## 📋 Resum Executiu
 
-**Robert** és una extensió de VS Code desenvolupada per IBM que integra funcionalitats de Jira Cloud (eina de gestió de projectes Agile). L'extensió proporciona una interfície webview per visualitzar i gestionar projectes, usuaris i issues de Jira dins de VS Code.
+**Robert** és una eina d'IBM que integra Jira Cloud i Rally (gestió de projectes Agile) en una interfície React per visualitzar i gestionar projectes, sprints, usuaris i issues.
+
+Es distribueix en **dues versions que es mantenen en paral·lel a partir del mateix codi**:
+1. **Extensió de VS Code** (`src/extension.ts`): la UI viu dins d'un webview de VS Code.
+2. **App d'escriptori standalone** (Electron, `src/standalone/main.ts`): la mateixa UI en una finestra pròpia, per a qui no fa servir VS Code. Vegeu la secció «🖥️ Versió Standalone (Electron)» més avall i [docs/STANDALONE.md](docs/STANDALONE.md).
 
 ### Informació Clau del Projecte
 - **Nom**: Robert (IBM Robert)
-- **Versió**: 0.0.4
-- **Publisher**: ibm-robert
-- **Tipus**: VS Code Extension
-- **Tecnologies**: TypeScript, React, Vite, Jira Cloud REST API v3
-- **Repositori**: https://github.com/ibm/robert-vscode-extension.git
+- **Versió**: vegeu `version` a `package.json` (la comparteixen les dues versions)
+- **Publisher**: trevSmart
+- **Tipus**: VS Code Extension + app d'escriptori Electron
+- **Tecnologies**: TypeScript, React, Vite, Electron, Jira Cloud REST API v3, Rally WSAPI
+- **Repositori**: https://github.com/trevSmart/robert.git
 
 ## 🏗️ Arquitectura del Projecte
 
@@ -21,18 +25,24 @@ Aquest document proporciona context complet del projecte Robert per agents IA, a
 ```
 Robert/
 ├── src/                          # Codi font TypeScript
-│   ├── extension.ts              # Punt d'entrada principal
+│   ├── extension.ts              # Punt d'entrada de l'extensió de VS Code
 │   ├── RobertWebviewProvider.ts  # Gestor de webviews
 │   ├── SettingsManager.ts        # Gestió de configuració
 │   ├── ErrorHandler.ts           # Gestió d'errors centralitzada
 │   ├── libs/jira/                # Integració amb Jira Cloud REST API
+│   ├── libs/rally/               # Integració amb Rally
+│   ├── libs/provider/            # Selecció del provider actiu (Jira / Rally)
+│   ├── standalone/              # Host de l'app d'escriptori (Electron)
 │   ├── templates/               # Plantilles HTML per webviews
 │   ├── types/                   # Definicions de tipus TypeScript
 │   ├── utils/                   # Utilitats compartides
 │   └── webview/                 # Components React per webviews
 ├── out/                         # Codi compilat JavaScript
 ├── resources/                   # Recursos (icones, imatges)
-├── dist/                        # Paquets VSIX generats
+├── scripts/                     # Scripts auxiliars (p. ex. standalone-launch.cjs)
+├── docs/STANDALONE.md           # Documentació de l'app standalone
+├── electron-builder.yml         # Empaquetat de l'app standalone
+├── dist/                        # Paquets VSIX i dist/standalone/ (instal·ladors)
 └── tmp/                         # Fitxers temporals
 ```
 
@@ -172,6 +182,8 @@ export ROBERT_COLLABORATION_ENABLED="false"
 - **@ESLint**: Linter i formatter
 - **@vscode/vsce**: Packaging tool per extensions
 - **vscrui**: UI components per VS Code
+- **electron**: Runtime de l'app standalone (només devDependency; no entra al VSIX)
+- **electron-builder**: Empaquetat de l'app standalone (dmg/zip, nsis, AppImage)
 
 ## 📝 Comandaments Disponibles
 
@@ -189,6 +201,8 @@ export ROBERT_COLLABORATION_ENABLED="false"
 
 ### Canal de Sortida "Robert"
 Any action performed by our extension must be logged to the "Robert" Output channel. Any errors or warnings must also be registered in the "Robert" Output channel.
+
+A l'app standalone el mateix canal s'escriu a `<userData>/logs/robert.log` (menú View → Show Logs); des del codi font també surt pel terminal.
 ```
 [Robert] ℹ️ INFO in Context:
 [Robert] Time: 2024-01-15T10:30:00.000Z
@@ -218,12 +232,16 @@ Any action performed by our extension must be logged to the "Robert" Output chan
 - `npm run lint`: Linting i formatatge
 - `npm run package`: Generar paquet VSIX
 - `npm run package:patch`: Incrementar versió i empaquetar
+- `npm run standalone:build`: Compilar TypeScript + webview per a l'app standalone
+- `npm run standalone:start`: Build + arrencar l'app standalone des del codi font
+- `npm run standalone:dev`: Arrencar l'app standalone sense recompilar
+- `npm run standalone:package`: Generar els instal·ladors de l'app standalone a `dist/standalone/`
 
 ### Build Process
 1. **TypeScript Compilation**: `tsc -p ./`
 2. **Webview Build**: `vite build` (React components)
 3. **Linting**: `eslint --fix .`
-4. **Packaging**: `vsce package --out dist/`
+4. **Packaging**: `vsce package --out dist/` (extensió) · `electron-builder --config electron-builder.yml` (standalone)
 
 ## 🎨 Interfície d'Usuari
 
@@ -245,7 +263,7 @@ Any action performed by our extension must be logged to the "Robert" Output chan
 ## 🔒 Seguretat i Configuració
 
 ### API Keys
-- El token API de Jira es guarda a configuració VS Code
+- El token API de Jira es guarda a configuració VS Code (extensió) o a `<userData>/settings.json` xifrat amb el clauer del sistema via `safeStorage` (app standalone)
 - No es loggeja ni es mostra en plain text
 - Validació abans d'utilitzar
 
@@ -267,6 +285,10 @@ Any action performed by our extension must be logged to the "Robert" Output chan
 3. `npm run package`: Generar VSIX
 4. `vsce publish`: Publicar a marketplace
 
+### App standalone
+1. `npm run standalone:start` per desenvolupar-la (equivalent a F5 per l'extensió)
+2. `npm run standalone:package` per generar els instal·ladors del sistema operatiu actual a `dist/standalone/` (sense signar per defecte)
+
 ## 🖥️ Versió Standalone (Electron)
 
 Robert es distribueix en **dues versions que s'han de mantenir totes dues**: l'extensió de VS Code i una aplicació d'escriptori standalone (Electron). Comparteixen tot el codi de producte; la versió standalone només afegeix un "host" a `src/standalone/` que fa el paper de VS Code.
@@ -276,6 +298,8 @@ Robert es distribueix en **dues versions que s'han de mantenir totes dues**: l'e
 - **Webview**: `ElectronWebview.ts` implementa `vscode.Webview` sobre una `BrowserWindow`; `preload.ts` exposa `acquireVsCodeApi()` a la UI React.
 - **Settings**: finestra generada a partir de `contributes.configuration` del `package.json`; es desen a `<userData>/settings.json` amb els tokens xifrats (`safeStorage`).
 - **Scripts**: `npm run standalone:start` (build + arrencada), `npm run standalone:dev`, `npm run standalone:package` (instal·ladors a `dist/standalone/`).
+- **Arrencada en desenvolupament**: `scripts/standalone-launch.cjs` treu `ELECTRON_RUN_AS_NODE` de l'entorn (els terminals de VS Code el defineixen) i, a macOS, executa Electron des d'una còpia del bundle anomenada "IBM Robert" amb la icona de Robert (a `node_modules/.cache/robert-standalone/`), perquè el Dock i el menú no mostrin "Electron". Arrencar directament amb `electron out/src/standalone/main.js` funciona, però amb nom i icona d'Electron.
+- **Perfil aïllat**: `ROBERT_STANDALONE_USER_DATA=<dir>` fa servir un altre directori de dades (útil per a proves).
 
 ### Regles per mantenir les dues versions
 

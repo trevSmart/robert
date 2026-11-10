@@ -24,11 +24,14 @@ import { SettingsWindowController } from './settingsWindow';
 /** Repository / app.asar root: this file lives in out/src/standalone/. */
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
 const APP_NAME = 'IBM Robert';
+/** Robert's version (app.getVersion() reports Electron's when running from source). */
+const APP_VERSION = (JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')) as { version: string }).version;
 const MAX_LOG_BYTES = 5 * 1024 * 1024;
 
 app.setName(APP_NAME);
 // ROBERT_STANDALONE_USER_DATA lets tests and power users run an isolated profile.
 app.setPath('userData', process.env.ROBERT_STANDALONE_USER_DATA || path.join(app.getPath('appData'), APP_NAME));
+app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: APP_VERSION, copyright: 'For IBM internal use only.' });
 registerAppSchemeAsPrivileged();
 
 if (!app.requestSingleInstanceLock()) {
@@ -142,7 +145,7 @@ async function start(): Promise<void> {
 	} as unknown as vscode.ExtensionContext;
 
 	initDevMode(context, { isPackaged: app.isPackaged });
-	output.appendLine(`[Robert] 🖥️  Standalone app ${app.getVersion()} starting (Electron ${process.versions.electron}, ${app.isPackaged ? 'packaged' : 'from source'})`);
+	output.appendLine(`[Robert] 🖥️  Standalone app ${APP_VERSION} starting (Electron ${process.versions.electron}, ${app.isPackaged ? 'packaged' : 'from source'})`);
 	output.appendLine(`[Robert] Settings file: ${config.getFilePath()}`);
 	output.appendLine(`[Robert] Test tab: ${isTestTabEnabled() ? 'enabled' : 'hidden'} (${getTestTabEnabledReason()})`);
 

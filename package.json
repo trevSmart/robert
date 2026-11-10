@@ -240,8 +240,8 @@
 		"publish": "vsce publish",
 		"publish:pre-release": "vsce publish --pre-release",
 		"standalone:build": "tsc -p ./ && npm run build:webview",
-		"standalone:start": "npm run standalone:build && electron out/src/standalone/main.js",
-		"standalone:dev": "electron out/src/standalone/main.js",
+		"standalone:start": "npm run standalone:build && node scripts/standalone-launch.cjs",
+		"standalone:dev": "node scripts/standalone-launch.cjs",
 		"standalone:package": "npm run standalone:build && electron-builder --config electron-builder.yml"
 	},
 	"devDependencies": {

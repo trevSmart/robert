@@ -49,7 +49,12 @@ npm run standalone:dev      # launch without rebuilding
 npm run standalone:package  # build installers for the current OS into dist/standalone/
 ```
 
-If you launch from a terminal inside VS Code and Electron behaves like plain Node (`Cannot find module 'electron'`), unset `ELECTRON_RUN_AS_NODE` first.
+Both launch commands go through `scripts/standalone-launch.cjs`, which:
+
+- removes `ELECTRON_RUN_AS_NODE` from the environment (terminals inside VS Code export it, and it makes Electron behave like plain Node: `Cannot find module 'electron'`);
+- on macOS, runs Electron from a cached copy of the bundle renamed to **IBM Robert** with Robert's icon (`node_modules/.cache/robert-standalone/`, rebuilt when Electron or the icon change). The Dock name, the app menu title and the Dock icon come from the bundle's `Info.plist`, so the stock `node_modules/electron` binary would show "Electron" with Electron's icon. Packaged builds get the right name and icon from electron-builder.
+
+Running `electron out/src/standalone/main.js` directly still works, just with Electron's name and icon.
 
 Running from source enables the same dev features as the F5 Extension Development Host (Test tab, verbose logging, log mirroring to the terminal).
 

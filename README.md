@@ -65,6 +65,12 @@ You can also open Robert in a full editor tab via the **Open in Editor** button 
 
 ---
 
+## Standalone desktop app
+
+Robert is also available as a standalone desktop app (Electron) built from the same codebase, for people who don't use VS Code. Settings are edited from **Settings…** (Cmd/Ctrl+,) in the app menu. See [docs/STANDALONE.md](docs/STANDALONE.md) to build and run it.
+
+---
+
 ## Configuration
 
 Connect Robert to your Jira Cloud site once; settings are saved across sessions.

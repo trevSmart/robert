@@ -1,0 +1,50 @@
+# Packaging of the standalone (Electron) version of IBM Robert.
+# Build with: npm run standalone:package  (outputs to dist/standalone/)
+appId: com.ibm.robert
+productName: IBM Robert
+copyright: For IBM internal use only.
+
+directories:
+  output: dist/standalone
+  buildResources: resources
+
+# package.json "main" points at the VS Code extension entry; the app uses its own.
+extraMetadata:
+  main: out/src/standalone/main.js
+
+files:
+  - package.json
+  - out/src/**/*.js
+  - "!out/src/**/*.test.js"
+  - out/webview/**
+  - "!out/webview/**/*.map"
+  - src/webview/loading.html
+  - media/**
+  - resources/icons/**
+  - resources/fonts/**
+  - resources/video.mp4
+  - "!**/.DS_Store"
+
+asar: true
+
+mac:
+  category: public.app-category.productivity
+  icon: resources/icons/robert-logo4.png
+  target:
+    - dmg
+    - zip
+
+win:
+  icon: resources/icons/robert-logo4.png
+  target:
+    - nsis
+
+nsis:
+  oneClick: false
+  perMachine: false
+
+linux:
+  icon: resources/icons/robert-logo4.png
+  category: Office
+  target:
+    - AppImage

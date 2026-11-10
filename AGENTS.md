@@ -267,6 +267,26 @@ Any action performed by our extension must be logged to the "Robert" Output chan
 3. `npm run package`: Generar VSIX
 4. `vsce publish`: Publicar a marketplace
 
+## 🖥️ Versió Standalone (Electron)
+
+Robert es distribueix en **dues versions que s'han de mantenir totes dues**: l'extensió de VS Code i una aplicació d'escriptori standalone (Electron). Comparteixen tot el codi de producte; la versió standalone només afegeix un "host" a `src/standalone/` que fa el paper de VS Code.
+
+- **Entrada**: `src/standalone/main.ts` (l'extensió continua sent `src/extension.ts`).
+- **Shim de `vscode`**: `src/standalone/host/vscodeShim.ts` implementa el subconjunt de l'API de VS Code que fa servir el backend (configuració, output channel, `globalState`, notificacions, `openExternal`, comandes). `installVscodeModule.ts` fa que `require('vscode')` el retorni.
+- **Webview**: `ElectronWebview.ts` implementa `vscode.Webview` sobre una `BrowserWindow`; `preload.ts` exposa `acquireVsCodeApi()` a la UI React.
+- **Settings**: finestra generada a partir de `contributes.configuration` del `package.json`; es desen a `<userData>/settings.json` amb els tokens xifrats (`safeStorage`).
+- **Scripts**: `npm run standalone:start` (build + arrencada), `npm run standalone:dev`, `npm run standalone:package` (instal·ladors a `dist/standalone/`).
+
+### Regles per mantenir les dues versions
+
+1. La lògica de producte va sempre al codi compartit (`src/webview/**`, message handlers, `src/libs/**`), mai a `src/standalone/` ni només a `src/extension.ts`.
+2. Si el codi compartit comença a fer servir una API nova de `vscode`, cal afegir-la al shim (o fer-ne un no-op / error clar) i ampliar `src/standalone/host/sharedCodeOnShim.test.ts`.
+3. Si la UI fa servir una variable CSS `--vscode-*` nova, cal afegir-la a les dues paletes de `src/standalone/host/theme.ts` (el test `host.test.ts` falla si en falta alguna).
+4. Els settings nous es declaren com sempre al `package.json`; si són secrets, afegeix-los a `SECRET_SETTING_KEYS`.
+5. Comprova els canvis a les dues versions (F5 per l'extensió, `npm run standalone:start` per l'app).
+
+Documentació completa: [docs/STANDALONE.md](docs/STANDALONE.md)
+
 ## Cursor Cloud specific instructions
 
 Scope: the main product is the VS Code extension (root `package.json`). `server/` is an **optional** collaboration backend (Express + WebSocket + PostgreSQL, disabled by default via `robert.collaboration.enabled`, with a deployed prod instance at `https://robert-8vdt.onrender.com`); it is not needed to develop/run the extension and requires a PostgreSQL DB to run locally.

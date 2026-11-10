@@ -31,7 +31,7 @@ interface BlockedReasonBannerProps {
 }
 
 /**
- * Mostra el motiu del bloqueig (camp BlockedReason de Rally).
+ * Mostra el motiu del bloqueig (camp BlockedReason de Jira).
  * No renderitza res si l'item no està bloquejat o no té motiu informat.
  */
 const BlockedReasonBanner: FC<BlockedReasonBannerProps> = ({ blocked, blockedReason }) => {

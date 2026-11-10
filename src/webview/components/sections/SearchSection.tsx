@@ -1,5 +1,5 @@
 import React, { FC, RefObject, useState, useEffect } from 'react';
-import { type GlobalSearchResultItem } from '../../../types/rally';
+import { type GlobalSearchResultItem } from '../../../types/jira';
 import SearchWithTypeFilter, { type SearchType } from '../common/SearchWithTypeFilter';
 import EntityTypeBadge from '../common/EntityTypeBadge';
 
@@ -60,7 +60,13 @@ const SearchSection: FC<SearchSectionProps> = ({
 		return parts.map((part, i) => {
 			if (regex.test(part)) {
 				return (
-					<span key={i} style={{ backgroundColor: 'rgba(255, 165, 0, 0.5)', fontWeight: 500 }}>
+					<span
+						key={i}
+						style={{
+							backgroundColor: 'rgba(255, 165, 0, 0.5)',
+							fontWeight: 500
+						}}
+					>
 						{part}
 					</span>
 				);
@@ -70,7 +76,15 @@ const SearchSection: FC<SearchSectionProps> = ({
 	};
 
 	return (
-		<div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
+		<div
+			style={{
+				padding: '20px',
+				display: 'flex',
+				flexDirection: 'column',
+				gap: '16px',
+				height: '100%'
+			}}
+		>
 			<div style={{ flexShrink: 0 }}>
 				<SearchWithTypeFilter
 					placeholder="Search by name or id"
@@ -87,7 +101,17 @@ const SearchSection: FC<SearchSectionProps> = ({
 			</div>
 
 			{globalSearchLoading && (
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', flex: 1, minHeight: '200px' }}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						gap: '12px',
+						flex: 1,
+						minHeight: '200px'
+					}}
+				>
 					<div
 						style={{
 							border: `2px solid var(--vscode-panel-border)`,
@@ -98,7 +122,14 @@ const SearchSection: FC<SearchSectionProps> = ({
 							animation: 'spin 1s linear infinite'
 						}}
 					/>
-					<div style={{ fontSize: '13px', color: 'var(--vscode-descriptionForeground)' }}>Searching...</div>
+					<div
+						style={{
+							fontSize: '13px',
+							color: 'var(--vscode-descriptionForeground)'
+						}}
+					>
+						Searching...
+					</div>
 				</div>
 			)}
 
@@ -116,8 +147,17 @@ const SearchSection: FC<SearchSectionProps> = ({
 						overflow: 'hidden'
 					}}
 				>
-					<div style={{ fontSize: '12px', color: 'var(--vscode-descriptionForeground)', padding: '8px 12px', borderBottom: '1px solid var(--vscode-panel-border)', flexShrink: 0 }}>
-						{globalSearchResults.length} result{globalSearchResults.length !== 1 ? 's' : ''}
+					<div
+						style={{
+							fontSize: '12px',
+							color: 'var(--vscode-descriptionForeground)',
+							padding: '8px 12px',
+							borderBottom: '1px solid var(--vscode-panel-border)',
+							flexShrink: 0
+						}}
+					>
+						{globalSearchResults.length} result
+						{globalSearchResults.length !== 1 ? 's' : ''}
 					</div>
 					<ul
 						style={{
@@ -130,7 +170,14 @@ const SearchSection: FC<SearchSectionProps> = ({
 						}}
 					>
 						{globalSearchResults.map((item, idx) => (
-							<li key={`${item.entityType}-${item.objectId}-${idx}`} style={{ margin: 0, padding: 0, borderBottom: '1px solid var(--vscode-panel-border)' }}>
+							<li
+								key={`${item.entityType}-${item.objectId}-${idx}`}
+								style={{
+									margin: 0,
+									padding: 0,
+									borderBottom: '1px solid var(--vscode-panel-border)'
+								}}
+							>
 								<button
 									type="button"
 									className="search-result-button"
@@ -158,14 +205,49 @@ const SearchSection: FC<SearchSectionProps> = ({
 									}}
 								>
 									<EntityTypeBadge type={item.entityType} />
-									<span style={{ fontWeight: 500, color: 'var(--vscode-foreground)' }}>{highlightMatch(item.formattedId)}</span>
-									<span style={{ color: 'var(--vscode-descriptionForeground)', flex: 1 }}>{highlightMatch(item.name || '\u2014')}</span>
+									<span
+										style={{
+											fontWeight: 500,
+											color: 'var(--vscode-foreground)'
+										}}
+									>
+										{highlightMatch(item.formattedId)}
+									</span>
+									{item.project && (
+										<span
+											title={`Project ${item.project}`}
+											style={{
+												padding: '0 6px',
+												fontSize: '11px',
+												borderRadius: '8px',
+												color: 'var(--vscode-badge-foreground)',
+												backgroundColor: 'var(--vscode-badge-background)'
+											}}
+										>
+											{item.project}
+										</span>
+									)}
+									<span
+										style={{
+											color: 'var(--vscode-descriptionForeground)',
+											flex: 1
+										}}
+									>
+										{highlightMatch(item.name || '\u2014')}
+									</span>
 								</button>
 							</li>
 						))}
 					</ul>
 					{globalSearchHasMore && (
-						<div style={{ textAlign: 'center', padding: '15px', borderTop: '1px solid var(--vscode-panel-border)', flexShrink: 0 }}>
+						<div
+							style={{
+								textAlign: 'center',
+								padding: '15px',
+								borderTop: '1px solid var(--vscode-panel-border)',
+								flexShrink: 0
+							}}
+						>
 							<button
 								onClick={() => onLoadMoreResults?.(globalSearchTerm, searchType)}
 								disabled={globalSearchLoadingMore}

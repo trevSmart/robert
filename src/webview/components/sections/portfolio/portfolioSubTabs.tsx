@@ -33,9 +33,24 @@ const DefectsIcon = ({ size = '18px' }: { size?: string }) => (
 );
 
 const portfolioSubTabsConfig: (SubTabConfig & { id: PortfolioViewType })[] = [
-	{ id: 'bySprints', label: 'Sprints', description: 'View user stories organized by sprints', icon: <SprintsIcon /> },
-	{ id: 'allUserStories', label: 'User Stories', description: 'View all user stories in the project', icon: <UserStoriesIcon /> },
-	{ id: 'allDefects', label: 'Defects', description: 'View all defects in the project', icon: <DefectsIcon /> }
+	{
+		id: 'bySprints',
+		label: 'Sprints',
+		description: 'View user stories organized by sprints',
+		icon: <SprintsIcon />
+	},
+	{
+		id: 'allUserStories',
+		label: 'User Stories',
+		description: 'View all user stories in the project',
+		icon: <UserStoriesIcon />
+	},
+	{
+		id: 'allDefects',
+		label: 'Defects',
+		description: 'View all defects in the project',
+		icon: <DefectsIcon />
+	}
 ];
 
 export function getPortfolioSubTabs(): SubTabConfig[] {

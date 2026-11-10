@@ -75,8 +75,8 @@ export class CollaborationMessageHandler {
 		if (/Collaboration server URL not configured/i.test(raw)) {
 			return 'Collaboration server URL is not set. Configure it in extension settings.';
 		}
-		if (/Rally User ID is required/i.test(raw)) {
-			return 'Rally user is required for collaboration. Ensure you are signed in to Rally.';
+		if (/Jira User ID is required/i.test(raw)) {
+			return 'Jira user is required for collaboration. Ensure you are signed in to Jira.';
 		}
 		return raw || 'Something went wrong with the collaboration service.';
 	}

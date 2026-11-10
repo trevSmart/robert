@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import type { FavoriteItem, RallyItemRef } from '../../types/rally';
+import type { FavoriteItem, JiraItemRef } from '../../types/jira';
 
 const STORAGE_KEY = 'robert.favorites';
 
@@ -8,12 +8,12 @@ const STORAGE_KEY = 'robert.favorites';
 const LEGACY_STORAGE_KEY = 'robert.pinnedItems';
 
 /** Item shape persisted under the legacy key: same fields, but `pinnedAt` instead of `favoritedAt`. */
-interface LegacyPinnedItem extends RallyItemRef {
+interface LegacyPinnedItem extends JiraItemRef {
 	pinnedAt: number;
 }
 
 /**
- * Persists the user-curated list of favorite Rally items (user stories, defects, sprints).
+ * Persists the user-curated list of favorite Jira items (user stories, defects, sprints).
  * Favoriting is toggled from each record's detail view and is independent of the recently
  * viewed history — favorites are never auto-evicted.
  */
@@ -58,7 +58,10 @@ export class FavoritesMessageHandler {
 			const legacy = this.context.globalState.get<LegacyPinnedItem[]>(LEGACY_STORAGE_KEY);
 			if (legacy === undefined) return;
 
-			const migrated: FavoriteItem[] = (legacy ?? []).filter(Boolean).map(({ pinnedAt, ...rest }) => ({ ...rest, favoritedAt: pinnedAt ?? Date.now() }));
+			const migrated: FavoriteItem[] = (legacy ?? []).filter(Boolean).map(({ pinnedAt, ...rest }) => ({
+				...rest,
+				favoritedAt: pinnedAt ?? Date.now()
+			}));
 			await this.context.globalState.update(STORAGE_KEY, migrated);
 			await this.context.globalState.update(LEGACY_STORAGE_KEY, undefined);
 		} catch (error) {
@@ -82,12 +85,15 @@ export class FavoritesMessageHandler {
 	}
 
 	private async handleGetFavoriteItems(webview: vscode.Webview): Promise<void> {
-		webview.postMessage({ command: 'favoriteItemsLoaded', items: this.normalize(this.getStoredItems()) });
+		webview.postMessage({
+			command: 'favoriteItemsLoaded',
+			items: this.normalize(this.getStoredItems())
+		});
 	}
 
 	private async handleToggleFavoriteItem(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const incoming = message.item as RallyItemRef;
+			const incoming = message.item as JiraItemRef;
 			if (!incoming?.objectId || !incoming?.type) {
 				return;
 			}
@@ -100,7 +106,13 @@ export class FavoritesMessageHandler {
 					current.filter(item => !(item.objectId === incoming.objectId && item.type === incoming.type))
 				);
 			} else {
-				const newItem: FavoriteItem = { objectId: incoming.objectId, formattedId: incoming.formattedId, name: incoming.name, type: incoming.type, favoritedAt: Date.now() };
+				const newItem: FavoriteItem = {
+					objectId: incoming.objectId,
+					formattedId: incoming.formattedId,
+					name: incoming.name,
+					type: incoming.type,
+					favoritedAt: Date.now()
+				};
 				await this.persist(webview, [newItem, ...current]);
 			}
 		} catch (error) {

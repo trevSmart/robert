@@ -1,4 +1,4 @@
-// Shared types for utility modules (not Rally-specific)
+// Shared types for utility modules (not Jira-specific)
 
 /**
  * Holiday interface for public holidays

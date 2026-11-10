@@ -51,7 +51,10 @@ const INITIAL_WIDTHS: Record<ColumnKey, number> = {
 };
 
 const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, embedded = false }) => {
-	const { sortedItems, sortConfig, requestSort } = useTableSort(tasks, { key: 'formattedId', direction: 'asc' });
+	const { sortedItems, sortConfig, requestSort } = useTableSort(tasks, {
+		key: 'formattedId',
+		direction: 'asc'
+	});
 	const { columnWidths, startResize } = useColumnResize(INITIAL_WIDTHS);
 	const totalColumnWidth = Object.values(columnWidths).reduce((sum, width) => sum + width, 0);
 	const getColumnPercent = (key: ColumnKey) => (totalColumnWidth > 0 ? (columnWidths[key] / totalColumnWidth) * 100 : 0);
@@ -166,7 +169,16 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 	return (
 		<div style={containerStyle}>
 			{loading && (
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						minHeight: '200px',
+						gap: '10px'
+					}}
+				>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -206,7 +218,14 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 			)}
 
 			{sortedItems.length > 0 && !loading && !error && (
-				<table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
+				<table
+					style={{
+						width: '100%',
+						tableLayout: 'fixed',
+						borderCollapse: 'collapse',
+						border: `1px solid ${themeColors.panelBorder}`
+					}}
+				>
 					<colgroup>
 						<col style={{ width: `${getColumnPercent('formattedId')}%` }} />
 						<col style={{ width: `${getColumnPercent('name')}%` }} />
@@ -217,7 +236,12 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 						<col style={{ width: `${getColumnPercent('timeSpent')}%` }} />
 					</colgroup>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
+						<tr
+							style={{
+								backgroundColor: themeColors.titleBarActiveBackground,
+								color: themeColors.titleBarActiveForeground
+							}}
+						>
 							<SortableHeader label="ID" sortKey="formattedId" colKey="formattedId" />
 							<SortableHeader label="Name" sortKey="name" colKey="name" />
 							<SortableHeader label="State" sortKey="state" colKey="state" />
@@ -246,15 +270,77 @@ const TasksTable: React.FC<TasksTableProps> = ({ tasks, loading = false, error, 
 									e.currentTarget.style.boxShadow = 'none';
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.formattedId}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{task.state}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{task.formattedId}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{task.name}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{task.state}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
 									<AvatarWithName name={task.owner || ''} size={20} emptyLabel="N/A" />
 								</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center' }}>{task.estimate || 0}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center' }}>{task.toDo}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center' }}>{task.timeSpent}</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										textAlign: 'center'
+									}}
+								>
+									{task.estimate || 0}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										textAlign: 'center'
+									}}
+								>
+									{task.toDo}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										textAlign: 'center'
+									}}
+								>
+									{task.timeSpent}
+								</td>
 							</tr>
 						))}
 					</tbody>

@@ -2,15 +2,16 @@ import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
 import { RobertWebviewProvider } from './RobertWebviewProvider';
 import { SettingsManager } from './SettingsManager';
-import type { RallyData, Iteration } from './types/rally';
+import type { JiraData, Iteration } from './types/jira';
+import type { RallyData } from './types/rally';
 import { OutputChannelManager } from './utils/OutputChannelManager';
-import { clearAllRallyCaches } from './libs/rally/rallyServices';
+import { clearAllProviderCaches, getActiveProvider, getProviderLabel } from './libs/provider';
 import type { CacheEntity } from './libs/cache/ttlConfig';
 import { detectDebugMode, getTestTabEnabledReason, initDevMode, isTestTabEnabled } from './utils/devMode';
 import { WebviewMessageDispatcher } from './webview/messageHandlers/WebviewMessageDispatcher';
 
-// Rally data cache - centralized state management
-export const rallyData: RallyData = {
+// Jira data cache - centralized state management
+export const jiraData: JiraData = {
 	projects: [],
 	users: [],
 	iterations: [],
@@ -21,22 +22,50 @@ export const rallyData: RallyData = {
 };
 
 /**
- * Timestamps paral·lels de l'última escriptura a rallyData, per entitat.
+ * Timestamps paral·lels de l'última escriptura a jiraData, per entitat.
  * Permet aplicar un TTL d'edat a la branca de fallback in-memory sense modificar
- * el tipus RallyData ni la forma dels objectes cachejats.
+ * el tipus JiraData ni la forma dels objectes cachejats.
  */
+export const jiraDataMeta: Partial<Record<CacheEntity, number>> = {};
+
+/** Estampa el moment de l'últim upsert exitós d'una entitat a jiraData. */
+export function stampJiraData(entity: CacheEntity, when: number = Date.now()): void {
+	jiraDataMeta[entity] = when;
+}
+
+/** Buida tots els timestamps de jiraData (usat al reload). */
+export function clearJiraDataMeta(): void {
+	for (const key of Object.keys(jiraDataMeta) as CacheEntity[]) {
+		delete jiraDataMeta[key];
+	}
+}
+
+// Rally data cache - same role as jiraData, used when robert.provider is "rally"
+export const rallyData: RallyData = {
+	projects: [],
+	users: [],
+	iterations: [],
+	userStories: [],
+	tasks: [],
+	defects: [],
+	currentUser: undefined
+};
+
 export const rallyDataMeta: Partial<Record<CacheEntity, number>> = {};
 
-/** Estampa el moment de l'últim upsert exitós d'una entitat a rallyData. */
 export function stampRallyData(entity: CacheEntity, when: number = Date.now()): void {
 	rallyDataMeta[entity] = when;
 }
 
-/** Buida tots els timestamps de rallyData (usat al reload). */
-export function clearRallyDataMeta(): void {
+function clearRallyDataMeta(): void {
 	for (const key of Object.keys(rallyDataMeta) as CacheEntity[]) {
 		delete rallyDataMeta[key];
 	}
+}
+
+/** In-memory data of the active provider (status bar, etc.). */
+function activeData(): JiraData | RallyData {
+	return getActiveProvider() === 'rally' ? rallyData : jiraData;
 }
 
 // Store global references for reload functionality
@@ -59,19 +88,23 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 	try {
 		outputManager.appendLine('[Robert] 🔄 Starting extension reload');
 
-		// Step 1: Clear all Rally caches
-		outputManager.appendLine('[Robert] 🗑️  Clearing Rally caches...');
-		clearAllRallyCaches();
+		// Step 1: Clear caches of both providers
+		outputManager.appendLine(`[Robert] 🗑️  Clearing caches (active provider: ${getProviderLabel()})...`);
+		clearAllProviderCaches();
 
-		// Step 2: Clear rallyData
-		outputManager.appendLine('[Robert] 🗑️  Clearing rally data...');
-		rallyData.projects = [];
-		rallyData.users = [];
-		rallyData.iterations = [];
-		rallyData.userStories = [];
-		rallyData.tasks = [];
-		rallyData.defects = [];
-		rallyData.currentUser = undefined;
+		// Step 2: Clear in-memory data of both providers
+		outputManager.appendLine('[Robert] 🗑️  Clearing provider data...');
+		for (const data of [jiraData, rallyData] as Array<JiraData | RallyData>) {
+			data.projects = [];
+			data.users = [];
+			data.iterations = [];
+			data.userStories = [];
+			data.tasks = [];
+			data.defects = [];
+			data.currentUser = undefined;
+		}
+		rallyData.testCases = [];
+		clearJiraDataMeta();
 		clearRallyDataMeta();
 
 		WebviewMessageDispatcher.clearSessionNavigationState();
@@ -79,8 +112,8 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 		// Step 3: Refresh webview provider (no need to re-register, just refresh data)
 		if (globalWebviewProvider) {
 			outputManager.appendLine('[Robert] 🔄 Refreshing webview provider...');
-			// Prefetch Rally data to warm the cache and trigger webview refresh
-			await globalWebviewProvider.prefetchRallyData('reload');
+			// Prefetch Jira data to warm the cache and trigger webview refresh
+			await globalWebviewProvider.prefetchJiraData('reload');
 			// Notify webview to refresh (via postMessage)
 			await globalWebviewProvider.resetAndRefreshWebviews();
 			if (globalStatusBarItem) {
@@ -136,8 +169,8 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 	);
 
-	// Prefetch Rally data on activation to warm the cache; refresh status bar when done
-	webviewProvider.prefetchRallyData('activation').then(() => updateStatusBarItem(statusBarItem, 'idle', errorHandler));
+	// Prefetch Jira data on activation to warm the cache; refresh status bar when done
+	webviewProvider.prefetchJiraData('activation').then(() => updateStatusBarItem(statusBarItem, 'idle', errorHandler));
 
 	// If in debug mode, perform additional actions
 	if (isDebugMode) {
@@ -224,10 +257,14 @@ export function activate(context: vscode.ExtensionContext) {
 			if (e.affectsConfiguration('robert.debugMode')) {
 				webviewProvider.broadcastTestTabVisibility();
 			}
+			if (e.affectsConfiguration('robert.provider')) {
+				outputManager.appendLine(`[Robert] 🔀 Provider changed to ${getProviderLabel()}; reloading data`);
+				reloadExtension(outputManager, errorHandler).catch(error => errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'providerChange'));
+			}
 		})
 	);
 
-	// Refresh "X days left" every hour (uses in-memory rallyData only, no API)
+	// Refresh "X days left" every hour (uses in-memory jiraData only, no API)
 	context.subscriptions.push(scheduleStatusBarUpdateHourly(statusBarItem, errorHandler));
 
 	// Commands used by interactive tooltip links
@@ -274,7 +311,7 @@ const STATUS_BAR_SPRINT_ICON = '$(calendar)';
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 
-/** Schedules status bar refresh every hour so "X days left" stays correct. Uses in-memory rallyData only. */
+/** Schedules status bar refresh every hour so "X days left" stays correct. Uses in-memory jiraData only. */
 function scheduleStatusBarUpdateHourly(item: vscode.StatusBarItem, errorHandler: ErrorHandler): vscode.Disposable {
 	const intervalId = setInterval(() => {
 		updateStatusBarItem(item, 'idle', errorHandler);
@@ -289,7 +326,7 @@ function getStatusBarIdleContent(): { text: string; daysLeft: number | null } {
 		if (!settingsManager.getSetting('statusBarShowSprintDaysLeft')) {
 			return { text: STATUS_BAR_NO_SPRINT_TEXT, daysLeft: null };
 		}
-		const iterations = rallyData.iterations ?? [];
+		const iterations = activeData().iterations ?? [];
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 
@@ -486,7 +523,12 @@ function _showStatusPopover(webviewProvider: RobertWebviewProvider) {
 		];
 
 		// Add a button to open the full panel quickly
-		qp.buttons = [{ iconPath: new vscode.ThemeIcon('screen-full'), tooltip: 'Open full panel' }];
+		qp.buttons = [
+			{
+				iconPath: new vscode.ThemeIcon('screen-full'),
+				tooltip: 'Open full panel'
+			}
+		];
 
 		const accept = () => {
 			try {

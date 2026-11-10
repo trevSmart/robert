@@ -19,7 +19,11 @@ export interface MetricsSectionProps {
 	nextSprintName: string;
 	selectedReadinessSprint: string;
 	onReadinessSprintChange: (value: string) => void;
-	sprintIterations: Array<{ objectId: string; name: string; startDate: string }>;
+	sprintIterations: Array<{
+		objectId: string;
+		name: string;
+		startDate: string;
+	}>;
 	defectsBySeverity: DefectsBySeverity[];
 	defectsBySeverityLoading: boolean;
 }
@@ -45,8 +49,25 @@ const MetricsSection: FC<MetricsSectionProps> = ({
 	<div style={{ padding: '20px' }}>
 		{/* Metrics Header */}
 		<div style={{ marginBottom: '30px', textAlign: 'center' }}>
-			<h2 style={{ margin: '0 0 8px 0', color: 'var(--vscode-foreground)', fontSize: '24px', fontWeight: '500' }}>Project Analytics</h2>
-			<p style={{ margin: 0, color: 'var(--vscode-descriptionForeground)', fontSize: '14px' }}>Real-time insights from Rally</p>
+			<h2
+				style={{
+					margin: '0 0 8px 0',
+					color: 'var(--vscode-foreground)',
+					fontSize: '24px',
+					fontWeight: '500'
+				}}
+			>
+				Project Analytics
+			</h2>
+			<p
+				style={{
+					margin: 0,
+					color: 'var(--vscode-descriptionForeground)',
+					fontSize: '14px'
+				}}
+			>
+				Real-time insights from Jira
+			</p>
 		</div>
 
 		{/* Sprint KPIs */}

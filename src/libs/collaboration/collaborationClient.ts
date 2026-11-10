@@ -115,10 +115,10 @@ export class CollaborationClient {
 		const serverUrl = this.getServerUrl();
 		const url = `${serverUrl}${endpoint}`;
 
-		// Check if Rally User ID is set before making any requests
+		// Check if Jira User ID is set before making any requests
 		// The collaboration server requires this header for all API calls
 		if (!this._rallyUserId) {
-			throw new Error('Rally User ID is required for collaboration server requests');
+			throw new Error('Jira User ID is required for collaboration server requests');
 		}
 
 		const headers: Record<string, string> = {
@@ -254,7 +254,10 @@ export class CollaborationClient {
 	// Notifications API
 	public async getNotifications(unreadOnly: boolean = false): Promise<{ notifications: Notification[]; unreadCount: number }> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
-			return this.makeRequest<{ notifications: Notification[]; unreadCount: number }>(`/api/notifications${unreadOnly ? '?unreadOnly=true' : ''}`);
+			return this.makeRequest<{
+				notifications: Notification[];
+				unreadCount: number;
+			}>(`/api/notifications${unreadOnly ? '?unreadOnly=true' : ''}`);
 		}, 'CollaborationClient.getNotifications');
 		return result ?? { notifications: [], unreadCount: 0 };
 	}
@@ -286,9 +289,21 @@ export class CollaborationClient {
 	}
 
 	// Users API
-	public async getCurrentUser(): Promise<{ id: string; rallyUserId: string; displayName: string; email?: string } | null> {
+	public async getCurrentUser(): Promise<{
+		id: string;
+		rallyUserId: string;
+		displayName: string;
+		email?: string;
+	} | null> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ user: { id: string; rallyUserId: string; displayName: string; email?: string } }>('/api/users/me');
+			const response = await this.makeRequest<{
+				user: {
+					id: string;
+					rallyUserId: string;
+					displayName: string;
+					email?: string;
+				};
+			}>('/api/users/me');
 			return response.user;
 		}, 'CollaborationClient.getCurrentUser');
 		return result ?? null;
@@ -311,7 +326,9 @@ export class CollaborationClient {
 	// Calendar Events API
 	public async getCalendarEvents(): Promise<CustomCalendarEvent[]> {
 		const result = await this._errorHandler.executeWithErrorHandling(async () => {
-			const response = await this.makeRequest<{ events: CustomCalendarEvent[] }>('/api/calendar-events');
+			const response = await this.makeRequest<{
+				events: CustomCalendarEvent[];
+			}>('/api/calendar-events');
 			return response.events;
 		}, 'CollaborationClient.getCalendarEvents');
 		return result ?? [];

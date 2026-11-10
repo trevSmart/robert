@@ -49,11 +49,46 @@ const ArrowPathIcon = ({ size = '28px' }: { size?: string }) => (
 
 const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialSelect, onTutorialClose, sendMessage }) => {
 	const tutorialBanners: Tutorial[] = [
-		{ title: 'Salesforce CRM Fundamentals', kicker: 'PLATFORM', bg: 'linear-gradient(135deg, #4a2c81 0%, #c86dd7 60%, #f0b7ff 100%)', shadow: 'rgba(72, 36, 129, 0.18)', accent: '#c86dd7', icon: TargetIcon },
-		{ title: 'Lightning Web Components', kicker: 'DEVELOPMENT', bg: 'linear-gradient(135deg, #2e4c82 0%, #2a6fd8 100%)', shadow: 'rgba(30, 60, 114, 0.18)', accent: '#2a6fd8', icon: TrophyIcon },
-		{ title: 'Salesforce Integration APIs', kicker: 'CONNECTIVITY', bg: 'linear-gradient(135deg, #1f5c85 0%, #3a8bbb 60%, #c3e4ff 100%)', shadow: 'rgba(15, 76, 117, 0.18)', accent: '#3a8bbb', icon: LightBulbIcon },
-		{ title: 'Salesforce Einstein AI', kicker: 'INTELLIGENCE', bg: 'linear-gradient(135deg, #3c4e60 0%, #546a8a 55%, #8a9ba6 100%)', shadow: 'rgba(44, 62, 80, 0.18)', accent: '#546a8a', icon: LightBulbIcon },
-		{ title: 'Salesforce DevOps & CI/CD', kicker: 'AUTOMATION', bg: 'linear-gradient(135deg, #5b3ea6 0%, #b27bff 55%, #e0c8ff 100%)', shadow: 'rgba(91, 62, 166, 0.18)', accent: '#b27bff', icon: ArrowPathIcon }
+		{
+			title: 'Salesforce CRM Fundamentals',
+			kicker: 'PLATFORM',
+			bg: 'linear-gradient(135deg, #4a2c81 0%, #c86dd7 60%, #f0b7ff 100%)',
+			shadow: 'rgba(72, 36, 129, 0.18)',
+			accent: '#c86dd7',
+			icon: TargetIcon
+		},
+		{
+			title: 'Lightning Web Components',
+			kicker: 'DEVELOPMENT',
+			bg: 'linear-gradient(135deg, #2e4c82 0%, #2a6fd8 100%)',
+			shadow: 'rgba(30, 60, 114, 0.18)',
+			accent: '#2a6fd8',
+			icon: TrophyIcon
+		},
+		{
+			title: 'Salesforce Integration APIs',
+			kicker: 'CONNECTIVITY',
+			bg: 'linear-gradient(135deg, #1f5c85 0%, #3a8bbb 60%, #c3e4ff 100%)',
+			shadow: 'rgba(15, 76, 117, 0.18)',
+			accent: '#3a8bbb',
+			icon: LightBulbIcon
+		},
+		{
+			title: 'Salesforce Einstein AI',
+			kicker: 'INTELLIGENCE',
+			bg: 'linear-gradient(135deg, #3c4e60 0%, #546a8a 55%, #8a9ba6 100%)',
+			shadow: 'rgba(44, 62, 80, 0.18)',
+			accent: '#546a8a',
+			icon: LightBulbIcon
+		},
+		{
+			title: 'Salesforce DevOps & CI/CD',
+			kicker: 'AUTOMATION',
+			bg: 'linear-gradient(135deg, #5b3ea6 0%, #b27bff 55%, #e0c8ff 100%)',
+			shadow: 'rgba(91, 62, 166, 0.18)',
+			accent: '#b27bff',
+			icon: ArrowPathIcon
+		}
 	];
 
 	if (selectedTutorial) {
@@ -73,7 +108,15 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 				>
 					Back to library
 				</button>
-				<div style={{ padding: '24px', background: selectedTutorial.bg, borderRadius: '16px', color: 'white', marginTop: '20px' }}>
+				<div
+					style={{
+						padding: '24px',
+						background: selectedTutorial.bg,
+						borderRadius: '16px',
+						color: 'white',
+						marginTop: '20px'
+					}}
+				>
 					<h1>{selectedTutorial.title}</h1>
 					<p>Master {selectedTutorial.title.toLowerCase()} with hands-on examples and best practices.</p>
 				</div>
@@ -83,12 +126,36 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 
 	// Tutorial banners + assets grid
 	const assets = [
-		{ title: 'Project Templates', description: 'Reusable project templates and checklists', gradient: 'linear-gradient(135deg, #4a2c81 0%, #c586d8 65%, #f2c7ff 100%)' },
-		{ title: 'Dashboards', description: 'Interactive dashboards and reports', gradient: 'linear-gradient(135deg, #2e4c82 0%, #3b6fd6 100%)' },
-		{ title: 'Lightning Web Components', description: 'Reusable Lightning components for Salesforce', gradient: 'linear-gradient(135deg, #1f5c85 0%, #3a8bbb 60%, #c3e4ff 100%)' },
-		{ title: 'Checklists', description: 'Standardized checklists and procedures', gradient: 'linear-gradient(135deg, #3c4e60 0%, #546a8a 55%, #8a9ba6 100%)' },
-		{ title: 'Documentation', description: 'Guides, manuals, and documentation', gradient: 'linear-gradient(135deg, #4a2c81 0%, #c586d8 65%, #f2c7ff 100%)' },
-		{ title: 'Tools & Scripts', description: 'Automation scripts and utilities', gradient: 'linear-gradient(135deg, #2e4c82 0%, #3b6fd6 100%)' }
+		{
+			title: 'Project Templates',
+			description: 'Reusable project templates and checklists',
+			gradient: 'linear-gradient(135deg, #4a2c81 0%, #c586d8 65%, #f2c7ff 100%)'
+		},
+		{
+			title: 'Dashboards',
+			description: 'Interactive dashboards and reports',
+			gradient: 'linear-gradient(135deg, #2e4c82 0%, #3b6fd6 100%)'
+		},
+		{
+			title: 'Lightning Web Components',
+			description: 'Reusable Lightning components for Salesforce',
+			gradient: 'linear-gradient(135deg, #1f5c85 0%, #3a8bbb 60%, #c3e4ff 100%)'
+		},
+		{
+			title: 'Checklists',
+			description: 'Standardized checklists and procedures',
+			gradient: 'linear-gradient(135deg, #3c4e60 0%, #546a8a 55%, #8a9ba6 100%)'
+		},
+		{
+			title: 'Documentation',
+			description: 'Guides, manuals, and documentation',
+			gradient: 'linear-gradient(135deg, #4a2c81 0%, #c586d8 65%, #f2c7ff 100%)'
+		},
+		{
+			title: 'Tools & Scripts',
+			description: 'Automation scripts and utilities',
+			gradient: 'linear-gradient(135deg, #2e4c82 0%, #3b6fd6 100%)'
+		}
 	];
 
 	return (
@@ -97,30 +164,106 @@ const LibrarySection: FC<LibrarySectionProps> = ({ selectedTutorial, onTutorialS
 				{tutorialBanners.map(banner => (
 					<div
 						key={banner.title}
-						style={{ height: '110px', borderRadius: '16px', background: banner.bg, padding: '16px 20px', color: '#ffffff', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+						style={{
+							height: '110px',
+							borderRadius: '16px',
+							background: banner.bg,
+							padding: '16px 20px',
+							color: '#ffffff',
+							cursor: 'pointer',
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'space-between'
+						}}
 						onClick={() => {
 							onTutorialSelect(banner);
-							sendMessage('openTutorialInEditor', { title: banner.title, kicker: banner.kicker, accent: banner.accent, bg: banner.bg, shadow: banner.shadow });
+							sendMessage('openTutorialInEditor', {
+								title: banner.title,
+								kicker: banner.kicker,
+								accent: banner.accent,
+								bg: banner.bg,
+								shadow: banner.shadow
+							});
 						}}
 					>
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-							<div style={{ fontSize: '11px', letterSpacing: '0.12em', fontWeight: 600, color: 'rgba(255,255,255,0.8)', textTransform: 'uppercase' }}>{banner.kicker}</div>
+							<div
+								style={{
+									fontSize: '11px',
+									letterSpacing: '0.12em',
+									fontWeight: 600,
+									color: 'rgba(255,255,255,0.8)',
+									textTransform: 'uppercase'
+								}}
+							>
+								{banner.kicker}
+							</div>
 							<div style={{ fontSize: '18px', fontWeight: 600 }}>{banner.title}</div>
 							<div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }}>Hands-on Salesforce development and administration.</div>
 						</div>
 						{banner.icon && typeof banner.icon === 'function' && (
-							<div style={{ width: '46px', height: '46px', borderRadius: '50%', backgroundColor: '#f5f5f5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: banner.accent, border: `2px solid ${banner.accent || '#ccc'}` }}>
+							<div
+								style={{
+									width: '46px',
+									height: '46px',
+									borderRadius: '50%',
+									backgroundColor: '#f5f5f5',
+									display: 'flex',
+									alignItems: 'center',
+									justifyContent: 'center',
+									color: banner.accent,
+									border: `2px solid ${banner.accent || '#ccc'}`
+								}}
+							>
 								{React.createElement(banner.icon as ComponentType<{ size?: string }>, { size: '28px' })}
 							</div>
 						)}
 					</div>
 				))}
 			</div>
-			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '20px' }}>
+			<div
+				style={{
+					display: 'grid',
+					gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+					gap: '16px',
+					marginTop: '20px'
+				}}
+			>
 				{assets.map(asset => (
-					<div key={asset.title} style={{ background: asset.gradient, borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', minHeight: '140px', cursor: 'pointer' }}>
-						<h4 style={{ margin: '0 0 8px 0', color: '#ffffff', fontSize: '16px', fontWeight: 500 }}>{asset.title}</h4>
-						<p style={{ margin: 0, color: 'rgba(255,255,255,0.8)', fontSize: '12px', lineHeight: 1.4 }}>{asset.description}</p>
+					<div
+						key={asset.title}
+						style={{
+							background: asset.gradient,
+							borderRadius: '12px',
+							padding: '20px',
+							display: 'flex',
+							flexDirection: 'column',
+							alignItems: 'center',
+							textAlign: 'center',
+							minHeight: '140px',
+							cursor: 'pointer'
+						}}
+					>
+						<h4
+							style={{
+								margin: '0 0 8px 0',
+								color: '#ffffff',
+								fontSize: '16px',
+								fontWeight: 500
+							}}
+						>
+							{asset.title}
+						</h4>
+						<p
+							style={{
+								margin: 0,
+								color: 'rgba(255,255,255,0.8)',
+								fontSize: '12px',
+								lineHeight: 1.4
+							}}
+						>
+							{asset.description}
+						</p>
 					</div>
 				))}
 			</div>

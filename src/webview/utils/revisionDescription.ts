@@ -1,7 +1,7 @@
 /**
- * Utilities to turn a Rally revision `Description` into structured field changes.
+ * Utilities to turn a Jira revision `Description` into structured field changes.
  *
- * Rally stores every change as free text, and the vast majority follows a very regular grammar:
+ * Jira stores every change as free text, and the vast majority follows a very regular grammar:
  *   "ITERATION changed from [Sprint 91] to [Sprint 92]"
  *   "BLOCKED REASON changed to [waiting for API]"
  *   "RELEASE added [2026-Q3], MILESTONES added [MI43737: (2026-09-22) IOP Salesforce]"
@@ -15,12 +15,12 @@
 export type RevisionChangeKind = 'changed' | 'added' | 'removed';
 
 export interface RevisionChange {
-	/** Rally field name as written in the description, e.g. 'ITERATION', 'TASK ESTIMATE TOTAL'. */
+	/** Jira field name as written in the description, e.g. 'ITERATION', 'TASK ESTIMATE TOTAL'. */
 	field: string;
 	kind: RevisionChangeKind;
 	/** Previous value; null for `changed to [X]`, `added` and `removed`. */
 	from: string | null;
-	/** New value, or the added/removed value. Null when Rally wrote an empty `[]`. */
+	/** New value, or the added/removed value. Null when Jira wrote an empty `[]`. */
 	to: string | null;
 }
 
@@ -30,13 +30,13 @@ export interface ParsedRevisionDescription {
 	structured: boolean;
 }
 
-// Case-sensitive on purpose: Rally writes field names in upper case and verbs in lower case, so
+// Case-sensitive on purpose: Jira writes field names in upper case and verbs in lower case, so
 // requiring that shape keeps free-text prose from being mistaken for a field name. Anything that
 // doesn't match simply falls back to the HTML render, so being strict here is the safe direction.
 const FIELD = '[A-Z][A-Z0-9 _/&.-]*?';
 const VERB = '(?:changed from|changed to|added|removed)';
 
-// Rally does not escape brackets, so a value can contain them — "TAGS added [[US Quality] 28/100]"
+// Jira does not escape brackets, so a value can contain them — "TAGS added [[US Quality] 28/100]"
 // or "TASKS added [TA1110817: [AGENTQA] Evaluation]". A value therefore runs lazily up to the last
 // `]` that is followed by either the end of the text or the next `FIELD verb` clause, rather than
 // stopping at the first one. The same lookahead is why commas inside a value are safe: a comma only
@@ -95,7 +95,7 @@ export function htmlToPlainText(value: string): string {
 }
 
 /**
- * Normalize a bracketed value: strip markup and surface Rally's empty `[]` as null so the UI
+ * Normalize a bracketed value: strip markup and surface Jira's empty `[]` as null so the UI
  * can show an explicit placeholder instead of a blank gap.
  */
 function toValue(raw: string | undefined): string | null {
@@ -136,9 +136,19 @@ export function parseRevisionDescription(description: string | null | undefined)
 				to: toValue(value)
 			});
 		} else if (setTo !== undefined) {
-			changes.push({ field: field.trim(), kind: 'changed', from: null, to: toValue(setTo) });
+			changes.push({
+				field: field.trim(),
+				kind: 'changed',
+				from: null,
+				to: toValue(setTo)
+			});
 		} else {
-			changes.push({ field: field.trim(), kind: 'changed', from: toValue(changedFrom), to: toValue(changedTo) });
+			changes.push({
+				field: field.trim(),
+				kind: 'changed',
+				from: toValue(changedFrom),
+				to: toValue(changedTo)
+			});
 		}
 	}
 	leftover += text.slice(cursor);

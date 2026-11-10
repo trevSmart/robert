@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
-import { type UserStory } from '../../../types/rally';
+import { type UserStory } from '../../../types/jira';
 import { useTableSort, type SortConfig } from '../../hooks/useTableSort';
 import { useColumnResize } from '../../hooks/useColumnResize';
 import { AvatarWithName } from './Avatar';
@@ -78,15 +78,17 @@ interface UserStoriesTableProps {
 	loadingMore?: boolean;
 }
 
-const COLUMN_KEYS = ['formattedId', 'name', 'assignee', 'scheduleState', 'taskEstimateTotal', 'items'] as const;
+const COLUMN_KEYS = ['formattedId', 'project', 'name', 'assignee', 'scheduleState', 'taskEstimateTotal', 'timeSpent', 'items'] as const;
 type ColumnKey = (typeof COLUMN_KEYS)[number];
 
 const INITIAL_WIDTHS: Record<ColumnKey, number> = {
 	formattedId: 110,
+	project: 90,
 	name: 320,
 	assignee: 160,
 	scheduleState: 130,
 	taskEstimateTotal: 110,
+	timeSpent: 110,
 	items: 100
 };
 
@@ -210,38 +212,81 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 
 	const RelatedItemsIcons: React.FC<{
 		tasksCount: number;
-		testCasesCount: number;
+		testCasesCount?: number;
 		defectsCount: number;
 		discussionCount: number;
 		blocked?: boolean;
 		blockedReason?: string | null;
 	}> = ({ tasksCount, testCasesCount, defectsCount, discussionCount, blocked, blockedReason }) => {
 		return (
-			<div style={{ display: 'flex', gap: '8px', alignItems: 'center', color: themeColors.foreground }}>
+			<div
+				style={{
+					display: 'flex',
+					gap: '8px',
+					alignItems: 'center',
+					color: themeColors.foreground
+				}}
+			>
 				{blocked && (
-					<span title={blockedReason ? `Blocked: ${blockedReason}` : 'Blocked'} style={{ display: 'inline-flex', alignItems: 'center', color: 'color(srgb 0.82 0.32 0.32 / 1)' }}>
+					<span
+						title={blockedReason ? `Blocked: ${blockedReason}` : 'Blocked'}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							color: 'color(srgb 0.82 0.32 0.32 / 1)'
+						}}
+					>
 						<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="1.5" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
 							<path strokeLinecap="round" strokeLinejoin="round" d="M18.364 18.364A9 9 0 0 0 5.636 5.636m12.728 12.728A9 9 0 0 1 5.636 5.636m12.728 12.728L5.636 5.636" />
 						</svg>
 					</span>
 				)}
 				{tasksCount > 0 && (
-					<span title={`${tasksCount} task(s)`} style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85 }}>
+					<span
+						title={`${tasksCount} task(s)`}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							opacity: 0.85
+						}}
+					>
 						<TasksIcon />
 					</span>
 				)}
-				{testCasesCount > 0 && (
-					<span title={`${testCasesCount} test case(s)`} style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85 }}>
+				{(testCasesCount ?? 0) > 0 && (
+					<span
+						title={`${testCasesCount} test case(s)`}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							opacity: 0.85
+						}}
+					>
 						<TestsIcon />
 					</span>
 				)}
 				{defectsCount > 0 && (
-					<span title={`${defectsCount} defect(s)`} style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85, color: '#ff6b6b' }}>
+					<span
+						title={`${defectsCount} defect(s)`}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							opacity: 0.85,
+							color: '#ff6b6b'
+						}}
+					>
 						<DefectsIcon />
 					</span>
 				)}
 				{discussionCount > 0 && (
-					<span title={`${discussionCount} discussion(s)`} style={{ display: 'inline-flex', alignItems: 'center', opacity: 0.85 }}>
+					<span
+						title={`${discussionCount} discussion(s)`}
+						style={{
+							display: 'inline-flex',
+							alignItems: 'center',
+							opacity: 0.85
+						}}
+					>
 						<DiscussionsIcon />
 					</span>
 				)}
@@ -252,7 +297,16 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 	return (
 		<>
 			{loading && (
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						minHeight: '200px',
+						gap: '10px'
+					}}
+				>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -280,22 +334,38 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 			)}
 
 			{userStories.length > 0 && !loading && !error && (
-				<table style={{ width: '100%', tableLayout: 'fixed', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
+				<table
+					style={{
+						width: '100%',
+						tableLayout: 'fixed',
+						borderCollapse: 'collapse',
+						border: `1px solid ${themeColors.panelBorder}`
+					}}
+				>
 					<colgroup>
 						<col style={{ width: `${getColumnPercent('formattedId')}%` }} />
+						<col style={{ width: `${getColumnPercent('project')}%` }} />
 						<col style={{ width: `${getColumnPercent('name')}%` }} />
 						<col style={{ width: `${getColumnPercent('assignee')}%` }} />
 						<col style={{ width: `${getColumnPercent('scheduleState')}%` }} />
 						<col style={{ width: `${getColumnPercent('taskEstimateTotal')}%` }} />
+						<col style={{ width: `${getColumnPercent('timeSpent')}%` }} />
 						<col style={{ width: `${getColumnPercent('items')}%` }} />
 					</colgroup>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
+						<tr
+							style={{
+								backgroundColor: themeColors.titleBarActiveBackground,
+								color: themeColors.titleBarActiveForeground
+							}}
+						>
 							<SortableHeader label="ID" sortKey="formattedId" colKey="formattedId" />
+							<SortableHeader label="Project" sortKey="project" colKey="project" />
 							<SortableHeader label="Name" sortKey="name" colKey="name" />
 							<SortableHeader label="Assigned To" sortKey="assignee" colKey="assignee" />
 							<SortableHeader label="State" sortKey="scheduleState" colKey="scheduleState" />
 							<SortableHeader label="Total Hours" sortKey="taskEstimateTotal" colKey="taskEstimateTotal" textAlign="center" />
+							<SortableHeader label="Time Spent" sortKey="timeSpent" colKey="timeSpent" textAlign="center" />
 							<th
 								style={{
 									position: 'relative',
@@ -338,14 +408,93 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 									}
 								}}
 							>
-								<td style={{ padding: '10px 12px', fontWeight: '300', color: themeColors.foreground, overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.formattedId}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.name}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										color: themeColors.foreground,
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{userStory.formattedId}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{userStory.project ?? '—'}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{userStory.name}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
 									<AvatarWithName name={userStory.assignee || ''} size={20} emptyLabel="Unassigned" />
 								</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', color: getScheduleStateColor(userStory.scheduleState || 'new'), overflow: 'hidden', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{userStory.scheduleState || 'N/A'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center', overflow: 'hidden', whiteSpace: 'nowrap' }}>{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}</td>
-								<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'center', overflow: 'hidden' }}>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										color: getScheduleStateColor(userStory.scheduleState || 'new'),
+										overflow: 'hidden',
+										whiteSpace: 'nowrap',
+										textOverflow: 'ellipsis'
+									}}
+								>
+									{userStory.scheduleState || 'N/A'}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										textAlign: 'center',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap'
+									}}
+								>
+									{userStory.taskEstimateTotal !== undefined && userStory.taskEstimateTotal !== null ? `${userStory.taskEstimateTotal}h` : '0h'}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										textAlign: 'center',
+										overflow: 'hidden',
+										whiteSpace: 'nowrap'
+									}}
+								>
+									{userStory.timeSpent ? `${userStory.timeSpent}h` : '0h'}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										textAlign: 'center',
+										overflow: 'hidden'
+									}}
+								>
 									<RelatedItemsIcons tasksCount={userStory.tasksCount} testCasesCount={userStory.testCasesCount} defectsCount={userStory.defectsCount} discussionCount={userStory.discussionCount} blocked={userStory.blocked} blockedReason={userStory.blockedReason} />
 								</td>
 							</tr>
@@ -355,7 +504,13 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 			)}
 
 			{!loading && !error && userStories.length > 0 && hasMore && (
-				<div style={{ textAlign: 'center', padding: '15px', borderTop: `1px solid ${themeColors.panelBorder}` }}>
+				<div
+					style={{
+						textAlign: 'center',
+						padding: '15px',
+						borderTop: `1px solid ${themeColors.panelBorder}`
+					}}
+				>
 					<button
 						onClick={onLoadMore}
 						disabled={loadingMore}
@@ -455,7 +610,16 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 			}}
 		>
 			{loading && (
-				<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '200px', gap: '10px' }}>
+				<div
+					style={{
+						display: 'flex',
+						flexDirection: 'column',
+						alignItems: 'center',
+						justifyContent: 'center',
+						minHeight: '200px',
+						gap: '10px'
+					}}
+				>
 					<div
 						style={{
 							border: `2px solid ${themeColors.panelBorder}`,
@@ -483,14 +647,72 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 			)}
 
 			{iterations.length > 0 && !loading && !error && (
-				<table style={{ width: '100%', borderCollapse: 'collapse', border: `1px solid ${themeColors.panelBorder}` }}>
+				<table
+					style={{
+						width: '100%',
+						borderCollapse: 'collapse',
+						border: `1px solid ${themeColors.panelBorder}`
+					}}
+				>
 					<thead>
-						<tr style={{ backgroundColor: themeColors.titleBarActiveBackground, color: themeColors.titleBarActiveForeground }}>
-							<th style={{ padding: '10px 0 10px 12px', textAlign: 'center', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600', width: '20px' }}></th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600', minWidth: '100px', width: '40%' }}>Name</th>
-							<th style={{ padding: '10px 12px', textAlign: 'right', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600', width: '80px' }}>Hours</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600' }}>Start Date</th>
-							<th style={{ padding: '10px 12px', textAlign: 'left', borderBottom: `1px solid ${themeColors.panelBorder}`, fontWeight: '600' }}>End Date</th>
+						<tr
+							style={{
+								backgroundColor: themeColors.titleBarActiveBackground,
+								color: themeColors.titleBarActiveForeground
+							}}
+						>
+							<th
+								style={{
+									padding: '10px 0 10px 12px',
+									textAlign: 'center',
+									borderBottom: `1px solid ${themeColors.panelBorder}`,
+									fontWeight: '600',
+									width: '20px'
+								}}
+							></th>
+							<th
+								style={{
+									padding: '10px 12px',
+									textAlign: 'left',
+									borderBottom: `1px solid ${themeColors.panelBorder}`,
+									fontWeight: '600',
+									minWidth: '100px',
+									width: '40%'
+								}}
+							>
+								Name
+							</th>
+							<th
+								style={{
+									padding: '10px 12px',
+									textAlign: 'right',
+									borderBottom: `1px solid ${themeColors.panelBorder}`,
+									fontWeight: '600',
+									width: '80px'
+								}}
+							>
+								Hours
+							</th>
+							<th
+								style={{
+									padding: '10px 12px',
+									textAlign: 'left',
+									borderBottom: `1px solid ${themeColors.panelBorder}`,
+									fontWeight: '600'
+								}}
+							>
+								Start Date
+							</th>
+							<th
+								style={{
+									padding: '10px 12px',
+									textAlign: 'left',
+									borderBottom: `1px solid ${themeColors.panelBorder}`,
+									fontWeight: '600'
+								}}
+							>
+								End Date
+							</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -498,9 +720,27 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 							groupedIterations[year].map((iteration, iterationIndex) => (
 								<React.Fragment key={`${year}-${iteration.objectId}`}>
 									{iterationIndex === 0 && (
-										<tr style={{ backgroundColor: yearGroupBackground, color: themeColors.titleBarActiveForeground }}>
-											<td style={{ width: '20px', borderBottom: `1px solid ${themeColors.panelBorder}` }} />
-											<td colSpan={4} style={{ padding: '10px 12px', fontWeight: '600', borderBottom: `1px solid ${themeColors.panelBorder}`, textAlign: 'left' }}>
+										<tr
+											style={{
+												backgroundColor: yearGroupBackground,
+												color: themeColors.titleBarActiveForeground
+											}}
+										>
+											<td
+												style={{
+													width: '20px',
+													borderBottom: `1px solid ${themeColors.panelBorder}`
+												}}
+											/>
+											<td
+												colSpan={4}
+												style={{
+													padding: '10px 12px',
+													fontWeight: '600',
+													borderBottom: `1px solid ${themeColors.panelBorder}`,
+													textAlign: 'left'
+												}}
+											>
 												{year}
 											</td>
 										</tr>
@@ -567,12 +807,44 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 												</div>
 											)}
 										</td>
-										<td style={{ padding: '10px 12px', fontWeight: '300', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : themeColors.foreground, textDecoration: 'none' }}>{iteration.name}</td>
-										<td style={{ padding: '10px 12px', fontWeight: '300', textAlign: 'right', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>
+										<td
+											style={{
+												padding: '10px 12px',
+												fontWeight: '300',
+												color: isFutureIteration(iteration) ? themeColors.descriptionForeground : themeColors.foreground,
+												textDecoration: 'none'
+											}}
+										>
+											{iteration.name}
+										</td>
+										<td
+											style={{
+												padding: '10px 12px',
+												fontWeight: '300',
+												textAlign: 'right',
+												color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined
+											}}
+										>
 											{iteration.taskEstimateTotal !== undefined && iteration.taskEstimateTotal !== null ? `${iteration.taskEstimateTotal}h` : ''}
 										</td>
-										<td style={{ padding: '10px 12px', fontWeight: '300', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}</td>
-										<td style={{ padding: '10px 12px', fontWeight: '300', color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined }}>{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}</td>
+										<td
+											style={{
+												padding: '10px 12px',
+												fontWeight: '300',
+												color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined
+											}}
+										>
+											{iteration.startDate ? new Date(iteration.startDate).toLocaleDateString() : 'N/A'}
+										</td>
+										<td
+											style={{
+												padding: '10px 12px',
+												fontWeight: '300',
+												color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined
+											}}
+										>
+											{iteration.endDate ? new Date(iteration.endDate).toLocaleDateString() : 'N/A'}
+										</td>
 									</tr>
 								</React.Fragment>
 							))

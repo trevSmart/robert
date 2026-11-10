@@ -1,12 +1,12 @@
 /**
- * Utilities to build a state/blocked timeline out of Rally revision descriptions.
+ * Utilities to build a state/blocked timeline out of Jira revision descriptions.
  *
- * Rally stores every change as a free-text `Description` on each Revision, e.g.:
+ * Jira stores every change as a free-text `Description` on each Revision, e.g.:
  *   "SCHEDULE STATE changed from [Defined] to [In-Progress]"
  *   "BLOCKED changed from [false] to [true], BLOCKED REASON changed to [waiting for API]"
  *
  * These helpers extract Schedule State transitions and Blocked/Unblocked events so
- * the detail view can render them as a timeline without any extra Rally API calls.
+ * the detail view can render them as a timeline without any extra Jira API calls.
  */
 
 export interface RevisionLike {
@@ -54,16 +54,20 @@ function isTruthyFlag(raw: string): boolean {
 }
 
 /**
- * Parse Rally revisions into a chronological (ascending) timeline of Schedule State
+ * Parse Jira revisions into a chronological (ascending) timeline of Schedule State
  * transitions and Blocked/Unblocked events.
  */
 export function buildRevisionTimeline(revisions: RevisionLike[]): RevisionTimeline {
-	const empty: RevisionTimeline = { stateEvents: [], blockedEvents: [], hasEvents: false };
+	const empty: RevisionTimeline = {
+		stateEvents: [],
+		blockedEvents: [],
+		hasEvents: false
+	};
 	if (!Array.isArray(revisions) || revisions.length === 0) {
 		return empty;
 	}
 
-	// Rally returns revisions newest-first; work ascending so "from → to" reads forward in time.
+	// Jira returns revisions newest-first; work ascending so "from → to" reads forward in time.
 	const ascending = [...revisions].sort((a, b) => (a.revisionNumber ?? 0) - (b.revisionNumber ?? 0));
 
 	const stateEvents: StateEvent[] = [];
@@ -141,7 +145,7 @@ export interface TimelineSegment {
 	blocked?: boolean;
 	/** Blocked reason, when the segment is a blocked interval. */
 	reason?: string | null;
-	/** Rally user who made the change that started this segment; unknown for the initial segment. */
+	/** Jira user who made the change that started this segment; unknown for the initial segment. */
 	author?: string;
 }
 
@@ -206,7 +210,7 @@ function segmentsFromBoundaries(boundaries: number[], labels: string[], totalMs:
 }
 
 /**
- * Turn Rally revisions into two proportional tracks (state + blocked) spanning
+ * Turn Jira revisions into two proportional tracks (state + blocked) spanning
  * from the story creation until now, so each segment's width reflects the share
  * of total elapsed time spent in that state / blocked interval.
  */
@@ -269,14 +273,29 @@ export function buildTimelineTracks(revisions: RevisionLike[], options: BuildTra
 
 	// Sprint start markers: only iterations whose start falls strictly within the span.
 	const sprintMarkers: SprintMarker[] = (options.iterations ?? [])
-		.map(iteration => ({ name: iteration.name, startMs: toMs(iteration.startDate) }))
+		.map(iteration => ({
+			name: iteration.name,
+			startMs: toMs(iteration.startDate)
+		}))
 		.filter((m): m is { name: string; startMs: number } => m.startMs !== null && m.startMs > startMs && m.startMs < endMs)
-		.map(m => ({ name: m.name, startMs: m.startMs, fraction: (m.startMs - startMs) / totalMs }))
+		.map(m => ({
+			name: m.name,
+			startMs: m.startMs,
+			fraction: (m.startMs - startMs) / totalMs
+		}))
 		.sort((a, b) => a.startMs - b.startMs);
 
 	const hasData = stateEvents.length > 0 || blockedEvents.length > 0;
 
-	return { startMs, endMs, totalMs, stateSegments, blockedSegments, sprintMarkers, hasData };
+	return {
+		startMs,
+		endMs,
+		totalMs,
+		stateSegments,
+		blockedSegments,
+		sprintMarkers,
+		hasData
+	};
 }
 
 export interface AxisTick {

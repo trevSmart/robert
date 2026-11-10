@@ -4,7 +4,7 @@
  * Reference: https://code.visualstudio.com/api/references/theme-color
  */
 
-import type { RallyEntityType } from '../../types/rally';
+import type { JiraEntityType } from '../../types/jira';
 
 export const themeColors = {
 	// ============================================================================
@@ -202,10 +202,10 @@ export const getScheduleStateColor = (scheduleState?: string): string => {
 };
 
 /**
- * Base RGB triplets of the entity type colour code, one per Rally entity type.
+ * Base RGB triplets of the entity type colour code, one per Jira entity type.
  * Kept as `'R G B'` strings so the alpha variants below stay a single source of truth.
  */
-const ENTITY_TYPE_BASE_RGB: Record<RallyEntityType, string> = {
+const ENTITY_TYPE_BASE_RGB: Record<JiraEntityType, string> = {
 	defect: '255 42 0', // Vermell
 	userstory: '0 168 84', // Verd
 	task: '0 122 255', // Blau
@@ -217,7 +217,7 @@ const ENTITY_TYPE_BASE_RGB: Record<RallyEntityType, string> = {
  * Alpha bump per type, en punts percentuals. L'ambre del sprint és el to més clar de tots
  * i queda una mica desdibuixat amb l'alpha base, així que puja lleugerament.
  */
-const ENTITY_TYPE_ALPHA_BOOST: Partial<Record<RallyEntityType, number>> = {
+const ENTITY_TYPE_ALPHA_BOOST: Partial<Record<JiraEntityType, number>> = {
 	sprint: 2
 };
 
@@ -226,7 +226,7 @@ const ENTITY_TYPE_ALPHA_BOOST: Partial<Record<RallyEntityType, number>> = {
  * into whichever editor background is active — no light/dark branch needed, unlike
  * getScheduleStateColor which paints opaque text.
  */
-export const getEntityTypeColors = (type: RallyEntityType): { background: string; border: string } => {
+export const getEntityTypeColors = (type: JiraEntityType): { background: string; border: string } => {
 	const base = ENTITY_TYPE_BASE_RGB[type];
 	const boost = ENTITY_TYPE_ALPHA_BOOST[type] ?? 0;
 	return {

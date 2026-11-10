@@ -1,6 +1,6 @@
 # Environment Variables Configuration
 
-Robert supports environment variables for configuring Rally connection settings and other options. This is especially useful for automated testing, CI/CD pipelines, and running the extension in virtual environments.
+Robert supports environment variables for configuring Jira connection settings and other options. This is especially useful for automated testing, CI/CD pipelines, and running the extension in virtual environments.
 
 ## Priority Order
 
@@ -14,19 +14,34 @@ This means if you set a value in VS Code settings, it will always be used even i
 
 ## Supported Environment Variables
 
-### Rally Configuration
+### Provider Selection
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `ROBERT_RALLY_API_KEY` | string | `""` | Rally API authentication key (required for Rally connection) |
-| `ROBERT_RALLY_INSTANCE` | string | `https://eu1.rallydev.com` | Rally server instance URL |
-| `ROBERT_RALLY_PROJECT_NAME` | string | `""` | Target Rally project name |
+| `ROBERT_PROVIDER` | string | `jira` | Data backend: `jira` or `rally` (the `robert.provider` setting takes priority) |
+
+### Rally Configuration (used when provider is `rally`)
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `ROBERT_RALLY_API_KEY` | string | `""` | Rally API key (required) |
+| `ROBERT_RALLY_INSTANCE` | string | `https://eu1.rallydev.com` | Rally instance URL |
+| `ROBERT_RALLY_PROJECT_NAME` | string | `""` | Rally project name |
+
+### Jira Configuration (used when provider is `jira`)
+
+| Variable | Type | Default | Description |
+|----------|------|---------|-------------|
+| `ROBERT_JIRA_EMAIL` | string | `""` | Atlassian account email used with the API token (required) |
+| `ROBERT_JIRA_API_TOKEN` | string | `""` | Jira Cloud API token (required) |
+| `ROBERT_JIRA_BASE_URL` | string | `https://your-site.atlassian.net` | Jira Cloud base URL |
+| `ROBERT_JIRA_PROJECT_KEY` | string | `""` | Jira project key (optional). Empty or unset means **all projects** (JQL `project is not EMPTY`). Previously defaulted to `DSS` |
 
 ### Extension Settings
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `ROBERT_API_ENDPOINT` | string | `https://rally.example.com` | General API endpoint |
+| `ROBERT_API_ENDPOINT` | string | `https://your-site.atlassian.net` | General API endpoint |
 | `ROBERT_REFRESH_INTERVAL` | number | `30` | Auto-refresh interval in seconds (5-3600) |
 | `ROBERT_MAX_RESULTS` | number | `100` | Maximum results per query (10-1000) |
 | `ROBERT_AUTO_REFRESH` | boolean | `true` | Enable automatic refresh |
@@ -59,14 +74,15 @@ Any other value is treated as `false`.
 
 ## Usage Examples
 
-### Basic Rally Connection Setup
+### Basic Jira Connection Setup
 
 Set up environment variables for automated agent testing:
 
 ```bash
-export ROBERT_RALLY_API_KEY="your-api-key-here"
-export ROBERT_RALLY_INSTANCE="https://eu1.rallydev.com"
-export ROBERT_RALLY_PROJECT_NAME="Your Project Name"
+export ROBERT_JIRA_EMAIL="you@example.com"
+export ROBERT_JIRA_API_TOKEN="your-api-token"
+export ROBERT_JIRA_BASE_URL="https://your-site.atlassian.net"
+export ROBERT_JIRA_PROJECT_KEY="DSS"
 ```
 
 ### CI/CD Pipeline Configuration
@@ -75,9 +91,10 @@ For a GitHub Actions or similar CI/CD pipeline:
 
 ```yaml
 env:
-  ROBERT_RALLY_API_KEY: ${{ secrets.RALLY_API_KEY }}
-  ROBERT_RALLY_INSTANCE: https://eu1.rallydev.com
-  ROBERT_RALLY_PROJECT_NAME: MyProject
+  ROBERT_JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+  ROBERT_JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+  ROBERT_JIRA_BASE_URL: https://your-site.atlassian.net
+  ROBERT_JIRA_PROJECT_KEY: DSS
   ROBERT_DEBUG_MODE: "true"
 ```
 
@@ -86,9 +103,10 @@ env:
 Create a `.env.local` file (don't commit this to version control):
 
 ```bash
-ROBERT_RALLY_API_KEY=your-development-api-key
-ROBERT_RALLY_INSTANCE=https://your-rally-instance.com
-ROBERT_RALLY_PROJECT_NAME=TestProject
+ROBERT_JIRA_EMAIL=you@example.com
+ROBERT_JIRA_API_TOKEN=your-api-token
+ROBERT_JIRA_BASE_URL=https://your-site.atlassian.net
+ROBERT_JIRA_PROJECT_KEY=DSS
 ROBERT_DEBUG_MODE=true
 ```
 
@@ -105,9 +123,10 @@ For automated testing environments (like an AI agent):
 
 ```bash
 #!/bin/bash
-export ROBERT_RALLY_API_KEY="test-api-key"
-export ROBERT_RALLY_INSTANCE="https://test-rally.example.com"
-export ROBERT_RALLY_PROJECT_NAME="TestProject"
+export ROBERT_JIRA_EMAIL="you@example.com"
+export ROBERT_JIRA_API_TOKEN="test-api-key"
+export ROBERT_JIRA_BASE_URL="https://your-site.atlassian.net"
+export ROBERT_JIRA_PROJECT_KEY="DSS"
 export ROBERT_DEBUG_MODE="true"
 
 # Launch VS Code with the extension
@@ -129,7 +148,7 @@ When a setting is loaded from an environment variable instead of VS Code setting
 
 ```
 [Robert] ℹ️ INFO in SettingsManager:
-Setting 'rallyApiKey' loaded from environment variable 'ROBERT_RALLY_API_KEY'
+Setting 'jiraApiToken' loaded from environment variable 'ROBERT_JIRA_API_TOKEN'
 ```
 
 This appears in the Robert output channel, helping you debug configuration issues.

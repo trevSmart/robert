@@ -2,7 +2,7 @@ import * as React from 'react';
 import { useState, useEffect, useRef } from 'react';
 import { themeColors, isLightTheme } from '../../utils/themeColors';
 import type { Holiday, DayEvent, CustomCalendarEvent } from '../../../types/utils';
-import type { UserStory } from '../../../types/rally';
+import type { UserStory } from '../../../types/jira';
 import { logDebug } from '../../utils/vscodeApi';
 import { compareIterationsByStart } from '../../utils/iterationSort';
 
@@ -58,7 +58,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const [modalClosing, setModalClosing] = useState(false);
 	const [modalEntered, setModalEntered] = useState(false);
 	const [editingEvent, setEditingEvent] = useState<CustomCalendarEvent | null>(null);
-	const [modalForm, setModalForm] = useState({ date: '', time: '', title: '', description: '', color: '#52a0e0', isPublic: false });
+	const [modalForm, setModalForm] = useState({
+		date: '',
+		time: '',
+		title: '',
+		description: '',
+		color: '#52a0e0',
+		isPublic: false
+	});
 	const modalTransitionMs = 220;
 	const [hoveredIteration, setHoveredIteration] = useState<Iteration | null>(null);
 	const [hoveredEvent, setHoveredEvent] = useState<DayEvent | null>(null);
@@ -638,11 +645,19 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	if (debugMode) {
 		console.log(
 			'All iterations:',
-			iterations.map(i => ({ name: i.name, start: i.startDate, end: i.endDate }))
+			iterations.map(i => ({
+				name: i.name,
+				start: i.startDate,
+				end: i.endDate
+			}))
 		);
 		console.log(
 			'Current month iterations:',
-			currentMonthIterations.map(i => ({ name: i.name, start: i.startDate, end: i.endDate }))
+			currentMonthIterations.map(i => ({
+				name: i.name,
+				start: i.startDate,
+				end: i.endDate
+			}))
 		);
 	}
 
@@ -775,11 +790,25 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 	const openModal = (event: CustomCalendarEvent | null, prefillDate?: string) => {
 		if (event) {
 			setEditingEvent(event);
-			setModalForm({ date: event.date, time: event.time || '', title: event.title, description: event.description || '', color: event.color, isPublic: event.isPublic || false });
+			setModalForm({
+				date: event.date,
+				time: event.time || '',
+				title: event.title,
+				description: event.description || '',
+				color: event.color,
+				isPublic: event.isPublic || false
+			});
 		} else {
 			setEditingEvent(null);
 			const defaultDate = prefillDate || `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
-			setModalForm({ date: defaultDate, time: '', title: '', description: '', color: '#52a0e0', isPublic: false });
+			setModalForm({
+				date: defaultDate,
+				time: '',
+				title: '',
+				description: '',
+				color: '#52a0e0',
+				isPublic: false
+			});
 		}
 		setModalClosing(false);
 		setModalEntered(false);
@@ -797,7 +826,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 			setModalClosing(false);
 			setModalEntered(false);
 			setEditingEvent(null);
-			setModalForm({ date: '', time: '', title: '', description: '', color: '#52a0e0', isPublic: false });
+			setModalForm({
+				date: '',
+				time: '',
+				title: '',
+				description: '',
+				color: '#52a0e0',
+				isPublic: false
+			});
 		}
 	};
 
@@ -1041,7 +1077,13 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						cursor: 'pointer'
 					}}
 				>
-					<div style={{ fontSize: '14px', color: themeColors.descriptionForeground, textAlign: 'center' }}>
+					<div
+						style={{
+							fontSize: '14px',
+							color: themeColors.descriptionForeground,
+							textAlign: 'center'
+						}}
+					>
 						Welcome, <span style={{ fontWeight: '600', color: 'var(--vscode-foreground)' }}>{getUserFirstName(currentUser)}</span>!
 					</div>
 					<div
@@ -1086,7 +1128,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				onMouseEnter={() => setIsHeaderHovered(true)}
 				onMouseLeave={() => setIsHeaderHovered(false)}
 			>
-				<div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', minWidth: 0 }}>
+				<div
+					style={{
+						flex: 1,
+						display: 'flex',
+						justifyContent: 'flex-start',
+						alignItems: 'center',
+						minWidth: 0
+					}}
+				>
 					<button
 						onClick={goToCurrentMonth}
 						style={{
@@ -1556,7 +1606,15 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						{/* Show iteration legends dynamically for any month */}
 						{orderedIterations.map(iteration => (
 							<div key={iteration.objectId} style={{ display: 'contents' }}>
-								<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px', minWidth: 0 }}>
+								<div
+									style={{
+										display: 'flex',
+										alignItems: 'center',
+										justifyContent: 'flex-end',
+										gap: '8px',
+										minWidth: 0
+									}}
+								>
 									<div
 										style={{
 											width: '7px',
@@ -1621,7 +1679,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				(() => {
 					const tooltipOffset = 10;
 					const wouldClip = mousePosition.x + tooltipOffset + 240 > window.innerWidth;
-					const tooltipPos = wouldClip ? { right: window.innerWidth - mousePosition.x + tooltipOffset, left: undefined } : { left: mousePosition.x + tooltipOffset, right: undefined };
+					const tooltipPos = wouldClip
+						? {
+								right: window.innerWidth - mousePosition.x + tooltipOffset,
+								left: undefined
+							}
+						: { left: mousePosition.x + tooltipOffset, right: undefined };
 					const tooltipStyle = {
 						position: 'fixed' as const,
 						...tooltipPos,
@@ -1647,9 +1710,35 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						const dateTime = ce.time ? `${dateStr} · ${ce.time}` : dateStr;
 						return (
 							<div style={tooltipStyle}>
-								<div style={{ fontWeight: '500', fontSize: '13px', marginBottom: '3px' }}>{ce.title}</div>
-								<div style={{ fontSize: '11px', color: themeColors.descriptionForeground, marginBottom: ce.description ? '4px' : '0' }}>{dateTime}</div>
-								{ce.description && <div style={{ fontSize: '11px', color: themeColors.foreground, whiteSpace: 'pre-wrap' }}>{ce.description}</div>}
+								<div
+									style={{
+										fontWeight: '500',
+										fontSize: '13px',
+										marginBottom: '3px'
+									}}
+								>
+									{ce.title}
+								</div>
+								<div
+									style={{
+										fontSize: '11px',
+										color: themeColors.descriptionForeground,
+										marginBottom: ce.description ? '4px' : '0'
+									}}
+								>
+									{dateTime}
+								</div>
+								{ce.description && (
+									<div
+										style={{
+											fontSize: '11px',
+											color: themeColors.foreground,
+											whiteSpace: 'pre-wrap'
+										}}
+									>
+										{ce.description}
+									</div>
+								)}
 							</div>
 						);
 					}
@@ -1676,7 +1765,12 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 				(() => {
 					const tooltipOffset = 10;
 					const wouldClip = mousePosition.x + tooltipOffset + 200 > window.innerWidth;
-					const tooltipPos = wouldClip ? { right: window.innerWidth - mousePosition.x + tooltipOffset, left: undefined } : { left: mousePosition.x + tooltipOffset, right: undefined };
+					const tooltipPos = wouldClip
+						? {
+								right: window.innerWidth - mousePosition.x + tooltipOffset,
+								left: undefined
+							}
+						: { left: mousePosition.x + tooltipOffset, right: undefined };
 					const tooltipStyle = {
 						position: 'fixed' as const,
 						...tooltipPos,
@@ -1704,8 +1798,25 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 						const iterDetail = iterStart && iterEnd && iterDays !== null ? `${fmtDate(iterStart)} to ${fmtDate(iterEnd)}${iterHours > 0 ? `: ${iterHours}h` : ''}` : null;
 						return (
 							<div style={tooltipStyle}>
-								<div style={{ fontWeight: '500', marginBottom: iterDetail ? '4px' : '0', fontSize: '13px' }}>{hoveredIteration.name}</div>
-								{iterDetail && <div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{iterDetail}</div>}
+								<div
+									style={{
+										fontWeight: '500',
+										marginBottom: iterDetail ? '4px' : '0',
+										fontSize: '13px'
+									}}
+								>
+									{hoveredIteration.name}
+								</div>
+								{iterDetail && (
+									<div
+										style={{
+											fontSize: '11px',
+											color: themeColors.descriptionForeground
+										}}
+									>
+										{iterDetail}
+									</div>
+								)}
 							</div>
 						);
 					}
@@ -1713,8 +1824,23 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 					const tooltip = getDayTooltip(hoveredDay!);
 					return (
 						<div style={tooltipStyle}>
-							<div style={{ fontWeight: '500', marginBottom: '4px', fontSize: '13px' }}>{tooltip.title}</div>
-							<div style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>{tooltip.content}</div>
+							<div
+								style={{
+									fontWeight: '500',
+									marginBottom: '4px',
+									fontSize: '13px'
+								}}
+							>
+								{tooltip.title}
+							</div>
+							<div
+								style={{
+									fontSize: '11px',
+									color: themeColors.descriptionForeground
+								}}
+							>
+								{tooltip.content}
+							</div>
 						</div>
 					);
 				})()}
@@ -1755,12 +1881,35 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							transition: `opacity ${modalTransitionMs}ms ease, transform ${modalTransitionMs}ms ease`
 						}}
 					>
-						<h3 style={{ margin: 0, fontSize: '15px', fontWeight: 500, color: themeColors.foreground }}>{editingEvent ? 'Edit Event' : 'New Event'}</h3>
+						<h3
+							style={{
+								margin: 0,
+								fontSize: '15px',
+								fontWeight: 500,
+								color: themeColors.foreground
+							}}
+						>
+							{editingEvent ? 'Edit Event' : 'New Event'}
+						</h3>
 
 						{/* Date + Time row */}
 						<div style={{ display: 'flex', gap: '10px' }}>
-							<div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
-								<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Date *</label>
+							<div
+								style={{
+									flex: 1,
+									display: 'flex',
+									flexDirection: 'column',
+									gap: '4px'
+								}}
+							>
+								<label
+									style={{
+										fontSize: '11px',
+										color: themeColors.descriptionForeground
+									}}
+								>
+									Date *
+								</label>
 								<input
 									type="date"
 									value={modalForm.date}
@@ -1778,8 +1927,22 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 									}}
 								/>
 							</div>
-							<div style={{ width: '100px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-								<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Time (optional)</label>
+							<div
+								style={{
+									width: '100px',
+									display: 'flex',
+									flexDirection: 'column',
+									gap: '4px'
+								}}
+							>
+								<label
+									style={{
+										fontSize: '11px',
+										color: themeColors.descriptionForeground
+									}}
+								>
+									Time (optional)
+								</label>
 								<input
 									type="time"
 									value={modalForm.time}
@@ -1801,7 +1964,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 						{/* Title */}
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-							<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Title *</label>
+							<label
+								style={{
+									fontSize: '11px',
+									color: themeColors.descriptionForeground
+								}}
+							>
+								Title *
+							</label>
 							<input
 								type="text"
 								value={modalForm.title}
@@ -1822,7 +1992,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 						{/* Description */}
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-							<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Description (shown on hover)</label>
+							<label
+								style={{
+									fontSize: '11px',
+									color: themeColors.descriptionForeground
+								}}
+							>
+								Description (shown on hover)
+							</label>
 							<textarea
 								value={modalForm.description}
 								onChange={e => setModalForm(f => ({ ...f, description: e.target.value }))}
@@ -1845,8 +2022,22 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 
 						{/* Color */}
 						<div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-							<label style={{ fontSize: '11px', color: themeColors.descriptionForeground }}>Color</label>
-							<div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+							<label
+								style={{
+									fontSize: '11px',
+									color: themeColors.descriptionForeground
+								}}
+							>
+								Color
+							</label>
+							<div
+								style={{
+									display: 'flex',
+									gap: '6px',
+									alignItems: 'center',
+									flexWrap: 'wrap'
+								}}
+							>
 								{PRESET_COLORS.map(c => (
 									<button
 										key={c}
@@ -1865,14 +2056,43 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 										title={c}
 									/>
 								))}
-								<input type="color" value={modalForm.color} onChange={e => setModalForm(f => ({ ...f, color: e.target.value }))} style={{ width: '22px', height: '22px', padding: 0, border: 'none', borderRadius: '4px', cursor: 'pointer', background: 'none' }} title="Custom color" />
+								<input
+									type="color"
+									value={modalForm.color}
+									onChange={e => setModalForm(f => ({ ...f, color: e.target.value }))}
+									style={{
+										width: '22px',
+										height: '22px',
+										padding: 0,
+										border: 'none',
+										borderRadius: '4px',
+										cursor: 'pointer',
+										background: 'none'
+									}}
+									title="Custom color"
+								/>
 							</div>
 						</div>
 
 						{/* Public/Private Checkbox */}
-						<div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', marginTop: '8px' }}>
+						<div
+							style={{
+								display: 'flex',
+								alignItems: 'center',
+								gap: '8px',
+								cursor: 'pointer',
+								marginTop: '8px'
+							}}
+						>
 							<input type="checkbox" id="isPublicCheckbox" checked={modalForm.isPublic} onChange={e => setModalForm(f => ({ ...f, isPublic: e.target.checked }))} style={{ cursor: 'pointer' }} />
-							<label htmlFor="isPublicCheckbox" style={{ fontSize: '12px', cursor: 'pointer', userSelect: 'none' }}>
+							<label
+								htmlFor="isPublicCheckbox"
+								style={{
+									fontSize: '12px',
+									cursor: 'pointer',
+									userSelect: 'none'
+								}}
+							>
 								Share with team
 							</label>
 						</div>
@@ -1883,7 +2103,14 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 							const isReadOnly = editingEvent && editingEvent.isPublic && editingEvent.creatorRallyUserId && currentUser?.objectId !== editingEvent.creatorRallyUserId;
 
 							return (
-								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px' }}>
+								<div
+									style={{
+										display: 'flex',
+										justifyContent: 'space-between',
+										alignItems: 'center',
+										marginTop: '4px'
+									}}
+								>
 									<div>
 										{editingEvent && !isReadOnly && (
 											<button
@@ -1901,7 +2128,16 @@ const Calendar: React.FC<CalendarProps> = ({ currentDate = new Date(), iteration
 												Delete
 											</button>
 										)}
-										{isReadOnly && <span style={{ fontSize: '12px', color: themeColors.descriptionForeground }}>Read-only</span>}
+										{isReadOnly && (
+											<span
+												style={{
+													fontSize: '12px',
+													color: themeColors.descriptionForeground
+												}}
+											>
+												Read-only
+											</span>
+										)}
 									</div>
 									<div style={{ display: 'flex', gap: '8px' }}>
 										<button

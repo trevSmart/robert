@@ -12,6 +12,7 @@
 		"checkJs": false,
 		"jsx": "react-jsx",
 		"jsxImportSource": "react",
+		"types": ["node", "vscode", "mocha"],
 		"skipLibCheck": true,
 		"allowSyntheticDefaultImports": true,
 		"moduleResolution": "nodenext"

@@ -1,15 +1,15 @@
 import { FC, ReactNode, useState } from 'react';
 import { themeColors } from '../../utils/themeColors';
 import EntityTypeBadge from './EntityTypeBadge';
-import type { RallyItemRef } from '../../../types/rally';
+import type { JiraItemRef } from '../../../types/jira';
 
-interface RowAction<T extends RallyItemRef> {
+interface RowAction<T extends JiraItemRef> {
 	codiconName: string;
 	title: string;
 	onClick: (item: T) => void;
 }
 
-interface RallyItemListProps<T extends RallyItemRef> {
+interface JiraItemListProps<T extends JiraItemRef> {
 	title: string;
 	/** Rendered before the title in the card header. Accepts a codicon span or inline SVG. */
 	titleIcon?: ReactNode;
@@ -18,9 +18,19 @@ interface RallyItemListProps<T extends RallyItemRef> {
 	rowAction: RowAction<T>;
 }
 
-export const CodiconSpan: FC<{ name: string }> = ({ name }) => <span className={`codicon codicon-${name}`} style={{ fontSize: '14px', lineHeight: 1, display: 'inline-block', flexShrink: 0 }} />;
+export const CodiconSpan: FC<{ name: string }> = ({ name }) => (
+	<span
+		className={`codicon codicon-${name}`}
+		style={{
+			fontSize: '14px',
+			lineHeight: 1,
+			display: 'inline-block',
+			flexShrink: 0
+		}}
+	/>
+);
 
-function RallyItemList<T extends RallyItemRef>({ title, titleIcon, items, onItemClick, rowAction }: RallyItemListProps<T>) {
+function JiraItemList<T extends JiraItemRef>({ title, titleIcon, items, onItemClick, rowAction }: JiraItemListProps<T>) {
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 
 	if (items.length === 0) return null;
@@ -83,6 +93,21 @@ function RallyItemList<T extends RallyItemRef>({ title, titleIcon, items, onItem
 									>
 										{item.formattedId}
 									</span>
+									{item.project && (
+										<span
+											title={`Project ${item.project}`}
+											style={{
+												flexShrink: 0,
+												padding: '0 6px',
+												fontSize: '11px',
+												borderRadius: '8px',
+												color: 'var(--vscode-badge-foreground)',
+												backgroundColor: 'var(--vscode-badge-background)'
+											}}
+										>
+											{item.project}
+										</span>
+									)}
 									<span
 										style={{
 											flex: 1,
@@ -129,4 +154,4 @@ function RallyItemList<T extends RallyItemRef>({ title, titleIcon, items, onItem
 	);
 }
 
-export default RallyItemList;
+export default JiraItemList;

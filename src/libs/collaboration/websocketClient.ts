@@ -77,8 +77,16 @@ export class WebSocketClient {
 
 				const ws = new WebSocket(wsUrl);
 				this._ws = ws;
+				// A socket is superseded once disconnect() or a newer connect() replaced it.
+				// Its late callbacks (e.g. the asynchronous onclose of a socket closed for a
+				// reconnection) must not touch the state of the current socket.
+				const isSuperseded = () => this._ws !== ws;
 
 				ws.onopen = () => {
+					if (isSuperseded()) {
+						resolve();
+						return;
+					}
 					this._isConnecting = false;
 					this._reconnectAttempts = 0;
 
@@ -95,6 +103,9 @@ export class WebSocketClient {
 				};
 
 				ws.onmessage = event => {
+					if (isSuperseded()) {
+						return;
+					}
 					try {
 						const message: WebSocketMessage = JSON.parse(event.data as string);
 						this.handleMessage(message);
@@ -104,12 +115,19 @@ export class WebSocketClient {
 				};
 
 				ws.onerror = error => {
+					if (isSuperseded()) {
+						reject(error);
+						return;
+					}
 					this._errorHandler.logWarning(`WebSocket error: ${error}`, 'WebSocketClient');
 					this._isConnecting = false;
 					reject(error);
 				};
 
 				ws.onclose = event => {
+					if (isSuperseded()) {
+						return;
+					}
 					this._isConnecting = false;
 					this._ws = null;
 
@@ -131,10 +149,11 @@ export class WebSocketClient {
 			this._reconnectTimer = null;
 		}
 
-		if (this._ws) {
-			this._ws.close(1000, 'Client disconnect');
-			this._ws = null;
-		}
+		// Clear the reference first so the closing socket's callbacks see themselves as superseded.
+		const ws = this._ws;
+		this._ws = null;
+		this._isConnecting = false;
+		ws?.close(1000, 'Client disconnect');
 	}
 
 	public send(message: WebSocketMessage): void {

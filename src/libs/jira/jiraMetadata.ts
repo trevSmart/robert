@@ -173,7 +173,7 @@ export function storyPointsOf(fields: Record<string, unknown>, ids: JiraFieldIds
 
 // --- Loading ----------------------------------------------------------------
 
-let loaded: { key: string; promise: Promise<void> } | null = null;
+let loaded: { key: string; promise: Promise<void>; token: object } | null = null;
 
 /**
  * Loads field and issue-type metadata for the configured site once (cached per
@@ -190,8 +190,15 @@ export function ensureJiraMetadata(): Promise<void> {
 		return loaded.promise;
 	}
 
+	// Identifies this load: a reset or a newer load (another site / bug-type setting)
+	// replaces `loaded`, and this load must then not publish its (stale) mappings.
+	const token = {};
+	const isActive = () => loaded?.token === token;
 	const promise = (async () => {
 		const [fields, types] = await Promise.all([jiraRequest<JiraFieldMetadata[]>('/rest/api/3/field'), jiraRequest<JiraIssueTypeMetadata[]>('/rest/api/3/issuetype')]);
+		if (!isActive()) {
+			return;
+		}
 		Object.assign(JIRA_FIELDS, resolveFieldIds(Array.isArray(fields) ? fields : []));
 		Object.assign(JIRA_ISSUE_TYPES, resolveIssueTypes(Array.isArray(types) ? types : [], bugTypeNames));
 		errorHandler.logInfo(
@@ -203,11 +210,11 @@ export function ensureJiraMetadata(): Promise<void> {
 		}
 	})().catch(error => {
 		errorHandler.logWarning(`Could not load Jira field/issue-type metadata, using defaults: ${error instanceof Error ? error.message : String(error)}`, 'jiraMetadata.ensureJiraMetadata');
-		if (loaded?.promise === promise) {
+		if (isActive()) {
 			loaded = null;
 		}
 	});
-	loaded = { key, promise };
+	loaded = { key, promise, token };
 	return promise;
 }
 

@@ -21,6 +21,7 @@ vi.mock('./jiraClient', () => ({
 }));
 
 import { JIRA_FIELDS, JIRA_ISSUE_TYPES, bugTypesJqlList, ensureJiraMetadata, isBugIssueType, isSubtaskIssueType, parseIssueTypeNames, resetJiraMetadata, resolveFieldIds, resolveIssueTypes, storyPointsOf, subtaskJql } from './jiraMetadata';
+import { getJiraSettings } from './jiraClient';
 
 const SITE_FIELDS = [
 	{ id: 'summary', name: 'Summary', custom: false, schema: { type: 'string' } },
@@ -144,5 +145,62 @@ describe('ensureJiraMetadata', () => {
 		jiraRequest.mockImplementation(async (path: string) => answer(path));
 		await ensureJiraMetadata();
 		expect(JIRA_FIELDS.sprint).toBe('customfield_20001');
+	});
+});
+
+describe('ensureJiraMetadata with overlapping loads', () => {
+	type Deferred = { resolve: (value: unknown) => void };
+	const pendingBySite = new Map<string, Deferred[]>();
+
+	/** Requests for each site stay pending until the test resolves them. */
+	function deferRequestsPerSite(site: { current: string }) {
+		jiraRequest.mockImplementation(
+			(path: string) =>
+				new Promise(resolve => {
+					// Capture the site at request time: each load answers with its own site's fields.
+					const requestedFor = site.current;
+					const list = pendingBySite.get(requestedFor) ?? [];
+					list.push({ resolve: () => resolve(path === '/rest/api/3/field' ? fieldsFor(requestedFor) : SITE_TYPES) });
+					pendingBySite.set(requestedFor, list);
+				})
+		);
+	}
+	const fieldsFor = (siteName: string) => [{ id: `customfield_sprint_${siteName}`, name: 'Sprint', custom: true, schema: { type: 'array', custom: 'com.pyxis.greenhopper.jira:gh-sprint' } }];
+	const settle = (siteName: string) => pendingBySite.get(siteName)?.forEach(request => request.resolve(undefined));
+
+	beforeEach(() => pendingBySite.clear());
+
+	it('does not let an older load for another site overwrite the newer one', async () => {
+		const site = { current: 'a' };
+		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKey: '' }));
+		deferRequestsPerSite(site);
+
+		const loadA = ensureJiraMetadata();
+		site.current = 'b';
+		const loadB = ensureJiraMetadata();
+
+		settle('b');
+		await loadB;
+		settle('a');
+		await loadA;
+
+		expect(JIRA_FIELDS.sprint).toBe('customfield_sprint_b');
+		// Site B stays cached: no new requests.
+		jiraRequest.mockClear();
+		await ensureJiraMetadata();
+		expect(jiraRequest).not.toHaveBeenCalled();
+	});
+
+	it('does not publish a load that finishes after a reset', async () => {
+		const site = { current: 'a' };
+		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKey: '' }));
+		deferRequestsPerSite(site);
+
+		const load = ensureJiraMetadata();
+		resetJiraMetadata();
+		settle('a');
+		await load;
+
+		expect(JIRA_FIELDS.sprint).toBe('customfield_10020');
 	});
 });

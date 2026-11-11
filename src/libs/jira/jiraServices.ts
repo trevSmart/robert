@@ -6,6 +6,7 @@ import { getJiraSettings, jiraRequest, searchIssues, projectJql, quoteJql } from
 import { JIRA_FIELDS, bugTypesJqlList, isBugIssueType, isSubtaskIssueType, onJiraMetadataChanged, resetJiraMetadata, storyPointsOf, subtaskJql } from './jiraMetadata';
 import { setJiraBroadcaster, callJira } from './jiraCall';
 import { ErrorHandler } from '../../ErrorHandler';
+import { validateEstimatedHours } from '../../utils/estimatedHours';
 import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
 
 const errorHandler = ErrorHandler.getInstance();
@@ -28,7 +29,24 @@ const PAGE_SIZE = 100;
 const CHUNK_SIZE = 25;
 
 // Field lists are functions: custom-field IDs are discovered per site (see jiraMetadata.ts).
-const storyFields = () => ['summary', 'description', 'status', 'priority', 'assignee', 'project', 'created', 'subtasks', 'issuetype', 'aggregatetimeoriginalestimate', 'aggregatetimeestimate', 'aggregatetimespent', JIRA_FIELDS.sprint, ...JIRA_FIELDS.storyPoints, JIRA_FIELDS.flagged];
+const storyFields = () => [
+	'summary',
+	'description',
+	'status',
+	'priority',
+	'assignee',
+	'project',
+	'created',
+	'subtasks',
+	'issuetype',
+	'timeoriginalestimate',
+	'aggregatetimeoriginalestimate',
+	'aggregatetimeestimate',
+	'aggregatetimespent',
+	JIRA_FIELDS.sprint,
+	...JIRA_FIELDS.storyPoints,
+	JIRA_FIELDS.flagged
+];
 const defectFields = () => ['summary', 'description', 'status', 'priority', 'assignee', 'project', 'created', 'issuetype', JIRA_FIELDS.sprint, JIRA_FIELDS.flagged];
 const TASK_FIELDS = ['summary', 'description', 'status', 'assignee', 'parent', 'issuetype', 'project', 'timeoriginalestimate', 'timeestimate', 'timespent', 'created'];
 
@@ -175,6 +193,8 @@ function formatStory(issue: any): any {
 		blocked: isFlagged(f),
 		blockedReason: null,
 		taskEstimateTotal: hours(f.aggregatetimeoriginalestimate ?? f.timeoriginalestimate),
+		// The story's own original estimate (without sub-tasks): the editable value.
+		estimatedHours: typeof f.timeoriginalestimate === 'number' ? hours(f.timeoriginalestimate) : null,
 		timeSpent: hours(f.aggregatetimespent ?? f.timespent),
 		taskStatus: f.status?.name,
 		tasksCount: (f.subtasks ?? []).length,
@@ -979,6 +999,52 @@ export async function getTaskWithParent(objectId: string): Promise<{ task: any; 
 		task: formatTask(issue),
 		userStoryObjectId: parentId ? String(parentId) : null
 	};
+}
+
+/**
+ * Validates an estimate in hours and converts it to a Jira duration string in
+ * minutes (e.g. 1.5 → "90m"). Minutes avoid fractional-hour parsing and the
+ * site's "hours per day" setting, which only applies to the d/w units.
+ */
+export function hoursToJiraDuration(value: number): string {
+	const result = validateEstimatedHours(value);
+	if (!result.ok) {
+		throw new Error(result.error);
+	}
+	return `${Math.round(result.value * 60)}m`;
+}
+
+/**
+ * Sets the story's own original estimate (Jira "Original estimate", the
+ * timetracking field) and returns the story as stored by Jira afterwards.
+ * Sub-task estimates are not touched, so the rolled-up total (taskEstimateTotal)
+ * changes by the same delta.
+ */
+export async function updateUserStoryEstimatedHours(objectId: string, estimatedHours: number): Promise<{ userStory: JiraUserStory | null }> {
+	const duration = hoursToJiraDuration(estimatedHours);
+	await ensureConfigured();
+
+	errorHandler.logInfo(`Updating original estimate of issue ${objectId} to ${estimatedHours}h (${duration})`, 'jiraServices.updateUserStoryEstimatedHours');
+	await callJira(
+		() =>
+			jiraRequest(`/rest/api/3/issue/${encodeURIComponent(objectId)}`, {
+				method: 'PUT',
+				body: { update: { timetracking: [{ edit: { originalEstimate: duration } }] } }
+			}),
+		'Saving estimated hours...'
+	);
+
+	const issue = await fetchIssueOrNull(objectId, storyFields());
+	const userStory = issue ? (formatStory(issue) as JiraUserStory) : null;
+	if (userStory) {
+		addToCache([userStory], jiraData.userStories, 'objectId');
+	}
+	// Sprint totals are sums of story estimates: drop them so the next load recomputes.
+	getIterationsCacheManager().clear();
+	delete jiraDataMeta.iterations;
+
+	errorHandler.logInfo(`Original estimate of ${userStory?.formattedId ?? objectId} saved: ${userStory?.estimatedHours ?? estimatedHours}h (total incl. sub-tasks: ${userStory?.taskEstimateTotal ?? '?'}h)`, 'jiraServices.updateUserStoryEstimatedHours');
+	return { userStory };
 }
 
 /** Resol la clau (p. ex. DSS-273) d'una incidència a partir del seu id numèric. */

@@ -2078,6 +2078,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					setGlobalSearchError(message.error || 'Failed to load test case');
 					setGlobalSearchLoading(false);
 					break;
+				case 'userStoryUpdated': {
+					// A field was edited (e.g. estimated hours): swap in the story as stored by the
+					// provider everywhere it is held, so tables and the calendar show the new value.
+					const updated = message.userStory as UserStory | undefined;
+					if (updated) {
+						const replace = (list: UserStory[]) => (list.some(story => story.objectId === updated.objectId) ? list.map(story => (story.objectId === updated.objectId ? { ...story, ...updated } : story)) : list);
+						setSelectedUserStory(prev => (prev && prev.objectId === updated.objectId ? { ...prev, ...updated } : prev));
+						setUserStories(replace);
+						setPortfolioUserStories(replace);
+						setSprintUserStories(replace);
+						logDebug(`User story ${updated.formattedId} updated (${message.field ?? 'unknown field'})`, 'MainWebview');
+					}
+					break;
+				}
 				case 'restoreState':
 					// Restore navigation state from another webview (e.g., when opening in editor from activity bar)
 					if (message.state) {

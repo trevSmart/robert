@@ -61,6 +61,8 @@ export const getTaskWithParent = route(jira.getTaskWithParent, rally.getTaskWith
 export const getUserStoryRevisions = route(jira.getUserStoryRevisions, rally.getUserStoryRevisions);
 export const getUserStoryRevisionsCount = route(jira.getUserStoryRevisionsCount, rally.getUserStoryRevisionsCount);
 export const fetchImageAsBase64 = route(jira.fetchJiraImageAsBase64, rally.fetchRallyImageAsBase64);
+/** Jira only: Rally's TaskEstimateTotal is a read-only roll-up (its implementation throws). */
+export const updateUserStoryEstimatedHours = route(jira.updateUserStoryEstimatedHours, rally.updateUserStoryEstimatedHours);
 // Validation must not trigger metadata requests (credentials may be missing).
 export const validateConfiguration: typeof validateJiraConfiguration = (...args) => (isRally() ? validateRallyConfiguration(...args) : validateJiraConfiguration(...args));
 

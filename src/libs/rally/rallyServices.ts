@@ -2904,6 +2904,16 @@ export async function getTestCaseWithParent(objectId: string): Promise<{ testCas
  * Fetch revisions for a user story by querying RevisionHistory directly
  */
 /**
+ * Rally has no story-level hours field to write: TaskEstimateTotal is a read-only
+ * roll-up of the task estimates. Kept so the provider facade has the same shape
+ * for both providers; the UI does not offer the edit for Rally.
+ */
+export async function updateUserStoryEstimatedHours(objectId: string, _estimatedHours: number): Promise<{ userStory: RallyUserStory | null }> {
+	errorHandler.logWarning(`Rejected estimated-hours edit for user story ${objectId}: not supported in Rally`, 'rallyServices.updateUserStoryEstimatedHours');
+	throw new Error('Editing estimated hours is not supported in Rally: the hours are the sum of the task estimates (TaskEstimateTotal).');
+}
+
+/**
  * Gets only the count of revisions for a user story (lightweight operation)
  * Returns the total count from RevisionHistory.Revisions.Count
  */

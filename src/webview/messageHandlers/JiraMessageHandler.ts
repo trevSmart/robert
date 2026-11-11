@@ -1,6 +1,22 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { getProjects, getIterations, getUserStories, getTasks, getDefects, getCurrentUser, getUserStoryDefects, getUserStoryDiscussions, getRecentTeamMembers, getAllTeamMembersProgress, getUsers, getMemberHoursHistory, getUserStoryTests, getProviderLabel } from '../../libs/provider';
+import {
+	getProjects,
+	getIterations,
+	getUserStories,
+	getTasks,
+	getDefects,
+	getCurrentUser,
+	getUserStoryDefects,
+	getUserStoryDiscussions,
+	getRecentTeamMembers,
+	getAllTeamMembersProgress,
+	getUsers,
+	getMemberHoursHistory,
+	getUserStoryTests,
+	getProviderLabel,
+	updateUserStoryEstimatedHours
+} from '../../libs/provider';
 import { HolidayService } from '../../libs/holidayService';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
@@ -67,8 +83,37 @@ export class JiraMessageHandler {
 			case 'getJiraCurrentUser':
 				await this.handleGetJiraCurrentUser(webview);
 				return true;
+			case 'updateUserStoryEstimatedHours':
+				await this.handleUpdateUserStoryEstimatedHours(webview, message);
+				return true;
 			default:
 				return false;
+		}
+	}
+
+	/**
+	 * Saves a story's estimated hours and answers with the story as stored by the
+	 * provider (`userStoryUpdated`), or `userStoryUpdateError` with a readable reason.
+	 */
+	private async handleUpdateUserStoryEstimatedHours(webview: vscode.Webview, message: any): Promise<void> {
+		const objectId = String(message.userStoryObjectId ?? '');
+		const requestId = message.requestId;
+		try {
+			if (!objectId) {
+				throw new Error('Missing user story id');
+			}
+			const estimatedHours = Number(message.estimatedHours);
+			this.errorHandler.logInfo(`Updating estimated hours of user story ${objectId} to ${estimatedHours}h`, 'JiraMessageHandler');
+			const { userStory } = await updateUserStoryEstimatedHours(objectId, estimatedHours);
+			if (!userStory) {
+				throw new Error('The user story was saved but could not be reloaded');
+			}
+			webview.postMessage({ command: 'userStoryUpdated', objectId, field: 'estimatedHours', userStory, requestId });
+			this.errorHandler.logInfo(`Estimated hours of ${userStory.formattedId} updated to ${userStory.estimatedHours ?? estimatedHours}h`, 'JiraMessageHandler');
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(errorMessage), 'updateUserStoryEstimatedHours');
+			webview.postMessage({ command: 'userStoryUpdateError', objectId, field: 'estimatedHours', error: errorMessage, requestId });
 		}
 	}
 

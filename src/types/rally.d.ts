@@ -21,6 +21,7 @@ export interface UserStory {
 	blocked: boolean;
 	blockedReason?: string | null; // Rally BlockedReason - motiu del bloqueig quan blocked=true
 	taskEstimateTotal: number;
+	estimatedHours?: number | null; // Jira only (story's own original estimate). Rally rolls hours up from tasks.
 	taskStatus?: string; // Deprecated - use scheduleState instead
 	tasksCount: number;
 	testCasesCount: number;

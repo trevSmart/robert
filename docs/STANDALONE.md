@@ -77,8 +77,26 @@ These depend on VS Code itself and degrade gracefully (logged, or a notification
 - "Open tutorial in editor" (needs a text editor).
 - Test-tab experiments that use VS Code / Cursor chat and `vscode.lm`.
 
+## Releases and updates
+
+The app does **not** update itself. It tells the user when a newer version is out and opens the installer download; the user runs the installer, which replaces the app and keeps the profile (settings, saved tokens, `globalState`). macOS and Windows behave the same, and nothing needs code signing.
+
+**Publishing a release**
+
+1. Bump `version` in `package.json` (shared with the VSIX) and merge to `main`.
+2. Create a GitHub Release whose tag is that version (e.g. `0.7.0`, or `v0.7.0`), from the GitHub UI or `gh release create`. Attach the VSIX as usual if you want.
+3. `.github/workflows/release-standalone.yml` runs on `release: published`, builds on macOS and Windows runners and uploads `Robert-<version>-mac-arm64.dmg`, `Robert-<version>-mac-x64.dmg` and `Robert-<version>-win-x64.exe` to the release. It fails if the tag does not match `package.json`. To (re)attach installers to an existing release, run the workflow manually with its tag. Releases created by another workflow with `GITHUB_TOKEN` do not trigger it: run it manually in that case.
+
+**How the app checks** (`src/standalone/updateCheck.ts`)
+
+- Packaged builds check 30 s after launch and every 6 hours; **Robert → Check for Updates…** (macOS) or **Help → Check for Updates…** (Windows/Linux) checks on demand, also when running from source.
+- It reads the repository's releases from the GitHub API (repository taken from `package.json` `repository.url`) and takes the newest published, non-prerelease release that is newer than the running version **and has an installer for this OS and CPU**. Releases with only a VSIX are ignored, so the notice appears only once the workflow has uploaded the installers.
+- The dialog offers **Download** (opens the installer URL in the browser), **Later** (no more automatic notices for that version until the next launch) and **Skip This Version** (stored in `globalState`; a manual check still offers it).
+- Automatic checks only log failures (no network, proxy, GitHub rate limit) to the Robert log; manual checks show them.
+- The installer file names come from `artifactName` in `electron-builder.yml`. If you change it, keep the OS and architecture in the name, or update `pickInstallerAsset`.
+
 ## Packaging notes
 
 - `electron-builder.yml` overrides `main` to `out/src/standalone/main.js`; the VS Code extension keeps using `package.json` `main`.
-- Builds are unsigned by default. Code signing / notarization for macOS and Windows needs certificates configured in CI (see the electron-builder docs) before distributing installers broadly.
+- Builds are unsigned (the release workflow sets `CSC_IDENTITY_AUTO_DISCOVERY=false`). On first install macOS Gatekeeper and Windows SmartScreen warn about an unidentified developer. Code signing / notarization needs certificates configured in CI (see the electron-builder docs); with signed builds, real auto-update with `electron-updater` would also become possible on macOS.
 - The VSIX excludes `out/src/standalone/**` (`.vscodeignore`), and `electron` / `electron-builder` are dev dependencies, so the extension package is unaffected.

@@ -29,21 +29,34 @@ files:
 
 asar: true
 
+# Installer names carry OS and CPU (e.g. Robert-0.7.0-mac-arm64.dmg, Robert-0.7.0-win-x64.exe):
+# the in-app update check (src/standalone/updateCheck.ts) picks the GitHub Release asset by them.
+artifactName: ${productName}-${version}-${os}-${arch}.${ext}
+# Releases are published by .github/workflows/release-standalone.yml with `gh release upload`.
+publish: null
+
 mac:
   category: public.app-category.productivity
   # Follows Apple's icon template (824px rounded rect with transparent margin on a
   # 1024px canvas). A full-bleed icon gets boxed in a light plate by recent macOS.
   icon: resources/icons/robert-logo-macos.png
+  # Intel and Apple silicon installers; the update check offers the one for the user's CPU.
   target:
-    - dmg
+    - target: dmg
+      arch:
+        - arm64
+        - x64
     - zip
 
 win:
   icon: resources/icons/robert-logo4.png
   target:
-    - nsis
+    - target: nsis
+      arch: x64
 
 nsis:
+  # NSIS has its own default name ("Robert Setup x.y.z.exe"); keep the shared pattern.
+  artifactName: ${productName}-${version}-${os}-${arch}.${ext}
   oneClick: false
   perMachine: false
 

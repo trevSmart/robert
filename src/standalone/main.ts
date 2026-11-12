@@ -9,7 +9,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type * as vscode from 'vscode';
-import { app, BrowserWindow, clipboard, dialog, Menu, type MenuItemConstructorOptions, nativeTheme, Notification, safeStorage, session, shell } from 'electron';
+import { app, BrowserWindow, clipboard, dialog, Menu, type MenuItemConstructorOptions, nativeTheme, net, Notification, safeStorage, session, shell } from 'electron';
 import { APP_SCHEME, AppProtocol, registerAppSchemeAsPrivileged } from './appProtocol';
 import { ElectronWebview, ElectronWebviewView } from './ElectronWebview';
 import { ConfigurationStore, type SecretCodec } from './host/ConfigurationStore';
@@ -20,6 +20,7 @@ import { Uri } from './host/Uri';
 import { createVscodeShim } from './host/vscodeShim';
 import { installVscodeModule } from './installVscodeModule';
 import { SettingsWindowController } from './settingsWindow';
+import { type GitHubRelease, githubRepoFromUrl, UpdateChecker } from './updateCheck';
 
 /** Repository / app.asar root: this file lives in out/src/standalone/. */
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
@@ -31,8 +32,14 @@ const APP_NAME = 'Robert';
  * it would lose existing settings and saved API tokens.
  */
 const APP_INTERNAL_NAME = 'IBM Robert';
+const PACKAGE_JSON = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')) as { version: string; repository?: { url?: string } };
 /** Robert's version (app.getVersion() reports Electron's when running from source). */
-const APP_VERSION = (JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')) as { version: string }).version;
+const APP_VERSION = PACKAGE_JSON.version;
+/** "owner/repo" whose GitHub Releases carry the standalone installers (see .github/workflows/release-standalone.yml). */
+const UPDATE_REPOSITORY = githubRepoFromUrl(PACKAGE_JSON.repository?.url ?? '');
+/** First automatic update check after launch, then every few hours while the app keeps running. */
+const UPDATE_CHECK_DELAY_MS = 30_000;
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const MAX_LOG_BYTES = 5 * 1024 * 1024;
 
 app.setName(APP_INTERNAL_NAME);
@@ -293,8 +300,8 @@ async function start(): Promise<void> {
 		}, 'standalone.reload');
 	};
 
-	// The settings window is a child of the main window only while the main window is visible.
-	const settingsParent = () => (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() ? mainWindow : undefined);
+	// The settings window and dialogs are children of the main window only while the main window is visible.
+	const visibleMainWindow = () => (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() ? mainWindow : undefined);
 
 	const settingsWindow = new SettingsWindowController(config, appProtocol, path.join(__dirname, 'preload.js'), iconPath, currentTheme, changedKeys => {
 		output.appendLine(`[Robert] ⚙️  Settings saved: ${changedKeys.join(', ') || 'no changes'}`);
@@ -318,8 +325,8 @@ async function start(): Promise<void> {
 	// Commands the shared code may execute through vscode.commands.
 	shim.commands.registerCommand('workbench.view.extension.robert', showMainWindow);
 	shim.commands.registerCommand('robert.openMainView', showMainWindow);
-	shim.commands.registerCommand('workbench.action.openSettings', () => settingsWindow.open(settingsParent()));
-	shim.commands.registerCommand('robert.openSettings', () => settingsWindow.open(settingsParent()));
+	shim.commands.registerCommand('workbench.action.openSettings', () => settingsWindow.open(visibleMainWindow()));
+	shim.commands.registerCommand('robert.openSettings', () => settingsWindow.open(visibleMainWindow()));
 	shim.commands.registerCommand('robert.reload', reload);
 	shim.commands.registerCommand('robert.showOutput', () => output.show());
 	shim.commands.registerCommand('robert.goBack', () => provider.navigateHistory('back'));
@@ -327,13 +334,66 @@ async function start(): Promise<void> {
 
 	nativeTheme.on('updated', () => mainWebview?.applyTheme(currentTheme()));
 
+	// --- update notifications -------------------------------------------------
+	// The app never updates itself: it tells the user a newer installer is out and opens its download.
+	const showMessage = (options: Electron.MessageBoxOptions) => {
+		const parent = visibleMainWindow();
+		return parent ? dialog.showMessageBox(parent, options) : dialog.showMessageBox(options);
+	};
+	const updateChecker = new UpdateChecker({
+		currentVersion: APP_VERSION,
+		platform: process.platform,
+		arch: process.arch,
+		fetchReleases: async () => {
+			if (!UPDATE_REPOSITORY) {
+				throw new Error('No GitHub repository is configured for updates.');
+			}
+			// net.fetch goes through Chromium's network stack, so it honours the system proxy.
+			const response = await net.fetch(`https://api.github.com/repos/${UPDATE_REPOSITORY}/releases?per_page=20`, {
+				headers: { Accept: 'application/vnd.github+json', 'User-Agent': `${APP_NAME}-standalone-update-check` },
+				signal: AbortSignal.timeout(15_000)
+			});
+			if (!response.ok) {
+				throw new Error(`GitHub answered ${response.status} ${response.statusText}`.trim());
+			}
+			return (await response.json()) as GitHubRelease[];
+		},
+		prompt: async update => {
+			const { response } = await showMessage({
+				type: 'info',
+				buttons: ['Download', 'Later', 'Skip This Version'],
+				defaultId: 0,
+				cancelId: 1,
+				title: 'Update available',
+				message: `${APP_NAME} ${update.version} is available`,
+				detail: `You have version ${APP_VERSION}. Download the installer and run it to update; your settings and saved tokens are kept.`
+			});
+			return response === 0 ? 'download' : response === 2 ? 'skip' : 'later';
+		},
+		showUpToDate: async () => {
+			await showMessage({ type: 'info', buttons: ['OK'], title: 'No updates', message: `${APP_NAME} is up to date`, detail: `Version ${APP_VERSION} is the latest version.` });
+		},
+		showError: async message => {
+			await showMessage({ type: 'warning', buttons: ['OK'], title: 'Update check failed', message: 'Could not check for updates', detail: message });
+		},
+		openExternal: async url => {
+			if (isHttpUrl(url)) {
+				await shell.openExternal(url);
+			}
+		},
+		state: context.globalState,
+		log: message => output.appendLine(message)
+	});
+	const checkForUpdates = () => void updateChecker.check({ manual: true });
+
 	Menu.setApplicationMenu(
 		buildMenu({
-			openSettings: () => settingsWindow.open(settingsParent()),
+			openSettings: () => settingsWindow.open(visibleMainWindow()),
 			reload: () => void reload(),
 			back: () => provider.navigateHistory('back'),
 			forward: () => provider.navigateHistory('forward'),
-			showLogs: () => output.show()
+			showLogs: () => output.show(),
+			checkForUpdates
 		})
 	);
 
@@ -346,6 +406,7 @@ async function start(): Promise<void> {
 	});
 	app.on('before-quit', () => {
 		isQuitting = true;
+		updateChecker.dispose();
 		provider.dispose();
 		for (const disposable of context.subscriptions) {
 			disposable.dispose();
@@ -359,18 +420,24 @@ async function start(): Promise<void> {
 		void provider.prefetchJiraData('activation');
 	}
 	await createMainWindow();
+
+	// Only installed builds check on their own; when running from source, use the menu item.
+	if (app.isPackaged) {
+		updateChecker.start(UPDATE_CHECK_DELAY_MS, UPDATE_CHECK_INTERVAL_MS);
+	}
 }
 
-function buildMenu(actions: { openSettings(): void; reload(): void; back(): void; forward(): void; showLogs(): void }): Menu {
+function buildMenu(actions: { openSettings(): void; reload(): void; back(): void; forward(): void; showLogs(): void; checkForUpdates(): void }): Menu {
 	const isMac = process.platform === 'darwin';
 	const settingsItem: MenuItemConstructorOptions = { label: isMac ? 'Settings…' : 'Settings', accelerator: 'CmdOrCtrl+,', click: actions.openSettings };
+	const updatesItem: MenuItemConstructorOptions = { label: 'Check for Updates…', click: actions.checkForUpdates };
 
 	const template: MenuItemConstructorOptions[] = [
 		...(isMac
 			? [
 					{
 						label: APP_NAME,
-						submenu: [{ role: 'about' }, { type: 'separator' }, settingsItem, { type: 'separator' }, { role: 'services' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }]
+						submenu: [{ role: 'about' }, updatesItem, { type: 'separator' }, settingsItem, { type: 'separator' }, { role: 'services' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }]
 					} as MenuItemConstructorOptions
 				]
 			: [{ label: 'File', submenu: [settingsItem, { type: 'separator' }, { role: 'quit' }] } as MenuItemConstructorOptions]),
@@ -393,7 +460,9 @@ function buildMenu(actions: { openSettings(): void; reload(): void; back(): void
 				{ role: 'toggleDevTools' }
 			]
 		},
-		{ role: 'windowMenu' }
+		{ role: 'windowMenu' },
+		// On macOS "Check for Updates…" lives in the app menu, next to About.
+		...(isMac ? [] : [{ label: 'Help', submenu: [updatesItem] } as MenuItemConstructorOptions])
 	];
 	return Menu.buildFromTemplate(template);
 }

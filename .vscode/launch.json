@@ -1,0 +1,80 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			// Original launch. Broken on current js-debug: it probes [::1] while the
+			// extension host inspector listens on 127.0.0.1 only, so the host stays
+			// paused ("Extension host did not start in 10 seconds (debugBrk: true)").
+			// Use the "Debug" compound below instead.
+			"name": "Debug (classic, inspect-brk)",
+			"type": "extensionHost",
+			"request": "launch",
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"${workspaceFolder}/test-workspace",
+				"--disable-extension=salesforce.salesforcedx-vscode-core",
+				"--disable-extension=salesforce.salesforcedx-vscode-apex-testing"
+			],
+			"outFiles": [
+				"${workspaceFolder}/out/src/**/*.js"
+			],
+			"preLaunchTask": "debug-compile",
+			"sourceMaps": true,
+			"smartStep": true,
+			"presentation": {
+				"group": "classic",
+				"order": 9
+			},
+			"suppressMultipleSessionWarning": true
+		},
+		{
+			// Launches the dev host without pausing on the first line (noDebug skips
+			// --inspect-brk-extensions) and exposes the inspector on a fixed port.
+			"name": "Launch Extension Host (inspector on 9333)",
+			"type": "extensionHost",
+			"request": "launch",
+			"noDebug": true,
+			"args": [
+				"--extensionDevelopmentPath=${workspaceFolder}",
+				"--inspect-extensions=9333",
+				"${workspaceFolder}/test-workspace",
+				"--disable-extension=salesforce.salesforcedx-vscode-core",
+				"--disable-extension=salesforce.salesforcedx-vscode-apex-testing"
+			],
+			"preLaunchTask": "debug-compile",
+			"presentation": {
+				"hidden": true
+			}
+		},
+		{
+			// Attaches straight to IPv4, avoiding the [::1] probe.
+			"name": "Attach to Extension Host (127.0.0.1:9333)",
+			"type": "node",
+			"request": "attach",
+			"address": "127.0.0.1",
+			"port": 9333,
+			"timeout": 30000,
+			"outFiles": [
+				"${workspaceFolder}/out/src/**/*.js"
+			],
+			"sourceMaps": true,
+			"smartStep": true,
+			"presentation": {
+				"hidden": true
+			}
+		}
+	],
+	"compounds": [
+		{
+			"name": "Debug",
+			"configurations": [
+				"Launch Extension Host (inspector on 9333)",
+				"Attach to Extension Host (127.0.0.1:9333)"
+			],
+			"stopAll": true,
+			"presentation": {
+				"order": 1
+			}
+		}
+	]
+}

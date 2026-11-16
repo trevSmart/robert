@@ -18,6 +18,9 @@ declare global {
 		rebusLogoUri?: string;
 		jiraLogoUri?: string;
 		rallyLogoUri?: string;
+		// Active provider when the HTML was rendered, so the UI never shows the
+		// previous provider's branding before the first data load.
+		robertProvider?: string;
 		interFontUri?: string;
 		testTabEnabled?: boolean;
 		// Jira data pre-fetched by the extension (e.g. while the intro video plays)

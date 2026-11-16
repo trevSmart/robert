@@ -9,6 +9,15 @@ export default defineConfig({
 		})
 	],
 	appType: 'mpa',
+	experimental: {
+		// Assets referenced from CSS (e.g. the codicon font) must use a path relative
+		// to the stylesheet: an absolute "/codicon.ttf" resolves against the webview
+		// origin root instead of out/webview/, so the icon font never loads and every
+		// codicon renders as an empty box. HTML URLs are rewritten by the host instead.
+		renderBuiltUrl(_filename, { hostType }) {
+			return hostType === 'css' ? { relative: true } : undefined;
+		}
+	},
 	build: {
 		outDir: 'out/webview',
 		rollupOptions: {

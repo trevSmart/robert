@@ -3,6 +3,7 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { ErrorHandler } from '../ErrorHandler';
 import { getTestTabEnabledReason, isTestTabEnabled } from '../utils/devMode';
+import { getActiveProvider } from '../libs/provider';
 
 /**
  * Manages webview HTML content generation, CSP headers, and resource URI resolution.
@@ -46,6 +47,7 @@ export class WebviewContentManager {
 					__INTER_FONT_URI__: interFontUri.toString(),
 					__JIRA_LOGO_URI__: jiraLogoUri.toString(),
 					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
+					__PROVIDER__: getActiveProvider(),
 					__TEST_TAB_ENABLED__: String(testTabEnabled),
 					__PRELOADED_DATA__: preloadedJson
 				});

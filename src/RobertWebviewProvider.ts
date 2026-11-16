@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
-import { getCurrentUser, getProjects, getIterations, getProviderLabel, setProviderBroadcaster, validateConfiguration } from './libs/provider';
+import { getActiveProvider, getCurrentUser, getProjects, getIterations, getProviderLabel, setProviderBroadcaster, validateConfiguration } from './libs/provider';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
 import { WebSocketClient } from './libs/collaboration/websocketClient';
@@ -257,6 +257,9 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 * Prefetch Jira data to warm the cache when the extension activates.
 	 */
 	public async prefetchJiraData(trigger: string = 'activation'): Promise<void> {
+		// Drop data preloaded by an earlier prefetch: it may belong to another
+		// provider or configuration, and this run might skip without replacing it.
+		this._preloadedData = undefined;
 		const run = this._errorHandler.executeWithErrorHandling(async () => {
 			const settings = this._settingsManager.getSettings();
 			if (!settings.autoRefresh) {
@@ -854,6 +857,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 						this._errorHandler.logInfo('Refreshing activity bar webview...', 'RobertWebviewProvider.resetAndRefreshWebviews');
 						await this._currentView.webview.postMessage({
 							command: 'refresh',
+							provider: getActiveProvider(),
 							timestamp: new Date().toISOString()
 						});
 					}
@@ -868,6 +872,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					this._errorHandler.logInfo('Refreshing panel webview...', 'RobertWebviewProvider.resetAndRefreshWebviews');
 					await this._currentPanel.webview.postMessage({
 						command: 'refresh',
+						provider: getActiveProvider(),
 						timestamp: new Date().toISOString()
 					});
 				} catch (error) {

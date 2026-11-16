@@ -3,9 +3,9 @@ import styled, { keyframes } from 'styled-components';
 import { isLightTheme } from '../../utils/themeColors';
 
 const softPulse = keyframes`
-  0%   { opacity: 0.30; }
-  50%  { opacity: 0.50; }
-  100% { opacity: 0.30; }
+  0%   { opacity: 0.45; }
+  50%  { opacity: 0.70; }
+  100% { opacity: 0.45; }
 `;
 
 const Wrapper = styled.div<{ $visible: boolean; $light: boolean }>`
@@ -16,8 +16,8 @@ const Wrapper = styled.div<{ $visible: boolean; $light: boolean }>`
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	width: 44px;
-	height: 44px;
+	width: 38px;
+	height: 38px;
 	padding: 3px;
 	border-radius: 8px;
 	background: ${props => (props.$light ? 'rgba(255, 255, 255, 0.72)' : 'rgba(15, 18, 25, 0.35)')};
@@ -32,8 +32,8 @@ const Wrapper = styled.div<{ $visible: boolean; $light: boolean }>`
 `;
 
 const Logo = styled.img`
-	width: 24px;
-	height: 24px;
+	width: 20px;
+	height: 20px;
 	object-fit: contain;
 	animation: ${softPulse} 1.2s ease-in-out infinite;
 `;

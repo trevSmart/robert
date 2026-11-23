@@ -17,6 +17,8 @@ export interface MetricsSectionProps {
 	stateDistributionLoading: boolean;
 	blockedDistribution: BlockedDistribution[];
 	nextSprintName: string;
+	readinessNotice: string | null;
+	readinessEmptyMessage: string | null;
 	selectedReadinessSprint: string;
 	onReadinessSprintChange: (value: string) => void;
 	sprintIterations: Array<{
@@ -40,6 +42,8 @@ const MetricsSection: FC<MetricsSectionProps> = ({
 	stateDistributionLoading,
 	blockedDistribution,
 	nextSprintName,
+	readinessNotice,
+	readinessEmptyMessage,
 	selectedReadinessSprint,
 	onReadinessSprintChange,
 	sprintIterations,
@@ -80,7 +84,18 @@ const MetricsSection: FC<MetricsSectionProps> = ({
 
 		{/* State Distribution and Defect Severity Charts */}
 		<div style={{ display: 'grid', gridTemplateColumns: '2fr 3fr', gap: '20px' }}>
-			<StateDistributionPie data={stateDistribution} blockedData={blockedDistribution} sprintName={nextSprintName} loading={stateDistributionLoading} selectedSprint={selectedReadinessSprint} onSprintChange={onReadinessSprintChange} iterations={sprintIterations} showSelector={true} />
+			<StateDistributionPie
+				data={stateDistribution}
+				blockedData={blockedDistribution}
+				sprintName={nextSprintName}
+				notice={readinessNotice}
+				emptyMessage={readinessEmptyMessage}
+				loading={stateDistributionLoading}
+				selectedSprint={selectedReadinessSprint}
+				onSprintChange={onReadinessSprintChange}
+				iterations={sprintIterations}
+				showSelector={true}
+			/>
 			<DefectSeverityChart data={defectsBySeverity} loading={defectsBySeverityLoading} />
 		</div>
 	</div>

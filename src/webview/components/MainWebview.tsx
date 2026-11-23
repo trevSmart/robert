@@ -33,7 +33,7 @@ import { type UserStory, type Defect, type Discussion, type TestCase, type Globa
 import { FavoritesContext, favoriteKey } from './common/FavoritesContext';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
-import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
+import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, resolveReadinessTarget, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 import { JiraLoadingIndicator } from './common/JiraLoadingIndicator';
 
 import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
@@ -643,6 +643,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [stateDistribution, setStateDistribution] = useState<StateDistribution[]>([]);
 	const [stateDistributionLoading, setStateDistributionLoading] = useState(false);
 	const [nextSprintName, setNextSprintName] = useState<string>('Next Sprint');
+	const [readinessNotice, setReadinessNotice] = useState<string | null>(null);
+	const [readinessEmptyMessage, setReadinessEmptyMessage] = useState<string | null>(null);
 	const [selectedReadinessSprint, setSelectedReadinessSprint] = useState<string>('next'); // 'next' or iteration name
 	const [blockedDistribution, setBlockedDistribution] = useState<BlockedDistribution[]>([]);
 	const [defectsBySeverity, setDefectsBySeverity] = useState<DefectsBySeverity[]>([]);
@@ -2274,18 +2276,12 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		(async () => {
 			try {
 				setStateDistributionLoading(true);
-				let targetIteration: Iteration | null = null;
-				let displayName = 'Next Sprint';
-
-				if (selectedReadinessSprint === 'next') {
-					targetIteration = findNextIteration(iterations);
-				} else {
-					// Find the iteration by name
-					targetIteration = iterations.find(it => it.name === selectedReadinessSprint) || null;
-				}
+				// 'next' → sprint següent; si encara no s'ha creat, el sprint actual (amb avís).
+				const { target: targetIteration, notice, emptyMessage } = resolveReadinessTarget(selectedReadinessSprint, iterations, findNextIteration(iterations), findCurrentIteration(iterations));
+				setReadinessNotice(notice);
+				setReadinessEmptyMessage(emptyMessage);
 
 				if (targetIteration) {
-					displayName = targetIteration.name;
 					setNextSprintName(targetIteration.name);
 					// Load stories specifically for this sprint to ensure we get all stories, not just cached ones
 					sendMessage({
@@ -2336,7 +2332,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			console.error('Error calculating metrics:', error);
 			setMetricsLoading(false);
 		}
-	}, [activeSection, iterations, portfolioUserStories, defects, findNextIteration, selectedReadinessSprint]);
+	}, [activeSection, iterations, portfolioUserStories, defects, findNextIteration, findCurrentIteration, selectedReadinessSprint]);
 
 	// Load iterations when navigating to home section
 	useEffect(() => {
@@ -2719,6 +2715,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 													stateDistributionLoading={stateDistributionLoading}
 													blockedDistribution={blockedDistribution}
 													nextSprintName={nextSprintName}
+													readinessNotice={readinessNotice}
+													readinessEmptyMessage={readinessEmptyMessage}
 													selectedReadinessSprint={selectedReadinessSprint}
 													onReadinessSprintChange={setSelectedReadinessSprint}
 													sprintIterations={iterations

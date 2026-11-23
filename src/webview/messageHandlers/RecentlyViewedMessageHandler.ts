@@ -33,7 +33,8 @@ export class RecentlyViewedMessageHandler {
 	}
 
 	private getStoredItems(): RecentlyViewedItem[] {
-		return (this.context.globalState.get<RecentlyViewedItem[]>(STORAGE_KEY, []) ?? []).filter(Boolean);
+		// Older versions stored Rally objectIds as numbers; normalise so `===` matches the string ids we receive now.
+		return (this.context.globalState.get<RecentlyViewedItem[]>(STORAGE_KEY, []) ?? []).filter(Boolean).map(item => ({ ...item, objectId: String(item.objectId) }));
 	}
 
 	/** Most recently viewed first, capped to MAX_ITEMS. */
@@ -59,10 +60,11 @@ export class RecentlyViewedMessageHandler {
 
 	private async handleRecordRecentlyViewedItem(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const incoming = message.item as RecentlyViewedItem;
-			if (!incoming?.objectId || !incoming?.type) {
+			const raw = message.item as RecentlyViewedItem;
+			if (!raw?.objectId || !raw?.type) {
 				return;
 			}
+			const incoming: RecentlyViewedItem = { ...raw, objectId: String(raw.objectId) };
 
 			const rest = this.getStoredItems().filter(item => !(item.objectId === incoming.objectId && item.type === incoming.type));
 			const newItem: RecentlyViewedItem = { ...incoming, viewedAt: Date.now() };
@@ -74,7 +76,8 @@ export class RecentlyViewedMessageHandler {
 
 	private async handleDeleteRecentlyViewedItem(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const { objectId, type } = message;
+			const objectId = String(message.objectId);
+			const { type } = message;
 			const remaining = this.getStoredItems().filter(item => !(item.objectId === objectId && item.type === type));
 			await this.persist(webview, remaining);
 		} catch (error) {

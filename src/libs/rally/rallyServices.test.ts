@@ -100,7 +100,7 @@ vi.mock('./CacheService', () => ({
 	clearAllCaches: vi.fn()
 }));
 
-import { extractIterationId, checkCacheForFilteredResults, getUserStories, userStoryCondition } from './rallyServices';
+import { extractIterationId, checkCacheForFilteredResults, getUserStories, getIterations, userStoryCondition } from './rallyServices';
 import { callRally } from './rallyCall';
 
 function rawStory(overrides: Record<string, unknown>) {
@@ -292,5 +292,37 @@ describe('userStoryCondition', () => {
 		expect(userStoryCondition('Name', 'login')).toEqual(['Name', 'contains', 'login']);
 		expect(userStoryCondition('Owner', '12345')).toEqual(['Owner', '=', '/user/12345']);
 		expect(userStoryCondition('Owner', 'currentuser')).toEqual(['Owner', '=', 'currentuser']);
+	});
+});
+
+describe('Rally ObjectID normalization', () => {
+	// Rally WSAPI returns ObjectID as a JSON number, but the rest of Robert (webview <select>
+	// values, navigation state, Jira) treats objectId as a string. Mixing both made strict
+	// comparisons fail silently (e.g. the Team dashboard header ignoring the selected sprint).
+	beforeEach(() => {
+		vi.clearAllMocks();
+		rallyData.userStories.length = 0;
+		rallyData.iterations.length = 0;
+	});
+
+	it('returns iteration objectIds as strings when Rally sends numbers', async () => {
+		vi.mocked(callRally).mockResolvedValueOnce({
+			Results: [{ ObjectID: 83178439645, Name: 'Sprint 53 - IOP octubre', StartDate: '2026-10-01', EndDate: '2026-10-31', State: 'Accepted', Project: { _refObjectName: 'IOP' }, _ref: '/iteration/83178439645' }]
+		});
+
+		const result = await getIterations({ Name: 'Sprint 53' });
+
+		expect(result.iterations[0].objectId).toBe('83178439645');
+	});
+
+	it('returns user story and nested iteration objectIds as strings when Rally sends numbers', async () => {
+		vi.mocked(callRally).mockResolvedValueOnce({
+			Results: [{ ...rawStory({}), ObjectID: 91229071621, Iteration: { ObjectID: 83178439645, _ref: '/iteration/83178439645', _refObjectName: 'Sprint 92' } }]
+		});
+
+		const result = await getUserStories({ Iteration: '/iteration/83178439645' });
+
+		expect(result.userStories[0].objectId).toBe('91229071621');
+		expect((result.userStories[0].iteration as { objectId?: string }).objectId).toBe('83178439645');
 	});
 });

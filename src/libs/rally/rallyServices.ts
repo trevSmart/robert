@@ -31,6 +31,16 @@ const fetchPolyfill = async (url: string, options?: FetchOptions): Promise<Respo
 // Error handler singleton instance
 const errorHandler = ErrorHandler.getInstance();
 
+/**
+ * Rally WSAPI returns ObjectID as a JSON number, while the rest of Robert (webview <select>
+ * values, navigation state, favorites, Jira) treats objectId as a string. Normalising at the
+ * source keeps strict comparisons (`===`) working everywhere.
+ */
+export function toObjectId(raw: { ObjectID?: unknown; objectId?: unknown } | null | undefined): string {
+	const id = raw?.ObjectID ?? raw?.objectId;
+	return id === undefined || id === null ? '' : String(id);
+}
+
 // Process data in chunks to avoid blocking the event loop
 // With 3500+ user stories, we need small chunks (25) to yield frequently
 const CHUNK_SIZE = 25; // Process 25 items at a time, yield after each chunk
@@ -502,7 +512,7 @@ async function formatProjectsAsync(results: any[]): Promise<RallyProject[]> {
 		const project: any = results[i];
 
 		formatted.push({
-			objectId: project.ObjectID ?? project.objectId,
+			objectId: toObjectId(project),
 			name: project.Name ?? project.name,
 			description: typeof (project.Description ?? project.description) === 'string' ? escapeHtml(String(project.Description ?? project.description)) : (project.Description ?? project.description),
 			state: project.State ?? project.state,
@@ -533,7 +543,7 @@ async function formatUsersAsync(results: any[]): Promise<RallyUser[]> {
 		const user: any = results[i];
 
 		formatted.push({
-			objectId: user.ObjectID ?? user.objectId,
+			objectId: toObjectId(user),
 			userName: user.UserName ?? user.userName,
 			displayName: user.DisplayName ?? user.displayName,
 			emailAddress: user.EmailAddress ?? user.emailAddress,
@@ -563,7 +573,7 @@ async function formatIterationsAsync(results: any[]): Promise<RallyIteration[]> 
 		const iteration: any = results[i];
 
 		formatted.push({
-			objectId: iteration.ObjectID ?? iteration.objectId,
+			objectId: toObjectId(iteration),
 			name: iteration.Name ?? iteration.name,
 			startDate: iteration.StartDate ?? iteration.startDate,
 			endDate: iteration.EndDate ?? iteration.endDate,
@@ -593,7 +603,7 @@ async function formatTasksAsync(results: any[]): Promise<any[]> {
 		const task: any = results[i];
 
 		formatted.push({
-			objectId: task.ObjectID ?? task.objectId,
+			objectId: toObjectId(task),
 			formattedId: task.FormattedID ?? task.formattedId,
 			name: task.Name ?? task.name,
 			description: sanitizeDescription(task.Description ?? task.description),
@@ -626,7 +636,7 @@ async function formatDefectsAsync(results: any[]): Promise<RallyDefect[]> {
 		const defect: any = results[i];
 
 		formatted.push({
-			objectId: defect.ObjectID ?? defect.objectId,
+			objectId: toObjectId(defect),
 			formattedId: defect.FormattedID ?? defect.formattedId,
 			name: defect.Name ?? defect.name,
 			description: sanitizeDescription(defect.Description ?? defect.description),
@@ -671,7 +681,7 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 		}
 
 		formatted.push({
-			objectId: userStory.ObjectID ?? userStory.objectId,
+			objectId: toObjectId(userStory),
 			formattedId: userStory.FormattedID ?? userStory.formattedId,
 			name: userStory.Name ?? userStory.name,
 			owner: userStory.Owner ? (userStory.Owner._refObjectName ?? userStory.Owner.refObjectName) : userStory.owner ? (userStory.owner._refObjectName ?? userStory.owner.refObjectName) : 'Sense propietari',
@@ -683,7 +693,7 @@ async function formatUserStoriesAsync(result: RallyApiResult): Promise<RallyUser
 			project: userStory.Project ? (userStory.Project._refObjectName ?? userStory.Project.refObjectName) : userStory.project ? (userStory.project._refObjectName ?? userStory.project.refObjectName) : null,
 			iteration: userStory.Iteration
 				? {
-						objectId: userStory.Iteration.ObjectID ?? userStory.Iteration.objectId,
+						objectId: toObjectId(userStory.Iteration),
 						_ref: userStory.Iteration._ref,
 						_refObjectName: userStory.Iteration._refObjectName ?? userStory.Iteration.refObjectName
 					}
@@ -1357,7 +1367,7 @@ async function formatTestCasesAsync(results: any[]): Promise<any[]> {
 		const testCase: any = results[i];
 
 		formatted.push({
-			objectId: testCase.ObjectID ?? testCase.objectId,
+			objectId: toObjectId(testCase),
 			formattedId: testCase.FormattedID ?? testCase.formattedId,
 			name: testCase.Name ?? testCase.name,
 			description: sanitizeDescription(testCase.Description ?? testCase.description),
@@ -1723,7 +1733,7 @@ async function formatDiscussionsAsync(results: any[], userStoryId: string): Prom
 		errorHandler.logDebug(`Extracted author name: ${authorName}`, 'formatDiscussionsAsync');
 
 		formatted.push({
-			objectId: discussion.ObjectID ?? discussion.objectId,
+			objectId: toObjectId(discussion),
 			// Keep raw HTML from Rally; it is sanitized with DOMPurify at render time
 			// (DiscussionsTable) so formatting (line breaks, mentions) and entities are preserved.
 			text: String(discussion.Text ?? discussion.text ?? ''),
@@ -2205,11 +2215,11 @@ async function getBatchTasks(userStoryIds: string[]): Promise<
 			// We'll iterate through original results to get the WorkProduct._ref
 			// biome-ignore lint/suspicious/noExplicitAny: Rally API has dynamic structure
 			// biome-ignore lint/suspicious/noExplicitAny: Need to access WorkProduct properties dynamically
-			const originalTask = results.find((r: any) => (r.ObjectID ?? r.objectId) === task.objectId) as any;
+			const originalTask = results.find((r: any) => toObjectId(r) === task.objectId) as any;
 
 			if (originalTask && originalTask.WorkProduct) {
 				// Extract ObjectID from WorkProduct
-				const workProductId = originalTask.WorkProduct.ObjectID ?? originalTask.WorkProduct.objectId;
+				const workProductId = toObjectId(originalTask.WorkProduct);
 				if (workProductId) {
 					if (!tasksByStory.has(workProductId)) {
 						tasksByStory.set(workProductId, []);

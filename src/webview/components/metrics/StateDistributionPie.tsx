@@ -14,6 +14,10 @@ interface StateDistributionPieProps {
 	data: StateDistribution[];
 	blockedData?: BlockedDistribution[];
 	sprintName?: string;
+	/** Avís sobre el sprint mostrat (p. ex. quan s'ensenya l'actual perquè no n'hi ha de següent). */
+	notice?: string | null;
+	/** Missatge quan no hi ha dades; per defecte, un de genèric. */
+	emptyMessage?: string | null;
 	loading?: boolean;
 	selectedSprint?: string;
 	onSprintChange?: (sprint: string) => void;
@@ -21,7 +25,7 @@ interface StateDistributionPieProps {
 	showSelector?: boolean;
 }
 
-const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, blockedData = [], sprintName = 'Next Sprint', loading = false, selectedSprint = 'next', onSprintChange, iterations = [], showSelector = false }) => {
+const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, blockedData = [], sprintName = 'Next Sprint', notice = null, emptyMessage = null, loading = false, selectedSprint = 'next', onSprintChange, iterations = [], showSelector = false }) => {
 	const chartRef = useRef<HTMLDivElement>(null);
 	const chartInstanceRef = useRef<echarts.ECharts | null>(null);
 
@@ -215,7 +219,9 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 	// El contenidor del gràfic es manté SEMPRE muntat perquè la instància d'ECharts es crea
 	// una sola vegada. Els estats de loading / sense dades es mostren com a overlay a sobre,
 	// no com a JSX alternatiu (que desmuntaria el chart i en provocaria la re-creació + re-animació).
-	const overlayMessage = loading ? 'Loading state distribution...' : data.length === 0 ? 'No state data available' : null;
+	// L'overlay només cobreix l'àrea del gràfic: la capçalera i el selector de sprint han de
+	// continuar accessibles, o l'usuari no podria triar un altre sprint quan no hi ha dades.
+	const overlayMessage = loading ? 'Loading state distribution...' : data.length === 0 ? emptyMessage || 'No state data available' : null;
 
 	return (
 		<div
@@ -244,7 +250,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 							fontWeight: '500'
 						}}
 					>
-						Next Sprint Readiness
+						Sprint Readiness
 					</h3>
 					<select
 						value={selectedSprint}
@@ -268,23 +274,37 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 					</select>
 				</div>
 			)}
-			<div ref={chartRef} style={{ width: '100%', height: '280px' }} />
-			{overlayMessage && (
+			{notice && (
 				<div
 					style={{
-						position: 'absolute',
-						inset: 0,
-						display: 'flex',
-						alignItems: 'center',
-						justifyContent: 'center',
-						backgroundColor: 'var(--vscode-editor-background)',
-						borderRadius: '12px',
+						marginBottom: '8px',
+						fontSize: '12px',
 						color: 'var(--vscode-descriptionForeground)'
 					}}
 				>
-					{overlayMessage}
+					{notice}
 				</div>
 			)}
+			<div style={{ position: 'relative' }}>
+				<div ref={chartRef} style={{ width: '100%', height: '280px' }} />
+				{overlayMessage && (
+					<div
+						style={{
+							position: 'absolute',
+							inset: 0,
+							display: 'flex',
+							alignItems: 'center',
+							justifyContent: 'center',
+							padding: '0 16px',
+							textAlign: 'center',
+							backgroundColor: 'var(--vscode-editor-background)',
+							color: 'var(--vscode-descriptionForeground)'
+						}}
+					>
+						{overlayMessage}
+					</div>
+				)}
+			</div>
 		</div>
 	);
 };

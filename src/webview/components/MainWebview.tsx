@@ -33,10 +33,11 @@ import { type UserStory, type Defect, type Discussion, type TestCase, type Globa
 import { FavoritesContext, favoriteKey } from './common/FavoritesContext';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
+import { missingViewData, pruneAttemptedLoads, attemptKey } from '../utils/viewDataNeeds';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, resolveReadinessTarget, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 import { JiraLoadingIndicator } from './common/JiraLoadingIndicator';
 
-import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
+import { CenteredContainer, Container, ContentArea, ContentColumn, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 import { setWebviewProvider, useProvider } from '../utils/providerState';
 import type { JiraTask, JiraDefect, JiraUser } from '../../types/jira';
@@ -715,6 +716,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	// Sprint objectId to auto-open once iterations finish (re)loading — set when a Recently Viewed
 	// sprint click can't find the sprint in the currently loaded iterations.
 	const pendingRecentlyViewedIterationIdRef = useRef<string | null>(null);
+	// Sprint a reseleccionar quan arribin les iterations — quan es restaura la navegació
+	// (pestanya d'editor nova, historial) abans que les iterations s'hagin carregat.
+	const pendingNavIterationRef = useRef<{ iterationId: string; screen: ScreenType } | null>(null);
+	// Càrregues automàtiques ja intentades a la secció actual (vegeu viewDataNeeds.ts).
+	const autoLoadAttemptedRef = useRef<Set<string>>(new Set());
 	const requestedTeamIterationRef = useRef<string | null>(null);
 	const teamMembersLoadingRef = useRef(false);
 
@@ -1015,6 +1021,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			// This prevents redundant fetches when switching between tabs
 			if (!loadedViews.current.has(newViewType)) {
 				loadedViews.current.add(newViewType);
+				// Tell the "ensure view data" effect this load already happened, so an empty
+				// result is not requested a second time.
+				if (newViewType === 'allUserStories' || newViewType === 'allDefects') {
+					autoLoadAttemptedRef.current.add(attemptKey('portfolio', newViewType));
+				}
 
 				const newLoader = dataLoaders[newViewType];
 				if (newLoader) {
@@ -1195,9 +1206,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			}
 
 			// Iteració seleccionada: buscar-la a les iterations ja carregades.
-			// Si l'ID no es pot resoldre (iterations encara no carregades o iteració
-			// ja no present), netegem la selecció perquè l'estat quedi determinista i
-			// no arrossegui la iteració anterior (que desincronitzaria l'historial).
+			// Si encara no s'han carregat (p. ex. en restaurar l'estat en una pestanya
+			// d'editor nova), la deixem pendent i la resol el handler 'iterationsLoaded'.
+			// Si ja hi són però la iteració no existeix, netegem la selecció perquè l'estat
+			// quedi determinista, i tornem al llistat de sprints en lloc d'una pantalla buida.
+			pendingNavIterationRef.current = null;
 			if (key.selectedIterationId) {
 				const iteration = iterations.find(i => i.objectId === key.selectedIterationId);
 				if (iteration) {
@@ -1207,6 +1220,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					}
 				} else {
 					setSelectedIteration(null);
+					if (!iterations.length) {
+						pendingNavIterationRef.current = { iterationId: key.selectedIterationId, screen: key.currentScreen as ScreenType };
+					} else if (key.currentScreen === 'userStories') {
+						setCurrentScreen('iterations');
+					}
 				}
 			} else {
 				setSelectedIteration(null);
@@ -1314,33 +1332,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				previousSectionBeforeSearchRef.current = activeSection;
 			}
 			setActiveSection(section);
-			if (section === 'portfolio' || section === 'home') {
-				// Load iterations only if we don't already have them and we're not already loading / in error
-				if (!iterations.length && !iterationsLoading && !iterationsError) {
-					loadIterations();
-				}
-			}
-			if (section === 'team') {
-				// Load team members only once per session to avoid redundant fetches
-				if (!hasLoadedTeamMembers.current && !teamMembersLoading && !teamMembersError) {
-					hasLoadedTeamMembers.current = true;
-					loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
-				}
-			}
-			if (section === 'metrics') {
-				// Load iterations, user stories, and defects for metrics when navigating to metrics section
-				if (!iterations.length && !iterationsLoading && !iterationsError) {
-					loadIterations();
-				}
-				if (!portfolioUserStories.length && !portfolioUserStoriesLoading) {
-					loadAllUserStories();
-				}
-				if (!defects.length && !defectsLoading && !defectsError) {
-					loadAllDefects();
-				}
-			}
+			// Data for the new section is loaded by the "ensure view data" effect, which also
+			// covers navigation that does not go through this handler (restored state, history).
 		},
-		[activeSection, loadIterations, iterations, iterationsLoading, iterationsError, loadTeamMembers, teamMembersLoading, teamMembersError, defects, defectsLoading, defectsError, loadAllDefects, portfolioUserStories, portfolioUserStoriesLoading, loadAllUserStories, selectedTeamIteration]
+		[activeSection]
 	);
 
 	const handleSearchEscapeWhenEmpty = useCallback(() => {
@@ -1634,6 +1629,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		teamMembersLoadingRef.current = false;
 		isFirstPortfolioNavigation.current = true;
 		loadedViews.current.clear();
+		autoLoadAttemptedRef.current.clear();
+		pendingNavIterationRef.current = null;
 		attemptedUserStoryDefects.current.clear();
 		attemptedUserStoryDiscussions.current.clear();
 		attemptedUserStoryTests.current.clear();
@@ -1693,7 +1690,21 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						// A Recently Viewed sprint click that couldn't find the sprint locally
 						// triggered this load — open it now that iterations are available.
 						const pendingIterationId = pendingRecentlyViewedIterationIdRef.current;
-						if (pendingIterationId) {
+						const pendingNav = pendingNavIterationRef.current;
+						if (pendingNav) {
+							// Restored navigation (editor tab / history) arrived before the sprints:
+							// reselect its sprint now, or fall back to the sprint list if it is gone.
+							pendingNavIterationRef.current = null;
+							const restoredIteration = message.iterations.find((i: Iteration) => i.objectId === pendingNav.iterationId);
+							if (restoredIteration) {
+								setSelectedIteration(restoredIteration);
+								if (pendingNav.screen === 'userStories' || pendingNav.screen === 'userStoryDetail') {
+									loadUserStories(restoredIteration);
+								}
+							} else if (pendingNav.screen === 'userStories') {
+								setCurrentScreen('iterations');
+							}
+						} else if (pendingIterationId) {
 							pendingRecentlyViewedIterationIdRef.current = null;
 							const pendingIteration = message.iterations.find((i: Iteration) => i.objectId === pendingIterationId);
 							if (pendingIteration) {
@@ -1721,6 +1732,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				case 'iterationsError':
 					setIterationsLoading(false);
 					setIterationsError(message.error || 'Error loading iterations');
+					// A restored sprint can no longer be resolved: show the sprint list (with the error).
+					if (pendingNavIterationRef.current) {
+						if (pendingNavIterationRef.current.screen === 'userStories') {
+							setCurrentScreen('iterations');
+						}
+						pendingNavIterationRef.current = null;
+					}
 					break;
 				case 'holidaysLoaded':
 					// Merge holidays from the new year with existing holidays
@@ -2134,8 +2152,13 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						if (state.globalSearchTerm) setGlobalSearchTerm(state.globalSearchTerm);
 						if (state.homeDate) setHomeDate(new Date(state.homeDate));
 
+						// The restored screen wins over the "open the current sprint on the first
+						// Portfolio visit" behaviour of the 'iterationsLoaded' handler.
+						isFirstPortfolioNavigation.current = false;
+
 						// Restore the main navigation (section, screen, selected item) via the
-						// same mechanism used for back/forward history navigation.
+						// same mechanism used for back/forward history navigation. The data of the
+						// restored view is loaded by the "ensure view data" effect.
 						applyNavKey({
 							activeSection: state.activeSection ?? activeSection,
 							currentScreen: state.currentScreen ?? currentScreen,
@@ -2143,6 +2166,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 							selectedUserStoryId: state.selectedUserStoryId,
 							selectedDefectId: state.selectedDefectId
 						});
+
+						// Search results are not part of the navigation state: re-run the search.
+						if (state.activeSection === 'search' && state.globalSearchTerm?.trim()) {
+							runGlobalSearch(state.globalSearchTerm);
+						}
 					}
 					break;
 				case 'navigateHistory':
@@ -2165,7 +2193,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 		window.addEventListener('message', handleMessage);
 		return () => window.removeEventListener('message', handleMessage);
-	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, loadTeamMembers, iterations, resetAllState, activeSection, handleIterationSelected, applyNavKey, navigateBack, navigateForward]); // Only include dependencies needed by handleMessage
+	}, [findCurrentIteration, loadUserStories, portfolioActiveViewType, currentScreen, sendMessage, loadTasks, loadIterations, loadAllDefects, loadTeamMembers, iterations, resetAllState, activeSection, handleIterationSelected, applyNavKey, navigateBack, navigateForward, runGlobalSearch]); // Only include dependencies needed by handleMessage
 
 	// Load velocity data from backend when on metrics (per-sprint US totals so Sprint 82 etc. show correct hours)
 	useEffect(() => {
@@ -2403,6 +2431,73 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		}
 	}, [activeSection]);
 
+	// Ensure view data: load whatever the active view needs and is still missing, however we got
+	// there — tab click, navigation state restored in a new editor tab ("Open in Editor"), or
+	// back/forward history. Loading used to hang off the click handlers only, so restored views
+	// rendered with empty lists.
+	useEffect(() => {
+		const attempted = autoLoadAttemptedRef.current;
+		pruneAttemptedLoads(attempted, activeSection);
+
+		const missing = missingViewData(
+			{
+				activeSection,
+				portfolioView: portfolioActiveViewType,
+				datasets: {
+					iterations: { count: iterations.length, loading: iterationsLoading, error: Boolean(iterationsError) },
+					// userStoriesError is shared with the sprint lists, so it is not used to block this load;
+					// the attempt key already prevents retry loops after a failure. An empty list under an
+					// active filter is a real result: reloading it unfiltered would drop the user's filter.
+					allUserStories: { count: portfolioUserStories.length || (userStoryFilters.project || userStoryFilters.sprint ? 1 : 0), loading: portfolioUserStoriesLoading, error: false },
+					allDefects: { count: defects.length, loading: defectsLoading, error: Boolean(defectsError) },
+					teamMembers: { count: teamMembers.length, loading: teamMembersLoading, error: Boolean(teamMembersError) }
+				}
+			},
+			attempted
+		);
+		if (!missing.length) return;
+
+		logDebug(`Ensure view data (${activeSection}/${portfolioActiveViewType}): loading ${missing.join(', ')}`, 'MainWebview.ensureViewData');
+		for (const dataset of missing) {
+			attempted.add(attemptKey(activeSection, dataset));
+			switch (dataset) {
+				case 'iterations':
+					loadIterations();
+					break;
+				case 'allUserStories':
+					loadAllUserStories();
+					break;
+				case 'allDefects':
+					loadAllDefects();
+					break;
+				case 'teamMembers':
+					hasLoadedTeamMembers.current = true;
+					loadTeamMembers(selectedTeamIteration === 'current' ? undefined : selectedTeamIteration);
+					break;
+			}
+		}
+	}, [
+		activeSection,
+		portfolioActiveViewType,
+		iterations.length,
+		iterationsLoading,
+		iterationsError,
+		portfolioUserStories.length,
+		portfolioUserStoriesLoading,
+		userStoryFilters,
+		defects.length,
+		defectsLoading,
+		defectsError,
+		teamMembers.length,
+		teamMembersLoading,
+		teamMembersError,
+		selectedTeamIteration,
+		loadIterations,
+		loadAllUserStories,
+		loadAllDefects,
+		loadTeamMembers
+	]);
+
 	// Auto-load defects when defects tab is selected for a user story
 	useEffect(() => {
 		if (selectedUserStory && activeUserStoryTab === 'defects' && !userStoryDefectsLoading) {
@@ -2597,8 +2692,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				<GlobalStyle />
 				<CenteredContainer>
 					<StickyNav>
-						<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} />
-						{portfolioSubTabsBar}
+						<ContentColumn>
+							<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} />
+							{portfolioSubTabsBar}
+						</ContentColumn>
 					</StickyNav>
 					<SmoothScrollWrapper ref={wrapperRef}>
 						<SmoothScrollContent ref={contentRef} noPaddingTop={activeSection === 'portfolio'}>

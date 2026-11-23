@@ -78,6 +78,20 @@ export const CenteredContainer = styled.div`
 	width: 100%;
 `;
 
+/**
+ * Maximum width of the main content column. In a wide editor tab ("Open in Editor") on a large
+ * monitor, full-width lines and tables become hard to read; the column stays centred instead.
+ * The sidebar view is always narrower, so it is unaffected.
+ */
+export const CONTENT_MAX_WIDTH = '1400px';
+
+/** Centred column for the navigation bars; StickyNav itself stays full width (background band). */
+export const ContentColumn = styled.div`
+	width: 100%;
+	max-width: ${CONTENT_MAX_WIDTH};
+	margin: 0 auto;
+`;
+
 export const StickyNav = styled.div`
 	flex-shrink: 0;
 	position: sticky;
@@ -141,12 +155,17 @@ export const SmoothScrollWrapper = styled.div`
 	flex-direction: column;
 `;
 
-// Inner content for Lenis (receives transform for scroll)
+// Inner content for Lenis (receives transform for scroll). Capped and centred like the nav bars;
+// the wrapper stays full width so the mouse wheel also scrolls from the side margins.
 export const SmoothScrollContent = styled.div<{ noPaddingTop?: boolean }>`
 	padding: ${props => (props.noPaddingTop ? '0 0 10px' : '10px 0')};
 	flex: 1;
 	display: flex;
 	flex-direction: column;
+	width: 100%;
+	max-width: ${CONTENT_MAX_WIDTH};
+	margin: 0 auto;
+	box-sizing: border-box;
 `;
 
 export const SettingsContent = styled.div`

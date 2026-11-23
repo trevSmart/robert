@@ -1,6 +1,6 @@
-## <img src="resources/icons/ibm-logo.webp" alt="IBM logo" width="50" style="position: relative; margin-right: 10px; top: 4px;"/> IBM Robert
+## <img src="resources/icons/robert-logo.png" alt="Robert logo" width="50" style="position: relative; margin-right: 10px; top: 4px;"/> Robert
 
-**IBM Robert** brings Jira Cloud and Rally project management into your editor. Track sprints, user stories, defects, and team workload without leaving VS Code — with dashboards, search, and analytics built for day-to-day delivery work.
+**Robert** brings Jira Cloud and Rally project management into your editor. Track sprints, user stories, defects, and team workload without leaving VS Code — with dashboards, search, and analytics built for day-to-day delivery work.
 
 Robert comes in two flavours with the same features: a **VS Code extension** and a **standalone desktop app** for people who don't use VS Code (see [Standalone desktop app](#standalone-desktop-app)).
 
@@ -54,14 +54,14 @@ Access built-in tutorials and guides to get the most out of Robert and Jira work
 
 ### Install
 
-1. Install **IBM Robert** from the VS Code Extensions view, or install a `.vsix` package provided by your team.
-2. Open the **IBM Robert** panel from the activity bar (left sidebar).
+1. Install **Robert** from the VS Code Extensions view, or install a `.vsix` package provided by your team.
+2. Open the **Robert** panel from the activity bar (left sidebar).
 3. On first launch, configure your Jira connection (see below).
 
 ### Open Robert
 
-- Click the **IBM Robert** icon in the activity bar, or
-- Run **IBM Robert: Open Main View** from the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`).
+- Click the **Robert** icon in the activity bar, or
+- Run **Robert: Open Main View** from the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`).
 
 You can also open Robert in a full editor tab via the **Open in Editor** button in the panel toolbar.
 
@@ -128,9 +128,9 @@ Use the search icon in the top bar to find work items across the project.
 
 ## Tips
 
-- **Reload data** — use the refresh button in the panel toolbar or run **IBM Robert: Reload**.
+- **Reload data** — use the refresh button in the panel toolbar or run **Robert: Reload**.
 - **Status bar** — when enabled, shows how many days remain until the current sprint cutoff.
-- **Output log** — if something looks wrong, open **View → Output → Robert** or run **IBM Robert: Show Robert Output**.
+- **Output log** — if something looks wrong, open **View → Output → Robert** or run **Robert: Show Robert Output**.
 
 ---
 
@@ -138,7 +138,7 @@ Use the search icon in the top bar to find work items across the project.
 
 | Issue | What to try |
 |-------|-------------|
-| Blank or empty view | Run **IBM Robert: Reload**, or restart VS Code |
+| Blank or empty view | Run **Robert: Reload**, or restart VS Code |
 | No data / connection errors | Check Jira base URL, email, API token, and project key in Settings |
 | Stale information | Enable auto refresh, or use the reload button |
 | Standalone app shows as "Electron" in the Dock | Launch it with `npm run standalone:start` / `standalone:dev` (not `electron` directly), or use a packaged build |

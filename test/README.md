@@ -1,6 +1,6 @@
 # Robert Extension - Test Suite
 
-This directory contains the test suite for the IBM Robert VS Code extension.
+This directory contains the test suite for the Robert VS Code extension.
 
 ## Test Structure
 

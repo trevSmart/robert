@@ -9,10 +9,6 @@ updates:
       time: "09:00"
       timezone: "UTC"
     open-pull-requests-limit: 10
-    reviewers:
-      - "ibm/robert-maintainers"
-    assignees:
-      - "ibm/robert-maintainers"
     commit-message:
       prefix: "deps"
       prefix-development: "deps-dev"

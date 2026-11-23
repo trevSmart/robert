@@ -19,7 +19,7 @@ const hoisted = vi.hoisted(async () => {
 	const logged: string[] = [];
 	const shim = createVscodeShim({
 		config,
-		appName: 'IBM Robert',
+		appName: 'Robert',
 		createLogChannel: () =>
 			({
 				trace: (m: string) => logged.push(m),

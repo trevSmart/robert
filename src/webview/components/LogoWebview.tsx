@@ -9,7 +9,7 @@ const LogoWebview: React.FC<LogoWebviewProps> = ({ rebusLogoUri }) => {
 	return (
 		<LogoContainerFull>
 			<LogoCard>
-				<LogoImageSmall src={rebusLogoUri} alt="IBM logo" />
+				<LogoImageSmall src={rebusLogoUri} alt="Robert logo" />
 				<LogoTitle>Robert</LogoTitle>
 				<LogoDescription>Click the activity bar to open the full view.</LogoDescription>
 			</LogoCard>

@@ -114,7 +114,7 @@ function rawStory(overrides: Record<string, unknown>) {
 		PlanEstimate: 1,
 		ToDo: 0,
 		c_Assignee: { _refObjectName: overrides.assignee ?? 'Unassigned' },
-		Project: { _refObjectName: 'Team.CC IBM_CC' },
+		Project: { _refObjectName: 'Team.CC ACME_CC' },
 		Iteration: {
 			ObjectID: overrides.iterationId ?? '83178439645',
 			_ref: `/iteration/${overrides.iterationId ?? '83178439645'}`,

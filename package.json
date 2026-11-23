@@ -1,7 +1,7 @@
 {
 	"name": "robert",
-	"displayName": "IBM Robert",
-	"description": "For IBM internal use only.",
+	"displayName": "Robert",
+	"description": "For internal use only.",
 	"version": "0.6.8",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
@@ -22,7 +22,7 @@
 	],
 	"contributes": {
 		"configuration": {
-			"title": "IBM Robert",
+			"title": "Robert",
 			"properties": {
 				"robert.autoRefresh": {
 					"type": "boolean",
@@ -105,7 +105,7 @@
 				"robert.statusBarShowSprintDaysLeft": {
 					"type": "boolean",
 					"default": true,
-					"description": "Show \"X days left\" in the status bar (days until current sprint cutoff). If disabled or no current sprint, shows \"IBM Robert\"."
+					"description": "Show \"X days left\" in the status bar (days until current sprint cutoff). If disabled or no current sprint, shows \"Robert\"."
 				},
 				"robert.showWelcomeAnimation": {
 					"type": "boolean",
@@ -139,41 +139,41 @@
 			{
 				"command": "robert.openMainView",
 				"title": "Open Main View",
-				"category": "IBM Robert"
+				"category": "Robert"
 			},
 			{
 				"command": "robert.showOutput",
 				"title": "Show Robert Output",
-				"category": "IBM Robert"
+				"category": "Robert"
 			},
 			{
 				"command": "robert.reload",
 				"title": "Reload Extension",
-				"category": "IBM Robert",
+				"category": "Robert",
 				"icon": "$(refresh)"
 			},
 			{
 				"command": "robert.openInEditor",
 				"title": "Open in Editor",
-				"category": "IBM Robert",
+				"category": "Robert",
 				"icon": "$(screen-full)"
 			},
 			{
 				"command": "robert.openSettings",
 				"title": "Settings",
-				"category": "IBM Robert",
+				"category": "Robert",
 				"icon": "$(gear)"
 			},
 			{
 				"command": "robert.goBack",
 				"title": "Go to Previous View",
-				"category": "IBM Robert",
+				"category": "Robert",
 				"icon": "$(arrow-left)"
 			},
 			{
 				"command": "robert.goForward",
 				"title": "Go to Next View",
-				"category": "IBM Robert",
+				"category": "Robert",
 				"icon": "$(arrow-right)"
 			}
 		],
@@ -193,7 +193,7 @@
 			"activitybar": [
 				{
 					"id": "robert",
-					"title": "IBM Robert",
+					"title": "Robert",
 					"icon": "./resources/icons/robert-logo-simple.png"
 				}
 			]
@@ -202,7 +202,7 @@
 			"robert": [
 				{
 					"id": "robert.mainView",
-					"name": "IBM Robert",
+					"name": "Robert",
 					"type": "webview",
 					"icon": "./resources/icons/robert-logo-simple.png"
 				}
@@ -211,7 +211,7 @@
 		"customEditors": [
 			{
 				"viewType": "robert.editor",
-				"displayName": "IBM Robert Editor",
+				"displayName": "Robert Editor",
 				"selector": [
 					{
 						"filenamePattern": "*.robert"

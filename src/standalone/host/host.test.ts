@@ -220,7 +220,7 @@ describe('vscode shim', () => {
 		const openExternal = vi.fn(async () => true);
 		const shim = createVscodeShim({
 			config,
-			appName: 'IBM Robert',
+			appName: 'Robert',
 			createLogChannel: () => ({ info: vi.fn() }) as never,
 			notify,
 			openExternal,

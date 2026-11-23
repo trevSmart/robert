@@ -268,8 +268,8 @@ export async function getCurrentUser() {
 					headers: {
 						zsessionid: rallyApiKey,
 						'Content-Type': 'application/json',
-						'X-RallyIntegrationName': 'IBM Robert Extension',
-						'X-RallyIntegrationVendor': 'IBM',
+						'X-RallyIntegrationName': 'Robert Extension',
+						'X-RallyIntegrationVendor': 'Robert',
 						'X-RallyIntegrationVersion': '0.0.9'
 					}
 				}),
@@ -3158,8 +3158,8 @@ export async function fetchRallyImageAsBase64(imageUrl: string): Promise<{ dataU
 			method: 'GET',
 			headers: {
 				zsessionid: rallyApiKey,
-				'X-RallyIntegrationName': 'IBM Robert Extension',
-				'X-RallyIntegrationVendor': 'IBM',
+				'X-RallyIntegrationName': 'Robert Extension',
+				'X-RallyIntegrationVendor': 'Robert',
 				'X-RallyIntegrationVersion': '0.0.9'
 			}
 		});

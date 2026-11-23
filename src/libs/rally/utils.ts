@@ -29,8 +29,8 @@ export const getRallyApi = () => {
 		server: rallyInstance,
 		requestOptions: {
 			headers: {
-				'X-RallyIntegrationName': 'IBM Robert Extension',
-				'X-RallyIntegrationVendor': 'IBM',
+				'X-RallyIntegrationName': 'Robert Extension',
+				'X-RallyIntegrationVendor': 'Robert',
 				'X-RallyIntegrationVersion': '0.0.9'
 			}
 		}

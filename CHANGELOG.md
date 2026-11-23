@@ -1,15 +1,22 @@
-## 0.6.8
-
-### Settings
-* Add the `robert.startupTab` setting (also `ROBERT_STARTUP_TAB`) to choose the tab the main view opens on: `home`, `search`, `portfolio`, `team`, `metrics` or `library`
-* Inject the startup tab into the initial HTML so the view starts on it without flashing Home; a provider switch or reload returns to it, and opening a view in an editor tab still restores the tab you were on
-* Fall back to Home for unknown values (`resolveStartupSection`); starting on Portfolio shows the sprint list, like a tab click
+## 0.6.9
 
 ### Branding
 * Remove IBM branding: the extension, views, command category and custom editor are now called "Robert", and the description reads "For internal use only."
 * Rally integration headers, the status bar quick summary and generated markdown reports no longer mention IBM
 * Remove the IBM logo assets and the `ibm/robert-maintainers` Dependabot reviewers
 * **Standalone app**: the appId is now `com.trevsmart.robert` and the profile directory and Keychain item use the name "Robert" (`APP_INTERNAL_NAME` removed). Settings and saved API tokens from previous versions are not carried over and must be entered again; on Windows the app installs alongside the previous one
+
+### Tests
+* Exclude `tmp/` from the Vitest run so local scratch copies are not picked up
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.8...0.6.9
+
+## 0.6.8
+
+### Settings
+* Add the `robert.startupTab` setting (also `ROBERT_STARTUP_TAB`) to choose the tab the main view opens on: `home`, `search`, `portfolio`, `team`, `metrics` or `library`
+* Inject the startup tab into the initial HTML so the view starts on it without flashing Home; a provider switch or reload returns to it, and opening a view in an editor tab still restores the tab you were on
+* Fall back to Home for unknown values (`resolveStartupSection`); starting on Portfolio shows the sprint list, like a tab click
 
 **Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.7...0.6.8
 

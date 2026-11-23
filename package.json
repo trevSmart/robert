@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.6.3",
+	"version": "0.6.4",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",
@@ -270,7 +270,7 @@
 		"knip": "^6.46.1",
 		"mocha": "^12.0.3",
 		"prettier": "^3.10.1",
-		"typescript": "~7.0.2",
+		"typescript": "~6.0.2",
 		"vitest": "^5.1.1"
 	},
 	"dependencies": {

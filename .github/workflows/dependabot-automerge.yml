@@ -14,7 +14,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Enable auto-merge for Dependabot PRs
+      - name: Fetch Dependabot metadata
+        id: metadata
+        uses: dependabot/fetch-metadata@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Only patch and minor updates merge on their own. Major updates can break the build
+      # (e.g. TypeScript 7 vs typescript-eslint's peer range) and stay open for a manual review.
+      - name: Enable auto-merge for Dependabot PRs (patch / minor only)
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
         uses: peter-evans/enable-pull-request-automerge@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}

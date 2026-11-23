@@ -1,5 +1,6 @@
 import { FC, useState } from 'react';
 import Avatar from '../common/Avatar';
+import Select from '../common/Select';
 import TeamMemberDetail from './team/TeamMemberDetail';
 
 export interface TeamMember {
@@ -157,26 +158,7 @@ const TeamSection: FC<TeamSectionProps> = ({ teamMembers, teamMembersLoading, te
 							>
 								Team Members
 							</h3>
-							<select
-								value={selectedTeamIteration}
-								onChange={e => onTeamIterationChange(e.target.value)}
-								style={{
-									padding: '4px 8px',
-									borderRadius: '4px',
-									backgroundColor: 'var(--vscode-dropdown-background)',
-									color: 'var(--vscode-dropdown-foreground)',
-									border: '1px solid var(--vscode-dropdown-border)',
-									cursor: 'pointer',
-									fontSize: '12px'
-								}}
-							>
-								<option value="current">{currentIterationName || 'Current Sprint'} (current)</option>
-								{pastIterations.map(it => (
-									<option key={it.objectId} value={it.objectId}>
-										{it.name}
-									</option>
-								))}
-							</select>
+							<Select ariaLabel="Sprint" value={selectedTeamIteration} options={[{ value: 'current', label: `${currentIterationName || 'Current Sprint'} (current)` }, ...pastIterations.map(it => ({ value: it.objectId, label: it.name }))]} onChange={onTeamIterationChange} />
 						</div>
 
 						{teamMembersError && (

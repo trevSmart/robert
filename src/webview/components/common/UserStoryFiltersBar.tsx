@@ -1,5 +1,6 @@
 import type { FC } from 'react';
 import type { UserStoryFilters } from '../sections/portfolio/types';
+import Select from './Select';
 
 interface SprintOption {
 	objectId: string;
@@ -15,17 +16,6 @@ interface UserStoryFiltersBarProps {
 	sprints: SprintOption[];
 	onChange: (filters: UserStoryFilters) => void;
 }
-
-const selectStyle = {
-	padding: '4px 8px',
-	borderRadius: '4px',
-	backgroundColor: 'var(--vscode-dropdown-background)',
-	color: 'var(--vscode-dropdown-foreground)',
-	border: '1px solid var(--vscode-dropdown-border)',
-	cursor: 'pointer',
-	fontSize: '12px',
-	maxWidth: '260px'
-} as const;
 
 const labelStyle = {
 	display: 'flex',
@@ -52,33 +42,21 @@ const UserStoryFiltersBar: FC<UserStoryFiltersBarProps> = ({ filters, projects, 
 		>
 			<label style={labelStyle}>
 				Project
-				<select
+				<Select
+					ariaLabel="Project"
+					maxWidth="260px"
 					value={filters.project}
-					onChange={e =>
+					options={[{ value: '', label: 'All projects' }, ...projects.map(key => ({ value: key, label: key }))]}
+					onChange={project =>
 						// Al cambiar de proyecto se descarta el sprint, que puede ser de otro.
-						onChange({ project: e.target.value, sprint: '' })
+						onChange({ project, sprint: '' })
 					}
-					style={selectStyle}
-				>
-					<option value="">All projects</option>
-					{projects.map(key => (
-						<option key={key} value={key}>
-							{key}
-						</option>
-					))}
-				</select>
+				/>
 			</label>
 
 			<label style={labelStyle}>
 				Sprint
-				<select value={filters.sprint} onChange={e => onChange({ ...filters, sprint: e.target.value })} style={selectStyle}>
-					<option value="">All sprints</option>
-					{visibleSprints.map(sprint => (
-						<option key={sprint.objectId} value={sprint._ref}>
-							{sprint.name}
-						</option>
-					))}
-				</select>
+				<Select ariaLabel="Sprint" maxWidth="260px" value={filters.sprint} options={[{ value: '', label: 'All sprints' }, ...visibleSprints.map(sprint => ({ value: sprint._ref, label: sprint.name }))]} onChange={sprint => onChange({ ...filters, sprint })} />
 			</label>
 
 			{hasFilters && (

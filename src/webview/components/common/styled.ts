@@ -80,17 +80,11 @@ export const CenteredContainer = styled.div`
 
 /**
  * Maximum width of the main content column. In a wide editor tab ("Open in Editor") on a large
- * monitor, full-width lines and tables become hard to read; the column stays centred instead.
+ * monitor, full-width lines and tables become hard to read; the content stays centred instead.
+ * The tab and sub-tab bars are not capped: they stay full width, aligned to the left edge.
  * The sidebar view is always narrower, so it is unaffected.
  */
 export const CONTENT_MAX_WIDTH = '1400px';
-
-/** Centred column for the navigation bars; StickyNav itself stays full width (background band). */
-export const ContentColumn = styled.div`
-	width: 100%;
-	max-width: ${CONTENT_MAX_WIDTH};
-	margin: 0 auto;
-`;
 
 export const StickyNav = styled.div`
 	flex-shrink: 0;

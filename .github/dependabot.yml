@@ -20,6 +20,11 @@ updates:
     labels:
       - "dependencies"
       - "automated"
+    ignore:
+      # @types/vscode must not be newer than engines.vscode in package.json, or `vsce package`
+      # refuses to build the VSIX. Bump both together, by hand, when raising the minimum VS Code.
+      - dependency-name: "@types/vscode"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
     groups:
       # Group React-related dependencies
       react:

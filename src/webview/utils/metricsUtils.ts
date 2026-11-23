@@ -285,3 +285,45 @@ export function calculateCompletedPoints(userStories: UserStory[], currentIterat
 
 	return completedStories.reduce((sum, story) => sum + (story.taskEstimateTotal || 0), 0);
 }
+
+/**
+ * Resultat de decidir quin sprint mostra la card "Sprint Readiness".
+ * - `target`: sprint del qual cal carregar les user stories (null si no n'hi ha cap).
+ * - `notice`: avís a mostrar sobre el gràfic (p. ex. quan es fa servir el sprint actual com a alternativa).
+ * - `emptyMessage`: missatge si el gràfic queda sense dades.
+ */
+export interface ReadinessTarget<T> {
+	target: T | null;
+	notice: string | null;
+	emptyMessage: string;
+}
+
+/**
+ * Decideix el sprint de la card "Sprint Readiness".
+ * Amb `selected === 'next'` es mostra el sprint següent; si encara no s'ha creat, es fa servir
+ * el sprint actual (amb un avís) en lloc de deixar la card buida.
+ */
+export function resolveReadinessTarget<T extends { name: string; endDate?: string | null }>(selected: string, iterations: T[], nextIteration: T | null, currentIteration: T | null): ReadinessTarget<T> {
+	const noStoriesIn = (it: T) => `No user stories in ${it.name}.`;
+
+	if (selected !== 'next') {
+		const target = iterations.find(it => it.name === selected) ?? null;
+		return target ? { target, notice: null, emptyMessage: noStoriesIn(target) } : { target: null, notice: null, emptyMessage: `Sprint "${selected}" not found. Pick a sprint above.` };
+	}
+
+	if (nextIteration) {
+		return { target: nextIteration, notice: null, emptyMessage: noStoriesIn(nextIteration) };
+	}
+
+	if (currentIteration) {
+		const end = currentIteration.endDate ? new Date(currentIteration.endDate) : null;
+		const endLabel = end && !Number.isNaN(end.getTime()) ? ` (ends ${end.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })})` : '';
+		return {
+			target: currentIteration,
+			notice: `No upcoming sprint has been created yet. Showing the current sprint${endLabel}.`,
+			emptyMessage: noStoriesIn(currentIteration)
+		};
+	}
+
+	return { target: null, notice: null, emptyMessage: 'No current or upcoming sprint found. Pick a sprint above.' };
+}

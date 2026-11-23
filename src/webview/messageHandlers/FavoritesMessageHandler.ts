@@ -70,7 +70,8 @@ export class FavoritesMessageHandler {
 	}
 
 	private getStoredItems(): FavoriteItem[] {
-		return (this.context.globalState.get<FavoriteItem[]>(STORAGE_KEY, []) ?? []).filter(Boolean);
+		// Older versions stored Rally objectIds as numbers; normalise so `===` matches the string ids we receive now.
+		return (this.context.globalState.get<FavoriteItem[]>(STORAGE_KEY, []) ?? []).filter(Boolean).map(item => ({ ...item, objectId: String(item.objectId) }));
 	}
 
 	/** Most recently favorited first. No cap — this is a curated list. */
@@ -93,10 +94,11 @@ export class FavoritesMessageHandler {
 
 	private async handleToggleFavoriteItem(webview: vscode.Webview, message: any): Promise<void> {
 		try {
-			const incoming = message.item as JiraItemRef;
-			if (!incoming?.objectId || !incoming?.type) {
+			const raw = message.item as JiraItemRef;
+			if (!raw?.objectId || !raw?.type) {
 				return;
 			}
+			const incoming: JiraItemRef = { ...raw, objectId: String(raw.objectId) };
 
 			const current = this.getStoredItems();
 			const alreadyFavorite = current.some(item => item.objectId === incoming.objectId && item.type === incoming.type);

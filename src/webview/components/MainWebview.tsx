@@ -37,7 +37,7 @@ import { missingViewData, pruneAttemptedLoads, attemptKey } from '../utils/viewD
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, resolveReadinessTarget, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 import { JiraLoadingIndicator } from './common/JiraLoadingIndicator';
 
-import { CenteredContainer, Container, ContentArea, ContentColumn, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
+import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 import { setWebviewProvider, useProvider } from '../utils/providerState';
 import type { JiraTask, JiraDefect, JiraUser } from '../../types/jira';
@@ -2692,10 +2692,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				<GlobalStyle />
 				<CenteredContainer>
 					<StickyNav>
-						<ContentColumn>
-							<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} />
-							{portfolioSubTabsBar}
-						</ContentColumn>
+						<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} />
+						{portfolioSubTabsBar}
 					</StickyNav>
 					<SmoothScrollWrapper ref={wrapperRef}>
 						<SmoothScrollContent ref={contentRef} noPaddingTop={activeSection === 'portfolio'}>

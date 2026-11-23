@@ -1,13 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useProvider } from '../../utils/providerState';
 import { themeColors } from '../../utils/themeColors';
-
-// Chevron icon component
-const ChevronDownIcon = () => (
-	<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
-		<path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-	</svg>
-);
+import Select from './Select';
 
 // Search icon component
 const SearchIcon = () => (
@@ -44,29 +38,6 @@ const typeOptions: SearchType[] = ['all', 'user-stories', 'defects', 'tasks', 't
 const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder = 'Search...', value, onChange, selectedType, onTypeChange, onSearchClick, onClear, onEscapeWhenEmpty, disableButton = false, inputRef }) => {
 	const { isRally } = useProvider();
 	const visibleTypeOptions = isRally ? typeOptions : typeOptions.filter(type => type !== 'test-cases');
-	const [isTypeDropdownOpen, setIsTypeDropdownOpen] = useState(false);
-	const [selectWidth, setSelectWidth] = useState('auto');
-	const selectRef = React.useRef<HTMLSelectElement>(null);
-
-	React.useEffect(() => {
-		// Measure the width needed for the select based on its content
-		if (selectRef.current) {
-			const tempSpan = document.createElement('span');
-			tempSpan.style.position = 'absolute';
-			tempSpan.style.visibility = 'hidden';
-			tempSpan.style.whiteSpace = 'nowrap';
-			tempSpan.style.fontSize = '13px';
-			tempSpan.style.fontWeight = '500';
-			tempSpan.style.fontFamily = "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-			tempSpan.textContent = typeLabels[selectedType];
-			document.body.appendChild(tempSpan);
-			const width = tempSpan.getBoundingClientRect().width;
-			document.body.removeChild(tempSpan);
-			// Add padding for the select element (left + right padding + chevron space)
-			const totalWidth = Math.ceil(width + 12 + 12 + 28);
-			setSelectWidth(`${totalWidth}px`);
-		}
-	}, [selectedType]);
 
 	return (
 		<div
@@ -99,57 +70,13 @@ const SearchWithTypeFilter: React.FC<SearchWithTypeFilterProps> = ({ placeholder
 				{/* Type selector dropdown */}
 				<div
 					style={{
-						position: 'relative',
 						display: 'flex',
-						alignItems: 'center',
+						alignItems: 'stretch',
 						flexShrink: 0,
 						borderRight: `1px solid ${themeColors.inputBorder}`
 					}}
 				>
-					<select
-						ref={selectRef}
-						value={selectedType}
-						onChange={e => onTypeChange(e.target.value as SearchType)}
-						style={{
-							appearance: 'none',
-							backgroundColor: 'transparent',
-							border: 'none',
-							color: themeColors.descriptionForeground,
-							padding: '8px 8px 8px 12px',
-							paddingRight: '28px',
-							fontSize: '13px',
-							fontWeight: 400,
-							cursor: 'pointer',
-							outline: 'none',
-							width: selectWidth,
-							transition: 'width 0.2s ease',
-							overflow: 'hidden'
-						}}
-					>
-						{visibleTypeOptions.map(type => (
-							<option key={type} value={type}>
-								{typeLabels[type]}
-							</option>
-						))}
-					</select>
-
-					{/* Chevron icon for dropdown */}
-					<div
-						style={{
-							position: 'absolute',
-							right: '8px',
-							display: 'flex',
-							alignItems: 'center',
-							justifyContent: 'center',
-							pointerEvents: 'none',
-							color: themeColors.descriptionForeground,
-							width: '14px',
-							height: '14px',
-							fontSize: '14px'
-						}}
-					>
-						<ChevronDownIcon />
-					</div>
+					<Select variant="inline" ariaLabel="Search type" value={selectedType} options={visibleTypeOptions.map(type => ({ value: type, label: typeLabels[type] }))} onChange={onTypeChange} />
 				</div>
 
 				{/* Search input */}

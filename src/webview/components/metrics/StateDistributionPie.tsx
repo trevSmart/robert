@@ -3,6 +3,7 @@ import * as echarts from 'echarts';
 import { disposeChart, initChart, setChartOption } from '../../utils/echartsHelpers';
 import { isLightTheme } from '../../utils/themeColors';
 import type { StateDistribution, BlockedDistribution } from '../../utils/metricsUtils';
+import Select from '../common/Select';
 
 interface IterationOption {
 	objectId: string;
@@ -252,26 +253,7 @@ const StateDistributionPie: React.FC<StateDistributionPieProps> = ({ data, block
 					>
 						Sprint Readiness
 					</h3>
-					<select
-						value={selectedSprint}
-						onChange={e => onSprintChange?.(e.target.value)}
-						style={{
-							padding: '4px 8px',
-							borderRadius: '4px',
-							backgroundColor: 'var(--vscode-dropdown-background)',
-							color: 'var(--vscode-dropdown-foreground)',
-							border: '1px solid var(--vscode-dropdown-border)',
-							cursor: 'pointer',
-							fontSize: '12px'
-						}}
-					>
-						<option value="next">Next Sprint</option>
-						{iterations.map(it => (
-							<option key={it.objectId} value={it.name}>
-								{it.name}
-							</option>
-						))}
-					</select>
+					<Select ariaLabel="Sprint" maxWidth="240px" value={selectedSprint} options={[{ value: 'next', label: 'Next Sprint' }, ...iterations.map(it => ({ value: it.name, label: it.name }))]} onChange={sprint => onSprintChange?.(sprint)} />
 				</div>
 			)}
 			{notice && (

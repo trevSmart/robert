@@ -34,6 +34,7 @@ import { FavoritesContext, favoriteKey } from './common/FavoritesContext';
 import type { Holiday, CustomCalendarEvent } from '../../types/utils';
 import { isLightTheme } from '../utils/themeColors';
 import { missingViewData, pruneAttemptedLoads, attemptKey } from '../utils/viewDataNeeds';
+import { resolveStartupSection } from '../utils/startupSection';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, resolveReadinessTarget, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 import { JiraLoadingIndicator } from './common/JiraLoadingIndicator';
 
@@ -486,6 +487,9 @@ interface Iteration {
 	_ref: string;
 }
 
+/** Tab shown on start, from the robert.startupTab setting injected into the initial HTML. */
+const STARTUP_SECTION = resolveStartupSection(typeof window !== 'undefined' ? window.robertStartupTab : undefined);
+
 const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, jiraLogoUri, rallyLogoUri }) => {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const hasVsCodeApi = Boolean(vscode);
@@ -677,7 +681,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const detailOriginSectionRef = useRef<SectionType | null>(null);
 
 	// Navigation state
-	const [activeSection, setActiveSection] = useState<SectionType>('home');
+	const [activeSection, setActiveSection] = useState<SectionType>(STARTUP_SECTION);
 	const [currentScreen, setCurrentScreen] = useState<ScreenType>('iterations');
 	const [activeSubTabBySection, setActiveSubTabBySection] = useState<Partial<Record<SectionType, string>>>({ portfolio: 'bySprints' });
 	const [homeDate, setHomeDate] = useState(new Date());
@@ -726,7 +730,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	// Track if this is the first time navigating to portfolio section
 	// (should auto-navigate to detail; subsequent times stay on list)
-	const isFirstPortfolioNavigation = useRef(true);
+	// Starting directly on Portfolio (robert.startupTab) shows the sprint list, as a tab click does,
+	// rather than jumping into the current sprint when the iterations arrive.
+	const isFirstPortfolioNavigation = useRef(STARTUP_SECTION !== 'portfolio');
 
 	// Track which portfolio views have been loaded to avoid redundant fetches
 	const loadedViews = useRef<Set<PortfolioViewType>>(new Set());
@@ -1520,8 +1526,8 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 	// Helper function to reset all state to initial values
 	const resetAllState = useCallback(() => {
-		// Reset navigation
-		setActiveSection('home');
+		// Reset navigation (back to the configured startup tab)
+		setActiveSection(STARTUP_SECTION);
 		setCurrentScreen('iterations');
 		setActiveSubTabBySection({ portfolio: 'bySprints' });
 		setHomeDate(new Date());
@@ -1627,7 +1633,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		loadedTeamIterationRef.current = null;
 		pendingTeamIterationRef.current = null;
 		teamMembersLoadingRef.current = false;
-		isFirstPortfolioNavigation.current = true;
+		isFirstPortfolioNavigation.current = STARTUP_SECTION !== 'portfolio';
 		loadedViews.current.clear();
 		autoLoadAttemptedRef.current.clear();
 		pendingNavIterationRef.current = null;

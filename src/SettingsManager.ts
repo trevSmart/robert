@@ -19,6 +19,8 @@ export interface RobertSettings {
 	collaborationAutoConnect: boolean;
 	statusBarShowSprintDaysLeft: boolean;
 	showWelcomeAnimation: boolean;
+	/** Tab shown when the main view starts (see STARTUP_SECTIONS in the webview). */
+	startupTab: string;
 }
 
 /**
@@ -29,7 +31,8 @@ const GENERIC_ENV_VARS: Partial<Record<keyof RobertSettings, string>> = {
 	autoRefresh: 'ROBERT_AUTO_REFRESH',
 	debugMode: 'ROBERT_DEBUG_MODE',
 	statusBarShowSprintDaysLeft: 'ROBERT_STATUS_BAR_SPRINT_DAYS',
-	showWelcomeAnimation: 'ROBERT_SHOW_WELCOME_ANIMATION'
+	showWelcomeAnimation: 'ROBERT_SHOW_WELCOME_ANIMATION',
+	startupTab: 'ROBERT_STARTUP_TAB'
 };
 
 export class SettingsManager {
@@ -72,7 +75,8 @@ export class SettingsManager {
 					collaborationEnabled: this.resolveBooleanSettingWithFallback('collaboration.enabled', this.readExplicit<boolean>(config, 'collaboration.enabled'), 'ROBERT_COLLABORATION_ENABLED', false),
 					collaborationAutoConnect: this.resolveBooleanSettingWithFallback('collaboration.autoConnect', this.readExplicit<boolean>(config, 'collaboration.autoConnect'), 'ROBERT_COLLABORATION_AUTO_CONNECT', true),
 					statusBarShowSprintDaysLeft: this.resolveBooleanSettingWithFallback('statusBarShowSprintDaysLeft', this.readExplicit<boolean>(config, 'statusBarShowSprintDaysLeft'), 'ROBERT_STATUS_BAR_SPRINT_DAYS', true),
-					showWelcomeAnimation: this.resolveBooleanSettingWithFallback('showWelcomeAnimation', this.readExplicit<boolean>(config, 'showWelcomeAnimation'), 'ROBERT_SHOW_WELCOME_ANIMATION', true)
+					showWelcomeAnimation: this.resolveBooleanSettingWithFallback('showWelcomeAnimation', this.readExplicit<boolean>(config, 'showWelcomeAnimation'), 'ROBERT_SHOW_WELCOME_ANIMATION', true),
+					startupTab: this.resolveSettingWithFallback('startupTab', this.readExplicit<string>(config, 'startupTab') ?? '', 'ROBERT_STARTUP_TAB', 'home')
 				};
 
 				return settings;
@@ -128,6 +132,9 @@ export class SettingsManager {
 			if (settings.showWelcomeAnimation !== undefined) {
 				await config.update('showWelcomeAnimation', settings.showWelcomeAnimation, vscode.ConfigurationTarget.Global);
 			}
+			if (settings.startupTab !== undefined) {
+				await config.update('startupTab', settings.startupTab, vscode.ConfigurationTarget.Global);
+			}
 
 			this._errorHandler.logInfo('Settings saved to VS Code configuration', 'SettingsManager.saveSettings');
 		}, 'SettingsManager.saveSettings');
@@ -156,6 +163,7 @@ export class SettingsManager {
 			await config.update('collaboration.autoConnect', defaultSettings.collaborationAutoConnect, vscode.ConfigurationTarget.Global);
 			await config.update('statusBarShowSprintDaysLeft', defaultSettings.statusBarShowSprintDaysLeft, vscode.ConfigurationTarget.Global);
 			await config.update('showWelcomeAnimation', defaultSettings.showWelcomeAnimation, vscode.ConfigurationTarget.Global);
+			await config.update('startupTab', defaultSettings.startupTab, vscode.ConfigurationTarget.Global);
 			this._errorHandler.logInfo('Settings reset to default values', 'SettingsManager.resetSettings');
 		}, 'SettingsManager.resetSettings');
 	}
@@ -287,7 +295,8 @@ export class SettingsManager {
 			collaborationEnabled: false,
 			collaborationAutoConnect: true,
 			statusBarShowSprintDaysLeft: true,
-			showWelcomeAnimation: true
+			showWelcomeAnimation: true,
+			startupTab: 'home'
 		};
 	}
 

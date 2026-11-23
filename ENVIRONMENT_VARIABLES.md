@@ -63,6 +63,7 @@ This means if you set a value in VS Code settings, it will always be used even i
 |----------|------|---------|-------------|
 | `ROBERT_SHOW_OUTPUT_ON_STARTUP` | boolean | `false` | Show output channel on extension startup |
 | `ROBERT_STATUS_BAR_SPRINT_DAYS` | boolean | `true` | Display sprint days left in status bar |
+| `ROBERT_STARTUP_TAB` | string | `home` | Tab shown when Robert starts: `home`, `search`, `portfolio`, `team`, `metrics` or `library` (setting `robert.startupTab`) |
 
 ## Boolean Environment Variable Values
 

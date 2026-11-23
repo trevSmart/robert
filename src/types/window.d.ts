@@ -21,6 +21,8 @@ declare global {
 		// Active provider when the HTML was rendered, so the UI never shows the
 		// previous provider's branding before the first data load.
 		robertProvider?: string;
+		// Value of the robert.startupTab setting when the HTML was rendered (validated by resolveStartupSection).
+		robertStartupTab?: string;
 		interFontUri?: string;
 		testTabEnabled?: boolean;
 		// Jira data pre-fetched by the extension (e.g. while the intro video plays)

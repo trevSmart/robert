@@ -4,6 +4,7 @@ import * as path from 'node:path';
 import { ErrorHandler } from '../ErrorHandler';
 import { getTestTabEnabledReason, isTestTabEnabled } from '../utils/devMode';
 import { getActiveProvider } from '../libs/provider';
+import { SettingsManager } from '../SettingsManager';
 
 /**
  * Manages webview HTML content generation, CSP headers, and resource URI resolution.
@@ -48,6 +49,8 @@ export class WebviewContentManager {
 					__JIRA_LOGO_URI__: jiraLogoUri.toString(),
 					__RALLY_LOGO_URI__: rallyLogoUri.toString(),
 					__PROVIDER__: getActiveProvider(),
+					// Validated in the webview (resolveStartupSection); escaped like any string placeholder.
+					__STARTUP_TAB__: String(SettingsManager.getInstance().getSetting('startupTab') ?? 'home').replace(/[^a-z]/gi, ''),
 					__TEST_TAB_ENABLED__: String(testTabEnabled),
 					__PRELOADED_DATA__: preloadedJson
 				});

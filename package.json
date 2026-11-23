@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "IBM Robert",
 	"description": "For IBM internal use only.",
-	"version": "0.6.7",
+	"version": "0.6.8",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",
@@ -111,6 +111,27 @@
 					"type": "boolean",
 					"default": true,
 					"description": "Play the welcome intro video the first time the Robert view is opened after the extension starts or is reloaded."
+				},
+				"robert.startupTab": {
+					"type": "string",
+					"enum": [
+						"home",
+						"search",
+						"portfolio",
+						"team",
+						"metrics",
+						"library"
+					],
+					"enumDescriptions": [
+						"Home: calendar, recently viewed and favorites",
+						"Search: global search",
+						"Portfolio: sprints, user stories and defects",
+						"Team: team members and their workload",
+						"Metrics: project analytics",
+						"Library: tutorials and guides"
+					],
+					"default": "home",
+					"description": "Tab shown when Robert starts. Applies the next time the view is opened; opening a view in an editor tab keeps the tab you were on."
 				}
 			}
 		},

@@ -4,14 +4,14 @@ Aquest document proporciona context complet del projecte Robert per agents IA, a
 
 ## 📋 Resum Executiu
 
-**Robert** és una eina d'IBM que integra Jira Cloud i Rally (gestió de projectes Agile) en una interfície React per visualitzar i gestionar projectes, sprints, usuaris i issues.
+**Robert** és una eina interna que integra Jira Cloud i Rally (gestió de projectes Agile) en una interfície React per visualitzar i gestionar projectes, sprints, usuaris i issues.
 
 Es distribueix en **dues versions que es mantenen en paral·lel a partir del mateix codi**:
 1. **Extensió de VS Code** (`src/extension.ts`): la UI viu dins d'un webview de VS Code.
 2. **App d'escriptori standalone** (Electron, `src/standalone/main.ts`): la mateixa UI en una finestra pròpia, per a qui no fa servir VS Code. Vegeu la secció «🖥️ Versió Standalone (Electron)» més avall i [docs/STANDALONE.md](docs/STANDALONE.md).
 
 ### Informació Clau del Projecte
-- **Nom**: Robert (IBM Robert)
+- **Nom**: Robert
 - **Versió**: vegeu `version` a `package.json` (la comparteixen les dues versions)
 - **Publisher**: trevSmart
 - **Tipus**: VS Code Extension + app d'escriptori Electron
@@ -149,9 +149,9 @@ export ROBERT_COLLABORATION_ENABLED="false"
 - Validació de configuració abans de crides API
 
 ### 2. **Interfície Webview**
-- **Vista Principal**: Mostra informació de Jira amb logo IBM
+- **Vista Principal**: Mostra informació de Jira amb el logo de Robert
 - **Vista Configuració**: Gestió de settings amb validació
-- **Vista Logo**: Pantalla de logo IBM
+- **Vista Logo**: Pantalla amb el logo de Robert
 - Suport per múltiples contexts (activity bar, editor, panel)
 
 ### 3. **Gestió d'Errors**
@@ -189,7 +189,7 @@ export ROBERT_COLLABORATION_ENABLED="false"
 
 ### Comandaments Principals
 - `robert.helloWorld`: Missatge de benvinguda
-- `robert.openView`: Obrir vista IBM Robert
+- `robert.openView`: Obrir vista Robert
 - `robert.openMainView`: Obrir vista principal
 - `robert.openSettings`: Obrir configuració
 - `robert.openExtensionSettings`: Obrir configuració extensió
@@ -248,7 +248,7 @@ A l'app standalone el mateix canal s'escriu a `<userData>/logs/robert.log` (men�
 ### Webviews React
 - **MainWebview.tsx**: Vista principal amb informació Jira
 - **SettingsWebview.tsx**: Gestió de configuració
-- **LogoWebview.tsx**: Pantalla de logo IBM
+- **LogoWebview.tsx**: Pantalla amb el logo de Robert
 
 ### Templates HTML
 - **mainWebview.html**: Template principal
@@ -256,9 +256,8 @@ A l'app standalone el mateix canal s'escriu a `<userData>/logs/robert.log` (men�
 - **logoWebview.html**: Template logo
 
 ### Recursos
-- **robert-logo-simple.png**: Logo IBM per activity bar
-- **robert-logo.png**: Logo IBM per webviews
-- **ibm-logo.webp**: Logo IBM general
+- **robert-logo-simple.png**: Logo de Robert per a l'activity bar
+- **robert-logo.png**: Logo de Robert per a les webviews
 
 ## 🔒 Seguretat i Configuració
 
@@ -300,7 +299,7 @@ Robert es distribueix en **dues versions que s'han de mantenir totes dues**: l'e
 - **Precedència (les dues versions)**: valor configurat explícitament > variable `ROBERT_*` > default del `package.json`. `SettingsManager` llegeix els valors explícits amb `inspect()` (`readExplicit()`), perquè `get()` retorna el default del manifest i amagaria les variables d'entorn.
 - **Scripts**: `npm run standalone:start` (build + arrencada), `npm run standalone:dev`, `npm run standalone:package` (instal·ladors a `dist/standalone/`).
 - **Arrencada en desenvolupament**: `scripts/standalone-launch.cjs` treu `ELECTRON_RUN_AS_NODE` de l'entorn (els terminals de VS Code el defineixen) i, a macOS, executa Electron des d'una còpia del bundle anomenada "Robert" amb la icona de Robert (a `node_modules/.cache/robert-standalone/`), perquè el Dock i el menú no mostrin "Electron". Arrencar directament amb `electron out/src/standalone/main.js` funciona, però amb nom i icona d'Electron.
-- **Nom de l'app**: el nom visible és "Robert" (`productName` a `electron-builder.yml`, `APP_NAME` a `main.ts`). El nom intern continua sent "IBM Robert" (`APP_INTERNAL_NAME`): és el que dona nom al directori de perfil i a l'element del clauer de macOS on `safeStorage` guarda la clau dels tokens. Si es canvia, es perden els settings i els tokens desats.
+- **Nom de l'app**: el nom és "Robert" (`productName` a `electron-builder.yml`, `APP_NAME` a `main.ts`, appId `com.trevsmart.robert`). També dona nom al directori de perfil i a l'element del clauer de macOS on `safeStorage` guarda la clau dels tokens. Si es canvia, es perden els settings i els tokens desats.
 - **Actualitzacions**: l'app no s'actualitza sola; avisa quan hi ha una versió nova i obre la descàrrega de l'instal·lador (igual a macOS i Windows, sense signatura). Publicar una GitHub Release amb el tag = versió del `package.json` dispara `.github/workflows/release-standalone.yml`, que hi adjunta els `.dmg` (arm64 i x64) i l'`.exe`. Lògica a `src/standalone/updateCheck.ts`; menú «Check for Updates…». Vegeu «Releases and updates» a [docs/STANDALONE.md](docs/STANDALONE.md).
 - **Perfil aïllat**: `ROBERT_STANDALONE_USER_DATA=<dir>` fa servir un altre directori de dades (útil per a proves).
 

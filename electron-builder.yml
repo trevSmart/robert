@@ -1,10 +1,10 @@
-# Packaging of the standalone (Electron) version of IBM Robert.
+# Packaging of the standalone (Electron) version of Robert.
 # Build with: npm run standalone:package  (outputs to dist/standalone/)
-appId: com.ibm.robert
-# Name of the .app bundle, shown in the Dock and the app menu. The profile directory and
-# Keychain item keep the internal name "IBM Robert" (see APP_INTERNAL_NAME in src/standalone/main.ts).
+appId: com.trevsmart.robert
+# Name of the .app bundle, shown in the Dock and the app menu. It also names the profile
+# directory and the Keychain item (see APP_NAME in src/standalone/main.ts).
 productName: Robert
-copyright: For IBM internal use only.
+copyright: For internal use only.
 
 directories:
   output: dist/standalone

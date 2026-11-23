@@ -1,4 +1,4 @@
-# IBM Robert — Standalone desktop app (Electron)
+# Robert — Standalone desktop app (Electron)
 
 Robert ships in two flavours built from **the same codebase**:
 
@@ -15,7 +15,7 @@ Robert ships in two flavours built from **the same codebase**:
 
 Settings follow the same precedence in both versions: an explicitly configured value > `ROBERT_*` environment variable > `package.json` default. In the standalone Settings window, settings that are not set show the value they currently resolve to (and whether it comes from the environment); **Reset** removes an explicit value. Only the fields you edit are saved, so untouched settings keep following the environment. If the OS has no real secure storage (Linux without a keyring, where Electron would fall back to its `basic_text` backend), API tokens cannot be saved and must be provided through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY`.
 
-The app is called **Robert** (`Robert.app`, shown as "Robert" in the Dock). Internally it keeps the name "IBM Robert", which names the profile directory and the macOS Keychain item that protects saved tokens, so existing settings carry over. `<userData>` is `~/Library/Application Support/IBM Robert` on macOS, `%APPDATA%\IBM Robert` on Windows and `~/.config/IBM Robert` on Linux. Set `ROBERT_STANDALONE_USER_DATA` to use another profile directory. The `ROBERT_*` environment variables documented in [ENVIRONMENT_VARIABLES.md](../ENVIRONMENT_VARIABLES.md) keep working as fallbacks.
+The app is called **Robert** (`Robert.app`, shown as "Robert" in the Dock). The same name also names the profile directory and the macOS Keychain item that protects saved tokens. `<userData>` is `~/Library/Application Support/Robert` on macOS, `%APPDATA%\Robert` on Windows and `~/.config/Robert` on Linux. Set `ROBERT_STANDALONE_USER_DATA` to use another profile directory. The `ROBERT_*` environment variables documented in [ENVIRONMENT_VARIABLES.md](../ENVIRONMENT_VARIABLES.md) keep working as fallbacks.
 
 ## How it works
 

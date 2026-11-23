@@ -1,5 +1,5 @@
 /**
- * Entry point of the standalone (Electron) version of IBM Robert.
+ * Entry point of the standalone (Electron) version of Robert.
  *
  * The VS Code extension and this app share all product code (React UI,
  * message handlers, settings, Jira/Rally providers). This file only plays the
@@ -24,14 +24,13 @@ import { type GitHubRelease, githubRepoFromUrl, UpdateChecker } from './updateCh
 
 /** Repository / app.asar root: this file lives in out/src/standalone/. */
 const ROOT_DIR = path.resolve(__dirname, '..', '..', '..');
-/** Name shown to the user (Dock, menus, dialogs, notifications). Must match productName in electron-builder.yml. */
-const APP_NAME = 'Robert';
 /**
- * Internal app name. It names the profile directory (<appData>/IBM Robert) and the
- * macOS Keychain item that safeStorage uses ("IBM Robert Safe Storage"), so changing
- * it would lose existing settings and saved API tokens.
+ * App name. It is shown to the user (Dock, menus, dialogs, notifications) and also names the
+ * profile directory (<appData>/Robert) and the macOS Keychain item that safeStorage uses
+ * ("Robert Safe Storage"), so changing it loses existing settings and saved API tokens.
+ * Must match productName in electron-builder.yml.
  */
-const APP_INTERNAL_NAME = 'IBM Robert';
+const APP_NAME = 'Robert';
 const PACKAGE_JSON = JSON.parse(fs.readFileSync(path.join(ROOT_DIR, 'package.json'), 'utf8')) as { version: string; repository?: { url?: string } };
 /** Robert's version (app.getVersion() reports Electron's when running from source). */
 const APP_VERSION = PACKAGE_JSON.version;
@@ -42,10 +41,10 @@ const UPDATE_CHECK_DELAY_MS = 30_000;
 const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const MAX_LOG_BYTES = 5 * 1024 * 1024;
 
-app.setName(APP_INTERNAL_NAME);
+app.setName(APP_NAME);
 // ROBERT_STANDALONE_USER_DATA lets tests and power users run an isolated profile.
-app.setPath('userData', process.env.ROBERT_STANDALONE_USER_DATA || path.join(app.getPath('appData'), APP_INTERNAL_NAME));
-app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: APP_VERSION, copyright: 'For IBM internal use only.' });
+app.setPath('userData', process.env.ROBERT_STANDALONE_USER_DATA || path.join(app.getPath('appData'), APP_NAME));
+app.setAboutPanelOptions({ applicationName: APP_NAME, applicationVersion: APP_VERSION, copyright: 'For internal use only.' });
 registerAppSchemeAsPrivileged();
 
 if (!app.requestSingleInstanceLock()) {

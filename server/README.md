@@ -205,4 +205,4 @@ Check that:
 
 ## License
 
-For IBM internal use only.
+For internal use only.

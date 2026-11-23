@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 
 const CURSOR_AGENT_OPEN_DELAY_MS = 150;
 
-export const DEFAULT_CURSOR_AGENT_PROMPT = `You are helping via the IBM Robert VS Code extension (Jira integration).
+export const DEFAULT_CURSOR_AGENT_PROMPT = `You are helping via the Robert VS Code extension (Jira integration).
 
 Review the current workspace and Jira sprint context, then provide 3 concise insights I can show in the extension UI:
 1. Sprint health (scope, blockers, at-risk items)

@@ -510,7 +510,7 @@ function _showStatusPopover(webviewProvider: RobertWebviewProvider) {
 	try {
 		const qp = vscode.window.createQuickPick();
 		qp.title = 'Robert';
-		qp.placeholder = 'IBM Robert — quick summary';
+		qp.placeholder = 'Robert — quick summary';
 		qp.matchOnDetail = true;
 		qp.matchOnDescription = true;
 
@@ -527,7 +527,7 @@ function _showStatusPopover(webviewProvider: RobertWebviewProvider) {
 			},
 			{
 				label: '$(sidebar-expand) Open sidebar view',
-				description: 'Show the IBM Robert container view',
+				description: 'Show the Robert container view',
 				detail: ''
 			}
 		];

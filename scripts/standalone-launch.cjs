@@ -21,7 +21,7 @@ const ENTRY = path.join(ROOT, 'out', 'src', 'standalone', 'main.js');
 // Same icon as the packaged macOS app (see electron-builder.yml).
 const ICON_PNG = path.join(ROOT, 'resources', 'icons', 'robert-logo-macos.png');
 const APP_NAME = 'Robert';
-const BUNDLE_ID = 'com.ibm.robert.dev';
+const BUNDLE_ID = 'com.trevsmart.robert.dev';
 const CACHE_DIR = path.join(ROOT, 'node_modules', '.cache', 'robert-standalone');
 
 function log(message) {

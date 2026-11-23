@@ -1,3 +1,143 @@
+## 0.6.8
+
+### Settings
+* Add the `robert.startupTab` setting (also `ROBERT_STARTUP_TAB`) to choose the tab the main view opens on: `home`, `search`, `portfolio`, `team`, `metrics` or `library`
+* Inject the startup tab into the initial HTML so the view starts on it without flashing Home; a provider switch or reload returns to it, and opening a view in an editor tab still restores the tab you were on
+* Fall back to Home for unknown values (`resolveStartupSection`); starting on Portfolio shows the sprint list, like a tab click
+
+### Branding
+* Remove IBM branding: the extension, views, command category and custom editor are now called "Robert", and the description reads "For internal use only."
+* Rally integration headers, the status bar quick summary and generated markdown reports no longer mention IBM
+* Remove the IBM logo assets and the `ibm/robert-maintainers` Dependabot reviewers
+* **Standalone app**: the appId is now `com.trevsmart.robert` and the profile directory and Keychain item use the name "Robert" (`APP_INTERNAL_NAME` removed). Settings and saved API tokens from previous versions are not carried over and must be entered again; on Windows the app installs alongside the previous one
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.7...0.6.8
+
+## 0.6.7
+
+### UI
+* Make the `Select` option list subtly translucent (72% opacity, 75% in light themes, 3px blur) so the content behind stays recognisable and options remain legible
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.6...0.6.7
+
+## 0.6.6
+
+### UI
+* Add a custom `Select` component, styled after the navigation overflow menu, with a translucent option list and enter/exit animations
+* Make it an accessible select-only combobox (WAI-ARIA APG): arrow keys, Home/End, Enter/Space, Escape, Tab and type-ahead; the list opens upwards when there is no room below and closes on outside scroll or resize (`selectNavigation`)
+* Replace every native select: Portfolio user story filters (project, sprint), Team sprint, Sprint Readiness sprint and the search type selector
+* Keep tab and sub-tab bars full width, aligned to the left edge, instead of capping them at the content width
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.4...0.6.6
+
+## 0.6.4
+
+### Build
+* Pin TypeScript to `~6.0.2`: TypeScript 7 (auto-merged by Dependabot) broke `npm install` because typescript-eslint 8.x only supports TypeScript < 6.1
+* Dependabot ignores TypeScript major updates, and the auto-merge workflow now only merges patch and minor updates; majors stay open for review
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.3...0.6.4
+
+## 0.6.3
+
+### Navigation
+* Load the data a restored view needs, however it was reached: views opened with **Open in Editor** and back/forward history no longer render Portfolio user stories / defects, Team or Metrics empty (`viewDataNeeds`)
+* Reselect a restored sprint once iterations arrive, give restored state priority over "open the current sprint on the first Portfolio visit", and re-run a restored search
+
+### UI
+* Centre content and navigation bars in a column capped at 1400px so wide editor tabs stay readable
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.2...0.6.3
+
+## 0.6.2
+
+### Editing (pilot)
+* Edit a user story's estimated hours from the user story form, the first editable field in Robert
+* Jira: edits the story's original estimate (`timetracking.originalEstimate`); save with the button or Enter, discard with Escape; the story is reloaded and swapped into every list, and sprint totals are recomputed
+* Rally: the field stays read-only (`TaskEstimateTotal` is a roll-up of task estimates) with an explanatory tooltip
+* Shared validation between the webview and the extension host (number, 0–1000 h; "1,5" and "8h" accepted)
+
+### Standalone app
+* Notify when a new version is available and open the installer download (**Check for Updates…** menu item); publishing a GitHub Release attaches the macOS (arm64, x64) and Windows installers
+* Update Electron to 45.4
+
+### Fixes
+* Normalise Rally ObjectIDs to strings at the source (`toObjectId`), so the Team dashboard header follows the selected sprint; also normalises favorites and recently viewed items stored by older versions
+* Sprint Readiness card: the empty state no longer covers the sprint selector, explains why it is empty, and falls back to the current sprint when no upcoming sprint exists (`resolveReadinessTarget`)
+* Load the codicon font correctly inside the webview, so icons such as the favourite and "Open in" buttons no longer render as empty boxes
+* Never show the previous provider's branding after switching provider; drop stale preloaded data at the start of each prefetch
+* Make the loading indicator slightly smaller and more visible
+* Pin `@types/vscode` to 1.105.0 to match `engines.vscode`, so `vsce` can package the VSIX again and the extension keeps installing on Cursor and older VS Code
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.1...0.6.2
+
+## 0.6.1
+
+### Standalone desktop app (Electron)
+* Run Robert as a standalone desktop app built from the same codebase as the extension: a host layer in `src/standalone/` provides a `vscode` module shim, an Electron-backed webview and a `robert-app://` protocol for the bundle and resources
+* Theme variables follow the OS light/dark theme
+* Settings window generated from `contributes.configuration`, with API tokens encrypted at rest via `safeStorage`; tokens are never stored in plain text when no OS keychain is available (`ROBERT_*` environment variables are used instead)
+* Only edited settings are saved, unset settings show the value they resolve to (including the `ROBERT_*` variable they come from), and a per-field Reset removes an explicit value
+* App menu with settings, reload data, back/forward and logs; mouse/trackpad history navigation; external and `mailto:` links open with the OS
+* On macOS closing the main window keeps the app running in the Dock (Cmd+Q quits); the app shows as "Robert" with its own icon, also when started from source
+* Packaging with electron-builder and `standalone:*` npm scripts; see `docs/STANDALONE.md`
+
+### Settings
+* Restore the documented precedence in both versions: explicit settings > `ROBERT_*` environment variables > defaults (`SettingsManager` reads explicit values with `inspect()`), and keep explicit `false` values
+
+### Jira
+* Discover tenant-specific custom fields (sprint, story points, flagged, epic link, team) and issue types per site, with the previous IDs as fallback, and clear cached data when the mappings change
+* Find sub-tasks with locale-independent JQL and detect bug types by id; add the `robert.jiraBugIssueTypes` setting (`ROBERT_JIRA_BUG_ISSUE_TYPES`) to override them
+* Read story points from every candidate field (company- and team-managed projects use different ones)
+
+### Fixes
+* Rally: the portfolio project filter matches on the project name
+* Collaboration: rebind the HTTP and WebSocket clients to the active provider's user on reload, and ignore callbacks from replaced WebSocket connections
+* Library: an open topic no longer stays visible below other views
+* macOS app icon follows Apple's template, so it is no longer boxed in a light plate
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.6.0...0.6.1
+
+## 0.6.0
+
+### Jira Cloud
+* Add Jira Cloud as a work-tracking provider alongside Rally, selected with the new `robert.provider` setting (`jira` | `rally`)
+* Provider facade that routes the UI to the Jira or Rally services, a Jira Cloud REST API v3 client, Jira settings and provider-aware logos
+* The collaboration server protocol is unchanged
+* Exclude `.env` and local dotfiles from the VSIX
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.5.4...0.6.0
+
+## 0.5.4
+
+### Fixes
+* Calendar: sort iterations by start date with a deterministic tie-break, comparing Rally ObjectIDs regardless of their runtime type (avoids "objectId.localeCompare is not a function")
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.5.3...0.5.4
+
+## 0.5.3
+
+* Version bump only, no functional changes
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.5.2...0.5.3
+
+## 0.5.2
+
+### Rally
+* Default the Rally instance to eu1 and ignore a trailing slash in the instance URL (it made WSAPI requests return 400)
+
+### Dependencies
+* Close the open Dependabot security alerts in the extension and the collaboration server
+* Routine Dependabot updates, including Vite 8.3, Vitest 5, Mocha 12, `@vscode/vsce` 4, React 19.3, styled-components 6.6 and vscrui 1.1
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.5.1...0.5.2
+
+## 0.5.1
+
+* Version bump only, no functional changes
+
+**Full Changelog**: https://github.com/trevSmart/robert/compare/0.5.0...0.5.1
+
 ## 0.5.0
 
 ### Favorites

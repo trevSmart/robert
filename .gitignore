@@ -51,7 +51,6 @@ jspm_packages/
 
 # IDE files
 .idea/
-.vscode/launch.json
 *.swp
 *.swo
 *~

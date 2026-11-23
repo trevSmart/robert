@@ -2,7 +2,8 @@ import { useSyncExternalStore } from 'react';
 
 /**
  * Active data provider as reported by the extension host ("jira" | "rally").
- * Set from the `iterationsLoaded` payload (and the preloaded data); read by any
+ * Initialised from the HTML injected by the host and updated by the `refresh`
+ * and `iterationsLoaded` messages; read by any
  * component through useProvider() without prop drilling.
  */
 export type WebviewProvider = 'jira' | 'rally';
@@ -10,8 +11,13 @@ export type WebviewProvider = 'jira' | 'rally';
 const listeners = new Set<() => void>();
 
 const initialProvider = (): WebviewProvider => {
-	const preloaded = typeof window !== 'undefined' ? window.__robertPreloadedData : undefined;
-	return preloaded?.provider === 'rally' ? 'rally' : 'jira';
+	if (typeof window === 'undefined') {
+		return 'jira';
+	}
+	// The host always injects the active provider into the HTML; preloaded data
+	// is only present when the prefetch succeeded.
+	const injected = window.robertProvider ?? window.__robertPreloadedData?.provider;
+	return injected === 'rally' ? 'rally' : 'jira';
 };
 
 let current: WebviewProvider = initialProvider();

@@ -1658,6 +1658,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 					logDebug('Received refresh command from extension', 'MainWebview.handleMessage');
 					// Reset all state to initial values
 					resetAllState();
+					// The webview survives a reload, so adopt the (possibly switched)
+					// provider now instead of waiting for the first successful load.
+					if (message.provider) {
+						setWebviewProvider(message.provider);
+					}
 					// Reset Jira call state
 					setJiraCallCount(0);
 					// Reload iterations to populate the initial view

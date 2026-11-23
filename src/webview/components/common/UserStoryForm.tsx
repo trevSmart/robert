@@ -9,6 +9,7 @@ import BlockedReasonBanner from './BlockedReasonBanner';
 import RevisionDescription from './RevisionDescription';
 import RevisionTimeline from './RevisionTimeline';
 import ResizableDescription from './ResizableDescription';
+import EstimatedHoursField from './EstimatedHoursField';
 import { useProvider } from '../../utils/providerState';
 import './CollapsibleCard';
 
@@ -425,31 +426,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					</h3>
 
 					<div style={{ minWidth: 0 }}>
-						<label
-							style={{
-								display: 'block',
-								marginBottom: '4px',
-								fontSize: '12px',
-								color: 'var(--vscode-descriptionForeground)'
-							}}
-						>
-							Plan Estimate
-						</label>
-						<input
-							type="number"
-							value={userStory.planEstimate || 0}
-							readOnly
-							style={{
-								width: '100%',
-								boxSizing: 'border-box',
-								padding: '6px 8px',
-								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
-								color: 'var(--vscode-input-foreground)',
-								border: '1px solid var(--vscode-input-border)',
-								borderRadius: '3px',
-								fontSize: '13px'
-							}}
-						/>
+						<EstimatedHoursField userStory={userStory} editable={!isRally} />
 					</div>
 
 					<div>
@@ -466,6 +443,34 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						<input
 							type="number"
 							value={userStory.timeSpent || 0}
+							readOnly
+							style={{
+								width: '100%',
+								boxSizing: 'border-box',
+								padding: '6px 8px',
+								backgroundColor: 'color-mix(in srgb, var(--vscode-input-background) 60%, var(--vscode-panel-background))',
+								color: 'var(--vscode-input-foreground)',
+								border: '1px solid var(--vscode-input-border)',
+								borderRadius: '3px',
+								fontSize: '13px'
+							}}
+						/>
+					</div>
+
+					<div style={{ minWidth: 0 }}>
+						<label
+							style={{
+								display: 'block',
+								marginBottom: '4px',
+								fontSize: '12px',
+								color: 'var(--vscode-descriptionForeground)'
+							}}
+						>
+							Plan Estimate
+						</label>
+						<input
+							type="number"
+							value={userStory.planEstimate || 0}
 							readOnly
 							style={{
 								width: '100%',

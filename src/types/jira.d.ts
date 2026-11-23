@@ -21,6 +21,7 @@ export interface UserStory {
 	blocked: boolean;
 	blockedReason?: string | null; // Jira BlockedReason - motiu del bloqueig quan blocked=true
 	taskEstimateTotal: number;
+	estimatedHours?: number | null; // Jira: the story's own original estimate (editable, excludes sub-tasks). null = not set. Absent in Rally.
 	timeSpent?: number; // Horas registradas (worklogs), incluye subtareas en Jira
 	taskStatus?: string; // Deprecated - use scheduleState instead
 	tasksCount: number;

@@ -125,12 +125,12 @@ const Menu = styled.ul<{ $lightTheme: boolean; $upwards: boolean; $closing: bool
 	list-style: none;
 	max-width: min(480px, calc(100vw - 16px));
 	overflow-y: auto;
-	/* Translucent and blurred, like a floating menu over the content behind it. The list usually
-	   opens over the editor background (same colour), so the opacity has to be clearly below 1
-	   for the effect to be noticeable over text, charts and avatars. */
-	background-color: color-mix(in srgb, var(--vscode-editor-background) ${({ $lightTheme }) => ($lightTheme ? '68%' : '70%')}, transparent);
-	backdrop-filter: blur(16px) saturate(170%);
-	-webkit-backdrop-filter: blur(16px) saturate(170%);
+	/* Subtly translucent with a light blur: the content behind stays recognisable (shapes,
+	   avatar colours) without hurting the options' legibility. A strong blur (e.g. 16px) smears
+	   thin text and row lines into a uniform tint, so the list ends up looking opaque. */
+	background-color: color-mix(in srgb, var(--vscode-editor-background) ${({ $lightTheme }) => ($lightTheme ? '75%' : '72%')}, transparent);
+	backdrop-filter: blur(3px) saturate(140%);
+	-webkit-backdrop-filter: blur(3px) saturate(140%);
 	border: 1px solid var(--vscode-panel-border);
 	border-radius: 6px;
 	box-shadow: 0 8px 24px rgba(0, 0, 0, ${({ $lightTheme }) => ($lightTheme ? '0.12' : '0.2')});

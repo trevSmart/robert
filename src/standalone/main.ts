@@ -15,11 +15,11 @@ import { ElectronWebview, ElectronWebviewView } from './ElectronWebview';
 import { ConfigurationStore, type SecretCodec } from './host/ConfigurationStore';
 import { FileLogChannel } from './host/FileLogChannel';
 import { FileMemento } from './host/FileMemento';
+import { SecretStore } from './host/SecretStore';
 import { getThemeBackground, type ThemeKind } from './host/theme';
 import { Uri } from './host/Uri';
 import { createVscodeShim } from './host/vscodeShim';
 import { installVscodeModule } from './installVscodeModule';
-import { SettingsWindowController } from './settingsWindow';
 import { type GitHubRelease, githubRepoFromUrl, UpdateChecker } from './updateCheck';
 
 /** Repository / app.asar root: this file lives in out/src/standalone/. */
@@ -121,9 +121,10 @@ async function start(): Promise<void> {
 	session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => callback(permission === 'clipboard-sanitized-write'));
 
 	// --- vscode module shim ---------------------------------------------------
+	// The codec only decrypts API credentials stored as settings by older versions, to migrate them.
 	const config = new ConfigurationStore(path.join(userData, 'settings.json'), ConfigurationStore.readSchemaFromManifest(path.join(ROOT_DIR, 'package.json')), safeStorageCodec);
-	// Settings that change what data Robert shows (provider + its connection); changing them reloads all data.
-	const dataSettingKeys = Object.keys(config.getSchema()).filter(key => key === 'robert.provider' || key.startsWith('robert.jira') || key.startsWith('robert.rally'));
+	// Counterpart of VS Code's SecretStorage: API credentials, encrypted with the OS keychain.
+	const secretStore = new SecretStore(path.join(userData, 'secrets.json'), safeStorageCodec);
 	const isVerbose = () => !app.isPackaged || config.getValue('robert.debugMode') === true || /^(true|1|yes)$/i.test(process.env.ROBERT_DEBUG_MODE ?? '');
 	const logFile = path.join(userData, 'logs', 'robert.log');
 	prepareLogFile(logFile);
@@ -165,7 +166,12 @@ async function start(): Promise<void> {
 	const { ErrorHandler } = require('../ErrorHandler') as typeof import('../ErrorHandler');
 	const { initDevMode, isTestTabEnabled, getTestTabEnabledReason } = require('../utils/devMode') as typeof import('../utils/devMode');
 	const { resetProviderData } = require('../extension') as typeof import('../extension');
-	const { getProviderLabel } = require('../libs/provider') as typeof import('../libs/provider');
+	const { getActiveProvider, getProviderLabel } = require('../libs/provider') as typeof import('../libs/provider');
+	const { SettingsManager } = require('../SettingsManager') as typeof import('../SettingsManager');
+	const { CredentialStore } = require('../settings/CredentialStore') as typeof import('../settings/CredentialStore');
+	const { migrateLegacyCredentials } = require('../settings/legacyCredentialMigration') as typeof import('../settings/legacyCredentialMigration');
+	const { setSettingsHostInfo } = require('../settings/SettingsService') as typeof import('../settings/SettingsService');
+	const { connectionSettingKeys } = require('../settings/settingsSchema') as typeof import('../settings/settingsSchema');
 	/* eslint-enable @typescript-eslint/no-require-imports */
 
 	const output = OutputChannelManager.getInstance();
@@ -174,6 +180,7 @@ async function start(): Promise<void> {
 	const context = {
 		subscriptions: [] as Array<{ dispose(): unknown }>,
 		globalState: new FileMemento(path.join(userData, 'globalState.json')),
+		secrets: secretStore,
 		workspaceState: new FileMemento(path.join(userData, 'workspaceState.json')),
 		extensionUri: Uri.file(ROOT_DIR),
 		extensionPath: ROOT_DIR,
@@ -187,6 +194,15 @@ async function start(): Promise<void> {
 	initDevMode(context, { isPackaged: app.isPackaged });
 	output.appendLine(`[Robert] 🖥️  Standalone app ${APP_VERSION} starting (Electron ${process.versions.electron}, ${app.isPackaged ? 'packaged' : 'from source'})`);
 	output.appendLine(`[Robert] Settings file: ${config.getFilePath()}`);
+	output.appendLine(`[Robert] Credentials: ${secretStore.isAvailable() ? 'stored encrypted with the OS keychain' : 'OS keychain not available, use ROBERT_* environment variables'}`);
+
+	// The settings dialog (shared React UI) has no workspace scope here and shows where settings are stored.
+	setSettingsHostInfo({ kind: 'standalone', userSettingsLocation: config.getFilePath() });
+	const credentialStore = CredentialStore.getInstance();
+	const credentialsReady = credentialStore
+		.initialize(secretStore, error => errorHandler.logWarning(`Could not read stored credentials: ${error.message}`, 'standalone.credentials'))
+		.then(() => migrateLegacyCredentials())
+		.catch(error => errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'standalone.migrateLegacyCredentials'));
 	output.appendLine(`[Robert] Test tab: ${isTestTabEnabled() ? 'enabled' : 'hidden'} (${getTestTabEnabledReason()})`);
 
 	const provider = new RobertWebviewProvider(context.extensionUri, context);
@@ -287,24 +303,35 @@ async function start(): Promise<void> {
 		await createMainWindow();
 	};
 
-	const reload = async () => {
+	// `replayIntro: false` for automatic reloads, so the settings dialog stays open.
+	const reload = async (options: { replayIntro?: boolean } = {}) => {
 		await errorHandler.executeWithErrorHandling(async () => {
 			output.appendLine('[Robert] 🔄 Reloading data');
 			resetProviderData(output);
 			await provider.prefetchJiraData('reload');
 			// The provider (or its credentials) may have changed: rebind collaboration to the current user.
 			await provider.refreshCollaborationIdentity();
-			await provider.resetAndRefreshWebviews();
+			await provider.resetAndRefreshWebviews(options);
 			output.appendLine('[Robert] ✅ Reload completed');
 		}, 'standalone.reload');
 	};
 
-	// The settings window and dialogs are children of the main window only while the main window is visible.
+	// Dialogs are children of the main window only while the main window is visible.
 	const visibleMainWindow = () => (mainWindow && !mainWindow.isDestroyed() && mainWindow.isVisible() ? mainWindow : undefined);
 
-	const settingsWindow = new SettingsWindowController(config, appProtocol, path.join(__dirname, 'preload.js'), iconPath, currentTheme, changedKeys => {
-		output.appendLine(`[Robert] ⚙️  Settings saved: ${changedKeys.join(', ') || 'no changes'}`);
-	});
+	const openSettings = () => void errorHandler.executeWithErrorHandling(() => provider.showSettings(), 'standalone.openSettings');
+
+	// Changing the provider, its connection or its credential reloads all data. Debounced:
+	// the settings dialog saves field by field, so editing a connection fires several changes.
+	const connectionKeys = connectionSettingKeys(config.getSchema());
+	let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+	const scheduleReload = (reason: string) => {
+		clearTimeout(reloadTimer);
+		reloadTimer = setTimeout(() => {
+			output.appendLine(`[Robert] 🔀 ${reason} (provider: ${getProviderLabel()}); reloading data`);
+			void reload({ replayIntro: false });
+		}, 800);
+	};
 
 	// React to setting changes the same way the extension does on onDidChangeConfiguration.
 	config.onDidChange(event => {
@@ -312,21 +339,28 @@ async function start(): Promise<void> {
 			provider.setDebugMode(isVerbose());
 			provider.broadcastTestTabVisibility();
 		}
-		if (dataSettingKeys.some(key => event.affectsConfiguration(key))) {
-			output.appendLine(`[Robert] 🔀 Connection settings changed (provider: ${getProviderLabel()}); reloading data`);
-			void reload();
+		if (connectionKeys.some(key => event.affectsConfiguration(key))) {
+			scheduleReload('Connection settings changed');
 		}
 		if (event.affectsConfiguration('robert.collaboration')) {
 			shim.window.showInformationMessage(`Collaboration settings take effect after restarting ${APP_NAME}.`);
 		}
 	});
+	// Only after the startup migration, which stores credentials itself.
+	void credentialsReady.then(() => {
+		credentialStore.onDidChange(key => {
+			if (key === SettingsManager.getInstance().getCredentialStatus(getActiveProvider()).secretKey) {
+				scheduleReload('API credential changed');
+			}
+		});
+	});
 
 	// Commands the shared code may execute through vscode.commands.
 	shim.commands.registerCommand('workbench.view.extension.robert', showMainWindow);
 	shim.commands.registerCommand('robert.openMainView', showMainWindow);
-	shim.commands.registerCommand('workbench.action.openSettings', () => settingsWindow.open(visibleMainWindow()));
-	shim.commands.registerCommand('robert.openSettings', () => settingsWindow.open(visibleMainWindow()));
-	shim.commands.registerCommand('robert.reload', reload);
+	shim.commands.registerCommand('workbench.action.openSettings', openSettings);
+	shim.commands.registerCommand('robert.openSettings', openSettings);
+	shim.commands.registerCommand('robert.reload', () => reload());
 	shim.commands.registerCommand('robert.showOutput', () => output.show());
 	shim.commands.registerCommand('robert.goBack', () => provider.navigateHistory('back'));
 	shim.commands.registerCommand('robert.goForward', () => provider.navigateHistory('forward'));
@@ -387,7 +421,7 @@ async function start(): Promise<void> {
 
 	Menu.setApplicationMenu(
 		buildMenu({
-			openSettings: () => settingsWindow.open(visibleMainWindow()),
+			openSettings,
 			reload: () => void reload(),
 			back: () => provider.navigateHistory('back'),
 			forward: () => provider.navigateHistory('forward'),
@@ -405,6 +439,7 @@ async function start(): Promise<void> {
 	});
 	app.on('before-quit', () => {
 		isQuitting = true;
+		clearTimeout(reloadTimer);
 		updateChecker.dispose();
 		provider.dispose();
 		for (const disposable of context.subscriptions) {
@@ -416,7 +451,7 @@ async function start(): Promise<void> {
 	// Like extension activation: warm the cache up front unless the intro video
 	// (which prefetches while it plays) is going to be shown.
 	if (!config.getValue('robert.showWelcomeAnimation')) {
-		void provider.prefetchJiraData('activation');
+		void credentialsReady.then(() => provider.prefetchJiraData('activation'));
 	}
 	await createMainWindow();
 

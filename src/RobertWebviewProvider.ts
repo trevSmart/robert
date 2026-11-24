@@ -8,6 +8,8 @@ import { WebviewContentManager } from './webview/WebviewContentManager';
 import { WebviewMessageDispatcher } from './webview/messageHandlers/WebviewMessageDispatcher';
 import { isTestTabEnabled } from './utils/devMode';
 import { HolidayService } from './libs/holidayService';
+import { CredentialStore } from './settings/CredentialStore';
+import { SettingsService } from './settings/SettingsService';
 
 export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode.CustomTextEditorProvider {
 	public static readonly viewType = 'robert.mainView';
@@ -28,6 +30,11 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	// Debug mode state
 	private _isDebugMode: boolean = false;
+
+	// Whether the main UI (React) of the activity bar view has mounted and can receive
+	// messages, and whether the settings dialog should open as soon as it does.
+	private _viewUiReady = false;
+	private _pendingShowSettings = false;
 
 	// Whether the intro video has already been shown in this extension-host session.
 	// Resets on every extension restart (in-memory only, not persisted), so the
@@ -63,6 +70,46 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		this._messageDispatcher = new WebviewMessageDispatcher(this._errorHandler, this._collaborationClient, this._context);
 
 		this.initializeCollaboration();
+		this.watchSettingsChanges();
+	}
+
+	/**
+	 * Keeps open settings dialogs in sync with changes made elsewhere (VS Code's
+	 * Settings UI, settings.json, another window, the keychain).
+	 */
+	private watchSettingsChanges(): void {
+		const settingsService = SettingsService.forExtensionPath(this._context.extensionPath);
+		const broadcastState = () => this.broadcastToWebviews({ ...settingsService.buildState() });
+		this._disposables.push(
+			vscode.workspace.onDidChangeConfiguration(event => {
+				if (event.affectsConfiguration('robert')) {
+					broadcastState();
+				}
+			}),
+			CredentialStore.getInstance().onDidChange(broadcastState)
+		);
+	}
+
+	/**
+	 * Opens Robert's settings dialog (robert.openSettings): in the editor panel when
+	 * it is the active one, otherwise in the activity bar view / main window, which
+	 * is revealed first. If that UI is not mounted yet (first opening, intro video),
+	 * the dialog opens as soon as it is.
+	 */
+	public async showSettings(): Promise<void> {
+		const message = { command: 'showSettings' };
+		if (this._currentPanel?.active) {
+			await this._currentPanel.webview.postMessage(message);
+			return;
+		}
+		if (!this._currentView?.visible) {
+			await vscode.commands.executeCommand('workbench.view.extension.robert');
+		}
+		if (this._currentView && this._viewUiReady) {
+			await this._currentView.webview.postMessage(message);
+		} else {
+			this._pendingShowSettings = true;
+		}
 	}
 
 	/**
@@ -261,6 +308,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		// provider or configuration, and this run might skip without replacing it.
 		this._preloadedData = undefined;
 		const run = this._errorHandler.executeWithErrorHandling(async () => {
+			// API credentials are loaded asynchronously from the OS keychain.
+			await CredentialStore.getInstance().whenReady();
 			const settings = this._settingsManager.getSettings();
 			if (!settings.autoRefresh) {
 				return;
@@ -369,6 +418,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 		const webviewId = this._generateWebviewId('activity-bar');
 		const preloadedData = this._preloadedData;
+		this._viewUiReady = false;
 		webviewView.webview.html = await this._getHtmlForWebview(webviewView.webview, 'activity-bar', webviewId, preloadedData);
 		this._preloadedData = undefined;
 		// Dispose any prior listener bound to this view (a previous render or the
@@ -384,6 +434,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 	 * (or fails / is skipped), swap the view's content for the normal main UI.
 	 */
 	private async _showIntroVideoInView(webviewView: vscode.WebviewView): Promise<void> {
+		this._viewUiReady = false;
 		webviewView.webview.html = await this._getHtmlForLoading(webviewView.webview);
 
 		// Warm the Jira cache while the video plays so the main UI can render with
@@ -431,6 +482,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		this._disposables.push(subscription);
 	}
 
+	/** Robert's logo for editor tabs (the stock webview tab shows a generic file icon). */
+	private _panelIconPath(): { light: vscode.Uri; dark: vscode.Uri } {
+		return {
+			light: vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo-simple.png'),
+			dark: vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo-simple-dark.png')
+		};
+	}
+
 	public async createWebviewPanel(): Promise<vscode.WebviewPanel> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
@@ -450,6 +509,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					retainContextWhenHidden: true,
 					localResourceRoots: [this._extensionUri]
 				});
+				panel.iconPath = this._panelIconPath();
 
 				this._currentPanel = panel;
 				setProviderBroadcaster(msg => this.broadcastToWebviews(msg));
@@ -483,11 +543,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				return panel;
 			}, 'createWebviewPanel')) ||
-			vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — 🐞' : 'Robert', vscode.ViewColumn.One, {
-				enableScripts: true,
-				retainContextWhenHidden: true,
-				localResourceRoots: [this._extensionUri]
-			})
+			Object.assign(
+				vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — 🐞' : 'Robert', vscode.ViewColumn.One, {
+					enableScripts: true,
+					retainContextWhenHidden: true,
+					localResourceRoots: [this._extensionUri]
+				}),
+				{ iconPath: this._panelIconPath() }
+			)
 		);
 	}
 
@@ -753,7 +816,17 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		const listener = webview.onDidReceiveMessage(
 			async message => {
 				await this._errorHandler.executeWithErrorHandling(async () => {
+					// Handlers read API credentials synchronously; make sure they are loaded.
+					await CredentialStore.getInstance().whenReady();
 					const handled = await this._messageDispatcher.dispatch(message.command, webview, message);
+
+					if (message.command === 'webviewReady' && webview === this._currentView?.webview) {
+						this._viewUiReady = true;
+						if (this._pendingShowSettings) {
+							this._pendingShowSettings = false;
+							await webview.postMessage({ command: 'showSettings' });
+						}
+					}
 
 					// Handle WebSocket subscriptions separately since they need WebSocket client
 					if (message.command === 'subscribeCollaborationUserStory' && this._websocketClient.isConnected()) {
@@ -833,9 +906,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	/**
 	 * Reset and refresh all webviews after extension reload
-	 * Sends a refresh message to all active webviews to reload their data
+	 * Sends a refresh message to all active webviews to reload their data.
+	 * `replayIntro: false` refreshes in place even when the welcome animation is on:
+	 * automatic reloads (a connection setting or token changed) must not replace the
+	 * view's HTML, which would close the settings dialog the change came from.
 	 */
-	public async resetAndRefreshWebviews(): Promise<void> {
+	public async resetAndRefreshWebviews(options: { replayIntro?: boolean } = {}): Promise<void> {
+		const replayIntro = options.replayIntro ?? true;
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			this._errorHandler.logInfo('Refreshing all webviews after extension reload', 'RobertWebviewProvider.resetAndRefreshWebviews');
 
@@ -848,7 +925,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			// fall back to the lightweight in-place refresh message.
 			if (this._currentView) {
 				try {
-					if (this._settingsManager.getSettings().showWelcomeAnimation) {
+					if (replayIntro && this._settingsManager.getSettings().showWelcomeAnimation) {
 						this._introVideoShown = true;
 						this._errorHandler.logInfo('Replaying intro video in activity bar view after reload', 'RobertWebviewProvider.resetAndRefreshWebviews');
 						await this._showIntroVideoInView(this._currentView);

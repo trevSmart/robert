@@ -12,6 +12,8 @@ Settings are resolved in this priority order:
 
 This means if you set a value in VS Code settings, it will always be used even if an environment variable is set.
 
+API credentials (`ROBERT_JIRA_API_TOKEN`, `ROBERT_RALLY_API_KEY`) are not VS Code settings: a credential stored from Robert's settings dialog lives in the OS keychain, for the connection it belongs to (Jira site + email, Rally instance), and takes priority over the environment variable. The environment variable applies when no credential is stored for the active connection.
+
 ## Supported Environment Variables
 
 ### Provider Selection

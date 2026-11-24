@@ -1,3 +1,23 @@
+## Unreleased
+
+### UI
+* Add a "More actions" menu (⋮) at the right end of the main tab bar with **Settings**, **Open as Editor** (sidebar view only) and **Reload**. The view's title bar menu is not available in an editor tab or in the standalone app, so the settings dialog could not be opened from there. The menu stays pinned to the right, apart from the "…" menu of tabs that do not fit
+* Rename **Open in Editor** to **Open as Editor** (`robert.openInEditor`, also in the view title bar)
+* Show Robert's logo on its editor tab (light and dark variants) instead of the generic file icon
+
+### Settings
+* Add Robert's own settings dialog, shared by the extension and the standalone app (`robert.openSettings`, the gear in the view title bar, `Cmd/Ctrl+,` in the app). It replaces the standalone app's separate Settings window
+* In VS Code, choose whether to save to the **Workspace** (default when a folder is open) or **User** settings, like VS Code's Settings editor; values still go to the usual `settings.json` files, and the dialog links to VS Code Settings
+* Each setting is saved on its own (checkboxes and selects at once, text on blur / Enter), and the dialog follows changes made elsewhere without overwriting them
+* `robert.debugMode` and `robert.showWelcomeAnimation` are now User-only (`"scope": "application"`)
+* Changing the provider, its connection or its API token reloads the data (debounced), in both versions
+
+### Security
+* Store the Jira API token and the Rally API key in the OS keychain instead of settings: VS Code `SecretStorage` in the extension, `<userData>/secrets.json` encrypted with `safeStorage` in the app. Credentials are kept per connection (Jira site + email, Rally instance), so workspaces using the same connection share them and they never reach a repository
+* Remove the `robert.jiraApiToken` and `robert.rallyApiKey` settings; values left by older versions are moved to the keychain on start and removed from `settings.json`
+* Add **Robert: Set API Token** to store the active connection's token from the Command Palette
+* The settings dialog never receives credential values, only whether one is stored
+
 ## 0.6.9
 
 ### Branding

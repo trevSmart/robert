@@ -63,7 +63,7 @@ Access built-in tutorials and guides to get the most out of Robert and Jira work
 - Click the **Robert** icon in the activity bar, or
 - Run **Robert: Open Main View** from the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`).
 
-You can also open Robert in a full editor tab via the **Open in Editor** button in the panel toolbar.
+You can also open Robert in a full editor tab via **Open as Editor** in the panel toolbar or in the ⋮ menu at the right end of Robert's tab bar. The editor tab shows Robert's logo.
 
 ---
 
@@ -71,7 +71,7 @@ You can also open Robert in a full editor tab via the **Open in Editor** button 
 
 Robert is also available as a standalone desktop app (macOS, Windows, Linux) built from the same codebase as the extension. It offers the same views — Home, Portfolio, Team, Metrics, Search — in its own window.
 
-- **Settings**: open **Settings…** from the app menu (`Cmd+,` / `Ctrl+,`). They are the same `robert.*` settings as in the extension. Settings you leave unset follow the `ROBERT_*` environment variables, then the defaults; **Reset** next to a setting goes back to that behaviour. API tokens are stored encrypted with your operating system's keychain (on Linux without a keyring, provide them through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY` instead).
+- **Settings**: open **Settings…** from the app menu (`Cmd+,` / `Ctrl+,`). It is the same settings dialog as in the extension, with the same `robert.*` settings. Settings you leave unset follow the `ROBERT_*` environment variables, then the defaults; **Reset** next to a setting goes back to that behaviour. API tokens are stored encrypted with your operating system's keychain (on Linux without a keyring, provide them through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY` instead).
 - **Reload data**: **View → Reload Data** (`Cmd+R` / `Ctrl+R`).
 - **Back / forward**: `Cmd+[` / `Cmd+]` on macOS, `Alt+←` / `Alt+→` on Windows and Linux, plus mouse side buttons and trackpad swipes.
 - **Logs**: **View → Show Logs**.
@@ -92,13 +92,15 @@ See [docs/STANDALONE.md](docs/STANDALONE.md) for details.
 
 Connect Robert to your Jira Cloud site once; settings are saved across sessions.
 
-1. Open VS Code Settings (`Cmd+,` / `Ctrl+,`).
-2. Search for **Robert**.
+1. Open Robert's settings: **Settings** in the ⋮ menu at the right end of Robert's tab bar (also in an editor tab and in the standalone app), the gear in the Robert view title bar, or **Robert: Settings** in the Command Palette.
+2. Choose where to save: **Workspace** (the default when a folder is open, so each workspace can connect to its own Jira or Rally project) or **User** (every workspace that does not override it).
 3. Set:
    - **Jira Base URL** — e.g. `https://your-site.atlassian.net`
    - **Jira Email** — the email of your Atlassian account
-   - **Jira API Token** — a token created at id.atlassian.com
    - **Jira Project Key** — the project you work on (e.g. `DSS`)
+   - **API Token** — a token created at id.atlassian.com
+
+Each change is saved on its own, in the same `settings.json` files VS Code's Settings editor uses (the dialog links to it). The API token is **not** a setting: it is stored in your OS keychain (VS Code `SecretStorage`) for that Jira site and account, so it never lands in `settings.json` or in a repository, and every workspace using the same connection shares it. **Robert: Set API Token** stores it from the Command Palette too. Tokens that older versions kept in `settings.json` are moved to the keychain automatically.
 
 | Setting | Description |
 |---------|-------------|

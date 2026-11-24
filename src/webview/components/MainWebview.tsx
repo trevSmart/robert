@@ -11,7 +11,7 @@ import DiscussionsTable from './common/DiscussionsTable';
 import TestCasesTable from './common/TestCasesTable';
 import ScreenHeader from './common/ScreenHeader';
 import OpenInJiraButton from './common/OpenInJiraButton';
-import NavigationBar from './common/NavigationBar';
+import NavigationBar, { type ViewAction } from './common/NavigationBar';
 import SubTabsBar from './common/SubTabsBar';
 import { getPortfolioSubTabs } from './sections/portfolio/portfolioSubTabs';
 import SprintDetailsForm from './common/SprintDetailsForm';
@@ -38,6 +38,7 @@ import { resolveStartupSection } from '../utils/startupSection';
 import { calculateWIP, calculateBlockedItems, groupByState, aggregateDefectsBySeverity, calculateCompletedPoints, groupByBlockedStatus, resolveReadinessTarget, type VelocityData, type StateDistribution, type DefectsBySeverity, type BlockedDistribution } from '../utils/metricsUtils';
 import { JiraLoadingIndicator } from './common/JiraLoadingIndicator';
 
+import SettingsDialog from './settings/SettingsDialog';
 import { CenteredContainer, Container, ContentArea, GlobalStyle, SmoothScrollContent, SmoothScrollWrapper, StickyNav, SpinnerContainer, Spinner, LoadingText, TabFadeWrapper } from './common/styled';
 import { getVsCodeApi } from '../utils/vscodeApi';
 import { setWebviewProvider, useProvider } from '../utils/providerState';
@@ -1457,6 +1458,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			command: 'getFavoriteItems'
 		});
 
+		// Actions of the menu at the right end of the tab bar (they depend on the host and the surface).
+		sendMessage({
+			command: 'getViewActions'
+		});
+
 		// Initialize collaboration client
 		try {
 			// Defer require() to runtime to avoid Vite build issues
@@ -1646,6 +1652,20 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 
 		logDebug('All state reset complete', 'MainWebview.resetAllState');
 	}, []);
+
+	// Settings is always available (the dialog lives in this webview); the host adds the rest.
+	const [viewActions, setViewActions] = useState<ViewAction[]>(['settings']);
+	const handleViewAction = useCallback(
+		(action: ViewAction) => {
+			if (action === 'settings') {
+				// Open the settings dialog of this webview (editor tab or sidebar alike).
+				window.postMessage({ command: 'showSettings' }, '*');
+				return;
+			}
+			sendMessage({ command: 'runViewAction', action });
+		},
+		[sendMessage]
+	);
 
 	// Handle messages from extension
 	useEffect(() => {
@@ -2179,6 +2199,11 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 						}
 					}
 					break;
+				case 'viewActions':
+					if (Array.isArray(message.actions)) {
+						setViewActions(message.actions as ViewAction[]);
+					}
+					break;
 				case 'navigateHistory':
 					// Browser-like back/forward triggered from an IDE command
 					// (robert.goBack / robert.goForward), e.g. mapped to the mouse side buttons.
@@ -2696,9 +2721,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		<FavoritesContext.Provider value={favoriteKeys}>
 			<Container>
 				<GlobalStyle />
+				<SettingsDialog />
 				<CenteredContainer>
 					<StickyNav>
-						<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} />
+						<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} viewActions={viewActions} onViewAction={handleViewAction} />
 						{portfolioSubTabsBar}
 					</StickyNav>
 					<SmoothScrollWrapper ref={wrapperRef}>

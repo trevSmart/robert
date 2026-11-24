@@ -6,6 +6,9 @@ import { CollaborationMessageHandler } from './CollaborationMessageHandler';
 import { CalendarMessageHandler } from './CalendarMessageHandler';
 import { RecentlyViewedMessageHandler } from './RecentlyViewedMessageHandler';
 import { FavoritesMessageHandler } from './FavoritesMessageHandler';
+import { SettingsMessageHandler } from './SettingsMessageHandler';
+import { ViewActionsMessageHandler } from './ViewActionsMessageHandler';
+import { SettingsService } from '../../settings/SettingsService';
 import { CollaborationClient } from '../../libs/collaboration/collaborationClient';
 import { SettingsManager } from '../../SettingsManager';
 import { isTestTabEnabled } from '../../utils/devMode';
@@ -31,6 +34,8 @@ export class WebviewMessageDispatcher {
 	private calendarHandler: CalendarMessageHandler;
 	private recentlyViewedHandler: RecentlyViewedMessageHandler;
 	private favoritesHandler: FavoritesMessageHandler;
+	private settingsHandler: SettingsMessageHandler;
+	private viewActionsHandler: ViewActionsMessageHandler;
 
 	constructor(
 		private errorHandler: ErrorHandler,
@@ -43,6 +48,8 @@ export class WebviewMessageDispatcher {
 		this.calendarHandler = new CalendarMessageHandler(errorHandler, collaborationClient, context);
 		this.recentlyViewedHandler = new RecentlyViewedMessageHandler(errorHandler, context);
 		this.favoritesHandler = new FavoritesMessageHandler(errorHandler, context);
+		this.settingsHandler = new SettingsMessageHandler(errorHandler, SettingsService.forExtensionPath(context.extensionPath));
+		this.viewActionsHandler = new ViewActionsMessageHandler(errorHandler);
 	}
 
 	/** Clears in-session navigation state (e.g. on extension reload). */
@@ -78,6 +85,12 @@ export class WebviewMessageDispatcher {
 				return true;
 			}
 			if (await this.favoritesHandler.handle(command, webview, message)) {
+				return true;
+			}
+			if (await this.settingsHandler.handle(command, webview, message)) {
+				return true;
+			}
+			if (await this.viewActionsHandler.handle(command, webview, message)) {
 				return true;
 			}
 

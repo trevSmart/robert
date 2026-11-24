@@ -92,7 +92,7 @@ See [docs/STANDALONE.md](docs/STANDALONE.md) for details.
 
 Connect Robert to your Jira Cloud site once; settings are saved across sessions.
 
-1. Open Robert's settings: the gear icon in the Robert view title bar, or **Robert: Settings** in the Command Palette.
+1. Open Robert's settings: **Settings** in the ⋮ menu at the right end of Robert's tab bar (also in an editor tab and in the standalone app), the gear in the Robert view title bar, or **Robert: Settings** in the Command Palette.
 2. Choose where to save: **Workspace** (the default when a folder is open, so each workspace can connect to its own Jira or Rally project) or **User** (every workspace that does not override it).
 3. Set:
    - **Jira Base URL** — e.g. `https://your-site.atlassian.net`

@@ -173,7 +173,12 @@ describe('SecretStore', () => {
 	it('treats an undecryptable value as unset', async () => {
 		const file = path.join(tmpDir, 'secrets.json');
 		fs.writeFileSync(file, JSON.stringify({ k: 'garbage' }));
-		const store = new SecretStore(file, { ...fakeCodec, decrypt: () => { throw new Error('bad key'); } });
+		const store = new SecretStore(file, {
+			...fakeCodec,
+			decrypt: () => {
+				throw new Error('bad key');
+			}
+		});
 		expect(await store.get('k')).toBeUndefined();
 	});
 });

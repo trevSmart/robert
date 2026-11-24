@@ -445,9 +445,7 @@ function CredentialRow({ credential, status, onStore, onClear }: CredentialRowPr
 					</LinkButton>
 				)}
 			</RowHead>
-			<Description>
-				{disabled ? credential.incompleteReason : <>Saved in the OS keychain for {credential.connectionLabel}, never in a settings file. Every workspace that uses this connection shares it.</>}
-			</Description>
+			<Description>{disabled ? credential.incompleteReason : <>Saved in the OS keychain for {credential.connectionLabel}, never in a settings file. Every workspace that uses this connection shares it.</>}</Description>
 			<InlineControls>
 				<Input
 					id={id}
@@ -598,16 +596,7 @@ export function SettingsDialog() {
 						{(['user', 'workspace'] as const).map(tabScope => {
 							const disabled = tabScope === 'workspace' && !host.hasWorkspace;
 							return (
-								<ScopeTab
-									key={tabScope}
-									type="button"
-									role="tab"
-									aria-selected={activeScope === tabScope}
-									$active={activeScope === tabScope}
-									disabled={disabled}
-									title={disabled ? 'Open a folder or workspace to save settings per workspace' : undefined}
-									onClick={() => setScope(tabScope)}
-								>
+								<ScopeTab key={tabScope} type="button" role="tab" aria-selected={activeScope === tabScope} $active={activeScope === tabScope} disabled={disabled} title={disabled ? 'Open a folder or workspace to save settings per workspace' : undefined} onClick={() => setScope(tabScope)}>
 									{tabScope === 'workspace' && host.workspaceName ? `Workspace (${host.workspaceName})` : SCOPE_LABEL[tabScope]}
 								</ScopeTab>
 							);

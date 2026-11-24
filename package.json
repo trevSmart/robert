@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "Robert",
 	"description": "For internal use only.",
-	"version": "0.6.9",
+	"version": "0.7.3",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",

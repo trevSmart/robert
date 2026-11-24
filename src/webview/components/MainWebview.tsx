@@ -2724,15 +2724,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				<SettingsDialog />
 				<CenteredContainer>
 					<StickyNav>
-						<NavigationBar
-							activeSection={activeSection}
-							onSectionChange={handleSectionChange}
-							collaborationBadgeCount={collaborationHelpRequestsCount}
-							showTestTab={showTestTab}
-							showCollaborationTab={collaborationEnabled}
-							viewActions={viewActions}
-							onViewAction={handleViewAction}
-						/>
+						<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} viewActions={viewActions} onViewAction={handleViewAction} />
 						{portfolioSubTabsBar}
 					</StickyNav>
 					<SmoothScrollWrapper ref={wrapperRef}>

@@ -145,6 +145,23 @@ describe('SecretStore', () => {
 		expect(changes).toEqual(['robert.credential.jira:x', 'robert.credential.jira:x']);
 	});
 
+	it('keeps a credential in memory when deleting it from disk fails, so a retry really deletes it', async () => {
+		const dir = path.join(tmpDir, 'profile');
+		const file = path.join(dir, 'secrets.json');
+		const store = new SecretStore(file, fakeCodec);
+		await store.store('k', 'top-secret');
+		fs.chmodSync(dir, 0o500);
+		try {
+			await expect(store.delete('k')).rejects.toThrow();
+			expect(await store.get('k')).toBe('top-secret');
+		} finally {
+			fs.chmodSync(dir, 0o700);
+		}
+		await store.delete('k');
+		expect(await store.get('k')).toBeUndefined();
+		expect(await new SecretStore(file, fakeCodec).get('k')).toBeUndefined();
+	});
+
 	it('refuses to store anything when the OS keychain is unavailable', async () => {
 		const file = path.join(tmpDir, 'secrets.json');
 		const store = new SecretStore(file, { ...fakeCodec, isAvailable: () => false });

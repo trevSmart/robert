@@ -303,14 +303,15 @@ async function start(): Promise<void> {
 		await createMainWindow();
 	};
 
-	const reload = async () => {
+	// `replayIntro: false` for automatic reloads, so the settings dialog stays open.
+	const reload = async (options: { replayIntro?: boolean } = {}) => {
 		await errorHandler.executeWithErrorHandling(async () => {
 			output.appendLine('[Robert] 🔄 Reloading data');
 			resetProviderData(output);
 			await provider.prefetchJiraData('reload');
 			// The provider (or its credentials) may have changed: rebind collaboration to the current user.
 			await provider.refreshCollaborationIdentity();
-			await provider.resetAndRefreshWebviews();
+			await provider.resetAndRefreshWebviews(options);
 			output.appendLine('[Robert] ✅ Reload completed');
 		}, 'standalone.reload');
 	};
@@ -328,7 +329,7 @@ async function start(): Promise<void> {
 		clearTimeout(reloadTimer);
 		reloadTimer = setTimeout(() => {
 			output.appendLine(`[Robert] 🔀 ${reason} (provider: ${getProviderLabel()}); reloading data`);
-			void reload();
+			void reload({ replayIntro: false });
 		}, 800);
 	};
 
@@ -359,7 +360,7 @@ async function start(): Promise<void> {
 	shim.commands.registerCommand('robert.openMainView', showMainWindow);
 	shim.commands.registerCommand('workbench.action.openSettings', openSettings);
 	shim.commands.registerCommand('robert.openSettings', openSettings);
-	shim.commands.registerCommand('robert.reload', reload);
+	shim.commands.registerCommand('robert.reload', () => reload());
 	shim.commands.registerCommand('robert.showOutput', () => output.show());
 	shim.commands.registerCommand('robert.goBack', () => provider.navigateHistory('back'));
 	shim.commands.registerCommand('robert.goForward', () => provider.navigateHistory('forward'));

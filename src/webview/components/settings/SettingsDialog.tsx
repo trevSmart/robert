@@ -328,10 +328,13 @@ function SettingRow({ field, scope, singleScope, status, onSave }: SettingRowPro
 
 	const commitDraft = () => {
 		if (draft === null) return;
-		const original = hasScopeValue ? String(scopeValue) : '';
+		const asText = (value: unknown) => (value === undefined || value === null ? '' : String(value)).trim();
+		const text = draft.text.trim();
 		setDraft(null);
-		if (draft.text.trim() === original.trim()) return;
-		onSave(field, draft.text.trim() === '' ? null : draft.text);
+		// Only save what the user changed: compare with the value when editing started, so an
+		// untouched field never writes an old value over a change made elsewhere meanwhile.
+		if (text === asText(draft.baseline) || text === asText(scopeValue)) return;
+		onSave(field, text === '' ? null : draft.text);
 	};
 
 	const overriddenBy = scope === 'user' && isSet(field.values.workspace) ? field.values.workspace : scope === 'user' && isSet(field.values.workspaceFolder) ? field.values.workspaceFolder : undefined;
@@ -632,7 +635,10 @@ export function SettingsDialog() {
 										<SettingRow key={`${activeScope}:${field.key}`} field={field} scope={activeScope} singleScope={host?.kind === 'standalone'} status={statuses[`${activeScope}:${field.key}`]} onSave={saveSetting} />
 									))}
 									{credentials.map(credential => (
-										<CredentialRow key={credential.id} credential={credential} status={statuses[`credential:${credential.id}`]} onStore={storeCredential} onClear={clearCredential} />
+										<CredentialRow
+											// Keyed by connection too: a value typed for one connection must not be saved for another.
+											key={`${credential.id}:${credential.connectionLabel}`}
+											credential={credential} status={statuses[`credential:${credential.id}`]} onStore={storeCredential} onClear={clearCredential} />
 									))}
 								</section>
 							);

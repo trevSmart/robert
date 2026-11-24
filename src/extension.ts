@@ -115,7 +115,7 @@ export function resetProviderData(outputManager: OutputChannelManager): void {
  * Reload the extension without reloading the IDE
  * Clears cache, resets data, and refreshes the webview
  */
-async function reloadExtension(outputManager: OutputChannelManager, _errorHandler: ErrorHandler): Promise<void> {
+async function reloadExtension(outputManager: OutputChannelManager, _errorHandler: ErrorHandler, options: { replayIntro?: boolean } = {}): Promise<void> {
 	try {
 		outputManager.appendLine('[Robert] 🔄 Starting extension reload');
 
@@ -129,7 +129,7 @@ async function reloadExtension(outputManager: OutputChannelManager, _errorHandle
 			// The provider (or its credentials) may have changed: rebind collaboration to the current user.
 			await globalWebviewProvider.refreshCollaborationIdentity();
 			// Notify webview to refresh (via postMessage)
-			await globalWebviewProvider.resetAndRefreshWebviews();
+			await globalWebviewProvider.resetAndRefreshWebviews(options);
 			if (globalStatusBarItem) {
 				updateStatusBarItem(globalStatusBarItem, 'idle', _errorHandler);
 			}
@@ -266,6 +266,12 @@ export function activate(context: vscode.ExtensionContext) {
 				if (value === undefined) {
 					return;
 				}
+				// The token belongs to the connection shown in the prompt: refuse to store it
+				// if settings changed meanwhile (e.g. in another window) and it now points elsewhere.
+				if (settingsManager.getSetting('provider') !== kind || settingsManager.getCredentialStatus(kind).secretKey !== status.secretKey) {
+					vscode.window.showWarningMessage(`Robert: the ${kind === 'jira' ? 'Jira' : 'Rally'} connection changed while you were typing, so the ${what} was not stored. Run the command again.`);
+					return;
+				}
 				await SettingsService.forExtensionPath(context.extensionPath).setCredential(kind, value);
 				vscode.window.showInformationMessage(`Robert: ${what} stored in the OS keychain.`);
 			}, 'robert.setApiToken');
@@ -310,7 +316,8 @@ export function activate(context: vscode.ExtensionContext) {
 		clearTimeout(reloadTimer);
 		reloadTimer = setTimeout(() => {
 			outputManager.appendLine(`[Robert] 🔀 ${reason} (provider: ${getProviderLabel()}); reloading data`);
-			reloadExtension(outputManager, errorHandler).catch(error => errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'connectionChange'));
+			// Refresh in place: replaying the intro would close the settings dialog.
+			reloadExtension(outputManager, errorHandler, { replayIntro: false }).catch(error => errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'connectionChange'));
 		}, 800);
 	};
 	context.subscriptions.push(new vscode.Disposable(() => clearTimeout(reloadTimer)));

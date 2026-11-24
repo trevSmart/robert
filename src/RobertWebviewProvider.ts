@@ -906,9 +906,13 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 	/**
 	 * Reset and refresh all webviews after extension reload
-	 * Sends a refresh message to all active webviews to reload their data
+	 * Sends a refresh message to all active webviews to reload their data.
+	 * `replayIntro: false` refreshes in place even when the welcome animation is on:
+	 * automatic reloads (a connection setting or token changed) must not replace the
+	 * view's HTML, which would close the settings dialog the change came from.
 	 */
-	public async resetAndRefreshWebviews(): Promise<void> {
+	public async resetAndRefreshWebviews(options: { replayIntro?: boolean } = {}): Promise<void> {
+		const replayIntro = options.replayIntro ?? true;
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			this._errorHandler.logInfo('Refreshing all webviews after extension reload', 'RobertWebviewProvider.resetAndRefreshWebviews');
 
@@ -921,7 +925,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 			// fall back to the lightweight in-place refresh message.
 			if (this._currentView) {
 				try {
-					if (this._settingsManager.getSettings().showWelcomeAnimation) {
+					if (replayIntro && this._settingsManager.getSettings().showWelcomeAnimation) {
 						this._introVideoShown = true;
 						this._errorHandler.logInfo('Replaying intro video in activity bar view after reload', 'RobertWebviewProvider.resetAndRefreshWebviews');
 						await this._showIntroVideoInView(this._currentView);

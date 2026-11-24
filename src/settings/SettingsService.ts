@@ -249,7 +249,7 @@ export class SettingsService {
 				if (schema.enum && !schema.enum.includes(value)) {
 					throw new Error(`${label} must be one of: ${schema.enum.join(', ')}.`);
 				}
-				if (HTTPS_SETTINGS.has(key) && !/^https:\/\/[^\s/]+/i.test(value)) {
+				if (HTTPS_SETTINGS.has(key) && !isHttpsUrl(value)) {
 					throw new Error(`${label} must be an HTTPS URL (https://…).`);
 				}
 				if (URL_SETTINGS.has(key)) {
@@ -272,6 +272,19 @@ export function readSettingsSchemaSafely(extensionPath: string): Record<string, 
 	} catch (error) {
 		ErrorHandler.getInstance().logWarning(`Could not read the settings schema: ${error instanceof Error ? error.message : String(error)}`, 'SettingsService');
 		return {};
+	}
+}
+
+/** A complete, parseable https:// URL with a host (no spaces or other trailing garbage). */
+function isHttpsUrl(value: string): boolean {
+	if (/\s/.test(value)) {
+		return false;
+	}
+	try {
+		const url = new URL(value);
+		return url.protocol === 'https:' && url.hostname !== '';
+	} catch {
+		return false;
 	}
 }
 

@@ -57,8 +57,7 @@ export class SecretStore {
 		if (!this.codec.isAvailable()) {
 			throw new SecureStorageUnavailableError();
 		}
-		this.values[key] = this.codec.encrypt(value);
-		this.save();
+		this.commit({ ...this.values, [key]: this.codec.encrypt(value) });
 		this.fire(key);
 	}
 
@@ -66,8 +65,8 @@ export class SecretStore {
 		if (!(key in this.values)) {
 			return;
 		}
-		delete this.values[key];
-		this.save();
+		const { [key]: _removed, ...rest } = this.values;
+		this.commit(rest);
 		this.fire(key);
 	}
 
@@ -93,10 +92,15 @@ export class SecretStore {
 		}
 	}
 
-	private save(): void {
+	/**
+	 * Writes the new contents to disk and only then adopts them in memory, so a
+	 * failed write leaves memory matching the file (a retried delete really retries).
+	 */
+	private commit(next: Record<string, string>): void {
 		fs.mkdirSync(path.dirname(this.filePath), { recursive: true });
 		const tmp = `${this.filePath}.tmp`;
-		fs.writeFileSync(tmp, `${JSON.stringify(this.values, null, '\t')}\n`, { encoding: 'utf8', mode: 0o600 });
+		fs.writeFileSync(tmp, `${JSON.stringify(next, null, '\t')}\n`, { encoding: 'utf8', mode: 0o600 });
 		fs.renameSync(tmp, this.filePath);
+		this.values = next;
 	}
 }

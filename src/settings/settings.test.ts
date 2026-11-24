@@ -211,6 +211,8 @@ describe('SettingsService', () => {
 
 	it('rejects invalid values and scopes', async () => {
 		await expect(service().update('robert.jiraBaseUrl', 'workspace', 'http://insecure')).rejects.toThrow(/HTTPS/);
+		await expect(service().update('robert.jiraBaseUrl', 'workspace', 'https://acme.atlassian.net bad')).rejects.toThrow(/HTTPS/);
+		await expect(service().update('robert.rallyInstance', 'workspace', 'https://#')).rejects.toThrow(/HTTPS/);
 		await expect(service().update('robert.provider', 'workspace', 'trello')).rejects.toThrow(/one of/);
 		await expect(service().update('robert.debugMode', 'workspace', true)).rejects.toThrow(/User settings/);
 		await expect(service().update('robert.jiraApiToken', 'user', 'secret')).rejects.toThrow(/Unknown setting/);

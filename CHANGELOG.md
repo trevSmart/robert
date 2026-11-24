@@ -1,7 +1,9 @@
 ## Unreleased
 
 ### UI
-* Add a "More actions" menu (⋮) at the right end of the main tab bar with **Settings**, **Open in Editor** (sidebar view only) and **Reload**. The view's title bar menu is not available in an editor tab or in the standalone app, so the settings dialog could not be opened from there. The menu stays pinned to the right, apart from the "…" menu of tabs that do not fit
+* Add a "More actions" menu (⋮) at the right end of the main tab bar with **Settings**, **Open as Editor** (sidebar view only) and **Reload**. The view's title bar menu is not available in an editor tab or in the standalone app, so the settings dialog could not be opened from there. The menu stays pinned to the right, apart from the "…" menu of tabs that do not fit
+* Rename **Open in Editor** to **Open as Editor** (`robert.openInEditor`, also in the view title bar)
+* Show Robert's logo on its editor tab (light and dark variants) instead of the generic file icon
 
 ### Settings
 * Add Robert's own settings dialog, shared by the extension and the standalone app (`robert.openSettings`, the gear in the view title bar, `Cmd/Ctrl+,` in the app). It replaces the standalone app's separate Settings window

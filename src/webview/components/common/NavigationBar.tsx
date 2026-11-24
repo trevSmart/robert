@@ -220,7 +220,7 @@ const ReloadIcon = () => (
 
 const VIEW_ACTION_ITEMS: Record<ViewAction, { label: string; Icon: React.FC }> = {
 	settings: { label: 'Settings', Icon: SettingsIcon },
-	openInEditor: { label: 'Open in Editor', Icon: OpenInEditorIcon },
+	openInEditor: { label: 'Open as Editor', Icon: OpenInEditorIcon },
 	reload: { label: 'Reload', Icon: ReloadIcon }
 };
 

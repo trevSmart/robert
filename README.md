@@ -63,7 +63,7 @@ Access built-in tutorials and guides to get the most out of Robert and Jira work
 - Click the **Robert** icon in the activity bar, or
 - Run **Robert: Open Main View** from the Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`).
 
-You can also open Robert in a full editor tab via the **Open in Editor** button in the panel toolbar.
+You can also open Robert in a full editor tab via **Open as Editor** in the panel toolbar or in the ⋮ menu at the right end of Robert's tab bar. The editor tab shows Robert's logo.
 
 ---
 

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchImageAsBase64, getTestCaseWithParent, getItemUrl, getProviderLabel } from '../../libs/provider';
+import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchImageAsBase64, getTestCaseWithParent, getItemUrl, getProviderLabel, getAttachments, isActiveProviderUrl } from '../../libs/provider';
 
 /**
  * Handles search and lookup-related webview messages
@@ -37,6 +37,12 @@ export class SearchMessageHandler {
 				return true;
 			case 'openInJira':
 				await this.handleOpenInJira(message);
+				return true;
+			case 'loadAttachments':
+				await this.handleLoadAttachments(webview, message);
+				return true;
+			case 'openAttachment':
+				await this.handleOpenAttachment(message);
 				return true;
 			default:
 				return false;
@@ -81,6 +87,36 @@ export class SearchMessageHandler {
 			await vscode.env.openExternal(uri);
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openInJira');
+		}
+	}
+
+	private async handleLoadAttachments(webview: vscode.Webview, message: any): Promise<void> {
+		const objectId = String(message?.objectId ?? '');
+		if (!objectId) {
+			return;
+		}
+		try {
+			this.errorHandler.logInfo(`Loading attachments for ${getProviderLabel()} item ${objectId}`, 'SearchMessageHandler');
+			const result = await getAttachments(objectId);
+			webview.postMessage({ type: 'attachmentsLoaded', objectId, attachments: result.attachments });
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadAttachments');
+			webview.postMessage({ type: 'attachmentsLoaded', objectId, attachments: [], error: errorMessage });
+		}
+	}
+
+	private async handleOpenAttachment(message: any): Promise<void> {
+		const url = typeof message?.url === 'string' ? message.url : '';
+		if (!isActiveProviderUrl(url)) {
+			this.errorHandler.logWarning(`Refused to open attachment URL outside the configured ${getProviderLabel()} instance`, 'openAttachment');
+			return;
+		}
+		try {
+			this.errorHandler.logInfo(`Opening ${getProviderLabel()} attachment in the browser`, 'openAttachment');
+			await vscode.env.openExternal(vscode.Uri.parse(url));
+		} catch (error) {
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'openAttachment');
 		}
 	}
 

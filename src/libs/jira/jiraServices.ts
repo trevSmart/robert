@@ -1,6 +1,6 @@
 import { jiraData, jiraDataMeta, stampJiraData } from '../../extension.js';
 import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
-import type { JiraProject, JiraUser, JiraUserStory, GlobalSearchResultItem } from '../../types/jira';
+import type { Attachment, JiraProject, JiraUser, JiraUserStory, GlobalSearchResultItem } from '../../types/jira';
 import { validateJiraConfiguration, clearUtilsCaches } from './utils';
 import { getJiraSettings, jiraRequest, searchIssues, projectJql, quoteJql } from './jiraClient';
 import { JIRA_FIELDS, bugTypesJqlList, isBugIssueType, isSubtaskIssueType, onJiraMetadataChanged, resetJiraMetadata, storyPointsOf, subtaskJql } from './jiraMetadata';
@@ -1086,6 +1086,35 @@ export async function getUserStoryRevisionsCount(objectId: string): Promise<{ co
 	await ensureConfigured();
 	const page = await callJira(() => jiraRequest<any>(`/rest/api/3/issue/${encodeURIComponent(objectId)}/changelog?maxResults=1`), 'Loading revision count...');
 	return { count: page.total ?? 0, source: 'api' };
+}
+
+/**
+ * Fitxers adjunts d'una incidència (camp `attachment`). Els enllaços apunten a
+ * /secure/attachment, que el navegador obre amb la sessió de Jira de l'usuari.
+ */
+export async function getAttachments(objectId: string): Promise<{ attachments: Attachment[]; count: number }> {
+	await ensureConfigured();
+	const issue = await callJira(() => jiraRequest<any>(`/rest/api/3/issue/${encodeURIComponent(objectId)}?fields=attachment`), 'Loading attachments...');
+	const { baseUrl } = getJiraSettings();
+	const attachments: Attachment[] = (issue?.fields?.attachment ?? [])
+		.map((attachment: any): Attachment => {
+			const id = String(attachment.id);
+			const fileName = String(attachment.filename ?? '');
+			const mimeType = String(attachment.mimeType ?? '');
+			return {
+				objectId: id,
+				fileName,
+				size: Number(attachment.size) || 0,
+				mimeType,
+				author: attachment.author?.displayName ?? 'Unknown',
+				createdDate: attachment.created ?? '',
+				url: `${baseUrl}/secure/attachment/${encodeURIComponent(id)}/${encodeURIComponent(fileName)}`,
+				thumbnailUrl: mimeType.startsWith('image/') ? (attachment.thumbnail ?? attachment.content ?? null) : null
+			};
+		})
+		.sort((a: Attachment, b: Attachment) => b.createdDate.localeCompare(a.createdDate));
+	errorHandler.logInfo(`Loaded ${attachments.length} attachment(s) for Jira issue ${objectId}`, 'jiraServices.getAttachments');
+	return { attachments, count: attachments.length };
 }
 
 /** Converteix el changelog de Jira al text de revisió que entenen els parsers de la UI. */

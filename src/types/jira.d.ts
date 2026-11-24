@@ -81,6 +81,21 @@ export interface Discussion {
 	_ref?: string;
 }
 
+/** A file attached to a work item (Jira issue attachment / Rally Attachment). Same shape for both providers. */
+export interface Attachment {
+	objectId: string;
+	fileName: string;
+	/** Size in bytes (0 when the provider does not report it). */
+	size: number;
+	mimeType: string;
+	author: string;
+	createdDate: string;
+	/** Page that opens the file in the browser (the user's Jira / Rally session authenticates it). */
+	url: string;
+	/** Image URL fetched through the extension proxy (authenticated) for a preview; null for non-images. */
+	thumbnailUrl: string | null;
+}
+
 export interface Revision {
 	revisionNumber: number;
 	description: string;

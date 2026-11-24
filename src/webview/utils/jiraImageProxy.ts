@@ -19,7 +19,7 @@ if (typeof window !== 'undefined') {
 	});
 }
 
-function fetchJiraImage(url: string): Promise<string> {
+export function fetchJiraImage(url: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		const vscode = getVsCodeApi();
 		if (!vscode) {

@@ -100,8 +100,10 @@ vi.mock('./CacheService', () => ({
 	clearAllCaches: vi.fn()
 }));
 
-import { extractIterationId, checkCacheForFilteredResults, getUserStories, getIterations, userStoryCondition } from './rallyServices';
+import { extractIterationId, checkCacheForFilteredResults, getUserStories, getIterations, userStoryCondition, getAttachments } from './rallyServices';
 import { callRally } from './rallyCall';
+import { queryUtils } from './utils';
+import { SettingsManager } from '../../SettingsManager';
 
 function rawStory(overrides: Record<string, unknown>) {
 	return {
@@ -324,5 +326,42 @@ describe('Rally ObjectID normalization', () => {
 
 		expect(result.userStories[0].objectId).toBe('91229071621');
 		expect((result.userStories[0].iteration as { objectId?: string }).objectId).toBe('83178439645');
+	});
+});
+
+describe('getAttachments (Rally)', () => {
+	beforeEach(() => {
+		vi.mocked(callRally).mockReset();
+		vi.mocked(SettingsManager.getInstance).mockReturnValue({ getSettings: vi.fn(() => ({})), getSetting: vi.fn((key: string) => (key === 'rallyInstance' ? 'https://rally1.rallydev.com/' : undefined)) } as any);
+	});
+
+	it('queries Attachment by artifact and maps each file to a browser link', async () => {
+		vi.mocked(callRally).mockResolvedValueOnce({
+			Results: [
+				{ ObjectID: 111, Name: 'screen shot.png', Size: 4096, ContentType: 'image/png', User: { _refObjectName: 'Ada Lovelace' }, CreationDate: '2026-02-01T10:00:00.000Z' },
+				{ ObjectID: 222, Name: 'big.png', Size: 6 * 1024 * 1024, ContentType: 'image/png', User: { _refObjectName: 'Bob' }, CreationDate: '2026-01-01T10:00:00.000Z' },
+				{ ObjectID: 333, Name: 'spec.pdf', Size: 900, ContentType: 'application/pdf', CreationDate: '2025-12-01T10:00:00.000Z' }
+			]
+		});
+
+		const result = await getAttachments('91229071621');
+
+		expect(queryUtils.where).toHaveBeenCalledWith('Artifact.ObjectID', '=', '91229071621');
+		expect(vi.mocked(callRally).mock.calls[0][1]).toMatchObject({ type: 'attachment' });
+		expect(result.count).toBe(3);
+		expect(result.attachments[0]).toEqual({
+			objectId: '111',
+			fileName: 'screen shot.png',
+			size: 4096,
+			mimeType: 'image/png',
+			author: 'Ada Lovelace',
+			createdDate: '2026-02-01T10:00:00.000Z',
+			url: 'https://rally1.rallydev.com/slm/attachment/111/screen%20shot.png',
+			thumbnailUrl: 'https://rally1.rallydev.com/slm/attachment/111/screen%20shot.png'
+		});
+		// Large images and non-images get no preview.
+		expect(result.attachments[1].thumbnailUrl).toBeNull();
+		expect(result.attachments[2].thumbnailUrl).toBeNull();
+		expect(result.attachments[2].author).toBe('Unknown');
 	});
 });

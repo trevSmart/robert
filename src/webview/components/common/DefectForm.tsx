@@ -5,6 +5,7 @@ import { EntityRefFormField } from './EntityTypeBadge';
 import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } from '../../utils/themeColors';
 import BlockedReasonBanner from './BlockedReasonBanner';
 import ResizableDescription from './ResizableDescription';
+import AttachmentsList, { useAttachments } from './AttachmentsList';
 import './CollapsibleCard';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
@@ -52,6 +53,7 @@ interface DefectFormProps {
 
 const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 	const lightTheme = isLightTheme();
+	const { attachments, error: attachmentsError } = useAttachments(defect.objectId);
 
 	const getInfoCardStyles = () => {
 		return {
@@ -297,6 +299,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 						</div>
 					</div>
 				</div>
+			</collapsible-card>
+			<collapsible-card title={attachments && attachments.length > 0 ? `Attachments (${attachments.length})` : 'Attachments'} style={{ margin: '20px 0' } as React.CSSProperties}>
+				<AttachmentsList attachments={attachments} error={attachmentsError} />
 			</collapsible-card>
 		</>
 	);

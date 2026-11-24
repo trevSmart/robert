@@ -1,5 +1,6 @@
 import { rallyData, rallyDataMeta, stampRallyData } from '../../extension.js';
 import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
+import type { Attachment } from '../../types/jira';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User, GlobalSearchResultItem } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId, clearUtilsCaches } from './utils';
 import { callRally, callRallyFetch, setRallyBroadcaster } from './rallyCall';
@@ -2986,6 +2987,55 @@ export async function getUserStoryRevisionsCount(objectId: string): Promise<{ co
 	errorHandler.logDebug(`Retrieved revisions count for user story: ${objectId} - Total: ${totalCount}`, 'getUserStoryRevisionsCount');
 
 	return { count: totalCount, source: 'api' };
+}
+
+/** Rally serves attachment content under /slm/attachment; previews above this size are not fetched. */
+const MAX_ATTACHMENT_PREVIEW_BYTES = 5 * 1024 * 1024;
+
+/**
+ * Files attached to an artifact (user story, defect...). The links point to
+ * /slm/attachment/<oid>/<name>, which the browser opens with the user's Rally session.
+ */
+export async function getAttachments(objectId: string): Promise<{ attachments: Attachment[]; count: number }> {
+	const validation = await validateRallyConfiguration();
+	if (!validation.isValid) {
+		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
+	}
+
+	const result = await callRally(
+		getRallyApi(),
+		{
+			type: 'attachment',
+			fetch: ['ObjectID', 'Name', 'Size', 'ContentType', 'User', 'CreationDate'],
+			query: queryUtils.where('Artifact.ObjectID', '=', objectId),
+			order: 'CreationDate DESC',
+			limit: 200
+		},
+		'Loading attachments...'
+	);
+	const resultData = result as RallyApiResult;
+	const results = resultData.Results || resultData.QueryResult?.Results || [];
+	const instance = String(SettingsManager.getInstance().getSetting('rallyInstance') || '').replace(/\/$/, '');
+
+	const attachments: Attachment[] = results.map((raw: any): Attachment => {
+		const id = String(raw.ObjectID);
+		const fileName = String(raw.Name ?? '');
+		const mimeType = String(raw.ContentType ?? '');
+		const size = Number(raw.Size) || 0;
+		const url = `${instance}/slm/attachment/${encodeURIComponent(id)}/${encodeURIComponent(fileName)}`;
+		return {
+			objectId: id,
+			fileName,
+			size,
+			mimeType,
+			author: raw.User?._refObjectName ?? raw.User?.DisplayName ?? 'Unknown',
+			createdDate: raw.CreationDate ?? '',
+			url,
+			thumbnailUrl: mimeType.startsWith('image/') && size <= MAX_ATTACHMENT_PREVIEW_BYTES ? url : null
+		};
+	});
+	errorHandler.logInfo(`Loaded ${attachments.length} attachment(s) for Rally artifact ${objectId}`, 'rallyServices.getAttachments');
+	return { attachments, count: attachments.length };
 }
 
 export async function getUserStoryRevisions(objectId: string): Promise<{ revisions: any[]; source: string; count: number }> {

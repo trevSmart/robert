@@ -10,6 +10,7 @@ import RevisionDescription from './RevisionDescription';
 import RevisionTimeline from './RevisionTimeline';
 import ResizableDescription from './ResizableDescription';
 import EstimatedHoursField from './EstimatedHoursField';
+import AttachmentsList, { AttachmentIcon, useAttachments } from './AttachmentsList';
 import { useProvider } from '../../utils/providerState';
 import './CollapsibleCard';
 
@@ -76,7 +77,7 @@ const StatPill: FC<{
 	);
 };
 
-type AdditionalTabKey = 'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions';
+export type AdditionalTabKey = 'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions' | 'attachments';
 
 interface UserStoryFormProps {
 	userStory: UserStory;
@@ -152,6 +153,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 	const [revisionsCount, setRevisionsCount] = useState<number | null>(null);
 	const [revisionsLoading, setRevisionsLoading] = useState(false);
 	const [revisionsLoaded, setRevisionsLoaded] = useState(false);
+	const { attachments, error: attachmentsError } = useAttachments(userStory.objectId);
 	const timelineCardRef = useRef<HTMLElement | null>(null);
 	const timelineExpandedRef = useRef(false);
 
@@ -541,7 +543,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					<div
 						style={{
 							display: 'grid',
-							gridTemplateColumns: `repeat(${isRally ? 5 : 4}, minmax(0, 1fr))`,
+							gridTemplateColumns: `repeat(${isRally ? 6 : 5}, minmax(0, 1fr))`,
 							gap: '12px'
 						}}
 					>
@@ -662,6 +664,29 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 								{revisionsCount !== null ? revisionsCount : '—'}
 							</span>
 						</StatPill>
+						<StatPill isSelected={selectedAdditionalTab === 'attachments'} onClick={() => handleTabChange('attachments')} title="Click to view attachments">
+							<span
+								style={{
+									fontSize: '11px',
+									color: 'var(--vscode-descriptionForeground)'
+								}}
+							>
+								Attachments
+							</span>
+							<span
+								style={{
+									display: 'flex',
+									alignItems: 'center',
+									gap: '6px',
+									fontSize: '18px',
+									fontWeight: 500,
+									color: 'var(--vscode-foreground)'
+								}}
+							>
+								<AttachmentIcon />
+								{attachments !== null ? attachments.length : '—'}
+							</span>
+						</StatPill>
 					</div>
 					{selectedAdditionalTab === 'revisions' && (
 						<div style={{ marginTop: '20px' }}>
@@ -758,7 +783,12 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 							)}
 						</div>
 					)}
-					{additionalTabContent?.[selectedAdditionalTab] && selectedAdditionalTab !== 'revisions' && <div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>}
+					{selectedAdditionalTab === 'attachments' && (
+						<div style={{ marginTop: '20px' }}>
+							<AttachmentsList attachments={attachments} error={attachmentsError} />
+						</div>
+					)}
+					{additionalTabContent?.[selectedAdditionalTab] && selectedAdditionalTab !== 'revisions' && selectedAdditionalTab !== 'attachments' && <div style={{ marginTop: '20px' }}>{additionalTabContent[selectedAdditionalTab]}</div>}
 				</div>
 			</collapsible-card>
 			<collapsible-card ref={timelineCardRef} title="Timeline" default-collapsed style={{ margin: '20px 0' } as React.CSSProperties}>

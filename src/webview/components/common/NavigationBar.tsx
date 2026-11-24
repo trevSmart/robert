@@ -233,7 +233,29 @@ const ViewActionsMenu: React.FC<{ actions: ViewAction[]; onAction: (action: View
 	const [open, setOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 	const buttonRef = useRef<HTMLButtonElement>(null);
+	const menuRef = useRef<HTMLDivElement>(null);
+	// Item to focus once the menu has rendered (WAI-ARIA menu button pattern).
+	const initialFocusRef = useRef<'first' | 'last'>('first');
 	const menuId = useId();
+
+	const items = () => Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') ?? []);
+
+	const openMenu = (focus: 'first' | 'last') => {
+		initialFocusRef.current = focus;
+		setOpen(true);
+	};
+
+	const closeMenu = (returnFocus: boolean) => {
+		setOpen(false);
+		if (returnFocus) buttonRef.current?.focus();
+	};
+
+	// Move focus into the menu when it opens.
+	useEffect(() => {
+		if (!open) return;
+		const list = items();
+		(initialFocusRef.current === 'last' ? list[list.length - 1] : list[0])?.focus();
+	}, [open]);
 
 	useEffect(() => {
 		if (!open) return;
@@ -242,8 +264,8 @@ const ViewActionsMenu: React.FC<{ actions: ViewAction[]; onAction: (action: View
 		};
 		const handleKey = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') {
-				setOpen(false);
-				buttonRef.current?.focus();
+				e.stopPropagation();
+				closeMenu(true);
 			}
 		};
 		document.addEventListener('mousedown', handleClickOutside);
@@ -253,6 +275,41 @@ const ViewActionsMenu: React.FC<{ actions: ViewAction[]; onAction: (action: View
 			document.removeEventListener('keydown', handleKey);
 		};
 	}, [open]);
+
+	const handleTriggerKeyDown = (e: React.KeyboardEvent) => {
+		if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+			e.preventDefault();
+			openMenu(e.key === 'ArrowUp' ? 'last' : 'first');
+		}
+	};
+
+	const handleMenuKeyDown = (e: React.KeyboardEvent) => {
+		const list = items();
+		const index = list.indexOf(document.activeElement as HTMLButtonElement);
+		let next: HTMLButtonElement | undefined;
+		switch (e.key) {
+			case 'ArrowDown':
+				next = list[(index + 1) % list.length];
+				break;
+			case 'ArrowUp':
+				next = list[(index - 1 + list.length) % list.length];
+				break;
+			case 'Home':
+				next = list[0];
+				break;
+			case 'End':
+				next = list[list.length - 1];
+				break;
+			case 'Tab':
+				// Leave the menu with the normal tab order.
+				closeMenu(false);
+				return;
+			default:
+				return;
+		}
+		e.preventDefault();
+		next?.focus();
+	};
 
 	return (
 		<div ref={containerRef} style={{ position: 'relative', display: 'flex', flex: 'none', marginLeft: 'auto' }}>
@@ -265,7 +322,8 @@ const ViewActionsMenu: React.FC<{ actions: ViewAction[]; onAction: (action: View
 				aria-haspopup="menu"
 				aria-expanded={open}
 				aria-controls={open ? menuId : undefined}
-				onClick={() => setOpen(value => !value)}
+				onClick={() => (open ? closeMenu(false) : openMenu('first'))}
+				onKeyDown={handleTriggerKeyDown}
 				$isActive={false}
 				$lightTheme={lightTheme}
 				style={{ padding: '10px 12px 6px', minWidth: '40px', justifyContent: 'center' }}
@@ -273,7 +331,7 @@ const ViewActionsMenu: React.FC<{ actions: ViewAction[]; onAction: (action: View
 				<MoreActionsIcon />
 			</NavOverflowBtn>
 			{open && (
-				<NavOverflowMenu id={menuId} role="menu">
+				<NavOverflowMenu ref={menuRef} id={menuId} role="menu" aria-label="More actions" onKeyDown={handleMenuKeyDown}>
 					{actions.map(action => {
 						const { label, Icon } = VIEW_ACTION_ITEMS[action];
 						return (
@@ -281,9 +339,12 @@ const ViewActionsMenu: React.FC<{ actions: ViewAction[]; onAction: (action: View
 								key={action}
 								type="button"
 								role="menuitem"
+								tabIndex={-1}
 								$isActive={false}
 								onClick={() => {
-									setOpen(false);
+									// Focus a control that outlives the menu first, so a dialog opened by the
+									// action (Settings) returns focus to it when it closes.
+									closeMenu(true);
 									onAction(action);
 								}}
 							>

@@ -627,7 +627,11 @@ export function SettingsDialog() {
 										<CredentialRow
 											// Keyed by connection too: a value typed for one connection must not be saved for another.
 											key={`${credential.id}:${credential.connectionLabel}`}
-											credential={credential} status={statuses[`credential:${credential.id}`]} onStore={storeCredential} onClear={clearCredential} />
+											credential={credential}
+											status={statuses[`credential:${credential.id}`]}
+											onStore={storeCredential}
+											onClear={clearCredential}
+										/>
 									))}
 								</section>
 							);

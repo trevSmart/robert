@@ -1,15 +1,18 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
+import { CredentialStore, jiraCredentialKey, rallyCredentialKey } from './settings/CredentialStore';
 
 export interface RobertSettings {
 	autoRefresh: boolean;
 	debugMode: boolean;
 	provider: 'jira' | 'rally';
 	rallyInstance: string;
+	/** From the OS keychain (per Rally instance), else the ROBERT_RALLY_API_KEY env var. Not a VS Code setting. */
 	rallyApiKey: string;
 	rallyProjectName: string;
 	jiraBaseUrl: string;
 	jiraEmail: string;
+	/** From the OS keychain (per Jira site + email), else the ROBERT_JIRA_API_TOKEN env var. Not a VS Code setting. */
 	jiraApiToken: string;
 	jiraProjectKey: string;
 	/** Comma-separated Jira issue-type names treated as bugs/defects. Empty = auto-detect. */
@@ -33,6 +36,31 @@ const GENERIC_ENV_VARS: Partial<Record<keyof RobertSettings, string>> = {
 	statusBarShowSprintDaysLeft: 'ROBERT_STATUS_BAR_SPRINT_DAYS',
 	showWelcomeAnimation: 'ROBERT_SHOW_WELCOME_ANIMATION',
 	startupTab: 'ROBERT_STARTUP_TAB'
+};
+
+export type CredentialKind = 'jira' | 'rally';
+
+/** How the credential of the active connection is resolved (the value itself is never exposed). */
+export interface CredentialStatus {
+	kind: CredentialKind;
+	/** Secret storage key for the current connection, undefined while the connection is incomplete. */
+	secretKey?: string;
+	connectionLabel: string;
+	connectionComplete: boolean;
+	incompleteReason?: string;
+	stored: boolean;
+	source: 'keychain' | 'legacySetting' | 'env' | 'none';
+	envVar: string;
+}
+
+/**
+ * Settings that held API credentials in plain text before they moved to the OS
+ * keychain. No longer declared in package.json; read only until migrated
+ * (see settings/legacyCredentialMigration.ts).
+ */
+export const LEGACY_CREDENTIAL_SETTINGS: Record<CredentialKind, { key: 'jiraApiToken' | 'rallyApiKey'; envVar: string }> = {
+	jira: { key: 'jiraApiToken', envVar: 'ROBERT_JIRA_API_TOKEN' },
+	rally: { key: 'rallyApiKey', envVar: 'ROBERT_RALLY_API_KEY' }
 };
 
 export class SettingsManager {
@@ -64,11 +92,11 @@ export class SettingsManager {
 					debugMode: this.resolveBooleanSettingWithFallback('debugMode', this.readExplicit<boolean>(config, 'debugMode'), 'ROBERT_DEBUG_MODE', false),
 					provider: this.resolveProvider(this.readExplicit<string>(config, 'provider') ?? ''),
 					rallyInstance: this.resolveSettingWithFallback('rallyInstance', this.readExplicit<string>(config, 'rallyInstance') ?? '', 'ROBERT_RALLY_INSTANCE', 'https://eu1.rallydev.com'),
-					rallyApiKey: this.resolveSettingWithFallback('rallyApiKey', this.readExplicit<string>(config, 'rallyApiKey') ?? '', 'ROBERT_RALLY_API_KEY', ''),
+					rallyApiKey: this.resolveCredential('rally'),
 					rallyProjectName: this.resolveSettingWithFallback('rallyProjectName', this.readExplicit<string>(config, 'rallyProjectName') ?? '', 'ROBERT_RALLY_PROJECT_NAME', ''),
 					jiraBaseUrl: this.resolveSettingWithFallback('jiraBaseUrl', this.readExplicit<string>(config, 'jiraBaseUrl') ?? '', 'ROBERT_JIRA_BASE_URL', 'https://jiracloudab.atlassian.net'),
 					jiraEmail: this.resolveSettingWithFallback('jiraEmail', this.readExplicit<string>(config, 'jiraEmail') ?? '', 'ROBERT_JIRA_EMAIL', ''),
-					jiraApiToken: this.resolveSettingWithFallback('jiraApiToken', this.readExplicit<string>(config, 'jiraApiToken') ?? '', 'ROBERT_JIRA_API_TOKEN', ''),
+					jiraApiToken: this.resolveCredential('jira'),
 					jiraProjectKey: this.resolveSettingWithFallback('jiraProjectKey', this.readExplicit<string>(config, 'jiraProjectKey') ?? '', 'ROBERT_JIRA_PROJECT_KEY', ''),
 					jiraBugIssueTypes: this.resolveSettingWithFallback('jiraBugIssueTypes', this.readExplicit<string>(config, 'jiraBugIssueTypes') ?? '', 'ROBERT_JIRA_BUG_ISSUE_TYPES', ''),
 					collaborationServerUrl: this.resolveSettingWithFallback('collaboration.serverUrl', this.readExplicit<string>(config, 'collaboration.serverUrl') ?? '', 'ROBERT_COLLABORATION_SERVER_URL', 'https://robert-8vdt.onrender.com'),
@@ -97,7 +125,7 @@ export class SettingsManager {
 			if (settings.debugMode !== undefined) {
 				await config.update('debugMode', settings.debugMode, vscode.ConfigurationTarget.Global);
 			}
-			for (const key of ['provider', 'rallyInstance', 'rallyApiKey', 'rallyProjectName'] as const) {
+			for (const key of ['provider', 'rallyInstance', 'rallyProjectName'] as const) {
 				if (settings[key] !== undefined) {
 					await config.update(key, settings[key], vscode.ConfigurationTarget.Global);
 				}
@@ -107,9 +135,6 @@ export class SettingsManager {
 			}
 			if (settings.jiraEmail !== undefined) {
 				await config.update('jiraEmail', settings.jiraEmail, vscode.ConfigurationTarget.Global);
-			}
-			if (settings.jiraApiToken !== undefined) {
-				await config.update('jiraApiToken', settings.jiraApiToken, vscode.ConfigurationTarget.Global);
 			}
 			if (settings.jiraProjectKey !== undefined) {
 				await config.update('jiraProjectKey', settings.jiraProjectKey, vscode.ConfigurationTarget.Global);
@@ -136,6 +161,14 @@ export class SettingsManager {
 				await config.update('startupTab', settings.startupTab, vscode.ConfigurationTarget.Global);
 			}
 
+			// Credentials go to the keychain, for the connection configured above.
+			if (settings.jiraApiToken !== undefined) {
+				await this.setCredential('jira', settings.jiraApiToken);
+			}
+			if (settings.rallyApiKey !== undefined) {
+				await this.setCredential('rally', settings.rallyApiKey);
+			}
+
 			this._errorHandler.logInfo('Settings saved to VS Code configuration', 'SettingsManager.saveSettings');
 		}, 'SettingsManager.saveSettings');
 	}
@@ -150,12 +183,14 @@ export class SettingsManager {
 
 			await config.update('autoRefresh', defaultSettings.autoRefresh, vscode.ConfigurationTarget.Global);
 			await config.update('debugMode', defaultSettings.debugMode, vscode.ConfigurationTarget.Global);
-			for (const key of ['provider', 'rallyInstance', 'rallyApiKey', 'rallyProjectName'] as const) {
+			// Forget the credentials of the current connections before the connection settings change.
+			await this.setCredential('jira', '');
+			await this.setCredential('rally', '');
+			for (const key of ['provider', 'rallyInstance', 'rallyProjectName'] as const) {
 				await config.update(key, defaultSettings[key], vscode.ConfigurationTarget.Global);
 			}
 			await config.update('jiraBaseUrl', defaultSettings.jiraBaseUrl, vscode.ConfigurationTarget.Global);
 			await config.update('jiraEmail', defaultSettings.jiraEmail, vscode.ConfigurationTarget.Global);
-			await config.update('jiraApiToken', defaultSettings.jiraApiToken, vscode.ConfigurationTarget.Global);
 			await config.update('jiraProjectKey', defaultSettings.jiraProjectKey, vscode.ConfigurationTarget.Global);
 			await config.update('jiraBugIssueTypes', defaultSettings.jiraBugIssueTypes, vscode.ConfigurationTarget.Global);
 			await config.update('collaboration.serverUrl', defaultSettings.collaborationServerUrl, vscode.ConfigurationTarget.Global);
@@ -194,19 +229,19 @@ export class SettingsManager {
 				if (key === 'provider') {
 					return this.resolveProvider(this.readExplicit<string>(config, 'provider') ?? '') as RobertSettings[K];
 				}
+				if (key === 'jiraApiToken') {
+					return this.resolveCredential('jira') as RobertSettings[K];
+				}
+				if (key === 'rallyApiKey') {
+					return this.resolveCredential('rally') as RobertSettings[K];
+				}
 				const rallyEnv: Record<string, string> = {
 					rallyInstance: 'ROBERT_RALLY_INSTANCE',
-					rallyApiKey: 'ROBERT_RALLY_API_KEY',
 					rallyProjectName: 'ROBERT_RALLY_PROJECT_NAME'
 				};
 				if (key in rallyEnv) {
 					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
 					return this.resolveSettingWithFallback(key, vscodeVal, rallyEnv[key], defaultValue as string) as RobertSettings[K];
-				}
-
-				if (key === 'jiraApiToken') {
-					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
-					return this.resolveSettingWithFallback(key, vscodeVal, 'ROBERT_JIRA_API_TOKEN', defaultValue as string) as RobertSettings[K];
 				}
 				if (key === 'jiraBaseUrl') {
 					const vscodeVal = this.readExplicit<string>(config, key) ?? '';
@@ -245,6 +280,12 @@ export class SettingsManager {
 		await this._errorHandler.executeWithErrorHandling(async () => {
 			const config = vscode.workspace.getConfiguration('robert');
 
+			if (key === 'jiraApiToken' || key === 'rallyApiKey') {
+				await this.setCredential(key === 'jiraApiToken' ? 'jira' : 'rally', String(value ?? ''));
+				this._errorHandler.logInfo(`Credential ${key} updated`, 'SettingsManager.updateSetting');
+				return;
+			}
+
 			// Handle nested settings
 			if (key === 'collaborationServerUrl') {
 				await config.update('collaboration.serverUrl', value, vscode.ConfigurationTarget.Global);
@@ -258,6 +299,86 @@ export class SettingsManager {
 
 			this._errorHandler.logInfo(`Setting ${key} updated to ${value}`, 'SettingsManager.updateSetting');
 		}, `SettingsManager.updateSetting.${key}`);
+	}
+
+	/**
+	 * Describes the credential of the active connection for a provider: which
+	 * secret key it lives under and where the value in use comes from.
+	 */
+	public getCredentialStatus(kind: CredentialKind): CredentialStatus {
+		const { envVar } = LEGACY_CREDENTIAL_SETTINGS[kind];
+		const store = CredentialStore.getInstance();
+		let secretKey: string | undefined;
+		let connectionLabel: string;
+		let incompleteReason: string | undefined;
+		if (kind === 'jira') {
+			const baseUrl = this.getSetting('jiraBaseUrl').trim();
+			const email = this.getSetting('jiraEmail').trim();
+			connectionLabel = email ? `${baseUrl} · ${email}` : baseUrl;
+			if (!baseUrl) incompleteReason = 'Set the Jira base URL first.';
+			else if (!email) incompleteReason = 'Set the Jira email first: the token is stored for each site and account.';
+			else secretKey = jiraCredentialKey(baseUrl, email);
+		} else {
+			const instance = this.getSetting('rallyInstance').trim();
+			connectionLabel = instance;
+			if (!instance) incompleteReason = 'Set the Rally instance URL first.';
+			else secretKey = rallyCredentialKey(instance);
+		}
+
+		const stored = secretKey !== undefined && Boolean(store.get(secretKey));
+		let source: CredentialStatus['source'] = 'none';
+		if (stored) {
+			source = 'keychain';
+		} else if (this.readLegacyCredential(kind)) {
+			source = 'legacySetting';
+		} else if (process.env[envVar]?.trim()) {
+			source = 'env';
+		}
+		return { kind, secretKey, connectionLabel, connectionComplete: secretKey !== undefined, incompleteReason, stored, source, envVar };
+	}
+
+	/**
+	 * Stores (or, with an empty value, deletes) the credential of the active
+	 * connection in the OS keychain.
+	 */
+	public async setCredential(kind: CredentialKind, value: string): Promise<void> {
+		const status = this.getCredentialStatus(kind);
+		const trimmed = value.trim();
+		if (!status.secretKey) {
+			if (trimmed) {
+				throw new Error(status.incompleteReason ?? 'The connection is not configured yet.');
+			}
+			return;
+		}
+		const store = CredentialStore.getInstance();
+		if (trimmed) {
+			await store.set(status.secretKey, trimmed);
+			this._errorHandler.logInfo(`${kind === 'jira' ? 'Jira API token' : 'Rally API key'} stored in the OS keychain for ${status.connectionLabel}`, 'SettingsManager.setCredential');
+		} else if (store.has(status.secretKey)) {
+			await store.delete(status.secretKey);
+			this._errorHandler.logInfo(`${kind === 'jira' ? 'Jira API token' : 'Rally API key'} removed from the OS keychain for ${status.connectionLabel}`, 'SettingsManager.setCredential');
+		}
+	}
+
+	/**
+	 * Credential for the active connection. Priority: OS keychain > legacy plain-text
+	 * setting (until migrated) > ROBERT_* environment variable.
+	 */
+	private resolveCredential(kind: CredentialKind): string {
+		const { key, envVar } = LEGACY_CREDENTIAL_SETTINGS[kind];
+		const { secretKey } = this.getCredentialStatus(kind);
+		const stored = secretKey ? CredentialStore.getInstance().get(secretKey) : undefined;
+		if (stored) {
+			return stored;
+		}
+		return this.resolveSettingWithFallback(key, this.readLegacyCredential(kind), envVar, '');
+	}
+
+	/** Plain-text credential left in settings by older versions (any scope), or ''. */
+	private readLegacyCredential(kind: CredentialKind): string {
+		const config = vscode.workspace.getConfiguration('robert');
+		const value = this.readExplicit<unknown>(config, LEGACY_CREDENTIAL_SETTINGS[kind].key);
+		return typeof value === 'string' ? value.trim() : '';
 	}
 
 	/**

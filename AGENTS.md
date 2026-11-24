@@ -101,13 +101,12 @@ Robert/
 | `robert.timeout` | number | `5000` | Timeout peticions (1000-60000ms) |
 | `robert.jiraBaseUrl` | string | `https://jiracloudab.atlassian.net` | URL base de Jira Cloud |
 | `robert.jiraEmail` | string | `""` | Email del compte Atlassian |
-| `robert.jiraApiToken` | string | `""` | Token API de Jira |
 | `robert.jiraProjectKey` | string | `DSS` | Clau del projecte Jira |
 
 ### Persistència
-- Settings es guarden a configuració global VS Code
-- Es mantenen entre sessions
-- Es poden sincronitzar amb VS Code Sync
+- Settings es guarden als `settings.json` de VS Code. El diàleg de settings propi de Robert (`robert.openSettings`, compartit amb l'app standalone) escriu a nivell **Workspace** per defecte, o **User** si es tria; cada camp es desa per separat.
+- Settings amb `"scope": "application"` (`debugMode`, `showWelcomeAnimation`) només existeixen a nivell User.
+- Els tokens API (`jiraApiToken`, `rallyApiKey`) **no són settings**: es guarden al clauer del sistema (`context.secrets` / `SecretStore` a l'app) per connexió, via `src/settings/CredentialStore.ts`. Els tokens que versions antigues deixaven al `settings.json` es migren automàticament (`src/settings/legacyCredentialMigration.ts`).
 
 ### Resolució de Configuració (Prioritat)
 
@@ -262,7 +261,8 @@ A l'app standalone el mateix canal s'escriu a `<userData>/logs/robert.log` (men�
 ## 🔒 Seguretat i Configuració
 
 ### API Keys
-- El token API de Jira es guarda a configuració VS Code (extensió) o a `<userData>/settings.json` xifrat amb el clauer del sistema via `safeStorage` (app standalone)
+- Els tokens API de Jira i Rally es guarden al clauer del sistema: `SecretStorage` (extensió) o `<userData>/secrets.json` xifrat via `safeStorage` (app standalone), indexats per connexió (lloc Jira + email, instància Rally)
+- El diàleg de settings mai rep el valor d'un token, només si està desat
 - No es loggeja ni es mostra en plain text
 - Validació abans d'utilitzar
 
@@ -295,7 +295,7 @@ Robert es distribueix en **dues versions que s'han de mantenir totes dues**: l'e
 - **Entrada**: `src/standalone/main.ts` (l'extensió continua sent `src/extension.ts`).
 - **Shim de `vscode`**: `src/standalone/host/vscodeShim.ts` implementa el subconjunt de l'API de VS Code que fa servir el backend (configuració, output channel, `globalState`, notificacions, `openExternal`, comandes). `installVscodeModule.ts` fa que `require('vscode')` el retorni.
 - **Webview**: `ElectronWebview.ts` implementa `vscode.Webview` sobre una `BrowserWindow`; `preload.ts` exposa `acquireVsCodeApi()` a la UI React.
-- **Settings**: finestra generada a partir de `contributes.configuration` del `package.json`; es desen a `<userData>/settings.json` amb els tokens xifrats (`safeStorage`). Només es desen els camps editats; els no configurats segueixen les variables `ROBERT_*` i després el default, i el botó **Reset** elimina un valor explícit. Sense clauer real (Linux amb backend `basic_text`) no es desen tokens: cal fer servir variables d'entorn.
+- **Settings**: el mateix diàleg React que l'extensió (`src/webview/components/settings/`), generat a partir de `contributes.configuration` del `package.json`, sense nivell workspace; es desen a `<userData>/settings.json`. Els tokens van a `<userData>/secrets.json` xifrats (`safeStorage`, `host/SecretStore.ts`). Cada camp es desa per separat; els no configurats segueixen les variables `ROBERT_*` i després el default, i el botó **Reset** elimina un valor explícit. Sense clauer real (Linux amb backend `basic_text`) no es desen tokens: cal fer servir variables d'entorn.
 - **Precedència (les dues versions)**: valor configurat explícitament > variable `ROBERT_*` > default del `package.json`. `SettingsManager` llegeix els valors explícits amb `inspect()` (`readExplicit()`), perquè `get()` retorna el default del manifest i amagaria les variables d'entorn.
 - **Scripts**: `npm run standalone:start` (build + arrencada), `npm run standalone:dev`, `npm run standalone:package` (instal·ladors a `dist/standalone/`).
 - **Arrencada en desenvolupament**: `scripts/standalone-launch.cjs` treu `ELECTRON_RUN_AS_NODE` de l'entorn (els terminals de VS Code el defineixen) i, a macOS, executa Electron des d'una còpia del bundle anomenada "Robert" amb la icona de Robert (a `node_modules/.cache/robert-standalone/`), perquè el Dock i el menú no mostrin "Electron". Arrencar directament amb `electron out/src/standalone/main.js` funciona, però amb nom i icona d'Electron.
@@ -308,7 +308,7 @@ Robert es distribueix en **dues versions que s'han de mantenir totes dues**: l'e
 1. La lògica de producte va sempre al codi compartit (`src/webview/**`, message handlers, `src/libs/**`), mai a `src/standalone/` ni només a `src/extension.ts`.
 2. Si el codi compartit comença a fer servir una API nova de `vscode`, cal afegir-la al shim (o fer-ne un no-op / error clar) i ampliar `src/standalone/host/sharedCodeOnShim.test.ts`.
 3. Si la UI fa servir una variable CSS `--vscode-*` nova, cal afegir-la a les dues paletes de `src/standalone/host/theme.ts` (el test `host.test.ts` falla si en falta alguna).
-4. Els settings nous es declaren com sempre al `package.json`; si són secrets, afegeix-los a `SECRET_SETTING_KEYS`.
+4. Els settings nous es declaren com sempre al `package.json` (el diàleg de settings es genera a partir d'aquí); si no tenen sentit per workspace, posa'ls `"scope": "application"`. Els secrets mai són settings: es desen amb `CredentialStore`.
 5. Comprova els canvis a les dues versions (F5 per l'extensió, `npm run standalone:start` per l'app).
 
 Documentació completa: [docs/STANDALONE.md](docs/STANDALONE.md)

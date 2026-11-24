@@ -7,13 +7,16 @@ Robert ships in two flavours built from **the same codebase**:
 | Entry point | `src/extension.ts` | `src/standalone/main.ts` |
 | Host | VS Code extension host | Electron main process |
 | UI | Webview view / panel | `BrowserWindow` |
-| Settings UI | VS Code Settings (`robert.*`) | Generated Settings window (Cmd/Ctrl+,) |
-| Settings storage | VS Code `settings.json` | `<userData>/settings.json` (tokens encrypted with the OS keychain via `safeStorage`) |
+| Settings UI | Robert's settings dialog (User / Workspace scope) + VS Code Settings | The same dialog (Cmd/Ctrl+,), single scope |
+| Settings storage | VS Code user / workspace `settings.json` | `<userData>/settings.json` |
+| API tokens | VS Code `SecretStorage` (`context.secrets`, OS keychain) | `<userData>/secrets.json`, each value encrypted with the OS keychain via `safeStorage` (`host/SecretStore.ts`) |
 | `globalState` | VS Code Memento | `<userData>/globalState.json` |
 | "Robert" output channel | Output panel | `<userData>/logs/robert.log` (View → Show Logs) |
 | Package | `npm run package` → `dist/*.vsix` | `npm run standalone:package` → `dist/standalone/` |
 
-Settings follow the same precedence in both versions: an explicitly configured value > `ROBERT_*` environment variable > `package.json` default. In the standalone Settings window, settings that are not set show the value they currently resolve to (and whether it comes from the environment); **Reset** removes an explicit value. Only the fields you edit are saved, so untouched settings keep following the environment. If the OS has no real secure storage (Linux without a keyring, where Electron would fall back to its `basic_text` backend), API tokens cannot be saved and must be provided through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY`.
+Settings follow the same precedence in both versions: an explicitly configured value > `ROBERT_*` environment variable > `package.json` default. The settings dialog is shared React code (`src/webview/components/settings/SettingsDialog.tsx`, backend in `src/settings/`): settings that are not set show the value they currently resolve to (and whether it comes from the environment); **Reset** removes an explicit value. Every field is saved on its own, so untouched settings keep following the environment and changes made elsewhere are never overwritten. In the app there is no workspace scope: everything goes to `<userData>/settings.json`, and there is a single configuration (no per-project profiles yet).
+
+API tokens are not settings. They are stored per connection (Jira site + account, Rally instance) in the host's secret storage and loaded into memory at startup (`src/settings/CredentialStore.ts`); the dialog can store, replace or remove them but never reads them back. If the OS has no real secure storage (Linux without a keyring, where Electron would fall back to its `basic_text` backend), API tokens cannot be saved and must be provided through `ROBERT_JIRA_API_TOKEN` / `ROBERT_RALLY_API_KEY`. Tokens saved as settings by older versions are moved to `secrets.json` on first start.
 
 The app is called **Robert** (`Robert.app`, shown as "Robert" in the Dock). The same name also names the profile directory and the macOS Keychain item that protects saved tokens. `<userData>` is `~/Library/Application Support/Robert` on macOS, `%APPDATA%\Robert` on Windows and `~/.config/Robert` on Linux. Set `ROBERT_STANDALONE_USER_DATA` to use another profile directory. The `ROBERT_*` environment variables documented in [ENVIRONMENT_VARIABLES.md](../ENVIRONMENT_VARIABLES.md) keep working as fallbacks.
 
@@ -34,6 +37,7 @@ SettingsManager, ErrorHandler, Jira/Rally providers
                    host/vscodeShim.ts (subset of the vscode API)
                      ├─ ConfigurationStore  (workspace.getConfiguration)
                      ├─ FileMemento         (context.globalState)
+                     ├─ SecretStore         (context.secrets)
                      ├─ FileLogChannel      (window.createOutputChannel)
                      └─ Electron            (notifications, openExternal, clipboard)
 ```
@@ -66,7 +70,7 @@ Running from source enables the same dev features as the F5 Extension Developmen
 - **Put product logic in shared code** (`src/webview/**`, message handlers, `src/libs/**`). Both hosts get it for free.
 - **Using a new `vscode` API in shared code?** Add it to `src/standalone/host/vscodeShim.ts` (or make it a no-op / clear "not available in the standalone app" error). `src/standalone/host/sharedCodeOnShim.test.ts` exercises shared code on the shim — extend it when you add shim surface.
 - **New `--vscode-*` CSS variable in the webview?** Add it to both palettes in `host/theme.ts`; `host.test.ts` fails if a variable used in `src/webview` is missing.
-- **New setting?** Declare it in `package.json` `contributes.configuration` as usual — the standalone Settings window is generated from it. Secrets must also be listed in `SECRET_SETTING_KEYS` (`host/ConfigurationStore.ts`).
+- **New setting?** Declare it in `package.json` `contributes.configuration` as usual — the settings dialog (both versions) is generated from it. Use `"scope": "application"` for settings that make no sense per workspace. Never declare secrets as settings: store them through `CredentialStore` (`src/settings/`), as the API tokens are.
 - **New command in `extension.ts`?** If it makes sense outside VS Code, register it in `main.ts` and/or add it to the app menu.
 
 ## Not available in the standalone app

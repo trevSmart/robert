@@ -1,14 +1,8 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { readSettingsSchema, type SettingSchema } from '../../settings/settingsSchema';
 
-/** JSON-schema-ish description of one setting, as declared in package.json `contributes.configuration`. */
-export interface SettingSchema {
-	type?: string;
-	default?: unknown;
-	description?: string;
-	enum?: string[];
-	enumDescriptions?: string[];
-}
+export type { SettingSchema };
 
 /** Encrypts/decrypts secret values at rest (backed by Electron `safeStorage` in the app). */
 export interface SecretCodec {
@@ -30,23 +24,10 @@ export interface WorkspaceConfiguration {
 	inspect<T>(key: string): { key: string; defaultValue?: T; globalValue?: T } | undefined;
 }
 
-/** Settings whose values are stored encrypted when a {@link SecretCodec} is available. */
-export const SECRET_SETTING_KEYS: ReadonlySet<string> = new Set(['robert.jiraApiToken', 'robert.rallyApiKey']);
-
-/** Environment variables that can provide each secret when secure storage is unavailable. */
-const SECRET_ENV_VARS: Record<string, string> = {
-	'robert.jiraApiToken': 'ROBERT_JIRA_API_TOKEN',
-	'robert.rallyApiKey': 'ROBERT_RALLY_API_KEY'
-};
-
-export class SecureStorageUnavailableError extends Error {
-	constructor(public readonly keys: string[]) {
-		const envVars = keys.map(key => SECRET_ENV_VARS[key] ?? key).join(', ');
-		super(`Secure storage (OS keychain) is not available, so credentials cannot be saved encrypted. Set them through environment variables instead (${envVars}).`);
-		this.name = 'SecureStorageUnavailableError';
-	}
-}
-
+/**
+ * Encrypted value. Older versions stored API credentials as settings this way;
+ * credentials now live in SecretStore, and these are only read once, to migrate them.
+ */
 type EncryptedValue = { __encrypted: string };
 
 function isEncryptedValue(value: unknown): value is EncryptedValue {
@@ -59,6 +40,7 @@ function isEncryptedValue(value: unknown): value is EncryptedValue {
  * Values live in a flat JSON object keyed by fully-qualified setting id
  * (e.g. `robert.jiraEmail`), mirroring VS Code's `settings.json`. Defaults come
  * from the extension manifest so both hosts share a single source of truth.
+ * API credentials are not settings: they live in SecretStore.
  */
 export class ConfigurationStore {
 	private values: Record<string, unknown> = {};
@@ -74,12 +56,7 @@ export class ConfigurationStore {
 
 	/** Reads the `contributes.configuration.properties` block from a package.json. */
 	public static readSchemaFromManifest(manifestPath: string): Record<string, SettingSchema> {
-		const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as {
-			contributes?: { configuration?: { properties?: Record<string, SettingSchema> } | Array<{ properties?: Record<string, SettingSchema> }> };
-		};
-		const configuration = manifest.contributes?.configuration;
-		const blocks = Array.isArray(configuration) ? configuration : configuration ? [configuration] : [];
-		return Object.assign({}, ...blocks.map(block => block.properties ?? {}));
+		return readSettingsSchema(manifestPath);
 	}
 
 	public getSchema(): Record<string, SettingSchema> {
@@ -144,15 +121,6 @@ export class ConfigurationStore {
 	 * precedence over ROBERT_* environment variables.
 	 */
 	public update(changes: Record<string, unknown>): string[] {
-		// Never persist credentials in plain text: without OS secure storage (e.g. Linux
-		// without a keyring) reject the whole update before touching anything.
-		if (!this.secretCodec?.isAvailable()) {
-			const blocked = Object.entries(changes).filter(([key, value]) => SECRET_SETTING_KEYS.has(key) && typeof value === 'string' && value !== '');
-			if (blocked.length > 0) {
-				throw new SecureStorageUnavailableError(blocked.map(([key]) => key));
-			}
-		}
-
 		const changed: string[] = [];
 		for (const [fullKey, value] of Object.entries(changes)) {
 			if (JSON.stringify(this.getUserValue(fullKey)) === JSON.stringify(value)) {
@@ -160,8 +128,6 @@ export class ConfigurationStore {
 			}
 			if (value === undefined) {
 				delete this.values[fullKey];
-			} else if (SECRET_SETTING_KEYS.has(fullKey) && typeof value === 'string' && value !== '' && this.secretCodec) {
-				this.values[fullKey] = { __encrypted: this.secretCodec.encrypt(value) } satisfies EncryptedValue;
 			} else {
 				this.values[fullKey] = value;
 			}

@@ -32,7 +32,8 @@
 				"robert.debugMode": {
 					"type": "boolean",
 					"default": false,
-					"description": "Enable debug mode"
+					"description": "Enable debug mode",
+					"scope": "application"
 				},
 				"robert.provider": {
 					"type": "string",
@@ -50,12 +51,8 @@
 				"robert.rallyInstance": {
 					"type": "string",
 					"default": "https://eu1.rallydev.com",
-					"description": "Rally instance URL (e.g., https://eu1.rallydev.com). Used when robert.provider is \"rally\"."
-				},
-				"robert.rallyApiKey": {
-					"type": "string",
-					"default": "",
-					"description": "Rally API key for authentication. Used when robert.provider is \"rally\"."
+					"description": "Rally instance URL (e.g., https://eu1.rallydev.com). Used when robert.provider is \"rally\".",
+					"markdownDescription": "Rally instance URL (e.g., https://eu1.rallydev.com). Used when `#robert.provider#` is \"rally\". The API key is not a setting: it is stored in the OS keychain for each instance. [Set the API key](command:robert.setApiToken) or use [Robert Settings](command:robert.openSettings)."
 				},
 				"robert.rallyProjectName": {
 					"type": "string",
@@ -70,12 +67,8 @@
 				"robert.jiraEmail": {
 					"type": "string",
 					"default": "",
-					"description": "Email of the Jira account used for authentication"
-				},
-				"robert.jiraApiToken": {
-					"type": "string",
-					"default": "",
-					"description": "Jira API token for authentication"
+					"description": "Email of the Jira account used for authentication",
+					"markdownDescription": "Email of the Jira account used for authentication. The API token is not a setting: it is stored in the OS keychain for each site and account. [Set the API token](command:robert.setApiToken) or use [Robert Settings](command:robert.openSettings)."
 				},
 				"robert.jiraProjectKey": {
 					"type": "string",
@@ -110,7 +103,8 @@
 				"robert.showWelcomeAnimation": {
 					"type": "boolean",
 					"default": true,
-					"description": "Play the welcome intro video the first time the Robert view is opened after the extension starts or is reloaded."
+					"description": "Play the welcome intro video the first time the Robert view is opened after the extension starts or is reloaded.",
+					"scope": "application"
 				},
 				"robert.startupTab": {
 					"type": "string",
@@ -163,6 +157,12 @@
 				"title": "Settings",
 				"category": "Robert",
 				"icon": "$(gear)"
+			},
+			{
+				"command": "robert.setApiToken",
+				"title": "Set API Token",
+				"category": "Robert",
+				"icon": "$(key)"
 			},
 			{
 				"command": "robert.goBack",

@@ -51,8 +51,11 @@ suite('Extension Integration Test Suite', () => {
 		assert.ok(config.has('autoRefresh'));
 		assert.ok(config.has('debugMode'));
 		assert.ok(config.has('jiraBaseUrl'));
-		assert.ok(config.has('jiraApiToken'));
+		assert.ok(config.has('jiraEmail'));
 		assert.ok(config.has('jiraProjectKey'));
+		// API credentials are stored in the OS keychain (SecretStorage), not as settings.
+		assert.ok(!config.has('jiraApiToken'));
+		assert.ok(!config.has('rallyApiKey'));
 	});
 
 	test('Configuration defaults should be correct', () => {

@@ -118,7 +118,8 @@ const Chevron = styled.span<{ $open: boolean }>`
 const Menu = styled.ul<{ $lightTheme: boolean; $upwards: boolean; $closing: boolean }>`
 	--select-menu-shift: ${({ $upwards }) => ($upwards ? '4px' : '-4px')};
 	position: fixed;
-	z-index: 1000;
+	/* Above every other layer, including the settings dialog (z-index 10000). */
+	z-index: 10001;
 	box-sizing: border-box;
 	margin: 0;
 	padding: 6px 0;

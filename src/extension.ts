@@ -9,6 +9,10 @@ import { clearAllProviderCaches, getActiveProvider, getProviderLabel } from './l
 import type { CacheEntity } from './libs/cache/ttlConfig';
 import { detectDebugMode, getTestTabEnabledReason, initDevMode, isTestTabEnabled } from './utils/devMode';
 import { WebviewMessageDispatcher } from './webview/messageHandlers/WebviewMessageDispatcher';
+import { CredentialStore } from './settings/CredentialStore';
+import { migrateLegacyCredentials } from './settings/legacyCredentialMigration';
+import { readSettingsSchemaSafely, SettingsService } from './settings/SettingsService';
+import { connectionSettingKeys } from './settings/settingsSchema';
 
 // Jira data cache - centralized state management
 export const jiraData: JiraData = {
@@ -163,6 +167,14 @@ export function activate(context: vscode.ExtensionContext) {
 	WebviewMessageDispatcher.clearLegacyPersistedNavigationState(context);
 	WebviewMessageDispatcher.clearSessionNavigationState();
 
+	// API credentials live in the OS keychain (SecretStorage). Load them into memory,
+	// then move any plain-text token left in settings.json by older versions.
+	const credentialStore = CredentialStore.getInstance();
+	const credentialsReady = credentialStore
+		.initialize(context.secrets, error => errorHandler.logWarning(`Could not read credentials from the OS keychain: ${error.message}`, 'Extension Activation'))
+		.then(() => migrateLegacyCredentials())
+		.catch(error => errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'migrateLegacyCredentials'));
+
 	// Get settings manager to check if should show output channel on startup
 	const settingsManager = SettingsManager.getInstance();
 	// Auto-show output channel if debug mode is enabled
@@ -180,7 +192,7 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	// Prefetch Jira data on activation to warm the cache; refresh status bar when done
-	webviewProvider.prefetchJiraData('activation').then(() => updateStatusBarItem(statusBarItem, 'idle', errorHandler));
+	void credentialsReady.then(() => webviewProvider.prefetchJiraData('activation')).then(() => updateStatusBarItem(statusBarItem, 'idle', errorHandler));
 
 	// If in debug mode, perform additional actions
 	if (isDebugMode) {
@@ -220,13 +232,45 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 	context.subscriptions.push(openInEditorCommand);
 
-	// Register command to open the extension's settings filtered to Robert only
+	// Robert's own settings dialog (it links to VS Code's Settings UI too)
 	const openSettingsCommand = vscode.commands.registerCommand('robert.openSettings', async () => {
 		await errorHandler.executeWithErrorHandling(async () => {
-			await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:trevSmart.robert');
+			await webviewProvider.showSettings();
 		}, 'robert.openSettings');
 	});
 	context.subscriptions.push(openSettingsCommand);
+
+	// Store the API token / key of the active connection in the OS keychain from the
+	// command palette (also linked from the native Settings UI, which cannot edit secrets).
+	context.subscriptions.push(
+		vscode.commands.registerCommand('robert.setApiToken', async () => {
+			await errorHandler.executeWithErrorHandling(async () => {
+				await credentialsReady;
+				const kind = settingsManager.getSetting('provider');
+				const status = settingsManager.getCredentialStatus(kind);
+				const what = kind === 'jira' ? 'Jira API token' : 'Rally API key';
+				if (!status.connectionComplete) {
+					const action = await vscode.window.showWarningMessage(`Robert: ${status.incompleteReason ?? 'configure the connection first.'}`, 'Open Settings');
+					if (action) {
+						await webviewProvider.showSettings();
+					}
+					return;
+				}
+				const value = await vscode.window.showInputBox({
+					title: `Robert: ${what}`,
+					prompt: `Stored in the OS keychain for ${status.connectionLabel}${status.stored ? ' (replaces the stored one)' : ''}`,
+					password: true,
+					ignoreFocusOut: true,
+					validateInput: input => (input.trim() ? undefined : 'Enter a value')
+				});
+				if (value === undefined) {
+					return;
+				}
+				await SettingsService.forExtensionPath(context.extensionPath).setCredential(kind, value);
+				vscode.window.showInformationMessage(`Robert: ${what} stored in the OS keychain.`);
+			}, 'robert.setApiToken');
+		})
+	);
 
 	// Register command used by the status bar to open a small, lightweight popover
 	const openStatusPanelCommand = vscode.commands.registerCommand('robert.openStatusPanel', async () => {
@@ -258,6 +302,19 @@ export function activate(context: vscode.ExtensionContext) {
 	globalStatusBarItem = statusBarItem;
 	context.subscriptions.push(statusBarItem);
 
+	// Changing the provider, its connection or its credential reloads all data. Debounced:
+	// the settings dialog saves field by field, so editing a connection fires several changes.
+	const connectionKeys = ['robert.provider', ...connectionSettingKeys(readSettingsSchemaSafely(context.extensionPath))];
+	let reloadTimer: ReturnType<typeof setTimeout> | undefined;
+	const scheduleReload = (reason: string) => {
+		clearTimeout(reloadTimer);
+		reloadTimer = setTimeout(() => {
+			outputManager.appendLine(`[Robert] 🔀 ${reason} (provider: ${getProviderLabel()}); reloading data`);
+			reloadExtension(outputManager, errorHandler).catch(error => errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'connectionChange'));
+		}, 800);
+	};
+	context.subscriptions.push(new vscode.Disposable(() => clearTimeout(reloadTimer)));
+
 	// Refresh status bar when sprint-days setting changes
 	context.subscriptions.push(
 		vscode.workspace.onDidChangeConfiguration(e => {
@@ -267,12 +324,21 @@ export function activate(context: vscode.ExtensionContext) {
 			if (e.affectsConfiguration('robert.debugMode')) {
 				webviewProvider.broadcastTestTabVisibility();
 			}
-			if (e.affectsConfiguration('robert.provider')) {
-				outputManager.appendLine(`[Robert] 🔀 Provider changed to ${getProviderLabel()}; reloading data`);
-				reloadExtension(outputManager, errorHandler).catch(error => errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'providerChange'));
+			if (connectionKeys.some(key => e.affectsConfiguration(key))) {
+				scheduleReload('Connection settings changed');
 			}
 		})
 	);
+	// Only after the startup migration, which stores credentials itself.
+	void credentialsReady.then(() => {
+		context.subscriptions.push(
+			credentialStore.onDidChange(key => {
+				if (key === settingsManager.getCredentialStatus(getActiveProvider()).secretKey) {
+					scheduleReload('API credential changed');
+				}
+			})
+		);
+	});
 
 	// Refresh "X days left" every hour (uses in-memory jiraData only, no API)
 	context.subscriptions.push(scheduleStatusBarUpdateHourly(statusBarItem, errorHandler));

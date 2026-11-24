@@ -2,8 +2,9 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ConfigurationStore, type SecretCodec, SecureStorageUnavailableError, type SettingSchema } from './ConfigurationStore';
+import { ConfigurationStore, type SecretCodec, type SettingSchema } from './ConfigurationStore';
 import { FileMemento } from './FileMemento';
+import { SecretStore, SecureStorageUnavailableError } from './SecretStore';
 import { injectTheme, buildThemeCss } from './theme';
 import { Uri } from './Uri';
 import { createVscodeShim } from './vscodeShim';
@@ -11,7 +12,6 @@ import { createVscodeShim } from './vscodeShim';
 const SCHEMA: Record<string, SettingSchema> = {
 	'robert.provider': { type: 'string', default: 'jira', enum: ['jira', 'rally'] },
 	'robert.jiraEmail': { type: 'string', default: '' },
-	'robert.jiraApiToken': { type: 'string', default: '' },
 	'robert.debugMode': { type: 'boolean', default: false },
 	'robert.collaboration.enabled': { type: 'boolean', default: false }
 };
@@ -93,40 +93,19 @@ describe('ConfigurationStore', () => {
 		expect(new ConfigurationStore(file, SCHEMA).getUserValue('robert.provider')).toBeUndefined();
 	});
 
-	it('does not re-encrypt or report a secret that did not change', () => {
+	it('still decrypts API credentials stored as settings by older versions, so they can be migrated', () => {
 		const file = path.join(tmpDir, 'settings.json');
+		fs.writeFileSync(file, JSON.stringify({ 'robert.jiraApiToken': { __encrypted: fakeCodec.encrypt('top-secret') }, 'robert.jiraEmail': 'me@example.com' }));
 		const store = new ConfigurationStore(file, SCHEMA, fakeCodec);
-		expect(store.update({ 'robert.jiraApiToken': 'top-secret' })).toEqual(['robert.jiraApiToken']);
-		expect(store.update({ 'robert.jiraApiToken': 'top-secret' })).toEqual([]);
+		expect(store.getConfiguration('robert').inspect('jiraApiToken')?.globalValue).toBe('top-secret');
+
+		// Removing the legacy key works even though it is no longer in the schema.
+		expect(store.update({ 'robert.jiraApiToken': undefined })).toEqual(['robert.jiraApiToken']);
+		expect(fs.readFileSync(file, 'utf8')).not.toContain('jiraApiToken');
+		expect(store.getUserValue('robert.jiraEmail')).toBe('me@example.com');
 	});
 
-	it('encrypts secret settings at rest when a codec is available', () => {
-		const file = path.join(tmpDir, 'settings.json');
-		const store = new ConfigurationStore(file, SCHEMA, fakeCodec);
-		store.update({ 'robert.jiraApiToken': 'top-secret', 'robert.jiraEmail': 'me@example.com' });
-
-		const raw = fs.readFileSync(file, 'utf8');
-		expect(raw).not.toContain('top-secret');
-		expect(raw).toContain('me@example.com');
-		expect(new ConfigurationStore(file, SCHEMA, fakeCodec).getConfiguration('robert').get('jiraApiToken')).toBe('top-secret');
-	});
-
-	it('refuses to store secrets in plain text when secure storage is unavailable', () => {
-		const file = path.join(tmpDir, 'settings.json');
-		const unavailable: SecretCodec = { ...fakeCodec, isAvailable: () => false };
-		for (const codec of [unavailable, undefined]) {
-			const store = new ConfigurationStore(file, SCHEMA, codec);
-			expect(() => store.update({ 'robert.jiraEmail': 'me@example.com', 'robert.jiraApiToken': 'top-secret' })).toThrow(SecureStorageUnavailableError);
-			expect(() => store.update({ 'robert.jiraApiToken': 'top-secret' })).toThrow(/ROBERT_JIRA_API_TOKEN/);
-			// The whole batch is rejected and nothing reaches disk.
-			expect(fs.existsSync(file)).toBe(false);
-			expect(store.getConfiguration('robert').get('jiraEmail')).toBe('');
-			// Clearing a secret is still allowed.
-			expect(() => store.update({ 'robert.jiraApiToken': undefined })).not.toThrow();
-		}
-	});
-
-	it('treats an undecryptable secret as unset instead of throwing', () => {
+	it('treats an undecryptable legacy credential as unset instead of throwing', () => {
 		const file = path.join(tmpDir, 'settings.json');
 		fs.writeFileSync(file, JSON.stringify({ 'robert.jiraApiToken': { __encrypted: 'garbage' } }));
 		const brokenCodec: SecretCodec = {
@@ -136,13 +115,49 @@ describe('ConfigurationStore', () => {
 			}
 		};
 		const store = new ConfigurationStore(file, SCHEMA, brokenCodec);
-		expect(store.getConfiguration('robert').get('jiraApiToken')).toBe('');
+		expect(store.getConfiguration('robert').get('jiraApiToken')).toBeUndefined();
 	});
 
 	it('reads the schema from the real extension manifest', () => {
 		const schema = ConfigurationStore.readSchemaFromManifest(path.resolve(__dirname, '../../../package.json'));
 		expect(schema['robert.provider']?.enum).toEqual(['jira', 'rally']);
-		expect(schema['robert.jiraApiToken']).toBeDefined();
+		// Credentials are not settings any more: they live in the OS keychain.
+		expect(schema['robert.jiraApiToken']).toBeUndefined();
+		expect(schema['robert.rallyApiKey']).toBeUndefined();
+		expect(schema['robert.debugMode']?.scope).toBe('application');
+	});
+});
+
+describe('SecretStore', () => {
+	it('stores values encrypted at rest and reads them back', async () => {
+		const file = path.join(tmpDir, 'secrets.json');
+		const store = new SecretStore(file, fakeCodec);
+		const changes: string[] = [];
+		store.onDidChange(event => changes.push(event.key));
+
+		await store.store('robert.credential.jira:x', 'top-secret');
+		expect(fs.readFileSync(file, 'utf8')).not.toContain('top-secret');
+		expect(await new SecretStore(file, fakeCodec).get('robert.credential.jira:x')).toBe('top-secret');
+		expect(await store.keys()).toEqual(['robert.credential.jira:x']);
+
+		await store.delete('robert.credential.jira:x');
+		expect(await store.get('robert.credential.jira:x')).toBeUndefined();
+		expect(changes).toEqual(['robert.credential.jira:x', 'robert.credential.jira:x']);
+	});
+
+	it('refuses to store anything when the OS keychain is unavailable', async () => {
+		const file = path.join(tmpDir, 'secrets.json');
+		const store = new SecretStore(file, { ...fakeCodec, isAvailable: () => false });
+		await expect(store.store('k', 'top-secret')).rejects.toThrow(SecureStorageUnavailableError);
+		await expect(store.store('k', 'top-secret')).rejects.toThrow(/ROBERT_JIRA_API_TOKEN/);
+		expect(fs.existsSync(file)).toBe(false);
+	});
+
+	it('treats an undecryptable value as unset', async () => {
+		const file = path.join(tmpDir, 'secrets.json');
+		fs.writeFileSync(file, JSON.stringify({ k: 'garbage' }));
+		const store = new SecretStore(file, { ...fakeCodec, decrypt: () => { throw new Error('bad key'); } });
+		expect(await store.get('k')).toBeUndefined();
 	});
 });
 

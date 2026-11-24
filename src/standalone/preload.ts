@@ -2,7 +2,7 @@
  * Preload script for the standalone (Electron) app's windows.
  *
  * Exposes a VS Code compatible `acquireVsCodeApi()` so the React webview code
- * runs unchanged, and a small `robertSettings` bridge for the settings window.
+ * runs unchanged (the settings dialog is part of that UI).
  *
  * Runs in a sandboxed renderer, where `require` is limited to Electron's own
  * modules: keep this file free of local imports and top-level exports (the IPC
@@ -14,8 +14,6 @@
 
 	const IPC_TO_HOST = 'robert:webview:to-host';
 	const IPC_TO_PAGE = 'robert:webview:to-page';
-	const IPC_SETTINGS_GET = 'robert:settings:get';
-	const IPC_SETTINGS_SAVE = 'robert:settings:save';
 	const STATE_KEY = '__robertWebviewState';
 
 	// Host → page: VS Code webviews receive messages as window "message" events.
@@ -48,10 +46,5 @@
 				return state;
 			}
 		};
-	});
-
-	contextBridge.exposeInMainWorld('robertSettings', {
-		get: () => ipcRenderer.invoke(IPC_SETTINGS_GET),
-		save: (values: Record<string, unknown>) => ipcRenderer.invoke(IPC_SETTINGS_SAVE, values)
 	});
 })();

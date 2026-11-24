@@ -22,6 +22,10 @@ export function setSettingsHostInfo(info: SettingsHostInfo): void {
 	hostInfo = info;
 }
 
+export function getSettingsHostInfo(): SettingsHostInfo {
+	return hostInfo;
+}
+
 /** Settings that must be valid HTTPS URLs. */
 const HTTPS_SETTINGS = new Set(['robert.jiraBaseUrl', 'robert.rallyInstance']);
 /** Settings that must be valid URLs (any scheme). */

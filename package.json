@@ -148,7 +148,7 @@
 			},
 			{
 				"command": "robert.openInEditor",
-				"title": "Open in Editor",
+				"title": "Open as Editor",
 				"category": "Robert",
 				"icon": "$(screen-full)"
 			},

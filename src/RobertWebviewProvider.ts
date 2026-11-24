@@ -482,6 +482,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		this._disposables.push(subscription);
 	}
 
+	/** Robert's logo for editor tabs (the stock webview tab shows a generic file icon). */
+	private _panelIconPath(): { light: vscode.Uri; dark: vscode.Uri } {
+		return {
+			light: vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo-simple.png'),
+			dark: vscode.Uri.joinPath(this._extensionUri, 'resources', 'icons', 'robert-logo-simple-dark.png')
+		};
+	}
+
 	public async createWebviewPanel(): Promise<vscode.WebviewPanel> {
 		return (
 			(await this._errorHandler.executeWithErrorHandling(async () => {
@@ -501,6 +509,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					retainContextWhenHidden: true,
 					localResourceRoots: [this._extensionUri]
 				});
+				panel.iconPath = this._panelIconPath();
 
 				this._currentPanel = panel;
 				setProviderBroadcaster(msg => this.broadcastToWebviews(msg));
@@ -534,11 +543,14 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 
 				return panel;
 			}, 'createWebviewPanel')) ||
-			vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — 🐞' : 'Robert', vscode.ViewColumn.One, {
-				enableScripts: true,
-				retainContextWhenHidden: true,
-				localResourceRoots: [this._extensionUri]
-			})
+			Object.assign(
+				vscode.window.createWebviewPanel('robert.mainPanel', this._isDebugMode ? 'Robert — 🐞' : 'Robert', vscode.ViewColumn.One, {
+					enableScripts: true,
+					retainContextWhenHidden: true,
+					localResourceRoots: [this._extensionUri]
+				}),
+				{ iconPath: this._panelIconPath() }
+			)
 		);
 	}
 

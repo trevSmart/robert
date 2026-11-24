@@ -1,5 +1,9 @@
 ## Unreleased
 
+### Attachments
+* Show the files attached to a user story (new **Attachments** tab in Related Records, with its count) and to a defect (new **Attachments** card), for both Jira and Rally
+* Each file shows its name, size, author and date, with a preview for images; clicking it opens the file in the browser with your Jira / Rally session. Only links on the configured Jira site / Rally instance are opened
+
 ### UI
 * Add a "More actions" menu (⋮) at the right end of the main tab bar with **Settings**, **Open as Editor** (sidebar view only) and **Reload**. The view's title bar menu is not available in an editor tab or in the standalone app, so the settings dialog could not be opened from there. The menu stays pinned to the right, apart from the "…" menu of tabs that do not fit
 * Rename **Open in Editor** to **Open as Editor** (`robert.openInEditor`, also in the view title bar)

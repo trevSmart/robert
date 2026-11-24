@@ -96,7 +96,7 @@ interface PortfolioViewProps {
 	_defectsLoadingMore?: boolean;
 	_onLoadMoreDefects?: () => void;
 	_selectedDefect: JiraDefect | null;
-	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions';
+	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions' | 'attachments';
 	currentScreen: ScreenType;
 	onLoadIterations: () => void;
 	onIterationSelected: (iteration: Iteration) => void;
@@ -110,7 +110,7 @@ interface PortfolioViewProps {
 	onBackToIterations: () => void;
 	onBackToUserStories: () => void;
 	_onBackToDefects: () => void;
-	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
+	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions' | 'attachments') => void;
 }
 
 // Portfolio View Components
@@ -599,7 +599,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const [tasks, setTasks] = useState<JiraTask[]>([]);
 	const [tasksLoading, setTasksLoading] = useState(false);
 	const [tasksError, setTasksError] = useState<string | null>(null);
-	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests' | 'defects' | 'discussions'>('tasks');
+	const [activeUserStoryTab, setActiveUserStoryTab] = useState<'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions' | 'attachments'>('tasks');
 
 	const [defects, setDefects] = useState<JiraDefect[]>([]);
 	const [defectsLoading, setDefectsLoading] = useState(false);
@@ -2154,7 +2154,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 							selectedIterationId?: string;
 							selectedUserStoryId?: string;
 							selectedDefectId?: string;
-							activeUserStoryTab?: 'tasks' | 'tests' | 'defects' | 'discussions';
+							activeUserStoryTab?: 'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions' | 'attachments';
 							globalSearchTerm?: string;
 							homeDate?: string;
 						};

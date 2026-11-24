@@ -60,6 +60,7 @@ export const getDefectByObjectId = route(jira.getDefectByObjectId, rally.getDefe
 export const getTaskWithParent = route(jira.getTaskWithParent, rally.getTaskWithParent);
 export const getUserStoryRevisions = route(jira.getUserStoryRevisions, rally.getUserStoryRevisions);
 export const getUserStoryRevisionsCount = route(jira.getUserStoryRevisionsCount, rally.getUserStoryRevisionsCount);
+export const getAttachments = route(jira.getAttachments, rally.getAttachments);
 export const fetchImageAsBase64 = route(jira.fetchJiraImageAsBase64, rally.fetchRallyImageAsBase64);
 /** Jira only: Rally's TaskEstimateTotal is a read-only roll-up (its implementation throws). */
 export const updateUserStoryEstimatedHours = route(jira.updateUserStoryEstimatedHours, rally.updateUserStoryEstimatedHours);
@@ -101,6 +102,26 @@ export function setProviderBroadcaster(fn: ((message: { command: string; label?:
 export function clearAllProviderCaches(): void {
 	jira.clearAllJiraCaches();
 	rally.clearAllRallyCaches();
+}
+
+/**
+ * True when `url` is an https URL on the active provider's configured host
+ * (Rally also serves from subdomains of the instance). Used to refuse opening
+ * arbitrary URLs that come back from the webview.
+ */
+export function isActiveProviderUrl(url: string): boolean {
+	const configured = SettingsManager.getInstance().getSetting(isRally() ? 'rallyInstance' : 'jiraBaseUrl');
+	if (!configured) {
+		return false;
+	}
+	try {
+		const target = new URL(url);
+		const baseHost = new URL(configured).hostname.toLowerCase();
+		const host = target.hostname.toLowerCase();
+		return target.protocol === 'https:' && (host === baseHost || (isRally() && host.endsWith(`.${baseHost}`)));
+	} catch {
+		return false;
+	}
 }
 
 /**

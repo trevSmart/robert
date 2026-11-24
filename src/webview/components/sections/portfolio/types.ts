@@ -57,7 +57,7 @@ export interface PortfolioViewProps {
 	defectsLoadingMore?: boolean;
 	onLoadMoreDefects?: () => void;
 	selectedDefect: JiraDefect | null;
-	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions';
+	activeUserStoryTab: 'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions' | 'attachments';
 	currentScreen: ScreenType;
 	onLoadIterations: () => void;
 	onIterationSelected: (iteration: PortfolioIteration) => void;
@@ -71,7 +71,7 @@ export interface PortfolioViewProps {
 	onBackToIterations: () => void;
 	onBackToUserStories: () => void;
 	onBackToDefects: () => void;
-	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions') => void;
+	onActiveUserStoryTabChange: (tab: 'tasks' | 'tests' | 'defects' | 'discussions' | 'revisions' | 'attachments') => void;
 	collaborationEnabled?: boolean;
 	/** Filtres del llistat All User Stories. Sense `onUserStoryFiltersChange` no es mostren. */
 	userStoryFilters?: UserStoryFilters;

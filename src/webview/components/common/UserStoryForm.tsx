@@ -10,6 +10,7 @@ import RevisionDescription from './RevisionDescription';
 import RevisionTimeline from './RevisionTimeline';
 import ResizableDescription from './ResizableDescription';
 import EstimatedHoursField from './EstimatedHoursField';
+import IssueFieldsCard from './IssueFieldsCard';
 import AttachmentsList, { AttachmentIcon, useAttachments } from './AttachmentsList';
 import { useProvider } from '../../utils/providerState';
 import './CollapsibleCard';
@@ -538,6 +539,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					</div>
 				</div>
 			</collapsible-card>
+			<IssueFieldsCard objectId={userStory.objectId} />
 			<collapsible-card title="Related Records" style={{ margin: '20px 0' } as React.CSSProperties}>
 				<div>
 					<div

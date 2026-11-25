@@ -105,7 +105,7 @@ Robert/
 
 ### Persistència
 - Settings es guarden als `settings.json` de VS Code. El diàleg de settings propi de Robert (`robert.openSettings`, compartit amb l'app standalone) escriu a nivell **Workspace** per defecte, o **User** si es tria; cada camp es desa per separat.
-- Settings amb `"scope": "application"` (`debugMode`, `showWelcomeAnimation`) només existeixen a nivell User.
+- Tots els settings es poden desar a nivell User o Workspace. Si mai se'n declara un amb `"scope": "application"`, el diàleg el mostra només de lectura a Workspace, amb l'enllaç «Edit in User».
 - Els tokens API (`jiraApiToken`, `rallyApiKey`) **no són settings**: es guarden al clauer del sistema (`context.secrets` / `SecretStore` a l'app) per connexió, via `src/settings/CredentialStore.ts`. Els tokens que versions antigues deixaven al `settings.json` es migren automàticament (`src/settings/legacyCredentialMigration.ts`).
 
 ### Resolució de Configuració (Prioritat)
@@ -308,7 +308,7 @@ Robert es distribueix en **dues versions que s'han de mantenir totes dues**: l'e
 1. La lògica de producte va sempre al codi compartit (`src/webview/**`, message handlers, `src/libs/**`), mai a `src/standalone/` ni només a `src/extension.ts`.
 2. Si el codi compartit comença a fer servir una API nova de `vscode`, cal afegir-la al shim (o fer-ne un no-op / error clar) i ampliar `src/standalone/host/sharedCodeOnShim.test.ts`.
 3. Si la UI fa servir una variable CSS `--vscode-*` nova, cal afegir-la a les dues paletes de `src/standalone/host/theme.ts` (el test `host.test.ts` falla si en falta alguna).
-4. Els settings nous es declaren com sempre al `package.json` (el diàleg de settings es genera a partir d'aquí); si no tenen sentit per workspace, posa'ls `"scope": "application"`. Els secrets mai són settings: es desen amb `CredentialStore`.
+4. Els settings nous es declaren com sempre al `package.json` (el diàleg de settings es genera a partir d'aquí); només si de debò no poden variar per workspace, posa'ls `"scope": "application"`. Els secrets mai són settings: es desen amb `CredentialStore`.
 5. Comprova els canvis a les dues versions (F5 per l'extensió, `npm run standalone:start` per l'app).
 
 Documentació completa: [docs/STANDALONE.md](docs/STANDALONE.md)

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
-import type { CredentialFieldModel, SettingFieldModel, SettingsResultMessage, SettingsScope, SettingsStateMessage } from '../../../settings/protocol';
+import type { AboutModel, CredentialFieldModel, SettingFieldModel, SettingsResultMessage, SettingsScope, SettingsStateMessage } from '../../../settings/protocol';
 import { getVsCodeApi } from '../../utils/vscodeApi';
 import Select from '../common/Select';
 
@@ -21,6 +21,24 @@ import Select from '../common/Select';
 type FieldStatus = { state: 'saving' | 'saved' | 'error'; message?: string };
 
 const SCOPE_LABEL: Record<SettingsScope, string> = { user: 'User', workspace: 'Workspace' };
+
+const PROVIDER_KEY = 'robert.provider';
+const PROVIDER_LABEL: Record<string, string> = { jira: 'Jira', rally: 'Rally' };
+/** Group holding the connection settings (and credential) of each provider. */
+const PROVIDER_GROUP: Record<string, string> = { jira: 'Jira Cloud', rally: 'Rally' };
+
+type SectionId = 'provider' | 'general' | 'collaboration' | 'about';
+
+/** Tabs of the dialog and the setting groups each one shows. Groups not listed here fall back to General. */
+const SECTIONS: ReadonlyArray<{ id: SectionId; label: string; groups: string[] }> = [
+	{ id: 'provider', label: 'Provider', groups: ['Provider', ...Object.values(PROVIDER_GROUP)] },
+	{ id: 'general', label: 'General', groups: ['General'] },
+	{ id: 'collaboration', label: 'Collaboration', groups: ['Collaboration'] },
+	// No settings: version, host and links.
+	{ id: 'about', label: 'About', groups: [] }
+];
+
+const sectionForGroup = (group: string): SectionId => SECTIONS.find(section => section.groups.includes(group))?.id ?? 'general';
 let requestCounter = 0;
 const nextRequestId = () => `settings-${Date.now()}-${++requestCounter}`;
 
@@ -37,6 +55,12 @@ function inheritedFor(field: SettingFieldModel, scope: SettingsScope): { value: 
 	if (scope === 'workspace' && isSet(field.values.user)) return { value: field.values.user, source: 'User settings' };
 	if (field.env.isSet) return { value: field.env.value, source: field.env.name };
 	return { value: field.defaultValue, source: 'default' };
+}
+
+/** Value a field shows in a scope: its own value there, or what it inherits. */
+function shownValueFor(field: SettingFieldModel, scope: SettingsScope): unknown {
+	const scopeValue = scope === 'workspace' ? field.values.workspace : field.values.user;
+	return scopeValue !== undefined ? scopeValue : inheritedFor(field, scope).value;
 }
 
 const fadeIn = keyframes`
@@ -66,7 +90,8 @@ const Panel = styled.div`
 	display: flex;
 	flex-direction: column;
 	width: min(760px, 100%);
-	max-height: 100%;
+	/* Fixed height so switching tabs (or providers) does not resize the dialog. */
+	height: min(720px, 100%);
 	background: var(--vscode-editor-background);
 	color: var(--vscode-foreground);
 	border: 1px solid var(--vscode-widget-border);
@@ -108,14 +133,15 @@ const IconButton = styled.button`
 	}
 `;
 
-const ScopeTabs = styled.div`
+const SectionTabs = styled.div`
 	display: flex;
 	gap: 4px;
 	padding: 10px 18px 0;
 	border-bottom: 1px solid var(--vscode-panel-border);
+	overflow-x: auto;
 `;
 
-const ScopeTab = styled.button<{ $active: boolean }>`
+const SectionTab = styled.button<{ $active: boolean }>`
 	border: none;
 	background: transparent;
 	padding: 6px 10px 7px;
@@ -134,13 +160,166 @@ const ScopeTab = styled.button<{ $active: boolean }>`
 	}
 `;
 
-const ScopeHint = styled.p`
-	margin: 0;
+const ScopeBar = styled.div`
+	display: flex;
+	justify-content: center;
 	padding: 10px 18px;
+	border-bottom: 1px solid var(--vscode-panel-border);
+`;
+
+const ScopeLine = styled.div`
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	flex-wrap: wrap;
 	font-size: 12px;
 	color: var(--vscode-descriptionForeground);
-	border-bottom: 1px solid var(--vscode-panel-border);
+`;
+
+const InfoButton = styled.button`
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: none;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--vscode-descriptionForeground);
+	cursor: help;
+	&:hover {
+		color: var(--vscode-foreground);
+	}
+	&:focus-visible {
+		outline: 1px solid var(--vscode-focusBorder);
+	}
+`;
+
+const InfoTooltip = styled.span`
+	position: fixed;
+	z-index: 10002;
+	width: max-content;
+	padding: 6px 9px;
+	font-size: 11.5px;
+	font-weight: 400;
+	line-height: 1.4;
+	text-align: left;
+	text-transform: none;
+	letter-spacing: normal;
+	color: var(--vscode-foreground);
+	background: var(--vscode-editor-background);
+	border: 1px solid var(--vscode-widget-border);
+	border-radius: 4px;
+	box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
 	word-break: break-word;
+	white-space: normal;
+	pointer-events: none;
+`;
+
+const TOOLTIP_MAX_WIDTH = 320;
+const TOOLTIP_MARGIN = 8;
+
+/**
+ * Info icon that shows `text` as a tooltip on hover or keyboard focus. The tooltip is
+ * portalled to <body> with fixed positioning and kept inside the window, so the dialog's
+ * scrolling body neither clips it nor scrolls sideways in a narrow sidebar.
+ */
+function InfoTip({ text, label }: { text: string; label: string }) {
+	const tooltipId = useId();
+	const [position, setPosition] = useState<React.CSSProperties | null>(null);
+
+	const show = (anchor: HTMLElement) => {
+		const rect = anchor.getBoundingClientRect();
+		const maxWidth = Math.min(TOOLTIP_MAX_WIDTH, window.innerWidth - 2 * TOOLTIP_MARGIN);
+		const center = rect.left + rect.width / 2;
+		const left = Math.min(Math.max(center - maxWidth / 2, TOOLTIP_MARGIN), window.innerWidth - maxWidth - TOOLTIP_MARGIN);
+		// Below the icon, or above it when it sits near the bottom of the window.
+		const vertical = rect.bottom + 120 > window.innerHeight ? { bottom: window.innerHeight - rect.top + 6 } : { top: rect.bottom + 6 };
+		setPosition({ left, maxWidth, ...vertical });
+	};
+	const hide = useCallback(() => setPosition(null), []);
+
+	useEffect(() => {
+		if (!position) return;
+		// The icon moves when the dialog scrolls or resizes: hide instead of following it.
+		window.addEventListener('scroll', hide, true);
+		window.addEventListener('resize', hide);
+		return () => {
+			window.removeEventListener('scroll', hide, true);
+			window.removeEventListener('resize', hide);
+		};
+	}, [position, hide]);
+
+	return (
+		<>
+			<InfoButton
+				type="button"
+				aria-label={label}
+				aria-describedby={position ? tooltipId : undefined}
+				onMouseEnter={event => show(event.currentTarget)}
+				onMouseLeave={hide}
+				onFocus={event => show(event.currentTarget)}
+				onBlur={hide}
+				onKeyDown={event => {
+					if (event.key === 'Escape' && position) {
+						// Close the tooltip, not the dialog.
+						event.stopPropagation();
+						hide();
+					}
+				}}
+			>
+				<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" width="15" height="15" aria-hidden>
+					<path strokeLinecap="round" strokeLinejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+				</svg>
+			</InfoButton>
+			{position &&
+				createPortal(
+					<InfoTooltip id={tooltipId} role="tooltip" style={position}>
+						{text}
+					</InfoTooltip>,
+					document.body
+				)}
+		</>
+	);
+}
+
+const Segmented = styled.div`
+	display: inline-flex;
+	flex-wrap: wrap;
+	gap: 2px;
+	padding: 2px;
+	border: 1px solid var(--vscode-widget-border);
+	border-radius: 5px;
+	background: var(--vscode-input-background);
+	max-width: 100%;
+`;
+
+const SegmentButton = styled.button<{ $active: boolean }>`
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	border: none;
+	border-radius: 3px;
+	padding: 4px 14px;
+	font-size: 12.5px;
+	cursor: pointer;
+	font-weight: ${p => (p.$active ? 600 : 400)};
+	background: ${p => (p.$active ? 'var(--vscode-button-background)' : 'transparent')};
+	color: ${p => (p.$active ? 'var(--vscode-button-foreground)' : 'var(--vscode-foreground)')};
+	&:hover:not(:disabled) {
+		background: ${p => (p.$active ? 'var(--vscode-button-hoverBackground)' : 'var(--vscode-toolbar-hoverBackground)')};
+	}
+	&:disabled {
+		cursor: not-allowed;
+		opacity: 0.5;
+	}
+	&:focus-visible {
+		outline: 1px solid var(--vscode-focusBorder);
+		outline-offset: 1px;
+	}
 `;
 
 const LinkButton = styled.button`
@@ -160,6 +339,8 @@ const LinkButton = styled.button`
 `;
 
 const Body = styled.div`
+	flex: 1;
+	min-height: 0;
 	overflow-y: auto;
 	padding: 4px 18px 18px;
 	overscroll-behavior: contain;
@@ -179,10 +360,9 @@ const GroupTitle = styled.h3`
 	border-bottom: 1px solid var(--vscode-panel-border);
 `;
 
-const GroupTag = styled.span`
-	text-transform: none;
-	letter-spacing: 0;
-	font-weight: 400;
+/** Settings under a group divider, indented from it. */
+const GroupContent = styled.div<{ $indented: boolean }>`
+	padding: 0 ${p => (p.$indented ? '14px' : '0')};
 `;
 
 const Row = styled.div`
@@ -191,14 +371,14 @@ const Row = styled.div`
 
 const RowHead = styled.div`
 	display: flex;
-	align-items: baseline;
-	gap: 8px;
+	align-items: center;
+	gap: 6px;
 	flex-wrap: wrap;
 `;
 
 const Label = styled.label`
-	font-weight: 600;
-	font-size: 13px;
+	font-weight: 500;
+	font-size: 11px;
 `;
 
 const Badge = styled.span<{ $tone?: 'info' | 'warning' | 'muted' }>`
@@ -247,15 +427,12 @@ const Input = styled.input`
 	}
 `;
 
-const CheckboxLine = styled.label`
-	display: flex;
-	gap: 8px;
-	align-items: flex-start;
+const Checkbox = styled.input`
+	margin: 0;
+	flex: none;
 	cursor: pointer;
-	font-size: 12px;
-	color: var(--vscode-descriptionForeground);
-	input {
-		margin: 2px 0 0;
+	&:disabled {
+		cursor: default;
 	}
 `;
 
@@ -304,21 +481,82 @@ function StatusNote({ status }: { status?: FieldStatus }) {
 	return <Note>{status.state === 'saving' ? 'Saving…' : 'Saved'}</Note>;
 }
 
+interface SegmentOption {
+	value: string;
+	label: string;
+	/** Codicon name shown before the label (e.g. `person`). */
+	icon?: string;
+	disabled?: boolean;
+	title?: string;
+}
+
+/** A row of mutually exclusive buttons (radio group), for short choices like the provider or the scope. */
+function SegmentedControl({ id, options, value, ariaLabel, onChange }: { id?: string; options: SegmentOption[]; value: string; ariaLabel: string; onChange: (value: string) => void }) {
+	const enabled = options.filter(option => !option.disabled);
+	return (
+		<Segmented
+			id={id}
+			role="radiogroup"
+			aria-label={ariaLabel}
+			onKeyDown={event => {
+				if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+				const index = enabled.findIndex(option => option.value === value);
+				const next = enabled[(index + (event.key === 'ArrowRight' ? 1 : -1) + enabled.length) % enabled.length];
+				if (!next || next.value === value) return;
+				event.preventDefault();
+				const group = event.currentTarget;
+				onChange(next.value);
+				requestAnimationFrame(() => group.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus());
+			}}
+		>
+			{options.map(option => {
+				const active = option.value === value;
+				return (
+					<SegmentButton
+						key={option.value}
+						type="button"
+						role="radio"
+						aria-checked={active}
+						tabIndex={active ? 0 : -1}
+						$active={active}
+						disabled={option.disabled}
+						title={option.title}
+						onClick={() => {
+							if (!active) onChange(option.value);
+						}}
+					>
+						{option.icon && <i className={`codicon codicon-${option.icon}`} aria-hidden />}
+						{option.label}
+					</SegmentButton>
+				);
+			})}
+		</Segmented>
+	);
+}
+
 interface SettingRowProps {
 	field: SettingFieldModel;
 	scope: SettingsScope;
 	/** The standalone app has a single scope: no need to name it. */
 	singleScope: boolean;
 	status?: FieldStatus;
+	/** Value to show instead of the stored one while a change is being saved. */
+	pendingValue?: unknown;
 	onSave: (field: SettingFieldModel, value: unknown) => void;
+	/**
+	 * Set when the setting cannot be written to the selected scope (User-only settings
+	 * while Workspace is selected): the row shows the value in effect, read-only.
+	 */
+	onSwitchToUser?: () => void;
 }
 
-function SettingRow({ field, scope, singleScope, status, onSave }: SettingRowProps) {
+function SettingRow({ field, scope, singleScope, status, pendingValue, onSave, onSwitchToUser }: SettingRowProps) {
 	const id = useId();
+	const readOnly = onSwitchToUser !== undefined;
 	const scopeValue = scope === 'workspace' ? field.values.workspace : field.values.user;
 	const hasScopeValue = scopeValue !== undefined;
 	const inherited = inheritedFor(field, scope);
-	const shownValue = hasScopeValue ? scopeValue : inherited.value;
+	const shownValue = pendingValue !== undefined ? pendingValue : hasScopeValue ? scopeValue : inherited.value;
 
 	// Text / number fields keep a local draft while focused and save on blur / Enter.
 	// `baseline` is the stored value when editing started, to notice changes made elsewhere meanwhile.
@@ -341,15 +579,14 @@ function SettingRow({ field, scope, singleScope, status, onSave }: SettingRowPro
 
 	let control: React.ReactNode;
 	if (field.type === 'boolean') {
-		control = (
-			<CheckboxLine>
-				<input id={id} type="checkbox" checked={Boolean(shownValue)} onChange={event => onSave(field, event.target.checked)} />
-				<span>{field.description}</span>
-			</CheckboxLine>
-		);
+		// Rendered in the row head, next to its label.
+		control = null;
+	} else if (field.key === PROVIDER_KEY && field.enum) {
+		const options = field.enum.map(value => ({ value, label: PROVIDER_LABEL[value] ?? value, disabled: readOnly }));
+		control = <SegmentedControl id={id} options={options} value={String(shownValue ?? field.enum[0])} onChange={value => onSave(field, value)} ariaLabel={field.label} />;
 	} else if (field.enum) {
 		const options = field.enum.map((value, index) => ({ value, label: field.enumDescriptions?.[index] ? `${value} — ${field.enumDescriptions[index]}` : value }));
-		control = <Select id={id} value={String(shownValue ?? field.enum[0])} options={options} onChange={value => onSave(field, value)} ariaLabel={field.label} />;
+		control = <Select id={id} value={String(shownValue ?? field.enum[0])} options={options} onChange={value => onSave(field, value)} ariaLabel={field.label} disabled={readOnly} />;
 	} else {
 		const isNumber = field.type === 'number' || field.type === 'integer';
 		control = (
@@ -360,6 +597,7 @@ function SettingRow({ field, scope, singleScope, status, onSave }: SettingRowPro
 				max={field.maximum}
 				spellCheck={false}
 				autoComplete="off"
+				disabled={readOnly}
 				value={draft !== null ? draft.text : hasScopeValue ? String(scopeValue ?? '') : ''}
 				placeholder={isSet(inherited.value) ? `${formatValue(inherited.value)} (${inherited.source})` : 'Not set'}
 				onFocus={() => setDraft({ text: hasScopeValue ? String(scopeValue ?? '') : '', baseline: scopeValue })}
@@ -385,17 +623,24 @@ function SettingRow({ field, scope, singleScope, status, onSave }: SettingRowPro
 	return (
 		<Row>
 			<RowHead>
-				<Label htmlFor={id}>{field.label}</Label>
-				{hasScopeValue ? <Badge $tone="info">{singleScope ? 'Set' : `Set in ${SCOPE_LABEL[scope]}`}</Badge> : <Badge $tone="muted">{inherited.source === 'default' ? 'Default' : `From ${inherited.source}`}</Badge>}
+				{field.type === 'boolean' && <Checkbox id={id} type="checkbox" checked={Boolean(shownValue)} disabled={readOnly} onChange={event => onSave(field, event.target.checked)} />}
+				{field.key === PROVIDER_KEY ? <Label as="span">{field.label}</Label> : <Label htmlFor={id}>{field.label}</Label>}
+				{field.description && <InfoTip label={`About ${field.label}`} text={field.description} />}
 				<Spacer />
-				{hasScopeValue && (
-					<LinkButton type="button" onClick={() => onSave(field, null)} title={singleScope ? 'Remove the value (use the environment variable or the default)' : `Remove the value from ${SCOPE_LABEL[scope]} settings`}>
-						Reset
+				{readOnly ? (
+					<LinkButton type="button" onClick={onSwitchToUser} title="Show User settings, where this setting can be changed">
+						Edit in User
 					</LinkButton>
+				) : (
+					hasScopeValue && (
+						<LinkButton type="button" onClick={() => onSave(field, null)} title={singleScope ? 'Remove the value (use the environment variable or the default)' : `Remove the value from ${SCOPE_LABEL[scope]} settings`}>
+							Reset
+						</LinkButton>
+					)
 				)}
 			</RowHead>
-			{field.type !== 'boolean' && field.description && <Description>{field.description}</Description>}
 			{control}
+			{readOnly && <Note>Only in User settings: it applies to every workspace. Showing the value in effect.</Note>}
 			{overriddenBy !== undefined && <Note $tone="warning">This workspace overrides it with: {formatValue(overriddenBy)}</Note>}
 			{changedElsewhere && <Note $tone="warning">Changed outside this dialog while you were editing (now: {formatValue(scopeValue)}). Saving keeps your text.</Note>}
 			<StatusNote status={status} />
@@ -437,6 +682,7 @@ function CredentialRow({ credential, status, onStore, onClear }: CredentialRowPr
 		<Row>
 			<RowHead>
 				<Label htmlFor={id}>{credential.label}</Label>
+				<InfoTip label={`About ${credential.label}`} text={`Saved in the OS keychain for ${credential.connectionLabel}, never in a settings file. Every workspace that uses this connection shares it.`} />
 				{sourceBadge}
 				<Spacer />
 				{credential.stored && (
@@ -445,7 +691,7 @@ function CredentialRow({ credential, status, onStore, onClear }: CredentialRowPr
 					</LinkButton>
 				)}
 			</RowHead>
-			<Description>{disabled ? credential.incompleteReason : <>Saved in the OS keychain for {credential.connectionLabel}, never in a settings file. Every workspace that uses this connection shares it.</>}</Description>
+			{disabled && <Description>{credential.incompleteReason}</Description>}
 			<InlineControls>
 				<Input
 					id={id}
@@ -471,11 +717,93 @@ function CredentialRow({ credential, status, onStore, onClear }: CredentialRowPr
 	);
 }
 
+const AboutHead = styled.div`
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin: 18px 0 16px;
+`;
+
+const AboutLogo = styled.img`
+	width: 48px;
+	height: 48px;
+	border-radius: 10px;
+	flex: none;
+`;
+
+const AboutName = styled.div`
+	font-size: 15px;
+	font-weight: 600;
+`;
+
+const AboutList = styled.dl`
+	display: grid;
+	grid-template-columns: max-content 1fr;
+	gap: 6px 16px;
+	margin: 0 0 16px;
+	font-size: 12px;
+	dt {
+		color: var(--vscode-descriptionForeground);
+	}
+	dd {
+		margin: 0;
+		word-break: break-word;
+	}
+`;
+
+const AboutLinks = styled.div`
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px 18px;
+	font-size: 12px;
+	a {
+		color: var(--vscode-textLink-foreground);
+		text-decoration: none;
+	}
+	a:hover {
+		text-decoration: underline;
+	}
+`;
+
+function AboutSection({ about, onShowLogs }: { about: AboutModel; onShowLogs: () => void }) {
+	const logo = typeof window !== 'undefined' ? window.rebusLogoUri : undefined;
+	return (
+		<section>
+			<AboutHead>
+				{logo && !logo.startsWith('__') && <AboutLogo src={logo} alt="" />}
+				<div>
+					<AboutName>{about.name}</AboutName>
+					{about.description && <Description>{about.description}</Description>}
+				</div>
+			</AboutHead>
+			<AboutList>
+				<dt>Version</dt>
+				<dd>{about.version || 'unknown'}</dd>
+				<dt>Running in</dt>
+				<dd>{about.host}</dd>
+			</AboutList>
+			<AboutLinks>
+				{about.links.map(link => (
+					<a key={link.url} href={link.url} target="_blank" rel="noreferrer">
+						{link.label}
+					</a>
+				))}
+				<LinkButton type="button" onClick={onShowLogs}>
+					Show logs
+				</LinkButton>
+			</AboutLinks>
+		</section>
+	);
+}
+
 export function SettingsDialog() {
 	const vscode = useMemo(() => getVsCodeApi(), []);
 	const [open, setOpen] = useState(false);
 	const [state, setState] = useState<SettingsStateMessage | null>(null);
 	const [scope, setScope] = useState<SettingsScope | null>(null);
+	const [section, setSection] = useState<SectionId>('provider');
+	// Provider picked with the toggle, shown until the host confirms it with a fresh state.
+	const [providerChoice, setProviderChoice] = useState<string | null>(null);
 	const [statuses, setStatuses] = useState<Record<string, FieldStatus>>({});
 	const pendingRef = useRef(new Map<string, string>());
 	const panelRef = useRef<HTMLDivElement>(null);
@@ -496,9 +824,11 @@ export function SettingsDialog() {
 					break;
 				case 'settingsState':
 					setState(message as SettingsStateMessage);
+					setProviderChoice(null);
 					break;
 				case 'settingsResult': {
 					const result = message as SettingsResultMessage;
+					if (!result.ok) setProviderChoice(null);
 					const fieldKey = pendingRef.current.get(result.requestId);
 					if (!fieldKey) break;
 					pendingRef.current.delete(result.requestId);
@@ -533,25 +863,47 @@ export function SettingsDialog() {
 	// The host's default scope until the user picks one; User when no workspace is open (any more).
 	const activeScope: SettingsScope = scope !== null && (scope === 'user' || state?.host.hasWorkspace) ? scope : (state?.host.defaultScope ?? 'user');
 
-	const saveSetting = useCallback((field: SettingFieldModel, value: unknown) => send(`${activeScope}:${field.key}`, { command: 'settingsUpdate', key: field.key, scope: activeScope, value }), [send, activeScope]);
+	const saveSetting = useCallback(
+		(field: SettingFieldModel, value: unknown) => {
+			if (field.key === PROVIDER_KEY) setProviderChoice(value === null ? null : String(value));
+			send(`${activeScope}:${field.key}`, { command: 'settingsUpdate', key: field.key, scope: activeScope, value });
+		},
+		[send, activeScope]
+	);
 	const storeCredential = useCallback((credential: CredentialFieldModel, value: string) => send(`credential:${credential.id}`, { command: 'settingsSetSecret', id: credential.id, value }), [send]);
 	const clearCredential = useCallback((credential: CredentialFieldModel) => send(`credential:${credential.id}`, { command: 'settingsClearSecret', id: credential.id }), [send]);
 
 	if (!open) return null;
 
 	const host = state?.host;
-	const visibleFields = state?.fields.filter(field => field.scopes.includes(activeScope)) ?? [];
-	const userOnlyFields = state?.fields.filter(field => !field.scopes.includes(activeScope)) ?? [];
-	const activeProvider = state?.fields.find(field => field.key === 'robert.provider')?.effectiveValue;
-	const inactiveGroup = activeProvider === 'rally' ? 'Jira Cloud' : activeProvider === 'jira' ? 'Rally' : undefined;
+	const singleScope = host?.kind === 'standalone';
+	const providerField = state?.fields.find(field => field.key === PROVIDER_KEY);
+	// The Provider tab only shows the connection settings of the provider selected in the toggle.
+	const selectedProvider = String(providerChoice ?? (providerField ? shownValueFor(providerField, activeScope) : undefined) ?? 'jira');
+	const hiddenProviderGroups = Object.entries(PROVIDER_GROUP)
+		.filter(([provider]) => provider !== selectedProvider)
+		.map(([, group]) => group);
+	const sectionGroups = (state?.groups ?? []).filter(group => sectionForGroup(group) === section && !hiddenProviderGroups.includes(group));
+	const sectionFields = state?.fields.filter(field => sectionGroups.includes(field.group)) ?? [];
+	// Every field is listed in every scope; those that cannot be written to the selected scope are read-only.
+	const visibleFields = sectionFields;
+	const switchToUser = () => {
+		setScope('user');
+		setProviderChoice(null);
+	};
+	const sectionLabel = SECTIONS.find(entry => entry.id === section)?.label;
+	// `Collaboration › Server Url` reads as `Server Url` inside the Collaboration tab.
+	const withSectionLabel = (field: SettingFieldModel): SettingFieldModel => (sectionLabel && field.label.startsWith(`${sectionLabel} › `) ? { ...field, label: field.label.slice(sectionLabel.length + 3) } : field);
+	const tabId = (id: SectionId) => `${titleId}-tab-${id}`;
+	const panelId = `${titleId}-panel`;
 
-	let scopeHint: React.ReactNode;
+	let scopeHint: string;
 	if (host?.kind === 'standalone') {
-		scopeHint = <>Saved in {host.userSettingsLocation ?? 'the app settings file'}. Settings that are not set use their ROBERT_* environment variable, then their default.</>;
+		scopeHint = `Saved in ${host.userSettingsLocation ?? 'the app settings file'}. Settings that are not set use their ROBERT_* environment variable, then their default.`;
 	} else if (activeScope === 'workspace') {
-		scopeHint = <>Saved in the settings of the workspace “{host?.workspaceName}” (.vscode/settings.json). They override User settings, so each workspace can connect to its own Jira or Rally project.</>;
+		scopeHint = `Saved in the settings of the workspace “${host?.workspaceName ?? ''}” (.vscode/settings.json). They override User settings, so each workspace can connect to its own Jira or Rally project.`;
 	} else {
-		scopeHint = <>Saved in your VS Code user settings. They apply to every workspace that does not override them.</>;
+		scopeHint = 'Saved in your VS Code user settings. They apply to every workspace that does not override them.';
 	}
 
 	const dialog = (
@@ -591,53 +943,103 @@ export function SettingsDialog() {
 						×
 					</IconButton>
 				</Header>
-				{host?.kind === 'vscode' ? (
-					<ScopeTabs role="tablist" aria-label="Where settings are saved">
-						{(['user', 'workspace'] as const).map(tabScope => {
-							const disabled = tabScope === 'workspace' && !host.hasWorkspace;
-							return (
-								<ScopeTab key={tabScope} type="button" role="tab" aria-selected={activeScope === tabScope} $active={activeScope === tabScope} disabled={disabled} title={disabled ? 'Open a folder or workspace to save settings per workspace' : undefined} onClick={() => setScope(tabScope)}>
-									{tabScope === 'workspace' && host.workspaceName ? `Workspace (${host.workspaceName})` : SCOPE_LABEL[tabScope]}
-								</ScopeTab>
-							);
-						})}
-					</ScopeTabs>
-				) : (
-					<ScopeTabs />
+				{host && (
+					<ScopeBar>
+						{host.kind === 'vscode' ? (
+							<ScopeLine>
+								<span>Save to</span>
+								<SegmentedControl
+									ariaLabel="Where settings are saved"
+									value={activeScope}
+									options={(['user', 'workspace'] as const).map(optionScope => {
+										const disabled = optionScope === 'workspace' && !host.hasWorkspace;
+										return {
+											value: optionScope,
+											icon: optionScope === 'user' ? 'person' : 'folder',
+											label: optionScope === 'workspace' && host.workspaceName ? `Workspace (${host.workspaceName})` : SCOPE_LABEL[optionScope],
+											disabled,
+											title: disabled ? 'Open a folder or workspace to save settings per workspace' : undefined
+										};
+									})}
+									onChange={value => {
+										setScope(value as SettingsScope);
+										setProviderChoice(null);
+									}}
+								/>
+								<InfoTip label="Where settings are saved" text={scopeHint} />
+							</ScopeLine>
+						) : (
+							<ScopeLine>
+								<span>Saved in the app settings file</span>
+								<InfoTip label="Where settings are saved" text={scopeHint} />
+							</ScopeLine>
+						)}
+					</ScopeBar>
 				)}
-				{host && <ScopeHint>{scopeHint}</ScopeHint>}
-				<Body>
+				<SectionTabs
+					role="tablist"
+					aria-label="Settings sections"
+					onKeyDown={event => {
+						if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+						event.preventDefault();
+						const index = SECTIONS.findIndex(entry => entry.id === section);
+						const next = SECTIONS[(index + (event.key === 'ArrowRight' ? 1 : -1) + SECTIONS.length) % SECTIONS.length];
+						setSection(next.id);
+						document.getElementById(tabId(next.id))?.focus();
+					}}
+				>
+					{SECTIONS.map(entry => (
+						<SectionTab key={entry.id} id={tabId(entry.id)} type="button" role="tab" aria-selected={section === entry.id} aria-controls={panelId} tabIndex={section === entry.id ? 0 : -1} $active={section === entry.id} onClick={() => setSection(entry.id)}>
+							{entry.label}
+						</SectionTab>
+					))}
+				</SectionTabs>
+				<Body id={panelId} role="tabpanel" aria-labelledby={tabId(section)}>
 					{!state ? (
 						<Note>Loading settings…</Note>
+					) : section === 'about' ? (
+						state.about ? (
+							<AboutSection about={state.about} onShowLogs={() => post({ command: 'settingsShowLogs' })} />
+						) : (
+							<Note>No information available.</Note>
+						)
 					) : (
-						state.groups.map(group => {
+						sectionGroups.map(group => {
 							const fields = visibleFields.filter(field => field.group === group);
 							const credentials = state.credentials.filter(credential => credential.group === group);
 							if (fields.length === 0 && credentials.length === 0) return null;
 							return (
 								<section key={group}>
-									<GroupTitle>
-										{group}
-										{group === inactiveGroup && <GroupTag>(not the active provider)</GroupTag>}
-									</GroupTitle>
-									{fields.map(field => (
-										<SettingRow key={`${activeScope}:${field.key}`} field={field} scope={activeScope} singleScope={host?.kind === 'standalone'} status={statuses[`${activeScope}:${field.key}`]} onSave={saveSetting} />
-									))}
-									{credentials.map(credential => (
-										<CredentialRow
-											// Keyed by connection too: a value typed for one connection must not be saved for another.
-											key={`${credential.id}:${credential.connectionLabel}`}
-											credential={credential}
-											status={statuses[`credential:${credential.id}`]}
-											onStore={storeCredential}
-											onClear={clearCredential}
-										/>
-									))}
+									{/* A group named like its tab needs no title of its own. */}
+									{group !== sectionLabel && <GroupTitle>{group}</GroupTitle>}
+									<GroupContent $indented={group !== sectionLabel}>
+										{fields.map(field => (
+											<SettingRow
+												key={`${activeScope}:${field.key}`}
+												field={withSectionLabel(field)}
+												scope={activeScope}
+												singleScope={singleScope}
+												status={statuses[`${activeScope}:${field.key}`]}
+												pendingValue={field.key === PROVIDER_KEY && providerChoice !== null ? providerChoice : undefined}
+												onSave={saveSetting}
+												onSwitchToUser={field.scopes.includes(activeScope) ? undefined : switchToUser}
+											/>
+										))}
+										{credentials.map(credential => (
+											<CredentialRow
+												// Keyed by connection too: a value typed for one connection must not be saved for another.
+												key={`${credential.id}:${credential.connectionLabel}`}
+												credential={credential}
+												status={statuses[`credential:${credential.id}`]}
+												onStore={storeCredential}
+												onClear={clearCredential}
+											/>
+										))}
+									</GroupContent>
 								</section>
 							);
 						})
 					)}
-					{userOnlyFields.length > 0 && <Note>Only in User settings: {userOnlyFields.map(field => field.label).join(', ')}.</Note>}
 				</Body>
 				{host?.canOpenNativeSettings && (
 					<Footer>

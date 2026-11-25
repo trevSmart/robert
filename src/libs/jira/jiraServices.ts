@@ -3,6 +3,7 @@ import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
 import type { Attachment, JiraProject, JiraUser, JiraUserStory, GlobalSearchResultItem } from '../../types/jira';
 import { validateJiraConfiguration, clearUtilsCaches } from './utils';
 import { getJiraSettings, jiraRequest, searchIssues, projectJql, quoteJql } from './jiraClient';
+import { clearIssueFieldsCache } from './jiraIssueFields';
 import { JIRA_FIELDS, bugTypesJqlList, isBugIssueType, isSubtaskIssueType, onJiraMetadataChanged, resetJiraMetadata, storyPointsOf, subtaskJql } from './jiraMetadata';
 import { setJiraBroadcaster, callJira } from './jiraCall';
 import { ErrorHandler } from '../../ErrorHandler';
@@ -899,6 +900,7 @@ export function clearAllJiraCaches(): void {
 		_clearAllCachesService();
 		clearUtilsCaches();
 		resetJiraMetadata();
+		clearIssueFieldsCache();
 		errorHandler.logInfo('All Jira caches cleared', 'jiraServices.clearAllJiraCaches');
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'jiraServices.clearAllJiraCaches');

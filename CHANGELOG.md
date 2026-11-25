@@ -4,6 +4,10 @@
 * Show the files attached to a user story (new **Attachments** tab in Related Records, with its count) and to a defect (new **Attachments** card), for both Jira and Rally
 * Each file shows its name, size, author and date, with a preview for images; clicking it opens the file in the browser with your Jira / Rally session. Only links on the configured Jira site / Rally instance are opened
 
+### Jira fields
+* User stories and defects get a **Fields** card (Jira only) with the issue's other fields that have a value, such as custom fields from the «Key details» tabs of the Jira issue view (e.g. «Talla» in «Esfuerzo Desarrollo»). Robert used to read only a fixed set of fields
+* Accounts that can read the Jira screen configuration (Administer Jira) see the fields grouped in the same tabs as Jira; the rest see them as one list, in the edit screen's order
+
 ### UI
 * Add a "More actions" menu (⋮) at the right end of the main tab bar with **Settings**, **Open as Editor** (sidebar view only) and **Reload**. The view's title bar menu is not available in an editor tab or in the standalone app, so the settings dialog could not be opened from there. The menu stays pinned to the right, apart from the "…" menu of tabs that do not fit
 * Rename **Open in Editor** to **Open as Editor** (`robert.openInEditor`, also in the view title bar)

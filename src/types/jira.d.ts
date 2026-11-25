@@ -96,6 +96,30 @@ export interface Attachment {
 	thumbnailUrl: string | null;
 }
 
+/** One field of a Jira issue with a value, ready to display. */
+export interface IssueFieldValue {
+	id: string;
+	name: string;
+	/** Plain-text value (options joined with ", ", users by display name...). */
+	text: string;
+	/** Rendered HTML for rich-text fields (sanitized again in the webview). */
+	html?: string;
+}
+
+/** A tab of the issue's view screen in Jira (e.g. «Esfuerzo Desarrollo»), or the single flat group. */
+export interface IssueFieldTab {
+	/** Tab name; null for the flat list (screen tabs not readable). */
+	name: string | null;
+	fields: IssueFieldValue[];
+}
+
+/** Fields of a Jira issue that Robert does not show elsewhere, grouped like Jira's «Key details» when possible. */
+export interface IssueFieldsResult {
+	tabs: IssueFieldTab[];
+	/** True when the tabs come from the issue's view screen (needs Jira admin rights to read). */
+	groupedByScreen: boolean;
+}
+
 export interface Revision {
 	revisionNumber: number;
 	description: string;

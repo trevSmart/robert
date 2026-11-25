@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
-import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchImageAsBase64, getTestCaseWithParent, getItemUrl, getProviderLabel, getAttachments, isActiveProviderUrl } from '../../libs/provider';
+import { globalSearch, getUserStoryByObjectId, getDefectByObjectId, getTaskWithParent, getUserStoryRevisions, getUserStoryRevisionsCount, fetchImageAsBase64, getTestCaseWithParent, getItemUrl, getProviderLabel, getAttachments, getIssueFields, isActiveProviderUrl } from '../../libs/provider';
 
 /**
  * Handles search and lookup-related webview messages
@@ -40,6 +40,9 @@ export class SearchMessageHandler {
 				return true;
 			case 'loadAttachments':
 				await this.handleLoadAttachments(webview, message);
+				return true;
+			case 'loadIssueFields':
+				await this.handleLoadIssueFields(webview, message);
 				return true;
 			case 'openAttachment':
 				await this.handleOpenAttachment(message);
@@ -103,6 +106,22 @@ export class SearchMessageHandler {
 			const errorMessage = error instanceof Error ? error.message : String(error);
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadAttachments');
 			webview.postMessage({ type: 'attachmentsLoaded', objectId, attachments: [], error: errorMessage });
+		}
+	}
+
+	private async handleLoadIssueFields(webview: vscode.Webview, message: any): Promise<void> {
+		const objectId = String(message?.objectId ?? '');
+		if (!objectId) {
+			return;
+		}
+		try {
+			this.errorHandler.logInfo(`Loading fields for ${getProviderLabel()} item ${objectId}`, 'SearchMessageHandler');
+			const result = await getIssueFields(objectId);
+			webview.postMessage({ type: 'issueFieldsLoaded', objectId, result });
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'loadIssueFields');
+			webview.postMessage({ type: 'issueFieldsLoaded', objectId, result: null, error: errorMessage });
 		}
 	}
 

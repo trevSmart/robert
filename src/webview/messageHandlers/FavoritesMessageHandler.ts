@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
 import type { FavoriteItem, JiraItemRef } from '../../types/jira';
+import { type CurrentProjectResolver, resolveConfiguredProject, WorkspaceItemStore } from './workspaceItemStore';
 
 const STORAGE_KEY = 'robert.favorites';
 
@@ -15,15 +16,20 @@ interface LegacyPinnedItem extends JiraItemRef {
 /**
  * Persists the user-curated list of favorite Jira items (user stories, defects, sprints).
  * Favoriting is toggled from each record's detail view and is independent of the recently
- * viewed history — favorites are never auto-evicted.
+ * viewed history — favorites are never auto-evicted. The list is per workspace (see
+ * WorkspaceItemStore).
  */
 export class FavoritesMessageHandler {
 	private migrationChecked = false;
+	private store: WorkspaceItemStore<FavoriteItem>;
 
 	constructor(
 		private errorHandler: ErrorHandler,
-		private context: vscode.ExtensionContext
-	) {}
+		private context: vscode.ExtensionContext,
+		currentProject: CurrentProjectResolver = resolveConfiguredProject
+	) {
+		this.store = new WorkspaceItemStore<FavoriteItem>(context, STORAGE_KEY, currentProject);
+	}
 
 	async handle(command: string, webview: vscode.Webview, message: any): Promise<boolean> {
 		switch (command) {
@@ -43,8 +49,9 @@ export class FavoritesMessageHandler {
 	}
 
 	/**
-	 * One-time move of the list stored under the pre-rename key, so users upgrading from a
-	 * "pinned" build keep their favorites instead of silently starting from an empty list.
+	 * One-time move of the global list stored under the pre-rename key, so users upgrading from a
+	 * "pinned" build keep their favorites instead of silently starting from an empty list. It runs
+	 * on the legacy global list, before WorkspaceItemStore seeds this workspace from it.
 	 */
 	private async ensureMigrated(): Promise<void> {
 		if (this.migrationChecked) return;
@@ -69,11 +76,6 @@ export class FavoritesMessageHandler {
 		}
 	}
 
-	private getStoredItems(): FavoriteItem[] {
-		// Older versions stored Rally objectIds as numbers; normalise so `===` matches the string ids we receive now.
-		return (this.context.globalState.get<FavoriteItem[]>(STORAGE_KEY, []) ?? []).filter(Boolean).map(item => ({ ...item, objectId: String(item.objectId) }));
-	}
-
 	/** Most recently favorited first. No cap — this is a curated list. */
 	private normalize(items: FavoriteItem[]): FavoriteItem[] {
 		return [...items].sort((a, b) => b.favoritedAt - a.favoritedAt);
@@ -81,15 +83,19 @@ export class FavoritesMessageHandler {
 
 	private async persist(webview: vscode.Webview, items: FavoriteItem[]): Promise<void> {
 		const normalized = this.normalize(items);
-		await this.context.globalState.update(STORAGE_KEY, normalized);
+		await this.store.write(normalized);
 		webview.postMessage({ command: 'favoriteItemsLoaded', items: normalized });
 	}
 
 	private async handleGetFavoriteItems(webview: vscode.Webview): Promise<void> {
-		webview.postMessage({
-			command: 'favoriteItemsLoaded',
-			items: this.normalize(this.getStoredItems())
-		});
+		try {
+			webview.postMessage({
+				command: 'favoriteItemsLoaded',
+				items: this.normalize(await this.store.read())
+			});
+		} catch (error) {
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getFavoriteItems');
+		}
 	}
 
 	private async handleToggleFavoriteItem(webview: vscode.Webview, message: any): Promise<void> {
@@ -100,7 +106,7 @@ export class FavoritesMessageHandler {
 			}
 			const incoming: JiraItemRef = { ...raw, objectId: String(raw.objectId) };
 
-			const current = this.getStoredItems();
+			const current = await this.store.read();
 			const alreadyFavorite = current.some(item => item.objectId === incoming.objectId && item.type === incoming.type);
 			if (alreadyFavorite) {
 				await this.persist(

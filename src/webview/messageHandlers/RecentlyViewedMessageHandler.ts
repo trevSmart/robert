@@ -1,20 +1,27 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../../ErrorHandler';
 import type { RecentlyViewedItem } from '../../types/jira';
+import { type CurrentProjectResolver, resolveConfiguredProject, WorkspaceItemStore } from './workspaceItemStore';
 
 const STORAGE_KEY = 'robert.recentlyViewedItems';
 const MAX_ITEMS = 10;
 
 /**
  * Persists the list of Jira items (user stories, defects, sprints) the user has recently
- * opened in a detail view, so Home can show a jump-back-in list across sessions. This is a
- * pure history: pinning is a separate concern handled by FavoritesMessageHandler.
+ * opened in a detail view, so Home can show a jump-back-in list across sessions. The list is
+ * per workspace (see WorkspaceItemStore). This is a pure history: pinning is a separate concern
+ * handled by FavoritesMessageHandler.
  */
 export class RecentlyViewedMessageHandler {
+	private store: WorkspaceItemStore<RecentlyViewedItem>;
+
 	constructor(
 		private errorHandler: ErrorHandler,
-		private context: vscode.ExtensionContext
-	) {}
+		context: vscode.ExtensionContext,
+		currentProject: CurrentProjectResolver = resolveConfiguredProject
+	) {
+		this.store = new WorkspaceItemStore<RecentlyViewedItem>(context, STORAGE_KEY, currentProject);
+	}
 
 	async handle(command: string, webview: vscode.Webview, message: any): Promise<boolean> {
 		switch (command) {
@@ -32,11 +39,6 @@ export class RecentlyViewedMessageHandler {
 		}
 	}
 
-	private getStoredItems(): RecentlyViewedItem[] {
-		// Older versions stored Rally objectIds as numbers; normalise so `===` matches the string ids we receive now.
-		return (this.context.globalState.get<RecentlyViewedItem[]>(STORAGE_KEY, []) ?? []).filter(Boolean).map(item => ({ ...item, objectId: String(item.objectId) }));
-	}
-
 	/** Most recently viewed first, capped to MAX_ITEMS. */
 	private normalize(items: RecentlyViewedItem[]): RecentlyViewedItem[] {
 		return [...items].sort((a, b) => b.viewedAt - a.viewedAt).slice(0, MAX_ITEMS);
@@ -44,7 +46,7 @@ export class RecentlyViewedMessageHandler {
 
 	private async persist(webview: vscode.Webview, items: RecentlyViewedItem[]): Promise<void> {
 		const normalized = this.normalize(items);
-		await this.context.globalState.update(STORAGE_KEY, normalized);
+		await this.store.write(normalized);
 		webview.postMessage({
 			command: 'recentlyViewedItemsLoaded',
 			items: normalized
@@ -52,10 +54,14 @@ export class RecentlyViewedMessageHandler {
 	}
 
 	private async handleGetRecentlyViewedItems(webview: vscode.Webview): Promise<void> {
-		webview.postMessage({
-			command: 'recentlyViewedItemsLoaded',
-			items: this.normalize(this.getStoredItems())
-		});
+		try {
+			webview.postMessage({
+				command: 'recentlyViewedItemsLoaded',
+				items: this.normalize(await this.store.read())
+			});
+		} catch (error) {
+			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'getRecentlyViewedItems');
+		}
 	}
 
 	private async handleRecordRecentlyViewedItem(webview: vscode.Webview, message: any): Promise<void> {
@@ -66,7 +72,7 @@ export class RecentlyViewedMessageHandler {
 			}
 			const incoming: RecentlyViewedItem = { ...raw, objectId: String(raw.objectId) };
 
-			const rest = this.getStoredItems().filter(item => !(item.objectId === incoming.objectId && item.type === incoming.type));
+			const rest = (await this.store.read()).filter(item => !(item.objectId === incoming.objectId && item.type === incoming.type));
 			const newItem: RecentlyViewedItem = { ...incoming, viewedAt: Date.now() };
 			await this.persist(webview, [newItem, ...rest]);
 		} catch (error) {
@@ -78,7 +84,7 @@ export class RecentlyViewedMessageHandler {
 		try {
 			const objectId = String(message.objectId);
 			const { type } = message;
-			const remaining = this.getStoredItems().filter(item => !(item.objectId === objectId && item.type === type));
+			const remaining = (await this.store.read()).filter(item => !(item.objectId === objectId && item.type === type));
 			await this.persist(webview, remaining);
 		} catch (error) {
 			this.errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'deleteRecentlyViewedItem');

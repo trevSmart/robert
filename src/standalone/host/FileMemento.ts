@@ -3,8 +3,8 @@ import * as path from 'node:path';
 
 /**
  * JSON-file-backed implementation of `vscode.Memento`, used as the
- * extension context's `globalState` in the standalone app (favorites,
- * recently viewed items, custom calendar events, ...).
+ * extension context's `globalState` (custom calendar events, ...) and
+ * `workspaceState` (favorites, recently viewed items) in the standalone app.
  */
 export class FileMemento {
 	private data: Record<string, unknown> = {};

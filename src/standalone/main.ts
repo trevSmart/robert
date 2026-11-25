@@ -197,7 +197,7 @@ async function start(): Promise<void> {
 	output.appendLine(`[Robert] Credentials: ${secretStore.isAvailable() ? 'stored encrypted with the OS keychain' : 'OS keychain not available, use ROBERT_* environment variables'}`);
 
 	// The settings dialog (shared React UI) has no workspace scope here and shows where settings are stored.
-	setSettingsHostInfo({ kind: 'standalone', userSettingsLocation: config.getFilePath() });
+	setSettingsHostInfo({ kind: 'standalone', userSettingsLocation: config.getFilePath(), hostLabel: `Standalone app · Electron ${process.versions.electron}` });
 	const credentialStore = CredentialStore.getInstance();
 	const credentialsReady = credentialStore
 		.initialize(secretStore, error => errorHandler.logWarning(`Could not read stored credentials: ${error.message}`, 'standalone.credentials'))

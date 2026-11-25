@@ -70,7 +70,7 @@ Running from source enables the same dev features as the F5 Extension Developmen
 - **Put product logic in shared code** (`src/webview/**`, message handlers, `src/libs/**`). Both hosts get it for free.
 - **Using a new `vscode` API in shared code?** Add it to `src/standalone/host/vscodeShim.ts` (or make it a no-op / clear "not available in the standalone app" error). `src/standalone/host/sharedCodeOnShim.test.ts` exercises shared code on the shim — extend it when you add shim surface.
 - **New `--vscode-*` CSS variable in the webview?** Add it to both palettes in `host/theme.ts`; `host.test.ts` fails if a variable used in `src/webview` is missing.
-- **New setting?** Declare it in `package.json` `contributes.configuration` as usual — the settings dialog (both versions) is generated from it. Use `"scope": "application"` for settings that make no sense per workspace. Never declare secrets as settings: store them through `CredentialStore` (`src/settings/`), as the API tokens are.
+- **New setting?** Declare it in `package.json` `contributes.configuration` as usual — the settings dialog (both versions) is generated from it. Use `"scope": "application"` only for settings that really cannot vary per workspace (the dialog then shows them read-only in Workspace). Never declare secrets as settings: store them through `CredentialStore` (`src/settings/`), as the API tokens are.
 - **New command in `extension.ts`?** If it makes sense outside VS Code, register it in `main.ts` and/or add it to the app menu.
 
 ## Not available in the standalone app

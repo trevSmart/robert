@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "Robert",
 	"description": "For internal use only.",
-	"version": "0.7.3",
+	"version": "0.7.7",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",
@@ -32,8 +32,7 @@
 				"robert.debugMode": {
 					"type": "boolean",
 					"default": false,
-					"description": "Enable debug mode",
-					"scope": "application"
+					"description": "Enable debug mode"
 				},
 				"robert.provider": {
 					"type": "string",
@@ -103,8 +102,7 @@
 				"robert.showWelcomeAnimation": {
 					"type": "boolean",
 					"default": true,
-					"description": "Play the welcome intro video the first time the Robert view is opened after the extension starts or is reloaded.",
-					"scope": "application"
+					"description": "Play the welcome intro video the first time the Robert view is opened after the extension starts or is reloaded."
 				},
 				"robert.startupTab": {
 					"type": "string",

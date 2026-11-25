@@ -124,7 +124,8 @@ describe('ConfigurationStore', () => {
 		// Credentials are not settings any more: they live in the OS keychain.
 		expect(schema['robert.jiraApiToken']).toBeUndefined();
 		expect(schema['robert.rallyApiKey']).toBeUndefined();
-		expect(schema['robert.debugMode']?.scope).toBe('application');
+		// Every setting can be saved per workspace too.
+		expect(Object.values(schema).every(entry => entry.scope !== 'application')).toBe(true);
 	});
 });
 

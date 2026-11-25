@@ -1,9 +1,10 @@
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { ErrorHandler } from '../ErrorHandler';
 import { type CredentialKind, SettingsManager } from '../SettingsManager';
 import { removeLegacyCredentialSetting } from './legacyCredentialMigration';
-import type { CredentialFieldModel, SettingFieldModel, SettingsHostModel, SettingsScope, SettingsStateMessage, SettingValueSource } from './protocol';
+import type { AboutModel, CredentialFieldModel, SettingFieldModel, SettingsHostModel, SettingsScope, SettingsStateMessage, SettingValueSource } from './protocol';
 import { envVarForSetting, groupForSetting, parseEnvValue, readSettingsSchema, SETTING_GROUPS, type SettingSchema, settingLabel } from './settingsSchema';
 
 const SECTION = 'robert';
@@ -13,6 +14,16 @@ export interface SettingsHostInfo {
 	kind: 'vscode' | 'standalone';
 	/** Where user settings are stored (standalone settings file), shown in the dialog. */
 	userSettingsLocation?: string;
+	/** Host shown in the About tab (the extension uses the editor's name and version). */
+	hostLabel?: string;
+}
+
+/** Product metadata from package.json for the About tab. */
+interface ManifestInfo {
+	name: string;
+	version: string;
+	description?: string;
+	repositoryUrl?: string;
 }
 
 let hostInfo: SettingsHostInfo = { kind: 'vscode' };
@@ -53,17 +64,36 @@ export class SettingsService {
 
 	constructor(
 		private readonly schema: Record<string, SettingSchema>,
-		private readonly env: NodeJS.ProcessEnv = process.env
+		private readonly env: NodeJS.ProcessEnv = process.env,
+		private readonly manifest: ManifestInfo = { name: 'Robert', version: '' }
 	) {}
 
 	/** One service per extension root, reading its package.json once. */
 	public static forExtensionPath(extensionPath: string): SettingsService {
 		let service = services.get(extensionPath);
 		if (!service) {
-			service = new SettingsService(readSettingsSchemaSafely(extensionPath));
+			service = new SettingsService(readSettingsSchemaSafely(extensionPath), process.env, readManifestInfo(extensionPath));
 			services.set(extensionPath, service);
 		}
 		return service;
+	}
+
+	public getAboutModel(): AboutModel {
+		const host = hostInfo.kind === 'standalone' ? (hostInfo.hostLabel ?? 'Standalone app') : [vscode.env?.appName ?? 'VS Code', vscode.version].filter(Boolean).join(' ');
+		const repo = this.manifest.repositoryUrl;
+		return {
+			name: this.manifest.name,
+			version: this.manifest.version,
+			description: this.manifest.description,
+			host,
+			links: repo
+				? [
+						{ label: 'Release notes', url: `${repo}/blob/main/CHANGELOG.md` },
+						{ label: 'Report an issue', url: `${repo}/issues` },
+						{ label: 'Source code', url: repo }
+					]
+				: []
+		};
 	}
 
 	public hasWorkspace(): boolean {
@@ -107,6 +137,7 @@ export class SettingsService {
 		return {
 			command: 'settingsState',
 			host: this.getHostModel(),
+			about: this.getAboutModel(),
 			fields,
 			credentials,
 			groups: SETTING_GROUPS.map(group => group.title)
@@ -262,6 +293,29 @@ export class SettingsService {
 				return value;
 			}
 		}
+	}
+}
+
+/** Name, version and repository from the package.json at an extension root. */
+function readManifestInfo(extensionPath: string): ManifestInfo {
+	try {
+		const manifest = JSON.parse(fs.readFileSync(path.join(extensionPath, 'package.json'), 'utf8')) as {
+			name?: string;
+			displayName?: string;
+			version?: string;
+			description?: string;
+			repository?: string | { url?: string };
+		};
+		const rawRepo = typeof manifest.repository === 'string' ? manifest.repository : manifest.repository?.url;
+		const repositoryUrl = rawRepo?.replace(/^git\+/, '').replace(/\.git$/, '');
+		return {
+			name: manifest.displayName ?? manifest.name ?? 'Robert',
+			version: manifest.version ?? '',
+			description: manifest.description,
+			repositoryUrl: repositoryUrl && /^https:\/\//.test(repositoryUrl) ? repositoryUrl : undefined
+		};
+	} catch {
+		return { name: 'Robert', version: '' };
 	}
 }
 

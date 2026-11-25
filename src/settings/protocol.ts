@@ -73,9 +73,20 @@ export interface SettingsHostModel {
 	userSettingsLocation?: string;
 }
 
+/** Shown in the About tab of the dialog. */
+export interface AboutModel {
+	name: string;
+	version: string;
+	description?: string;
+	/** Where Robert runs, e.g. `Visual Studio Code 1.105.0` or `Standalone app · Electron 45.4.1`. */
+	host: string;
+	links: Array<{ label: string; url: string }>;
+}
+
 export interface SettingsStateMessage {
 	command: 'settingsState';
 	host: SettingsHostModel;
+	about: AboutModel;
 	fields: SettingFieldModel[];
 	credentials: CredentialFieldModel[];
 	/** Group titles in display order. */

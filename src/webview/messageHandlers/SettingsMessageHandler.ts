@@ -49,6 +49,9 @@ export class SettingsMessageHandler {
 					await this.service.clearCredential(message.id);
 				});
 				return true;
+			case 'settingsShowLogs':
+				await vscode.commands.executeCommand('robert.showOutput');
+				return true;
 			case 'settingsOpenNative':
 				await this.openNativeSettings(message?.scope === 'workspace' ? 'workspace' : 'user');
 				return true;

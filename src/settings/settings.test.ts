@@ -39,6 +39,8 @@ const hoisted = vi.hoisted(() => {
 	const vscode = {
 		workspace,
 		ConfigurationTarget: { Global: 1, Workspace: 2, WorkspaceFolder: 3 },
+		env: { appName: 'Visual Studio Code' },
+		version: '1.105.0',
 		window: {
 			createOutputChannel: () => ({ appendLine: () => undefined, show: () => undefined, dispose: () => undefined, debug: () => undefined, info: () => undefined, warn: () => undefined, error: () => undefined }),
 			showWarningMessage: async (message: string) => {
@@ -192,7 +194,10 @@ describe('SettingsService', () => {
 		expect(fields['robert.jiraProjectKey']).toMatchObject({ values: { user: 'USR', workspace: 'WSP' }, effectiveValue: 'WSP', effectiveSource: 'workspace', scopes: ['user', 'workspace'] });
 		expect(fields['robert.jiraEmail']).toMatchObject({ effectiveValue: 'env@acme.com', effectiveSource: 'env', env: { name: 'ROBERT_JIRA_EMAIL', isSet: true } });
 		expect(fields['robert.provider']).toMatchObject({ effectiveValue: 'jira', effectiveSource: 'default', enum: ['jira', 'rally'] });
-		expect(fields['robert.debugMode'].scopes).toEqual(['user']);
+		expect(fields['robert.debugMode'].scopes).toEqual(['user', 'workspace']);
+		// A setting declared with "scope": "application" can only be saved in User settings.
+		const appScoped = new SettingsService({ ...schema, 'robert.machineOnly': { type: 'boolean', default: false, scope: 'application' } }, {}).buildState();
+		expect(appScoped.fields.find(field => field.key === 'robert.machineOnly')?.scopes).toEqual(['user']);
 		expect(fields['robert.jiraApiToken']).toBeUndefined();
 	});
 
@@ -214,11 +219,23 @@ describe('SettingsService', () => {
 		await expect(service().update('robert.jiraBaseUrl', 'workspace', 'https://acme.atlassian.net bad')).rejects.toThrow(/HTTPS/);
 		await expect(service().update('robert.rallyInstance', 'workspace', 'https://#')).rejects.toThrow(/HTTPS/);
 		await expect(service().update('robert.provider', 'workspace', 'trello')).rejects.toThrow(/one of/);
-		await expect(service().update('robert.debugMode', 'workspace', true)).rejects.toThrow(/User settings/);
+		await expect(new SettingsService({ ...schema, 'robert.machineOnly': { type: 'boolean', default: false, scope: 'application' } }, {}).update('robert.machineOnly', 'workspace', true)).rejects.toThrow(/User settings/);
+		await service().update('robert.debugMode', 'workspace', true);
+		expect(hoisted.scopes.workspace.get('robert.debugMode')).toBe(true);
+		hoisted.scopes.workspace.delete('robert.debugMode');
 		await expect(service().update('robert.jiraApiToken', 'user', 'secret')).rejects.toThrow(/Unknown setting/);
 		hoisted.workspace.workspaceFolders = undefined;
 		await expect(service().update('robert.jiraProjectKey', 'workspace', 'X')).rejects.toThrow(/Open a folder/);
 		expect(hoisted.scopes.workspace.size).toBe(0);
+	});
+
+	it('describes Robert and its host for the About tab', () => {
+		const about = SettingsService.forExtensionPath(ROOT).buildState().about;
+		expect(about).toMatchObject({ name: 'Robert', host: 'Visual Studio Code 1.105.0' });
+		expect(about.version).toMatch(/^\d+\.\d+\.\d+/);
+		expect(about.links.map(link => link.url)).toContain('https://github.com/trevSmart/robert/issues');
+		setSettingsHostInfo({ kind: 'standalone', hostLabel: 'Standalone app · Electron 45' });
+		expect(SettingsService.forExtensionPath(ROOT).getAboutModel().host).toBe('Standalone app · Electron 45');
 	});
 
 	it('only offers the user scope in the standalone app', () => {

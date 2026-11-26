@@ -6,6 +6,7 @@ import { CollaborationMessageHandler } from './CollaborationMessageHandler';
 import { CalendarMessageHandler } from './CalendarMessageHandler';
 import { RecentlyViewedMessageHandler } from './RecentlyViewedMessageHandler';
 import { FavoritesMessageHandler } from './FavoritesMessageHandler';
+import { PinnedIssueFieldsMessageHandler } from './PinnedIssueFieldsMessageHandler';
 import { SettingsMessageHandler } from './SettingsMessageHandler';
 import { ViewActionsMessageHandler } from './ViewActionsMessageHandler';
 import { SettingsService } from '../../settings/SettingsService';
@@ -34,6 +35,7 @@ export class WebviewMessageDispatcher {
 	private calendarHandler: CalendarMessageHandler;
 	private recentlyViewedHandler: RecentlyViewedMessageHandler;
 	private favoritesHandler: FavoritesMessageHandler;
+	private pinnedIssueFieldsHandler: PinnedIssueFieldsMessageHandler;
 	private settingsHandler: SettingsMessageHandler;
 	private viewActionsHandler: ViewActionsMessageHandler;
 
@@ -48,6 +50,7 @@ export class WebviewMessageDispatcher {
 		this.calendarHandler = new CalendarMessageHandler(errorHandler, collaborationClient, context);
 		this.recentlyViewedHandler = new RecentlyViewedMessageHandler(errorHandler, context);
 		this.favoritesHandler = new FavoritesMessageHandler(errorHandler, context);
+		this.pinnedIssueFieldsHandler = new PinnedIssueFieldsMessageHandler(errorHandler, context);
 		this.settingsHandler = new SettingsMessageHandler(errorHandler, SettingsService.forExtensionPath(context.extensionPath));
 		this.viewActionsHandler = new ViewActionsMessageHandler(errorHandler);
 	}
@@ -85,6 +88,9 @@ export class WebviewMessageDispatcher {
 				return true;
 			}
 			if (await this.favoritesHandler.handle(command, webview, message)) {
+				return true;
+			}
+			if (await this.pinnedIssueFieldsHandler.handle(command, webview, message)) {
 				return true;
 			}
 			if (await this.settingsHandler.handle(command, webview, message)) {

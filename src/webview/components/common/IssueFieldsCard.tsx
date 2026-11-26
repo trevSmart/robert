@@ -1,18 +1,17 @@
 import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import styled from 'styled-components';
 import DOMPurify from 'dompurify';
-import { type IssueFieldsResult, type IssueFieldValue } from '../../../types/jira';
+import { type IssueFieldsItemType, type IssueFieldsResult, type IssueFieldValue } from '../../../types/jira';
 import { getVsCodeApi } from '../../utils/vscodeApi';
-import { useProvider } from '../../utils/providerState';
 import { fieldMatchesFilter, normalizeForFilter } from '../../utils/issueFieldsFilter';
 import SubTabsBar from './SubTabsBar';
 import './CollapsibleCard';
 
 /**
- * Loads the fields of a Jira issue that Robert does not show elsewhere.
- * `result` is null until the first response arrives. Does nothing when `objectId` is undefined.
+ * Loads the fields of a Jira issue or Rally artifact that Robert does not show elsewhere.
+ * `result` is null until the first response arrives.
  */
-function useIssueFields(objectId: string | undefined): { result: IssueFieldsResult | null; error: string | null } {
+function useIssueFields(objectId: string, itemType: IssueFieldsItemType): { result: IssueFieldsResult | null; error: string | null } {
 	const [state, setState] = useState<{ objectId: string | undefined; result: IssueFieldsResult | null; error: string | null }>({ objectId, result: null, error: null });
 
 	useEffect(() => {
@@ -27,21 +26,21 @@ function useIssueFields(objectId: string | undefined): { result: IssueFieldsResu
 			}
 		};
 		window.addEventListener('message', listener);
-		vscode.postMessage({ command: 'loadIssueFields', objectId });
+		vscode.postMessage({ command: 'loadIssueFields', objectId, itemType });
 		return () => window.removeEventListener('message', listener);
-	}, [objectId]);
+	}, [objectId, itemType]);
 
 	// Never show the previous item's fields while the new ones load.
 	return state.objectId === objectId ? { result: state.result, error: state.error } : { result: null, error: null };
 }
 
 /** Ids of the pinned fields (stored per workspace by the extension), with a toggle that updates optimistically. */
-function usePinnedIssueFields(enabled: boolean): { pinnedIds: Set<string>; togglePinned: (fieldId: string) => void } {
+function usePinnedIssueFields(): { pinnedIds: Set<string>; togglePinned: (fieldId: string) => void } {
 	const [pinnedIds, setPinnedIds] = useState<Set<string>>(() => new Set());
 
 	useEffect(() => {
 		const vscode = getVsCodeApi();
-		if (!enabled || !vscode) {
+		if (!vscode) {
 			return;
 		}
 		const listener = (event: MessageEvent) => {
@@ -53,7 +52,7 @@ function usePinnedIssueFields(enabled: boolean): { pinnedIds: Set<string>; toggl
 		window.addEventListener('message', listener);
 		vscode.postMessage({ command: 'getPinnedIssueFields' });
 		return () => window.removeEventListener('message', listener);
-	}, [enabled]);
+	}, []);
 
 	const togglePinned = useCallback((fieldId: string) => {
 		setPinnedIds(current => {
@@ -192,16 +191,16 @@ const FieldRows: FC<{ fields: IssueFieldValue[]; pinnedIds: Set<string>; onToggl
 );
 
 /**
- * Jira only: «Fields» card with the issue's other fields (e.g. «Talla»), grouped by
- * the tabs of the issue's Jira screen when the account can read them (Jira admins).
+ * «Fields» card with the item's other fields (e.g. «Talla»). With Jira they are grouped by the
+ * tabs of the issue's screen when the account can read them (Jira admins); with Rally, in
+ * «Custom» and «Standard» tabs (Rally does not expose the detail page layout).
  *
  * Collapsed by default. Pinned fields (per workspace, for every issue) stay visible while it is
  * collapsed; expanding it adds a filter and, below the pinned ones, the rest of the fields.
  */
-const IssueFieldsCard: FC<{ objectId: string }> = ({ objectId }) => {
-	const { isRally } = useProvider();
-	const { result, error } = useIssueFields(isRally ? undefined : objectId);
-	const { pinnedIds, togglePinned } = usePinnedIssueFields(!isRally);
+const IssueFieldsCard: FC<{ objectId: string; itemType: IssueFieldsItemType }> = ({ objectId, itemType }) => {
+	const { result, error } = useIssueFields(objectId, itemType);
+	const { pinnedIds, togglePinned } = usePinnedIssueFields();
 	const [activeTab, setActiveTab] = useState<{ objectId: string; index: number }>({ objectId, index: 0 });
 	const [expanded, setExpanded] = useState(false);
 	const [filter, setFilter] = useState('');
@@ -225,7 +224,7 @@ const IssueFieldsCard: FC<{ objectId: string }> = ({ objectId }) => {
 		};
 		card.addEventListener('toggle', handleToggle);
 		return () => card.removeEventListener('toggle', handleToggle);
-	}, [isRally]);
+	}, []);
 
 	const tabs = useMemo(() => result?.tabs ?? [], [result]);
 	const total = tabs.reduce((sum, tab) => sum + tab.fields.length, 0);
@@ -236,10 +235,6 @@ const IssueFieldsCard: FC<{ objectId: string }> = ({ objectId }) => {
 	const visiblePinned = pinnedFields.filter(field => fieldMatchesFilter(field, normalizedFilter));
 	const unpinnedTabs = useMemo(() => tabs.map(tab => ({ name: tab.name, fields: tab.fields.filter(field => !pinnedIds.has(field.id)) })), [tabs, pinnedIds]);
 	const filteredTabs = unpinnedTabs.map(tab => ({ name: tab.name, fields: tab.fields.filter(field => fieldMatchesFilter(field, normalizedFilter)) }));
-
-	if (isRally) {
-		return null;
-	}
 
 	const activeIndex = activeTab.objectId === objectId && activeTab.index < filteredTabs.length ? activeTab.index : 0;
 	const fields = filteredTabs[activeIndex]?.fields ?? [];

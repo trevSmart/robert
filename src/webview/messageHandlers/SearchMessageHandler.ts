@@ -116,7 +116,8 @@ export class SearchMessageHandler {
 		}
 		try {
 			this.errorHandler.logInfo(`Loading fields for ${getProviderLabel()} item ${objectId}`, 'SearchMessageHandler');
-			const result = await getIssueFields(objectId);
+			const itemType = message?.itemType === 'defect' ? 'defect' : 'userstory';
+			const result = await getIssueFields(objectId, itemType);
 			webview.postMessage({ type: 'issueFieldsLoaded', objectId, result });
 		} catch (error) {
 			const errorMessage = error instanceof Error ? error.message : String(error);

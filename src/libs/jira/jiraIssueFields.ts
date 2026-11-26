@@ -8,7 +8,7 @@
  * *Administer Jira*: si l'usuari les pot llegir, els camps s'agrupen per pestanya;
  * si no (401/403), es recorda per a la sessió i es mostra la llista plana.
  */
-import type { IssueFieldsResult, IssueFieldTab, IssueFieldValue } from '../../types/jira';
+import type { IssueFieldsItemType, IssueFieldsResult, IssueFieldTab, IssueFieldValue } from '../../types/jira';
 import { ErrorHandler } from '../../ErrorHandler';
 import { getJiraSettings, jiraRequest } from './jiraClient';
 import { callJira } from './jiraCall';
@@ -222,7 +222,8 @@ export function groupByScreen(values: Map<string, IssueFieldValue>, layout: NonN
 	return tabs;
 }
 
-export async function getIssueFields(objectId: string): Promise<IssueFieldsResult> {
+/** `_itemType` is only used by Rally; a Jira issue key or id is enough. */
+export async function getIssueFields(objectId: string, _itemType?: IssueFieldsItemType): Promise<IssueFieldsResult> {
 	const validation = await validateJiraConfiguration();
 	if (!validation.isValid) {
 		throw new Error(`Jira configuration error: ${validation.errors.join(', ')}`);

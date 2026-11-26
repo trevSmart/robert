@@ -236,6 +236,18 @@ class CollapsibleCard extends HTMLElement {
 					flex: 1;
 				}
 
+				/*
+				 * Always-visible area between the header and the collapsible content (e.g. the
+				 * pinned fields of the Fields card). Slotted, so the light-DOM styles apply.
+				 */
+				.summary {
+					display: contents;
+				}
+
+				::slotted([slot='summary']) {
+					display: block;
+				}
+
 				.content {
 					padding-left: ${this.isCompact() ? '0' : '16px'};
 					padding-right: ${this.isCompact() ? '0' : '16px'};
@@ -264,6 +276,7 @@ class CollapsibleCard extends HTMLElement {
 					<h3 class="title">${title}</h3>
 					<slot name="header-actions"></slot>
 				</div>
+				<slot name="summary" class="summary"></slot>
 				<div class="content">
 					<slot></slot>
 				</div>

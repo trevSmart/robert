@@ -302,8 +302,7 @@
 		"react": "^19.3.1",
 		"react-dom": "^19.3.1",
 		"styled-components": "^6.6.0",
-		"vite": "^8.3.8",
-		"vscrui": "^1.1.0"
+		"vite": "^8.3.8"
 	},
 	"overrides": {
 		"serialize-javascript": "7.1.4",

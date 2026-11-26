@@ -96,7 +96,7 @@ export interface Attachment {
 	thumbnailUrl: string | null;
 }
 
-/** One field of a Jira issue with a value, ready to display. */
+/** One field of a Jira issue or Rally artifact with a value, ready to display. */
 export interface IssueFieldValue {
 	id: string;
 	name: string;
@@ -106,14 +106,20 @@ export interface IssueFieldValue {
 	html?: string;
 }
 
-/** A tab of the issue's view screen in Jira (e.g. «Esfuerzo Desarrollo»), or the single flat group. */
+/** A tab of the issue's view screen in Jira (e.g. «Esfuerzo Desarrollo»), a Custom / Standard group in Rally, or the single flat group. */
 export interface IssueFieldTab {
 	/** Tab name; null for the flat list (screen tabs not readable). */
 	name: string | null;
 	fields: IssueFieldValue[];
 }
 
-/** Fields of a Jira issue that Robert does not show elsewhere, grouped like Jira's «Key details» when possible. */
+/** Item types with a Fields card. Rally needs it to pick the WSAPI type; Jira ignores it. */
+export type IssueFieldsItemType = 'userstory' | 'defect';
+
+/**
+ * Fields of an issue that Robert does not show elsewhere: grouped like Jira's «Key details» when
+ * possible, and in «Custom» / «Standard» tabs with Rally.
+ */
 export interface IssueFieldsResult {
 	tabs: IssueFieldTab[];
 	/** True when the tabs come from the issue's view screen (needs Jira admin rights to read). */

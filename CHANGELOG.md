@@ -9,6 +9,7 @@
 * Accounts that can read the Jira screen configuration (Administer Jira) see the fields grouped in the same tabs as Jira; the rest see them as one list, in the edit screen's order
 * The **Fields** card starts collapsed. Pin a field with its pin button to keep it visible while the card is collapsed, for every issue (saved per workspace); expanding the card shows the pinned fields first, then the rest
 * Filter the fields of an expanded **Fields** card by name or value (case and accents are ignored)
+* The **Fields** card is also available with Rally: every field of the user story or defect that has a value and that the workspace does not hide, with the names from the Rally field definitions, in **Custom** and **Standard** tabs (Rally does not expose its detail page layout). Collections other than tags show their number of items
 
 ### UI
 * Add a "More actions" menu (⋮) at the right end of the main tab bar with **Settings**, **Open as Editor** (sidebar view only) and **Reload**. The view's title bar menu is not available in an editor tab or in the standalone app, so the settings dialog could not be opened from there. The menu stays pinned to the right, apart from the "…" menu of tabs that do not fit

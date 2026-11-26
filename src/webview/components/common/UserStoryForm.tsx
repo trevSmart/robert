@@ -539,7 +539,7 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					</div>
 				</div>
 			</collapsible-card>
-			<IssueFieldsCard objectId={userStory.objectId} />
+			<IssueFieldsCard objectId={userStory.objectId} itemType="userstory" />
 			<collapsible-card title="Related Records" style={{ margin: '20px 0' } as React.CSSProperties}>
 				<div>
 					<div

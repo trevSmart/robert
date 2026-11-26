@@ -9,6 +9,7 @@
 import * as jira from '../jira/jiraServices';
 import * as rally from '../rally/rallyServices';
 import { getIssueFields as getJiraIssueFields } from '../jira/jiraIssueFields';
+import { getIssueFields as getRallyIssueFields } from '../rally/rallyIssueFields';
 import { setJiraBroadcaster } from '../jira/jiraCall';
 import { setRallyBroadcaster } from '../rally/rallyCall';
 import { validateJiraConfiguration } from '../jira/utils';
@@ -62,8 +63,7 @@ export const getTaskWithParent = route(jira.getTaskWithParent, rally.getTaskWith
 export const getUserStoryRevisions = route(jira.getUserStoryRevisions, rally.getUserStoryRevisions);
 export const getUserStoryRevisionsCount = route(jira.getUserStoryRevisionsCount, rally.getUserStoryRevisionsCount);
 export const getAttachments = route(jira.getAttachments, rally.getAttachments);
-/** Jira only: Rally has no screen-based custom field layout (its implementation throws). */
-export const getIssueFields = route(getJiraIssueFields, rally.getIssueFields);
+export const getIssueFields = route(getJiraIssueFields, getRallyIssueFields);
 export const fetchImageAsBase64 = route(jira.fetchJiraImageAsBase64, rally.fetchRallyImageAsBase64);
 /** Jira only: Rally's TaskEstimateTotal is a read-only roll-up (its implementation throws). */
 export const updateUserStoryEstimatedHours = route(jira.updateUserStoryEstimatedHours, rally.updateUserStoryEstimatedHours);

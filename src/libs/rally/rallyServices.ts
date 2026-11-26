@@ -1,9 +1,10 @@
 import { rallyData, rallyDataMeta, stampRallyData } from '../../extension.js';
 import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
-import type { Attachment, IssueFieldsResult } from '../../types/jira';
+import type { Attachment } from '../../types/jira';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User, GlobalSearchResultItem } from '../../types/rally';
 import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId, clearUtilsCaches } from './utils';
 import { callRally, callRallyFetch, setRallyBroadcaster } from './rallyCall';
+import { clearRallyIssueFieldsCache } from './rallyIssueFields';
 import { ErrorHandler } from '../../ErrorHandler';
 import { SettingsManager } from '../../SettingsManager';
 import { getUserStoriesCacheManager, getProjectsCacheManager, getIterationsCacheManager, getTeamMembersCacheManager, getUsersCacheManager, clearAllCaches as _clearAllCachesService } from './CacheService';
@@ -2611,6 +2612,7 @@ export function clearAllRallyCaches(): void {
 		getTeamMembersCacheManager().clear();
 		getUsersCacheManager().clear();
 		clearUtilsCaches();
+		clearRallyIssueFieldsCache();
 		errorHandler.logInfo('All Rally caches cleared', 'rallyServices.clearAllRallyCaches');
 	} catch (error) {
 		errorHandler.handleError(error instanceof Error ? error : new Error(String(error)), 'rallyServices.clearAllRallyCaches');
@@ -2919,12 +2921,6 @@ export async function getTestCaseWithParent(objectId: string): Promise<{ testCas
  * roll-up of the task estimates. Kept so the provider facade has the same shape
  * for both providers; the UI does not offer the edit for Rally.
  */
-/** Jira only: the webview never asks for it with Rally (the Fields card is hidden). */
-export async function getIssueFields(objectId: string): Promise<IssueFieldsResult> {
-	errorHandler.logWarning(`Rejected fields request for ${objectId}: the Fields card is Jira only`, 'rallyServices.getIssueFields');
-	throw new Error('The Fields card is only available with Jira.');
-}
-
 export async function updateUserStoryEstimatedHours(objectId: string, _estimatedHours: number): Promise<{ userStory: RallyUserStory | null }> {
 	errorHandler.logWarning(`Rejected estimated-hours edit for user story ${objectId}: not supported in Rally`, 'rallyServices.updateUserStoryEstimatedHours');
 	throw new Error('Editing estimated hours is not supported in Rally: the hours are the sum of the task estimates (TaskEstimateTotal).');

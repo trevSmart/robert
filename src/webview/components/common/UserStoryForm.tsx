@@ -10,7 +10,7 @@ import RevisionDescription from './RevisionDescription';
 import RevisionTimeline from './RevisionTimeline';
 import ResizableDescription from './ResizableDescription';
 import EstimatedHoursField from './EstimatedHoursField';
-import IssueFieldsCard from './IssueFieldsCard';
+import IssueFieldsSection from './IssueFieldsSection';
 import AttachmentsList, { AttachmentIcon, useAttachments } from './AttachmentsList';
 import { useProvider } from '../../utils/providerState';
 import './CollapsibleCard';
@@ -516,6 +516,9 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 						<AvatarFormField name={userStory.assignee || ''} emptyLabel="N/A" />
 					</div>
 
+					{/* Other fields of the record (pinned ones always visible) */}
+					<IssueFieldsSection objectId={userStory.objectId} itemType="userstory" />
+
 					{/* Description */}
 					<div
 						style={{
@@ -539,7 +542,6 @@ const UserStoryForm: FC<UserStoryFormProps> = ({ userStory, selectedAdditionalTa
 					</div>
 				</div>
 			</collapsible-card>
-			<IssueFieldsCard objectId={userStory.objectId} itemType="userstory" />
 			<collapsible-card title="Related Records" style={{ margin: '20px 0' } as React.CSSProperties}>
 				<div>
 					<div

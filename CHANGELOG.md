@@ -5,11 +5,11 @@
 * Each file shows its name, size, author and date, with a preview for images; clicking it opens the file in the browser with your Jira / Rally session. Only links on the configured Jira site / Rally instance are opened
 
 ### Jira fields
-* User stories and defects get a **Fields** card (Jira only) with the issue's other fields that have a value, such as custom fields from the «Key details» tabs of the Jira issue view (e.g. «Talla» in «Esfuerzo Desarrollo»). Robert used to read only a fixed set of fields
+* The **Details** card of user stories and defects gets a **Fields** section (Jira only) with the issue's other fields that have a value, such as custom fields from the «Key details» tabs of the Jira issue view (e.g. «Talla» in «Esfuerzo Desarrollo»). Robert used to read only a fixed set of fields
 * Accounts that can read the Jira screen configuration (Administer Jira) see the fields grouped in the same tabs as Jira; the rest see them as one list, in the edit screen's order
-* The **Fields** card starts collapsed. Pin a field with its pin button to keep it visible while the card is collapsed, for every issue (saved per workspace); expanding the card shows the pinned fields first, then the rest
-* Filter the fields of an expanded **Fields** card by name or value (case and accents are ignored)
-* The **Fields** card is also available with Rally: every field of the user story or defect that has a value and that the workspace does not hide, with the names from the Rally field definitions, in **Custom** and **Standard** tabs (Rally does not expose its detail page layout). Collections other than tags show their number of items
+* The **Fields** section shows the pinned fields: pin a field with its pin button to keep it visible for every issue (saved per workspace). **Show all fields** lists the rest below them
+* Filter the fields by name or value while **Show all fields** is open (case and accents are ignored)
+* The **Fields** section is also available with Rally: every field of the user story or defect that has a value and that the workspace does not hide, with the names from the Rally field definitions, in **Custom** and **Standard** tabs (Rally does not expose its detail page layout). Collections other than tags show their number of items
 
 ### UI
 * Add a "More actions" menu (⋮) at the right end of the main tab bar with **Settings**, **Open as Editor** (sidebar view only) and **Reload**. The view's title bar menu is not available in an editor tab or in the standalone app, so the settings dialog could not be opened from there. The menu stays pinned to the right, apart from the "…" menu of tabs that do not fit

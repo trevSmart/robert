@@ -62,6 +62,7 @@ interface Iteration {
 	endDate: string;
 	state: string;
 	project: string | null;
+	projects?: string[];
 	_ref: string;
 }
 
@@ -534,6 +535,9 @@ const UserStoriesTable: React.FC<UserStoriesTableProps> = ({ userStories, loadin
 	);
 };
 
+/** Projects of a sprint: Jira sprints can span several projects (`projects`), Rally iterations have one. */
+const iterationProjectsLabel = (iteration: { project?: string | null; projects?: string[] }): string => (iteration.projects?.length ? iteration.projects.join(', ') : (iteration.project ?? ''));
+
 interface IterationsTableProps {
 	iterations: Iteration[];
 	loading?: boolean;
@@ -685,6 +689,17 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 							<th
 								style={{
 									padding: '10px 12px',
+									textAlign: 'left',
+									borderBottom: `1px solid ${themeColors.panelBorder}`,
+									fontWeight: '600',
+									width: '90px'
+								}}
+							>
+								Project
+							</th>
+							<th
+								style={{
+									padding: '10px 12px',
 									textAlign: 'right',
 									borderBottom: `1px solid ${themeColors.panelBorder}`,
 									fontWeight: '600',
@@ -733,7 +748,7 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 												}}
 											/>
 											<td
-												colSpan={4}
+												colSpan={5}
 												style={{
 													padding: '10px 12px',
 													fontWeight: '600',
@@ -816,6 +831,20 @@ export const IterationsTable: React.FC<IterationsTableProps> = ({ iterations, lo
 											}}
 										>
 											{iteration.name}
+										</td>
+										<td
+											style={{
+												padding: '10px 12px',
+												fontWeight: '300',
+												color: isFutureIteration(iteration) ? themeColors.descriptionForeground : undefined,
+												overflow: 'hidden',
+												textOverflow: 'ellipsis',
+												whiteSpace: 'nowrap',
+												maxWidth: '160px'
+											}}
+											title={iterationProjectsLabel(iteration)}
+										>
+											{iterationProjectsLabel(iteration) || '—'}
 										</td>
 										<td
 											style={{

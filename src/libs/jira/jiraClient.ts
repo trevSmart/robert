@@ -1,5 +1,6 @@
 import { SettingsManager } from '../../SettingsManager';
 import { ErrorHandler } from '../../ErrorHandler';
+import { getActiveProjects, parseProjectList } from '../provider/projectScope';
 
 const errorHandler = ErrorHandler.getInstance();
 
@@ -7,8 +8,8 @@ export interface JiraSettings {
 	baseUrl: string;
 	email: string;
 	apiToken: string;
-	/** Empty means "all projects". */
-	projectKey: string;
+	/** Configured project keys (comma-separated setting). Empty means "all projects". */
+	projectKeys: string[];
 }
 
 export function getJiraSettings(): JiraSettings {
@@ -17,7 +18,7 @@ export function getJiraSettings(): JiraSettings {
 		baseUrl: (settings.getSetting('jiraBaseUrl') || '').replace(/\/$/, ''),
 		email: settings.getSetting('jiraEmail') || '',
 		apiToken: settings.getSetting('jiraApiToken') || '',
-		projectKey: (settings.getSetting('jiraProjectKey') || '').trim()
+		projectKeys: parseProjectList(settings.getSetting('jiraProjectKey'))
 	};
 }
 
@@ -87,10 +88,18 @@ export async function searchIssues(jql: string, fields: string[], max = 1000): P
 	return issues.slice(0, max);
 }
 
-/** Project filter for every query. With no project key configured it spans all projects. */
-export function projectJql(): string {
-	const { projectKey } = getJiraSettings();
-	return projectKey ? `project = ${quoteJql(projectKey)}` : 'project is not EMPTY';
+/**
+ * Project filter for every query: the projects in the current scope (the one selected in the
+ * project selector, or every configured key). With no project key configured it spans all projects.
+ */
+export function projectJql(projects: string[] = getActiveProjects()): string {
+	if (!projects.length) {
+		return 'project is not EMPTY';
+	}
+	if (projects.length === 1) {
+		return `project = ${quoteJql(projects[0])}`;
+	}
+	return `project in (${projects.map(quoteJql).join(', ')})`;
 }
 
 export function quoteJql(value: string): string {

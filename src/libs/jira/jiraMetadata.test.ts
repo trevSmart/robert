@@ -15,7 +15,7 @@ vi.mock('../../SettingsManager', () => ({
 }));
 vi.mock('./jiraClient', () => ({
 	jiraRequest,
-	getJiraSettings: vi.fn(() => ({ baseUrl: 'https://tenant.atlassian.net', email: 'a@b.c', apiToken: 't', projectKey: '' })),
+	getJiraSettings: vi.fn(() => ({ baseUrl: 'https://tenant.atlassian.net', email: 'a@b.c', apiToken: 't', projectKeys: [] })),
 	validateJiraSettings: vi.fn(() => ({ isValid: true, errors: [] })),
 	quoteJql: (value: string) => `"${value.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
 }));
@@ -172,7 +172,7 @@ describe('ensureJiraMetadata with overlapping loads', () => {
 
 	it('does not let an older load for another site overwrite the newer one', async () => {
 		const site = { current: 'a' };
-		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKey: '' }));
+		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKeys: [] }));
 		deferRequestsPerSite(site);
 
 		const loadA = ensureJiraMetadata();
@@ -193,7 +193,7 @@ describe('ensureJiraMetadata with overlapping loads', () => {
 
 	it('does not publish a load that finishes after a reset', async () => {
 		const site = { current: 'a' };
-		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKey: '' }));
+		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKeys: [] }));
 		deferRequestsPerSite(site);
 
 		const load = ensureJiraMetadata();
@@ -210,7 +210,7 @@ describe('mapping changes', () => {
 
 	it("falls back to the defaults, not the previous site's mappings, when the active load fails", async () => {
 		const site = { current: 'a' };
-		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKey: '' }));
+		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: `https://${site.current}.atlassian.net`, email: 'a@b.c', apiToken: 't', projectKeys: [] }));
 		jiraRequest.mockImplementation(async (path: string) => answer(path));
 		await ensureJiraMetadata();
 		expect(JIRA_FIELDS.sprint).toBe('customfield_20001');
@@ -228,7 +228,7 @@ describe('mapping changes', () => {
 	});
 
 	it('notifies listeners only when the mappings actually change', async () => {
-		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: 'https://tenant.atlassian.net', email: 'a@b.c', apiToken: 't', projectKey: '' }));
+		vi.mocked(getJiraSettings).mockImplementation(() => ({ baseUrl: 'https://tenant.atlassian.net', email: 'a@b.c', apiToken: 't', projectKeys: [] }));
 		const changed = vi.fn();
 		const unsubscribe = onJiraMetadataChanged(changed);
 

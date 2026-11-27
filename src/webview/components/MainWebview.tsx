@@ -11,6 +11,7 @@ import DiscussionsTable from './common/DiscussionsTable';
 import TestCasesTable from './common/TestCasesTable';
 import ScreenHeader from './common/ScreenHeader';
 import OpenInJiraButton from './common/OpenInJiraButton';
+import ProjectScopeSelector, { EMPTY_PROJECT_SCOPE, type ProjectScope } from './common/ProjectScopeSelector';
 import NavigationBar, { type ViewAction } from './common/NavigationBar';
 import SubTabsBar from './common/SubTabsBar';
 import { getPortfolioSubTabs } from './sections/portfolio/portfolioSubTabs';
@@ -582,6 +583,9 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 	const NO_USER_STORY_FILTERS: UserStoryFilters = { project: '', sprint: '' };
 	const [userStoryFilters, setUserStoryFilters] = useState<UserStoryFilters>(NO_USER_STORY_FILTERS);
 	const userStoryFiltersRef = useRef<UserStoryFilters>(NO_USER_STORY_FILTERS);
+	// Configured projects and the one selected in the navigation bar (null = all projects).
+	const [projectScope, setProjectScope] = useState<ProjectScope>(preloadedData?.projectScope ?? EMPTY_PROJECT_SCOPE);
+	const projectScopeRef = useRef<ProjectScope>(projectScope);
 	const [knownProjects, setKnownProjects] = useState<string[]>([]);
 	const rememberProjects = useCallback((keys: Array<string | null | undefined>) => {
 		setKnownProjects(prev => {
@@ -590,6 +594,10 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 			return next.size === prev.length ? prev : Array.from(next).sort((a, b) => a.localeCompare(b));
 		});
 	}, []);
+
+	// Project filter of All User Stories: none when the selector narrows to one project, otherwise
+	// the configured projects (or, with no project configured, the projects seen in the data).
+	const userStoryFilterProjects = useMemo(() => (projectScope.active ? [] : projectScope.projects.length ? projectScope.projects : knownProjects), [projectScope, knownProjects]);
 
 	// Sprint-filtered User Stories state
 	const [sprintUserStories, setSprintUserStories] = useState<UserStory[]>([]);
@@ -1653,6 +1661,15 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 		logDebug('All state reset complete', 'MainWebview.resetAllState');
 	}, []);
 
+	// The host applies the selection and broadcasts `projectScopeChanged` to every Robert view.
+	const handleProjectScopeChange = useCallback(
+		(project: string | null) => {
+			if (project === projectScopeRef.current.active) return;
+			sendMessage({ command: 'setActiveProject', project });
+		},
+		[sendMessage]
+	);
+
 	// Settings is always available (the dialog lives in this webview); the host adds the rest.
 	const [viewActions, setViewActions] = useState<ViewAction[]>(['settings']);
 	const handleViewAction = useCallback(
@@ -1698,8 +1715,33 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				case 'showLogo':
 					// Handle logo display if needed
 					break;
+				case 'projectScopeChanged': {
+					const nextScope: ProjectScope = { projects: Array.isArray(message.projects) ? message.projects : [], active: message.active ?? null };
+					const previousScope = projectScopeRef.current;
+					projectScopeRef.current = nextScope;
+					setProjectScope(nextScope);
+					if (previousScope.active !== nextScope.active) {
+						// Every view shows data of the selected project(s): drop what was loaded for the
+						// previous scope and reload, staying in the current section.
+						logDebug(`Project scope changed to ${nextScope.active ?? 'all projects'}; reloading data`, 'MainWebview.handleMessage');
+						const section = activeSection;
+						resetAllState();
+						setActiveSection(section);
+						userStoryFiltersRef.current = NO_USER_STORY_FILTERS;
+						setUserStoryFilters(NO_USER_STORY_FILTERS);
+						setKnownProjects([]);
+						setTimeout(() => {
+							loadIterations();
+						}, 100);
+					}
+					break;
+				}
 				case 'iterationsLoaded':
 					setIterationsLoading(false);
+					if (message.projectScope) {
+						projectScopeRef.current = message.projectScope;
+						setProjectScope(message.projectScope);
+					}
 					if (message.iterations) {
 						setIterations(message.iterations);
 						rememberProjects(message.iterations.flatMap((it: { projects?: string[] }) => it.projects ?? []));
@@ -2724,7 +2766,16 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 				<SettingsDialog />
 				<CenteredContainer>
 					<StickyNav>
-						<NavigationBar activeSection={activeSection} onSectionChange={handleSectionChange} collaborationBadgeCount={collaborationHelpRequestsCount} showTestTab={showTestTab} showCollaborationTab={collaborationEnabled} viewActions={viewActions} onViewAction={handleViewAction} />
+						<NavigationBar
+							activeSection={activeSection}
+							onSectionChange={handleSectionChange}
+							collaborationBadgeCount={collaborationHelpRequestsCount}
+							showTestTab={showTestTab}
+							showCollaborationTab={collaborationEnabled}
+							viewActions={viewActions}
+							onViewAction={handleViewAction}
+							trailingContent={<ProjectScopeSelector scope={projectScope} onChange={handleProjectScopeChange} />}
+						/>
 						{portfolioSubTabsBar}
 					</StickyNav>
 					<SmoothScrollWrapper ref={wrapperRef}>
@@ -2925,7 +2976,7 @@ const MainWebview: FC<MainWebviewProps> = ({ webviewId, context, _rebusLogoUri, 
 													onActiveUserStoryTabChange={setActiveUserStoryTab}
 													collaborationEnabled={collaborationEnabled}
 													userStoryFilters={userStoryFilters}
-													userStoryFilterProjects={knownProjects}
+													userStoryFilterProjects={userStoryFilterProjects}
 													onUserStoryFiltersChange={handleUserStoryFiltersChange}
 												/>
 											)}

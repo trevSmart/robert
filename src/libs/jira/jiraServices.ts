@@ -3,6 +3,7 @@ import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
 import type { Attachment, JiraProject, JiraUser, JiraUserStory, GlobalSearchResultItem } from '../../types/jira';
 import { validateJiraConfiguration, clearUtilsCaches } from './utils';
 import { getJiraSettings, jiraRequest, searchIssues, projectJql, quoteJql } from './jiraClient';
+import { getActiveProjects, projectScopeKey } from '../provider/projectScope';
 import { clearIssueFieldsCache } from './jiraIssueFields';
 import { JIRA_FIELDS, bugTypesJqlList, isBugIssueType, isSubtaskIssueType, onJiraMetadataChanged, resetJiraMetadata, storyPointsOf, subtaskJql } from './jiraMetadata';
 import { setJiraBroadcaster, callJira } from './jiraCall';
@@ -401,16 +402,18 @@ export async function getUsers(query: Record<string, unknown> = {}, limit: numbe
 	errorHandler.logDebug(`getUsers called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'jiraServices.getUsers');
 
 	await ensureConfigured();
-	const { projectKey } = getJiraSettings();
+	const projectKeys = getActiveProjects();
 	const search = String(query.DisplayName ?? query.displayName ?? '');
 	const response = await callJira(
 		() =>
 			jiraRequest<any[]>(
-				projectKey
-					? `/rest/api/3/user/assignable/search?project=${encodeURIComponent(projectKey)}&query=${encodeURIComponent(search)}&maxResults=${limit ?? 1000}`
-					: search
-						? `/rest/api/3/user/search?query=${encodeURIComponent(search)}&maxResults=${limit ?? 1000}`
-						: `/rest/api/3/users/search?maxResults=${limit ?? 1000}`
+				projectKeys.length === 1
+					? `/rest/api/3/user/assignable/search?project=${encodeURIComponent(projectKeys[0])}&query=${encodeURIComponent(search)}&maxResults=${limit ?? 1000}`
+					: projectKeys.length > 1
+						? `/rest/api/3/user/assignable/multiProjectSearch?projectKeys=${projectKeys.map(encodeURIComponent).join(',')}&query=${encodeURIComponent(search)}&maxResults=${limit ?? 1000}`
+						: search
+							? `/rest/api/3/user/search?query=${encodeURIComponent(search)}&maxResults=${limit ?? 1000}`
+							: `/rest/api/3/users/search?maxResults=${limit ?? 1000}`
 			),
 		'Loading users...'
 	);
@@ -425,7 +428,7 @@ export async function getUsers(query: Record<string, unknown> = {}, limit: numbe
 export async function getIterations(query: Record<string, unknown> = {}, limit: number | null = null, opts?: { maxAge?: number }) {
 	errorHandler.logDebug(`getIterations called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'jiraServices.getIterations');
 
-	const cacheKey = `iterations:${JSON.stringify(query)}`;
+	const cacheKey = `${projectScopeKey()}:iterations:${JSON.stringify(query)}`;
 	const iterationsTtl = opts?.maxAge ?? ttlFor('iterations');
 	const iterationsCacheMgr = getIterationsCacheManager();
 	const cachedHit = iterationsCacheMgr.getWithMeta(cacheKey);
@@ -455,7 +458,7 @@ export async function getIterations(query: Record<string, unknown> = {}, limit: 
 					startDate: sprint.startDate ?? '',
 					endDate: sprint.endDate ?? '',
 					state: ITERATION_STATE_BY_SPRINT_STATE[sprint.state] ?? sprint.state ?? 'Unknown',
-					project: issue.fields.project?.key ?? getJiraSettings().projectKey ?? null,
+					project: issue.fields.project?.key ?? getActiveProjects()[0] ?? null,
 					projects: [],
 					taskEstimateTotal: 0,
 					_ref: `/iteration/${id}`

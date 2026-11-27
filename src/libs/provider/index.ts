@@ -16,6 +16,7 @@ import { validateJiraConfiguration } from '../jira/utils';
 import { ensureJiraMetadata } from '../jira/jiraMetadata';
 import { validateRallyConfiguration } from '../rally/utils';
 import { SettingsManager } from '../../SettingsManager';
+import { jiraData, jiraDataMeta, rallyData, rallyDataMeta } from '../../extension.js';
 
 export type ProviderId = 'jira' | 'rally';
 
@@ -99,6 +100,26 @@ export function setProviderBroadcaster(fn: ((message: { command: string; label?:
 					})
 			: null
 	);
+}
+
+/**
+ * Drops the in-memory data that depends on the project scope (sprints, work items, users) of both
+ * providers, so a change in the project selector never reuses items of another project. The TTL
+ * caches are keyed by scope (`projectScopeKey()`) and stay valid; metadata and the current user too.
+ */
+export function clearProjectScopedData(): void {
+	const scopedEntities = ['users', 'iterations', 'userStories', 'tasks', 'defects', 'testCases'];
+	for (const [data, meta] of [
+		[jiraData, jiraDataMeta],
+		[rallyData, rallyDataMeta]
+	] as unknown as Array<[Record<string, unknown>, Record<string, unknown>]>) {
+		for (const entity of scopedEntities) {
+			if (Array.isArray(data[entity])) {
+				data[entity] = [];
+			}
+			delete meta[entity];
+		}
+	}
 }
 
 /** Clears caches of both providers, so a provider switch never serves stale data. */

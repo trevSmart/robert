@@ -103,11 +103,12 @@ const SortAscIcon = () => (
 	</svg>
 );
 
-const COLUMN_KEYS = ['formattedId', 'name', 'iteration', 'scheduleState', 'severity', 'priority'] as const;
+const COLUMN_KEYS = ['formattedId', 'project', 'name', 'iteration', 'scheduleState', 'severity', 'priority'] as const;
 type ColumnKey = (typeof COLUMN_KEYS)[number];
 
 const INITIAL_WIDTHS: Record<ColumnKey, number> = {
 	formattedId: 120,
+	project: 90,
 	name: 360,
 	iteration: 160,
 	scheduleState: 120,
@@ -289,6 +290,7 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 				>
 					<colgroup>
 						<col style={{ width: `${getColumnPercent('formattedId')}%` }} />
+						<col style={{ width: `${getColumnPercent('project')}%` }} />
 						<col style={{ width: `${getColumnPercent('name')}%` }} />
 						<col style={{ width: `${getColumnPercent('iteration')}%` }} />
 						<col style={{ width: `${getColumnPercent('scheduleState')}%` }} />
@@ -303,6 +305,7 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 							}}
 						>
 							<SortableHeader label="ID" sortKey="formattedId" colKey="formattedId" />
+							<SortableHeader label="Project" sortKey="project" colKey="project" />
 							<SortableHeader label="Name" sortKey="name" colKey="name" />
 							<SortableHeader label="Sprint" sortKey="iteration" colKey="iteration" />
 							<SortableHeader label="State" sortKey="scheduleState" colKey="scheduleState" />
@@ -350,6 +353,18 @@ const DefectsTable: React.FC<DefectsTableProps> = ({ defects, loading = false, e
 									}}
 								>
 									{defect.formattedId}
+								</td>
+								<td
+									style={{
+										padding: '10px 12px',
+										fontWeight: '300',
+										overflow: 'hidden',
+										textOverflow: 'ellipsis',
+										whiteSpace: 'nowrap'
+									}}
+									title={defect.project ?? undefined}
+								>
+									{defect.project ?? '—'}
 								</td>
 								<td
 									style={{

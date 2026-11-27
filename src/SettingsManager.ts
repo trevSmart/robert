@@ -514,7 +514,8 @@ export class SettingsManager {
 			errors.push('Rally API key cannot be empty');
 		}
 
-		if (settings.rallyProjectName !== undefined && settings.rallyProjectName.trim() === '') {
+		// One or more comma-separated project names (see libs/provider/projectScope.ts).
+		if (settings.rallyProjectName !== undefined && settings.rallyProjectName.split(',').every(name => name.trim() === '')) {
 			errors.push('Rally project name cannot be empty');
 		}
 

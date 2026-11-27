@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { getProjectScopeState } from '../../libs/provider/projectScope';
 import { ErrorHandler } from '../../ErrorHandler';
 import {
 	getProjects,
@@ -172,6 +173,7 @@ export class JiraMessageHandler {
 					holidays: holidays || [],
 					collaborationEnabled: collaborationEnabled || false,
 					provider: SettingsManager.getInstance().getSetting('provider'),
+					projectScope: getProjectScopeState(),
 					devMode: isTestTabEnabled(),
 					debugMode: SettingsManager.getInstance().getSetting('debugMode')
 				});

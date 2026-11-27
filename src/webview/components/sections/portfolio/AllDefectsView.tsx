@@ -34,6 +34,7 @@ const AllDefectsView: FC<PortfolioViewProps> = ({ defects, defectsLoading, defec
 					<ScreenHeader
 						entityType="defect"
 						title={`${selectedDefect.formattedId}: ${selectedDefect.name}`}
+						projectKey={selectedDefect.project ?? undefined}
 						showBackButton={true}
 						onBack={onBackToDefects}
 						titleActions={

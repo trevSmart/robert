@@ -11,20 +11,18 @@ let _validationCache: {
 	timestamp: number;
 	settingsKey: string;
 } | null = null;
-let _projectIdCache: { projectId: string; settingsKey: string } | null = null;
 
 function settingsFingerprint(): string {
-	const { baseUrl, email, apiToken, projectKey } = getJiraSettings();
-	return `${baseUrl}|${email}|${apiToken}|${projectKey}`;
+	const { baseUrl, email, apiToken, projectKeys } = getJiraSettings();
+	return `${baseUrl}|${email}|${apiToken}|${projectKeys.join(',')}`;
 }
 
 /**
- * Buida les caches de mòdul (validació i id de projecte).
+ * Buida les caches de mòdul (validació).
  */
 export function clearUtilsCaches(): void {
 	_validationCache = null;
-	_projectIdCache = null;
-	errorHandler.logDebug('Utils caches cleared (validation, projectId)', 'jiraUtils.clearUtilsCaches');
+	errorHandler.logDebug('Utils caches cleared (validation)', 'jiraUtils.clearUtilsCaches');
 }
 
 /**
@@ -40,8 +38,8 @@ export async function validateJiraConfiguration(): Promise<{
 		return _validationCache.result;
 	}
 
-	const { baseUrl, email, apiToken, projectKey } = getJiraSettings();
-	errorHandler.logDebug(`Jira configuration check: baseUrl=${baseUrl || '(not set)'}, email=${email || '(not set)'}, token=${apiToken ? '***' : '(not set)'}, project=${projectKey || '(all)'}`, 'jiraUtils.validateJiraConfiguration');
+	const { baseUrl, email, apiToken, projectKeys } = getJiraSettings();
+	errorHandler.logDebug(`Jira configuration check: baseUrl=${baseUrl || '(not set)'}, email=${email || '(not set)'}, token=${apiToken ? '***' : '(not set)'}, projects=${projectKeys.join(', ') || '(all)'}`, 'jiraUtils.validateJiraConfiguration');
 
 	const basic = validateJiraSettings();
 	if (!basic.isValid) {
@@ -49,17 +47,40 @@ export async function validateJiraConfiguration(): Promise<{
 	}
 
 	const errors: string[] = [];
-	try {
-		await callJira(() => jiraRequest(projectKey ? `/rest/api/3/project/${encodeURIComponent(projectKey)}` : '/rest/api/3/myself'), 'Validating Jira configuration...');
-	} catch (error: unknown) {
+	const describeFailure = (error: unknown): string => {
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		errorHandler.logDebug(`Jira validation request failed: ${errorMessage}`, 'jiraUtils.validateJiraConfiguration');
 		if (errorMessage.includes('401') || errorMessage.includes('403')) {
-			errors.push('Invalid Jira email/API token or insufficient permissions');
-		} else if (projectKey && errorMessage.includes('404')) {
-			errors.push(`Jira project "${projectKey}" not found or not accessible`);
-		} else {
-			errors.push(`Jira API connection failed: ${errorMessage || 'Unknown error'}`);
+			return 'Invalid Jira email/API token or insufficient permissions';
+		}
+		return errorMessage.includes('404') ? '404' : `Jira API connection failed: ${errorMessage || 'Unknown error'}`;
+	};
+
+	if (!projectKeys.length) {
+		try {
+			await callJira(() => jiraRequest('/rest/api/3/myself'), 'Validating Jira configuration...');
+		} catch (error: unknown) {
+			const failure = describeFailure(error);
+			errors.push(failure === '404' ? 'Jira API connection failed: 404' : failure);
+		}
+	} else {
+		// Every configured project must exist and be visible to the account.
+		const missing: string[] = [];
+		for (const key of projectKeys) {
+			try {
+				await callJira(() => jiraRequest(`/rest/api/3/project/${encodeURIComponent(key)}`), 'Validating Jira configuration...');
+			} catch (error: unknown) {
+				const failure = describeFailure(error);
+				if (failure === '404') {
+					missing.push(key);
+				} else {
+					errors.push(failure);
+					break;
+				}
+			}
+		}
+		if (missing.length) {
+			errors.push(missing.length === 1 ? `Jira project "${missing[0]}" not found or not accessible` : `Jira projects ${missing.map(k => `"${k}"`).join(', ')} not found or not accessible`);
 		}
 	}
 
@@ -68,21 +89,4 @@ export async function validateJiraConfiguration(): Promise<{
 		_validationCache = { result, timestamp: Date.now(), settingsKey };
 	}
 	return result;
-}
-
-/**
- * Obté l'id numèric del projecte configurat (cachejat per configuració).
- */
-export async function getProjectId(): Promise<string> {
-	const settingsKey = settingsFingerprint();
-	if (_projectIdCache && _projectIdCache.settingsKey === settingsKey) {
-		return _projectIdCache.projectId;
-	}
-	const { projectKey } = getJiraSettings();
-	if (!projectKey) {
-		throw new Error('Jira project key configuration not found');
-	}
-	const project = await callJira(() => jiraRequest<{ id: string }>(`/rest/api/3/project/${encodeURIComponent(projectKey)}`), 'Resolving Jira project...');
-	_projectIdCache = { projectId: String(project.id), settingsKey };
-	return _projectIdCache.projectId;
 }

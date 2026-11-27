@@ -4,6 +4,7 @@ import type { RallyApi } from 'ibm-rally-node';
 import { SettingsManager } from '../../SettingsManager';
 import { ErrorHandler } from '../../ErrorHandler';
 import { callRally } from './rallyCall';
+import { getActiveProjects, parseProjectList } from '../provider/projectScope';
 
 const errorHandler = ErrorHandler.getInstance();
 
@@ -52,10 +53,17 @@ let _validationCache: {
 	settingsKey: string;
 } | null = null;
 
-// Cache for the resolved project ObjectID.
-// Keyed on a settings fingerprint (instance + apiKey + projectName) so that a change to
-// any of those values invalidates the cached ID automatically.
-let _projectIdCache: { projectId: string; settingsKey: string } | null = null;
+type QueryBuilder = ReturnType<typeof queryUtils.where>;
+
+/** `a OR b` (the Rally query builder has `or`, but its type declarations omit it). */
+function orQuery(a: QueryBuilder, b: QueryBuilder): QueryBuilder {
+	return (a as unknown as { or(query: QueryBuilder): QueryBuilder }).or(b);
+}
+
+// Cache of resolved project ObjectIDs by project name.
+// Keyed on a settings fingerprint (instance + apiKey) so that a change to either value
+// invalidates the cached IDs automatically.
+let _projectIdCache: { ids: Map<string, string>; settingsKey: string } | null = null;
 
 /**
  * Clear all module-level caches in utils (Rally API instance, validation result, project ID).
@@ -115,8 +123,9 @@ export async function validateRallyConfiguration(): Promise<{
 		errors.push('Rally API key is not configured');
 	}
 
-	// Validem el nom del projecte
-	if (!rallyProjectName || rallyProjectName.trim() === '') {
+	// Validem el nom del projecte (un o més, separats per comes)
+	const projectNames = parseProjectList(rallyProjectName);
+	if (!projectNames.length) {
 		errors.push('Rally project name is not configured');
 	}
 
@@ -125,31 +134,18 @@ export async function validateRallyConfiguration(): Promise<{
 		return { isValid: false, errors };
 	}
 
-	// Intentem fer una crida de prova a l'API per verificar l'autenticació
+	// Resolem tots els projectes configurats: comprova l'autenticació i que cada projecte existeix.
 	errorHandler.logDebug('Testing Rally API connection...', 'rallyUtils.validateRallyConfiguration');
 	try {
-		const rallyApi = getRallyApi();
-		errorHandler.logDebug('Making test query to Rally API...', 'rallyUtils.validateRallyConfiguration');
-		const result = await callRally(
-			rallyApi,
-			{
-				type: 'project',
-				fetch: ['ObjectID', 'Name'],
-				limit: 1
-			},
-			'Validating Rally configuration...'
-		);
-		const resultData = result as {
-			Results?: unknown[];
-			QueryResult?: { Results?: unknown[] };
-		};
-		const results = resultData.Results || resultData.QueryResult?.Results || [];
-		errorHandler.logDebug(`Test query successful, found ${results.length} projects`, 'rallyUtils.validateRallyConfiguration');
+		const ids = await resolveProjectIds(projectNames);
+		errorHandler.logDebug(`Test query successful, resolved ${ids.length} project(s)`, 'rallyUtils.validateRallyConfiguration');
 	} catch (error: unknown) {
 		errorHandler.logDebug('Test query failed with error', 'rallyUtils.validateRallyConfiguration');
 		const errorMessage = error instanceof Error ? error.message : String(error);
 		errorHandler.logDebug(`Error details: ${errorMessage}`, 'rallyUtils.validateRallyConfiguration');
-		if (errorMessage?.includes('401')) {
+		if (error instanceof RallyProjectNotFoundError) {
+			errors.push(errorMessage);
+		} else if (errorMessage?.includes('401')) {
 			errors.push('Invalid Rally API key or insufficient permissions');
 		} else if (errorMessage?.includes('404')) {
 			errors.push('Rally instance URL not found or invalid');
@@ -173,49 +169,80 @@ export async function validateRallyConfiguration(): Promise<{
 	return result;
 }
 
-/**
- * Obté l'ID del projecte especificat a la configuració de l'extensió
- * The result is cached keyed on (instance, apiKey, projectName) and cleared by clearUtilsCaches().
- * @returns {Promise<string>} - L'ID del projecte
- */
-export async function getProjectId(): Promise<string> {
-	const settingsManager = SettingsManager.getInstance();
-	const rallyProjectName = settingsManager.getSetting('rallyProjectName')?.trim();
+/** Raised when one or more configured Rally project names do not exist. */
+export class RallyProjectNotFoundError extends Error {
+	constructor(readonly names: string[]) {
+		super(names.length === 1 ? `No Rally project found with name "${names[0]}"` : `No Rally projects found with names ${names.map(n => `"${n}"`).join(', ')}`);
+		this.name = 'RallyProjectNotFoundError';
+	}
+}
 
-	if (!rallyProjectName) {
+/**
+ * Resolves Rally project names to ObjectIDs, in the given order, with one query for the names
+ * not cached yet. The cache is keyed on (instance, apiKey) and cleared by clearUtilsCaches().
+ */
+async function resolveProjectIds(names: string[]): Promise<string[]> {
+	if (!names.length) {
 		throw new Error('Rally project name configuration not found');
 	}
 
-	const rallyInstance = settingsManager.getSetting('rallyInstance');
-	const rallyApiKey = settingsManager.getSetting('rallyApiKey');
-	const settingsKey = `${rallyInstance}|${rallyApiKey}|${rallyProjectName}`;
+	const settingsManager = SettingsManager.getInstance();
+	const settingsKey = `${settingsManager.getSetting('rallyInstance')}|${settingsManager.getSetting('rallyApiKey')}`;
+	if (!_projectIdCache || _projectIdCache.settingsKey !== settingsKey) {
+		_projectIdCache = { ids: new Map(), settingsKey };
+	}
+	const cache = _projectIdCache.ids;
 
-	// Return cached project ID if all relevant settings are unchanged
-	if (_projectIdCache && _projectIdCache.settingsKey === settingsKey) {
-		errorHandler.logDebug(`Returning cached project ID for "${rallyProjectName}"`, 'rallyUtils.getProjectId');
-		return _projectIdCache.projectId;
+	const pending = names.filter(name => !cache.has(name));
+	if (pending.length) {
+		const nameQuery = pending.map(name => queryUtils.where('Name', '=', name)).reduce(orQuery);
+		const result = await callRally(
+			getRallyApi(),
+			{
+				type: 'project',
+				fetch: ['ObjectID', 'Name'],
+				query: nameQuery
+			},
+			'Resolving Rally projects...'
+		);
+		const resultData = result as {
+			Results?: Array<{ ObjectID: string | number; Name?: string }>;
+		};
+		for (const project of resultData.Results ?? []) {
+			// Several projects can share a name in different workspaces; keep the first one, as before.
+			if (project.Name && pending.includes(project.Name) && !cache.has(project.Name)) {
+				cache.set(project.Name, String(project.ObjectID));
+			}
+		}
+		const missing = pending.filter(name => !cache.has(name));
+		if (missing.length) {
+			throw new RallyProjectNotFoundError(missing);
+		}
+		errorHandler.logDebug(`Resolved Rally project IDs: ${pending.map(name => `${name}=${cache.get(name)}`).join(', ')}`, 'rallyUtils.resolveProjectIds');
 	}
 
-	const rallyApi = getRallyApi();
+	return names.map(name => cache.get(name) as string);
+}
 
-	const result = await callRally(
-		rallyApi,
-		{
-			type: 'project',
-			fetch: ['ObjectID', 'Name'],
-			query: queryUtils.where('Name', '=', rallyProjectName)
-		},
-		'Resolving Rally project...'
-	);
+/**
+ * ObjectIDs of the Rally projects to query.
+ * - `active`: the project selected in the project selector, or every configured project.
+ * - `configured`: every configured project (used for lookups by id, which must work whatever is selected).
+ */
+export async function getProjectIds(scope: 'active' | 'configured' = 'active'): Promise<string[]> {
+	const names = scope === 'active' ? getActiveProjects() : parseProjectList(SettingsManager.getInstance().getSetting('rallyProjectName'));
+	return resolveProjectIds(names);
+}
 
-	const resultData = result as {
-		Results?: Array<{ ObjectID: string; Name?: string }>;
-	};
-	if (!resultData.Results || resultData.Results.length === 0) {
-		throw new Error(`No project found with name "${rallyProjectName}"`);
+/** Rally query matching any of the given projects (`(Project = /project/A) OR (Project = /project/B)`). */
+export function projectScopeQuery(projectIds: string[]) {
+	if (!projectIds.length) {
+		throw new Error('Rally project name configuration not found');
 	}
+	return projectIds.map(id => queryUtils.where('Project', '=', `/project/${id}`)).reduce(orQuery);
+}
 
-	const projectId = resultData.Results[0].ObjectID;
-	_projectIdCache = { projectId, settingsKey };
-	return projectId;
+/** Rally query for the projects currently in scope. */
+export async function getProjectScopeQuery(scope: 'active' | 'configured' = 'active') {
+	return projectScopeQuery(await getProjectIds(scope));
 }

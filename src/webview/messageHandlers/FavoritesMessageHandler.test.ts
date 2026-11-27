@@ -55,7 +55,7 @@ describe('FavoritesMessageHandler legacy migration', () => {
 	let context: ReturnType<typeof createContext>;
 	let webview: ReturnType<typeof createWebview>;
 
-	const makeHandler = (project: string | null = 'DSS') => new FavoritesMessageHandler(errorHandler as any, context as any, () => project);
+	const makeHandler = (project: string | null = 'DSS') => new FavoritesMessageHandler(errorHandler as any, context as any, () => (project ? [project] : []));
 
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -168,7 +168,7 @@ describe('FavoritesMessageHandler per-workspace storage', () => {
 
 	it('stores new favorites in workspaceState, not globalState', async () => {
 		const context = createContext();
-		const handler = new FavoritesMessageHandler(errorHandler as any, context as any, () => 'DSS');
+		const handler = new FavoritesMessageHandler(errorHandler as any, context as any, () => ['DSS']);
 
 		await handler.handle('toggleFavoriteItem', createWebview() as any, { item: story('1', 'DSS') });
 
@@ -181,7 +181,7 @@ describe('FavoritesMessageHandler per-workspace storage', () => {
 		const ws = (project: string) => {
 			const workspace = new Map<string, unknown>();
 			const context = { globalState: createMemento(global), workspaceState: createMemento(workspace) };
-			return { handler: new FavoritesMessageHandler(errorHandler as any, context as any, () => project), workspace };
+			return { handler: new FavoritesMessageHandler(errorHandler as any, context as any, () => (project ? [project] : [])), workspace };
 		};
 		const a = ws('AAA');
 		const b = ws('BBB');
@@ -203,7 +203,7 @@ describe('FavoritesMessageHandler per-workspace storage', () => {
 		});
 		const webview = createWebview();
 
-		await new FavoritesMessageHandler(errorHandler as any, context as any, () => 'DSS').handle('getFavoriteItems', webview as any, {});
+		await new FavoritesMessageHandler(errorHandler as any, context as any, () => ['DSS']).handle('getFavoriteItems', webview as any, {});
 
 		expect(webview.postMessage).toHaveBeenCalledWith({ command: 'favoriteItemsLoaded', items: [expect.objectContaining({ objectId: '1' })] });
 		// The global list stays, so other workspaces can still seed their own share.
@@ -214,7 +214,7 @@ describe('FavoritesMessageHandler per-workspace storage', () => {
 		const context = createContext({ [STORAGE_KEY]: [{ ...story('1', 'DSS'), favoritedAt: 1 }] }, { [STORAGE_KEY]: [] });
 		const webview = createWebview();
 
-		await new FavoritesMessageHandler(errorHandler as any, context as any, () => 'DSS').handle('getFavoriteItems', webview as any, {});
+		await new FavoritesMessageHandler(errorHandler as any, context as any, () => ['DSS']).handle('getFavoriteItems', webview as any, {});
 
 		expect(webview.postMessage).toHaveBeenCalledWith({ command: 'favoriteItemsLoaded', items: [] });
 	});
@@ -223,7 +223,7 @@ describe('FavoritesMessageHandler per-workspace storage', () => {
 		const context = createContext({ [STORAGE_KEY]: [{ ...story('1', 'DSS'), favoritedAt: 1 }] });
 		const webview = createWebview();
 
-		await new FavoritesMessageHandler(errorHandler as any, context as any, () => null).handle('getFavoriteItems', webview as any, {});
+		await new FavoritesMessageHandler(errorHandler as any, context as any, () => []).handle('getFavoriteItems', webview as any, {});
 
 		expect(webview.postMessage).toHaveBeenCalledWith({ command: 'favoriteItemsLoaded', items: [] });
 	});

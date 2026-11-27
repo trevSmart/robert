@@ -56,7 +56,7 @@
 				"robert.rallyProjectName": {
 					"type": "string",
 					"default": "",
-					"description": "Rally project name to connect to. Used when robert.provider is \"rally\"."
+					"description": "Rally project name(s) to connect to. Separate several projects with commas (e.g. \"Team A, Team B\"); the project selector in Robert's navigation bar then shows all of them or one at a time. Used when robert.provider is \"rally\"."
 				},
 				"robert.jiraBaseUrl": {
 					"type": "string",
@@ -72,7 +72,7 @@
 				"robert.jiraProjectKey": {
 					"type": "string",
 					"default": "",
-					"description": "Jira project key to connect to (e.g., DSS). Leave empty to query all projects"
+					"description": "Jira project key(s) to connect to. Separate several projects with commas (e.g. \"DSS, ABC\"); the project selector in Robert's navigation bar then shows all of them or one at a time. Leave empty to query all projects."
 				},
 				"robert.jiraBugIssueTypes": {
 					"type": "string",

@@ -101,7 +101,14 @@ Robert/
 | `robert.timeout` | number | `5000` | Timeout peticions (1000-60000ms) |
 | `robert.jiraBaseUrl` | string | `https://jiracloudab.atlassian.net` | URL base de Jira Cloud |
 | `robert.jiraEmail` | string | `""` | Email del compte Atlassian |
-| `robert.jiraProjectKey` | string | `DSS` | Clau del projecte Jira |
+| `robert.jiraProjectKey` | string | `""` | Clau o claus del projecte Jira, separades per comes (`DSS, ABC`); buit = tots els projectes |
+| `robert.rallyProjectName` | string | `""` | Nom o noms del projecte Rally, separats per comes (obligatori amb provider `rally`) |
+
+### Multiprojecte
+- `robert.jiraProjectKey` i `robert.rallyProjectName` accepten diversos projectes separats per comes. `src/libs/provider/projectScope.ts` els interpreta (`parseProjectList`) i guarda el projecte triat al selector de la barra de navegació (`workspaceState`, clau `robert.activeProject`; `null` = tots).
+- Els serveis llegeixen l'abast a cada crida: Jira amb `projectJql()` (`project in (...)`), Rally amb `getProjectScopeQuery()` (OR de `Project = /project/<oid>`). Les consultes per id d'una user story (tasks, detall) fan servir tots els projectes configurats (`getProjectIds('configured')`).
+- Les caches que no filtren per projecte porten el prefix `projectScopeKey()`.
+- La UI envia `setActiveProject`; el host respon a totes les vistes amb `projectScopeChanged`, i cada vista torna a carregar les dades. `iterationsLoaded` i el preload porten `projectScope: { projects, active }`.
 
 ### Persistència
 - Settings es guarden als `settings.json` de VS Code. El diàleg de settings propi de Robert (`robert.openSettings`, compartit amb l'app standalone) escriu a nivell **Workspace** per defecte, o **User** si es tria; cada camp es desa per separat.

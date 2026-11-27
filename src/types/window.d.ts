@@ -36,6 +36,8 @@ declare global {
 			devMode: boolean;
 			debugMode: boolean;
 			provider?: 'jira' | 'rally';
+			/** Configured projects and the one selected in the project selector (null = all). */
+			projectScope?: { projects: string[]; active: string | null };
 		};
 	}
 

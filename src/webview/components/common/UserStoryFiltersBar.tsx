@@ -40,19 +40,22 @@ const UserStoryFiltersBar: FC<UserStoryFiltersBarProps> = ({ filters, projects, 
 				marginBottom: '12px'
 			}}
 		>
-			<label style={labelStyle}>
-				Project
-				<Select
-					ariaLabel="Project"
-					maxWidth="260px"
-					value={filters.project}
-					options={[{ value: '', label: 'All projects' }, ...projects.map(key => ({ value: key, label: key }))]}
-					onChange={project =>
-						// Al cambiar de proyecto se descarta el sprint, que puede ser de otro.
-						onChange({ project, sprint: '' })
-					}
-				/>
-			</label>
+			{/* With one project in scope (or none known) there is nothing to choose. */}
+			{(projects.length > 1 || filters.project) && (
+				<label style={labelStyle}>
+					Project
+					<Select
+						ariaLabel="Project"
+						maxWidth="260px"
+						value={filters.project}
+						options={[{ value: '', label: 'All projects' }, ...projects.map(key => ({ value: key, label: key }))]}
+						onChange={project =>
+							// Al cambiar de proyecto se descarta el sprint, que puede ser de otro.
+							onChange({ project, sprint: '' })
+						}
+					/>
+				</label>
+			)}
 
 			<label style={labelStyle}>
 				Sprint

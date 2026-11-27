@@ -151,7 +151,8 @@ const BySprintsView: FC<PortfolioViewProps> = ({
 										objectId: selectedIteration.objectId,
 										formattedId: selectedIteration.name,
 										name: selectedIteration.name,
-										type: 'sprint'
+										type: 'sprint',
+										project: selectedIteration.project ?? undefined
 									}}
 								/>
 								<OpenInJiraButton objectId={selectedIteration.objectId} artifactType="iteration" />

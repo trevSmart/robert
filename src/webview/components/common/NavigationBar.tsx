@@ -113,6 +113,8 @@ interface NavigationBarProps {
 	/** Actions offered by the host; the menu is hidden when empty. */
 	viewActions?: ViewAction[];
 	onViewAction?: (action: ViewAction) => void;
+	/** Rendered between the tabs and the actions menu (the project selector). */
+	trailingContent?: React.ReactNode;
 }
 
 // Search tab: magnifying glass SVG only (no label)
@@ -359,7 +361,7 @@ const ViewActionsMenu: React.FC<{ actions: ViewAction[]; onAction: (action: View
 	);
 };
 
-const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange, collaborationBadgeCount = 0, showTestTab = false, showCollaborationTab = false, viewActions = [], onViewAction }) => {
+const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionChange, collaborationBadgeCount = 0, showTestTab = false, showCollaborationTab = false, viewActions = [], onViewAction, trailingContent }) => {
 	const lightTheme = isLightTheme();
 	const tabs = useMemo(() => {
 		const baseTabs = [
@@ -719,6 +721,7 @@ const NavigationBar: React.FC<NavigationBarProps> = ({ activeSection, onSectionC
 					</button>
 				</div>
 			</div>
+			{trailingContent}
 			{viewActions.length > 0 && onViewAction && <ViewActionsMenu actions={viewActions} onAction={onViewAction} lightTheme={lightTheme} />}
 		</div>
 	);

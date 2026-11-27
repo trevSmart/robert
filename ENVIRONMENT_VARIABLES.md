@@ -28,7 +28,7 @@ API credentials (`ROBERT_JIRA_API_TOKEN`, `ROBERT_RALLY_API_KEY`) are not VS Cod
 |----------|------|---------|-------------|
 | `ROBERT_RALLY_API_KEY` | string | `""` | Rally API key (required) |
 | `ROBERT_RALLY_INSTANCE` | string | `https://eu1.rallydev.com` | Rally instance URL |
-| `ROBERT_RALLY_PROJECT_NAME` | string | `""` | Rally project name |
+| `ROBERT_RALLY_PROJECT_NAME` | string | `""` | Rally project name (required). Several projects separated by commas (e.g. `Team A, Team B`); names containing commas are not supported |
 
 ### Jira Configuration (used when provider is `jira`)
 
@@ -37,7 +37,7 @@ API credentials (`ROBERT_JIRA_API_TOKEN`, `ROBERT_RALLY_API_KEY`) are not VS Cod
 | `ROBERT_JIRA_EMAIL` | string | `""` | Atlassian account email used with the API token (required) |
 | `ROBERT_JIRA_API_TOKEN` | string | `""` | Jira Cloud API token (required) |
 | `ROBERT_JIRA_BASE_URL` | string | `https://your-site.atlassian.net` | Jira Cloud base URL |
-| `ROBERT_JIRA_PROJECT_KEY` | string | `""` | Jira project key (optional). Empty or unset means **all projects** (JQL `project is not EMPTY`). Previously defaulted to `DSS` |
+| `ROBERT_JIRA_PROJECT_KEY` | string | `""` | Jira project key(s) (optional). Several keys separated by commas (e.g. `DSS, ABC`, JQL `project in ("DSS", "ABC")`). Empty or unset means **all projects** (JQL `project is not EMPTY`). Previously defaulted to `DSS` |
 | `ROBERT_JIRA_BUG_ISSUE_TYPES` | string | `""` | Comma-separated Jira issue-type names treated as bugs/defects (e.g. `Bug, Incidencias`). Empty means auto-detect (Bug, Defect, Incidencia…) |
 
 ### Extension Settings

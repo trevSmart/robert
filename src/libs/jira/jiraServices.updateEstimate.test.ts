@@ -16,6 +16,7 @@ vi.mock('../../ErrorHandler', () => ({
 	ErrorHandler: { getInstance: vi.fn(() => ({ logInfo: vi.fn(), logWarning: vi.fn(), logDebug: vi.fn(), handleError: vi.fn() })) }
 }));
 vi.mock('./utils', () => ({ validateJiraConfiguration, clearUtilsCaches: vi.fn() }));
+vi.mock('../provider/projectScope', () => ({ getActiveProjects: vi.fn(() => []), projectScopeKey: vi.fn(() => 'scope[]') }));
 vi.mock('./jiraClient', () => ({ getJiraSettings: vi.fn(), jiraRequest, searchIssues: vi.fn(), projectJql: vi.fn(), quoteJql: vi.fn() }));
 vi.mock('./jiraCall', () => ({ setJiraBroadcaster: vi.fn(), callJira: (fn: () => Promise<unknown>) => fn() }));
 vi.mock('./CacheService', () => ({

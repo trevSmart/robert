@@ -2,7 +2,8 @@ import { rallyData, rallyDataMeta, stampRallyData } from '../../extension.js';
 import { ttlFor, isStale, type CacheEntity } from '../cache/ttlConfig';
 import type { Attachment } from '../../types/jira';
 import type { RallyApiObject, RallyApiResult, RallyProject, RallyQuery, RallyQueryBuilder, RallyQueryOptions, RallyQueryParams, RallyUser, RallyUserStory, RallyIteration, RallyDefect, User, GlobalSearchResultItem } from '../../types/rally';
-import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectId, clearUtilsCaches } from './utils';
+import { getRallyApi, queryUtils, validateRallyConfiguration, getProjectIds, getProjectScopeQuery, clearUtilsCaches } from './utils';
+import { projectScopeKey } from '../provider/projectScope';
 import { callRally, callRallyFetch, setRallyBroadcaster } from './rallyCall';
 import { clearRallyIssueFieldsCache } from './rallyIssueFields';
 import { ErrorHandler } from '../../ErrorHandler';
@@ -843,7 +844,7 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 	errorHandler.logDebug(`getIterations called with query: ${JSON.stringify(query)}, limit: ${limit}`, 'rallyServices.getIterations');
 
 	// Generate cache key from query
-	const cacheKey = `iterations:${JSON.stringify(query)}`;
+	const cacheKey = `${projectScopeKey()}:iterations:${JSON.stringify(query)}`;
 
 	// Effective freshness window: a per-call maxAge (e.g. velocity forcing 24h) overrides the
 	// entity default (48h). Applied to BOTH cache layers so a caller can demand fresher data.
@@ -897,9 +898,8 @@ export async function getIterations(query: RallyQueryParams = {}, limit: number 
 		queryOptions.limit = limit;
 	}
 
-	// Sempre filtrem per projecte
-	const projectId = await getProjectId();
-	queryOptions.query = queryUtils.where('Project', '=', `/project/${projectId}`);
+	// Sempre filtrem pels projectes de l'abast actual
+	queryOptions.query = await getProjectScopeQuery();
 
 	if (Object.keys(query).length) {
 		const iterationQueries = Object.keys(query).map(key => {
@@ -984,8 +984,7 @@ async function buildScopedUserStoryQueryOptions(query: RallyQueryParams, offset:
 	const queryOptions = buildUserStoryQueryOptions(query, offset);
 
 	if (!query?.Project) {
-		const projectId = await getProjectId();
-		const projectQuery = queryUtils.where('Project', '=', `/project/${projectId}`);
+		const projectQuery = await getProjectScopeQuery();
 
 		if (queryOptions.query) {
 			// @ts-expect-error - Rally query builder has and method
@@ -1150,9 +1149,9 @@ export async function getTasks(userStoryId: string, query: RallyQueryParams = {}
 		queryOptions.limit = limit;
 	}
 
-	// Always filter by project for better query performance
-	const projectId = await getProjectId();
-	const rallyQueries = [queryUtils.where('WorkProduct', '=', `/hierarchicalrequirement/${userStoryId}`), queryUtils.where('Project', '=', `/project/${projectId}`)];
+	// Always filter by project for better query performance. Any configured project: the story
+	// may belong to a project other than the one selected (e.g. opened from favorites).
+	const rallyQueries = [queryUtils.where('WorkProduct', '=', `/hierarchicalrequirement/${userStoryId}`), await getProjectScopeQuery('configured')];
 
 	if (Object.keys(query).length) {
 		const additionalQueries = Object.keys(query).map(key => {
@@ -1277,9 +1276,8 @@ export async function getDefects(query: RallyQueryParams = {}, offset: number = 
 		}
 	}
 
-	// Sempre filtrem per projecte (unless it's a filtered query for specific user story)
-	const projectId = await getProjectId();
-	queryOptions.query = queryUtils.where('Project', '=', `/project/${projectId}`);
+	// Sempre filtrem pels projectes de l'abast actual
+	queryOptions.query = await getProjectScopeQuery();
 
 	if (Object.keys(query).length) {
 		const defectQueries = Object.keys(query).map(key => {
@@ -1399,7 +1397,6 @@ export async function getUserStoryTests(userStoryId: string) {
 		errorHandler.logDebug(`Getting test cases for user story: ${userStoryId}`, 'rallyServices.getUserStoryTests');
 
 		const rallyApi = getRallyApi();
-		const _projectId = await getProjectId();
 
 		// Query to get the user story with its test cases expanded
 		const queryOptions: RallyQueryOptions = {
@@ -1560,7 +1557,6 @@ export async function getUserStoryDefects(userStoryId: string) {
 		errorHandler.logDebug(`Getting defects for user story: ${userStoryId}`, 'rallyServices.getUserStoryDefects');
 
 		const rallyApi = getRallyApi();
-		const _projectId = await getProjectId();
 
 		// Query to get the user story with its defects expanded
 		const queryOptions: RallyQueryOptions = {
@@ -1762,7 +1758,6 @@ export async function getUserStoryDiscussions(userStoryId: string) {
 		errorHandler.logDebug(`Getting discussions for user story: ${userStoryId}`, 'rallyServices.getUserStoryDiscussions');
 
 		const rallyApi = getRallyApi();
-		const _projectId = await getProjectId();
 
 		// Query to get the user story with its discussions expanded
 		const queryOptions: RallyQueryOptions = {
@@ -1914,8 +1909,8 @@ export async function getRecentTeamMembers(numberOfIterations: number = 3) {
 		errorHandler.logDebug(`Getting team members from last ${numberOfIterations} iterations`, 'rallyServices.getRecentTeamMembers');
 
 		// Check cache first
-		const projectId = await getProjectId();
-		const cacheKey = `team-members:${projectId}:last${numberOfIterations}`;
+		const projectIds = await getProjectIds();
+		const cacheKey = `team-members:${projectIds.join('|')}:last${numberOfIterations}`;
 		const teamMembersCache = getTeamMembersCacheManager();
 		const cachedTeamMembers = teamMembersCache.get(cacheKey);
 
@@ -2166,7 +2161,7 @@ async function getBatchTasks(userStoryIds: string[]): Promise<
 
 	try {
 		const rallyApi = getRallyApi();
-		const projectId = await getProjectId();
+		const projectQuery = await getProjectScopeQuery('configured');
 
 		// Build a query with OR conditions for all user story IDs
 		// WorkProduct = /hierarchicalrequirement/ID1 OR WorkProduct = /hierarchicalrequirement/ID2 OR ...
@@ -2175,7 +2170,7 @@ async function getBatchTasks(userStoryIds: string[]): Promise<
 		const queryOptions: RallyQueryOptions = {
 			type: 'task',
 			fetch: ['FormattedID', 'Name', 'Description', 'State', 'Owner', 'Estimate', 'ToDo', 'TimeSpent', 'WorkProduct', 'ObjectID', 'Rank'],
-			query: queryUtils.where('Project', '=', `/project/${projectId}`),
+			query: projectQuery,
 			order: 'Rank'
 		};
 
@@ -2626,13 +2621,12 @@ const GLOBAL_SEARCH_LIMIT_PER_TYPE = 15;
  * Build a Rally query that matches term by FormattedID (exact or contains) or Name (contains).
  * Combines with project filter.
  */
-function buildGlobalSearchQuery(term: string, projectRef: string): RallyQueryBuilder {
+function buildGlobalSearchQuery(term: string, projectFilter: RallyQueryBuilder): RallyQueryBuilder {
 	const formIdExact = queryUtils.where('FormattedID', '=', term);
 	const formIdContains = queryUtils.where('FormattedID', 'contains', term);
 	const nameContains = queryUtils.where('Name', 'contains', term);
 	// @ts-expect-error - Rally query builder has or method
 	const searchOr = formIdExact.or(formIdContains).or(nameContains);
-	const projectFilter = queryUtils.where('Project', '=', projectRef);
 	return searchOr.and(projectFilter);
 }
 
@@ -2664,10 +2658,8 @@ export async function globalSearch(
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
-	const projectId = await getProjectId();
-	const projectRef = `/project/${projectId}`;
 	const limitPerType = options?.limitPerType ?? GLOBAL_SEARCH_LIMIT_PER_TYPE;
-	const searchQuery = buildGlobalSearchQuery(trimmed, projectRef);
+	const searchQuery = buildGlobalSearchQuery(trimmed, await getProjectScopeQuery());
 
 	const rallyApi = getRallyApi();
 
@@ -2764,21 +2756,12 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 		throw new Error(`Rally configuration error: ${validation.errors.join(', ')}`);
 	}
 
-	// Get project ID from cached rallyData if available, otherwise fetch it
-	let projectRef: string | undefined;
-	const settingsManager = SettingsManager.getInstance();
-	const rallyProjectName = settingsManager.getSetting('rallyProjectName')?.trim();
-
-	if (rallyProjectName && rallyData.projects.length > 0) {
-		const currentProject = rallyData.projects.find((p: RallyProject) => p.name === rallyProjectName);
-		if (currentProject) {
-			projectRef = `/project/${currentProject.objectId}`;
-			errorHandler.logDebug(`Scoping user story query to project: ${rallyProjectName} (${currentProject.objectId})`, 'getUserStoryByObjectId');
-		} else {
-			errorHandler.logWarning(`Project "${rallyProjectName}" not found in cached rallyData, querying without project scope`, 'getUserStoryByObjectId');
-		}
-	} else {
-		errorHandler.logDebug('No project name configured or rallyData.projects empty, querying without project scope', 'getUserStoryByObjectId');
+	// Scope to every configured project: the story may belong to a project other than the selected one.
+	let projectQuery: RallyQueryBuilder | undefined;
+	try {
+		projectQuery = await getProjectScopeQuery('configured');
+	} catch (error) {
+		errorHandler.logWarning(`Could not resolve the configured Rally projects, querying without project scope: ${error instanceof Error ? error.message : String(error)}`, 'getUserStoryByObjectId');
 	}
 
 	const rallyApi = getRallyApi();
@@ -2812,9 +2795,9 @@ export async function getUserStoryByObjectId(objectId: string): Promise<{ userSt
 		query: queryUtils.where('ObjectID', '=', objectId)
 	};
 
-	// Scope to project if available
-	if (projectRef) {
-		queryOptions.query = queryUtils.where('ObjectID', '=', objectId).and(queryUtils.where('Project', '=', projectRef));
+	// Scope to the configured projects if available
+	if (projectQuery) {
+		queryOptions.query = queryUtils.where('ObjectID', '=', objectId).and(projectQuery);
 	}
 
 	const result = await callRally(rallyApi, queryOptions, 'Loading user story...');

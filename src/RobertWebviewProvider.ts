@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { ErrorHandler } from './ErrorHandler';
-import { getActiveProvider, getCurrentUser, getProjects, getIterations, getProviderLabel, setProviderBroadcaster, validateConfiguration } from './libs/provider';
+import { clearProjectScopedData, getActiveProvider, getCurrentUser, getProjects, getIterations, getProviderLabel, setProviderBroadcaster, validateConfiguration } from './libs/provider';
+import { getProjectScopeState, initProjectScope, setActiveProject } from './libs/provider/projectScope';
 import { SettingsManager } from './SettingsManager';
 import { CollaborationClient } from './libs/collaboration/collaborationClient';
 import { WebSocketClient } from './libs/collaboration/websocketClient';
@@ -50,6 +51,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		holidays: unknown[];
 		collaborationEnabled: boolean;
 		provider: 'jira' | 'rally';
+		projectScope: { projects: string[]; active: string | null };
 		devMode: boolean;
 		debugMode: boolean;
 	};
@@ -68,6 +70,8 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 		this._websocketClient = WebSocketClient.getInstance();
 		this._contentManager = new WebviewContentManager(this._extensionUri, this._errorHandler);
 		this._messageDispatcher = new WebviewMessageDispatcher(this._errorHandler, this._collaborationClient, this._context);
+		// Restore the project selected in the project selector (per workspace) before any data loads.
+		initProjectScope(this._context.workspaceState);
 
 		this.initializeCollaboration();
 		this.watchSettingsChanges();
@@ -339,6 +343,7 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 					holidays: holidays || [],
 					collaborationEnabled: this._settingsManager.getSetting('collaborationEnabled') || false,
 					provider: this._settingsManager.getSetting('provider'),
+					projectScope: getProjectScopeState(),
 					devMode: isTestTabEnabled(),
 					debugMode: this._settingsManager.getSetting('debugMode')
 				};
@@ -818,6 +823,22 @@ export class RobertWebviewProvider implements vscode.WebviewViewProvider, vscode
 				await this._errorHandler.executeWithErrorHandling(async () => {
 					// Handlers read API credentials synchronously; make sure they are loaded.
 					await CredentialStore.getInstance().whenReady();
+
+					// The project scope is shared by every Robert view: apply it and tell all of them.
+					if (message.command === 'setActiveProject') {
+						const project = typeof message.project === 'string' && message.project ? message.project : null;
+						const state = await setActiveProject(project);
+						clearProjectScopedData();
+						// Data preloaded for the previous scope must not be injected into a view opened later.
+						this._preloadedData = undefined;
+						this.broadcastToWebviews({ command: 'projectScopeChanged', ...state });
+						return;
+					}
+					if (message.command === 'getProjectScope') {
+						await webview.postMessage({ command: 'projectScopeChanged', ...getProjectScopeState() });
+						return;
+					}
+
 					const handled = await this._messageDispatcher.dispatch(message.command, webview, message);
 
 					if (message.command === 'webviewReady' && webview === this._currentView?.webview) {

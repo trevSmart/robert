@@ -40,8 +40,12 @@ vi.mock('./utils', () => ({
 		isValid: true,
 		errors: []
 	})),
-	getProjectId: vi.fn(async () => '74278607305'),
+	getProjectIds: vi.fn(async () => ['74278607305']),
+	getProjectScopeQuery: vi.fn(async () => queryBuilder),
 	clearUtilsCaches: vi.fn()
+}));
+vi.mock('../provider/projectScope', () => ({
+	projectScopeKey: vi.fn(() => 'scope[Test]')
 }));
 vi.mock('./rallyCall', () => ({
 	callRally: vi.fn(),

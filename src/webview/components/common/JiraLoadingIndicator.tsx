@@ -19,7 +19,9 @@ const Wrapper = styled.div<{ $visible: boolean; $light: boolean }>`
 	width: 38px;
 	height: 38px;
 	padding: 3px;
+	box-sizing: border-box;
 	border-radius: 8px;
+	border: 1px solid ${props => (props.$light ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.14)')};
 	background: ${props => (props.$light ? 'rgba(255, 255, 255, 0.72)' : 'rgba(15, 18, 25, 0.35)')};
 	backdrop-filter: blur(6px);
 	box-shadow: ${props => (props.$light ? '0 2px 10px rgba(0, 0, 0, 0.12)' : '0 4px 12px rgba(0, 0, 0, 0.18)')};

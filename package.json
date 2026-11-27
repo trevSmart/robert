@@ -2,7 +2,7 @@
 	"name": "robert",
 	"displayName": "Robert",
 	"description": "For internal use only.",
-	"version": "0.7.9",
+	"version": "0.7.11",
 	"type": "commonjs",
 	"icon": "resources/icons/robert-logo4.png",
 	"publisher": "trevSmart",
@@ -217,26 +217,7 @@
 				],
 				"priority": "default"
 			}
-		],
-		"menus": {
-			"view/title": [
-				{
-					"command": "robert.openInEditor",
-					"when": "view == robert.mainView",
-					"group": "1_robert@1"
-				},
-				{
-					"command": "robert.openSettings",
-					"when": "view == robert.mainView",
-					"group": "1_robert@2"
-				},
-				{
-					"command": "robert.reload",
-					"when": "view == robert.mainView",
-					"group": "1_robert@3"
-				}
-			]
-		}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile && npm run build:webview",

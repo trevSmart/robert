@@ -1,11 +1,18 @@
 ## Unreleased
 
+### Projects
+* Work with several projects at once: `robert.jiraProjectKey` and `robert.rallyProjectName` accept a comma-separated list (e.g. `DSS, ABC`); a single project works as before
+* When more than one project is configured, a project selector in the navigation bar shows **All projects** or narrows every view (sprints, user stories, defects, calendar, team, metrics, search) to one of them. The choice is saved per workspace and shared by the sidebar and the editor tab
+* The connection check verifies every configured project and names the ones that are missing
+* Project column in the sprint and defect lists, and project badge on the defect detail
+* User stories and defects opened by id (favorites, recently viewed, search) load from any configured project, whatever the selector shows
+
 ### Attachments
 * Show the files attached to a user story (new **Attachments** tab in Related Records, with its count) and to a defect (new **Attachments** card), for both Jira and Rally
 * Each file shows its name, size, author and date, with a preview for images; clicking it opens the file in the browser with your Jira / Rally session. Only links on the configured Jira site / Rally instance are opened
 
-### Jira fields
-* The **Details** card of user stories and defects gets a **Fields** section (Jira only) with the issue's other fields that have a value, such as custom fields from the «Key details» tabs of the Jira issue view (e.g. «Talla» in «Esfuerzo Desarrollo»). Robert used to read only a fixed set of fields
+### Fields
+* The **Details** card of user stories and defects gets a **Fields** section with the issue's other fields that have a value, such as custom fields from the «Key details» tabs of the Jira issue view (e.g. «Talla» in «Esfuerzo Desarrollo»). Robert used to read only a fixed set of fields
 * Accounts that can read the Jira screen configuration (Administer Jira) see the fields grouped in the same tabs as Jira; the rest see them as one list, in the edit screen's order
 * The **Fields** section shows the pinned fields: pin a field with its pin button to keep it visible for every issue (saved per workspace). **Show all fields** lists the rest below them
 * Filter the fields by name or value while **Show all fields** is open (case and accents are ignored)

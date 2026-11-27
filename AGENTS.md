@@ -180,7 +180,6 @@ export ROBERT_COLLABORATION_ENABLED="false"
 ### Development Dependencies
 - **@ESLint**: Linter i formatter
 - **@vscode/vsce**: Packaging tool per extensions
-- **vscrui**: UI components per VS Code
 - **electron**: Runtime de l'app standalone (només devDependency; no entra al VSIX)
 - **electron-builder**: Empaquetat de l'app standalone (dmg/zip, nsis, AppImage)
 

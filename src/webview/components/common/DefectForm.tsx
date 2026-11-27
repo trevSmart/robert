@@ -6,7 +6,7 @@ import { isLightTheme, getScheduleStateColor as getThemeScheduleStateColor } fro
 import BlockedReasonBanner from './BlockedReasonBanner';
 import ResizableDescription from './ResizableDescription';
 import AttachmentsList, { useAttachments } from './AttachmentsList';
-import IssueFieldsCard from './IssueFieldsCard';
+import IssueFieldsSection from './IssueFieldsSection';
 import './CollapsibleCard';
 
 const StatusPill = styled.div<{ isBlocked: boolean }>`
@@ -277,6 +277,9 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 							<EntityRefFormField type="sprint" value={defect.iteration} emptyLabel="N/A" />
 						</div>
 
+						{/* Other fields of the record (pinned ones always visible) */}
+						<IssueFieldsSection objectId={defect.objectId} itemType="defect" />
+
 						{/* Description */}
 						<div
 							style={{
@@ -301,7 +304,6 @@ const DefectForm: FC<DefectFormProps> = ({ defect }) => {
 					</div>
 				</div>
 			</collapsible-card>
-			<IssueFieldsCard objectId={defect.objectId} itemType="defect" />
 			<collapsible-card title={attachments && attachments.length > 0 ? `Attachments (${attachments.length})` : 'Attachments'} style={{ margin: '20px 0' } as React.CSSProperties}>
 				<AttachmentsList attachments={attachments} error={attachmentsError} />
 			</collapsible-card>

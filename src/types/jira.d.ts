@@ -113,7 +113,7 @@ export interface IssueFieldTab {
 	fields: IssueFieldValue[];
 }
 
-/** Item types with a Fields card. Rally needs it to pick the WSAPI type; Jira ignores it. */
+/** Item types with a Fields section (in Details). Rally needs it to pick the WSAPI type; Jira ignores it. */
 export type IssueFieldsItemType = 'userstory' | 'defect';
 
 /**

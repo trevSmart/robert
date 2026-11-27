@@ -1,11 +1,10 @@
-import { FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import styled from 'styled-components';
 import DOMPurify from 'dompurify';
 import { type IssueFieldsItemType, type IssueFieldsResult, type IssueFieldValue } from '../../../types/jira';
 import { getVsCodeApi } from '../../utils/vscodeApi';
 import { fieldMatchesFilter, normalizeForFilter } from '../../utils/issueFieldsFilter';
 import SubTabsBar from './SubTabsBar';
-import './CollapsibleCard';
 
 /**
  * Loads the fields of a Jira issue or Rally artifact that Robert does not show elsewhere.
@@ -149,6 +148,46 @@ const Message = styled.div`
 	color: var(--vscode-descriptionForeground);
 `;
 
+const Section = styled.div`
+	grid-column: 1 / -1;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+`;
+
+const Heading = styled.div`
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 12px;
+	margin: 18px 0 3px 0;
+
+	& h3 {
+		margin: 0;
+		font-size: 14px;
+		color: var(--vscode-foreground);
+	}
+`;
+
+const ToggleButton = styled.button`
+	padding: 0;
+	border: none;
+	background: none;
+	font-family: inherit;
+	font-size: 12px;
+	color: var(--vscode-textLink-foreground);
+	cursor: pointer;
+
+	&:hover {
+		text-decoration: underline;
+	}
+
+	&:focus-visible {
+		outline: 1px solid var(--vscode-focusBorder);
+		outline-offset: 2px;
+	}
+`;
+
 const FilterInput = styled.input`
 	width: 180px;
 	max-width: 40vw;
@@ -191,40 +230,26 @@ const FieldRows: FC<{ fields: IssueFieldValue[]; pinnedIds: Set<string>; onToggl
 );
 
 /**
- * «Fields» card with the item's other fields (e.g. «Talla»). With Jira they are grouped by the
- * tabs of the issue's screen when the account can read them (Jira admins); with Rally, in
- * «Custom» and «Standard» tabs (Rally does not expose the detail page layout).
+ * «Fields» part of the Details card: the item's other fields (e.g. «Talla»). With Jira they are
+ * grouped by the tabs of the issue's screen when the account can read them (Jira admins); with
+ * Rally, in «Custom» and «Standard» tabs (Rally does not expose the detail page layout).
  *
- * Collapsed by default. Pinned fields (per workspace, for every issue) stay visible while it is
- * collapsed; expanding it adds a filter and, below the pinned ones, the rest of the fields.
+ * Pinned fields (per workspace, for every issue) are always shown. «Show all fields» reveals the
+ * rest, with a filter and the tabs. Rendered as a full-width item of the Details grid.
  */
-const IssueFieldsCard: FC<{ objectId: string; itemType: IssueFieldsItemType }> = ({ objectId, itemType }) => {
+const IssueFieldsSection: FC<{ objectId: string; itemType: IssueFieldsItemType }> = ({ objectId, itemType }) => {
 	const { result, error } = useIssueFields(objectId, itemType);
 	const { pinnedIds, togglePinned } = usePinnedIssueFields();
 	const [activeTab, setActiveTab] = useState<{ objectId: string; index: number }>({ objectId, index: 0 });
 	const [expanded, setExpanded] = useState(false);
 	const [filter, setFilter] = useState('');
-	const cardRef = useRef<HTMLElement>(null);
 
-	useEffect(() => {
-		const card = cardRef.current;
-		if (!card) {
-			return;
+	const toggleExpanded = () => {
+		if (expanded) {
+			setFilter('');
 		}
-		const handleToggle = (event: Event) => {
-			// Ignore toggles bubbling up from any card nested inside this one.
-			if (event.target !== card) {
-				return;
-			}
-			const collapsed = (event as CustomEvent<{ collapsed: boolean }>).detail?.collapsed;
-			setExpanded(collapsed === false);
-			if (collapsed) {
-				setFilter('');
-			}
-		};
-		card.addEventListener('toggle', handleToggle);
-		return () => card.removeEventListener('toggle', handleToggle);
-	}, []);
+		setExpanded(!expanded);
+	};
 
 	const tabs = useMemo(() => result?.tabs ?? [], [result]);
 	const total = tabs.reduce((sum, tab) => sum + tab.fields.length, 0);
@@ -239,15 +264,11 @@ const IssueFieldsCard: FC<{ objectId: string; itemType: IssueFieldsItemType }> =
 	const activeIndex = activeTab.objectId === objectId && activeTab.index < filteredTabs.length ? activeTab.index : 0;
 	const fields = filteredTabs[activeIndex]?.fields ?? [];
 	const anyUnpinnedMatch = filteredTabs.some(tab => tab.fields.length > 0);
-	const showSummary = !!error || visiblePinned.length > 0;
+	const unpinnedCount = total - pinnedFields.length;
 
 	let body;
-	if (error) {
+	if (!expanded) {
 		body = null;
-	} else if (!result) {
-		body = <Message>Loading fields…</Message>;
-	} else if (total === 0) {
-		body = <Message>No other fields have a value.</Message>;
 	} else if (normalizedFilter && !anyUnpinnedMatch) {
 		body = visiblePinned.length > 0 ? null : <Message>No fields match «{filter.trim()}».</Message>;
 	} else if (fields.length === 0) {
@@ -256,13 +277,19 @@ const IssueFieldsCard: FC<{ objectId: string; itemType: IssueFieldsItemType }> =
 		body = <FieldRows fields={fields} pinnedIds={pinnedIds} onTogglePinned={togglePinned} />;
 	}
 
-	const showPinHint = !!result && total > 0 && pinnedFields.length === 0 && !normalizedFilter;
-	const showTabs = tabs.length > 1 && !error && anyUnpinnedMatch;
+	const showPinHint = expanded && total > 0 && pinnedFields.length === 0 && !normalizedFilter;
+	const showTabs = expanded && tabs.length > 1 && anyUnpinnedMatch;
 
 	return (
-		<collapsible-card ref={cardRef} title={result ? `Fields (${total})` : 'Fields'} default-collapsed style={{ margin: '20px 0' } as React.CSSProperties}>
-			{expanded && total > 0 && (
-				<div slot="header-actions" style={{ display: 'flex', alignItems: 'center', marginLeft: '12px' }}>
+		<Section>
+			<Heading>
+				<h3>Fields</h3>
+				{result && !error && unpinnedCount > 0 && (
+					<ToggleButton type="button" onClick={toggleExpanded} aria-expanded={expanded}>
+						{expanded ? 'Show fewer fields' : `Show all fields (${total})`}
+					</ToggleButton>
+				)}
+				{expanded && total > 0 && (
 					<FilterInput
 						type="search"
 						value={filter}
@@ -276,31 +303,25 @@ const IssueFieldsCard: FC<{ objectId: string; itemType: IssueFieldsItemType }> =
 							}
 						}}
 					/>
-				</div>
-			)}
-			{showSummary && (
-				<div slot="summary" style={{ padding: expanded ? '16px 36px 0' : '14px 36px' }}>
-					{error ? <Message>Could not load the fields: {error}</Message> : <FieldRows fields={visiblePinned} pinnedIds={pinnedIds} onTogglePinned={togglePinned} />}
-				</div>
-			)}
-			{(showPinHint || showTabs || body) && (
-				<div
-					style={{
-						// Below the pinned fields, a divider separates them from the rest.
-						padding: showSummary ? '16px 20px 20px' : '12px 20px 20px',
-						borderTop: showSummary ? '1px solid var(--vscode-panel-border)' : undefined,
-						display: 'flex',
-						flexDirection: 'column',
-						gap: '16px'
-					}}
-				>
-					{showPinHint && <Message>Pin a field to keep it visible while this card is collapsed.</Message>}
+				)}
+			</Heading>
+			{error ? (
+				<Message>Could not load the fields: {error}</Message>
+			) : !result ? (
+				<Message>Loading fields…</Message>
+			) : total === 0 ? (
+				<Message>No other fields have a value.</Message>
+			) : (
+				<>
+					{visiblePinned.length > 0 && <FieldRows fields={visiblePinned} pinnedIds={pinnedIds} onTogglePinned={togglePinned} />}
+					{!expanded && pinnedFields.length === 0 && <Message>Pin a field to show it here; «Show all fields» lists the rest.</Message>}
+					{showPinHint && <Message>Pin a field to keep it visible here when the list is folded.</Message>}
 					{showTabs && <SubTabsBar subTabs={filteredTabs.map((tab, index) => ({ id: String(index), label: `${tab.name ?? 'Fields'} (${tab.fields.length})` }))} activeSubTabId={String(activeIndex)} onSubTabChange={id => setActiveTab({ objectId, index: Number(id) })} />}
 					{body}
-				</div>
+				</>
 			)}
-		</collapsible-card>
+		</Section>
 	);
 };
 
-export default IssueFieldsCard;
+export default IssueFieldsSection;
